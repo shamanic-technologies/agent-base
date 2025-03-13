@@ -1,0 +1,22 @@
+[build]
+builder = "NIXPACKS"
+buildCommand = "npm install && npm run build"
+
+[deploy]
+numReplicas = 1
+healthcheckPath = "/health"
+healthcheckTimeout = 10
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+
+[service]
+name = "proxy-service"
+internalPort = 3004
+healthcheckPath = "/health"
+domains = ["api.helloworld.example.com"]
+
+[variables]
+PORT = "3004"
+NODE_ENV = "production"
+MODEL_SERVICE_URL = "${MODEL_SERVICE_URL}"
+KEY_SERVICE_URL = "${KEY_SERVICE_URL}" 

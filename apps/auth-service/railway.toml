@@ -1,0 +1,21 @@
+[build]
+builder = "NIXPACKS"
+buildCommand = "npm install && npm run build"
+
+[deploy]
+numReplicas = 1
+healthcheckPath = "/health"
+healthcheckTimeout = 10
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+
+[service]
+name = "auth-service"
+internalPort = 3005
+healthcheckPath = "/health"
+domains = ["auth.helloworld.example.com"]
+
+[variables]
+PORT = "3005"
+NODE_ENV = "production"
+JWT_SECRET = "${JWT_SECRET}" 

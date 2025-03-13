@@ -1,0 +1,19 @@
+[build]
+builder = "NIXPACKS"
+buildCommand = "npm install && npm run build"
+
+[deploy]
+numReplicas = 1
+healthcheckPath = "/health"
+healthcheckTimeout = 10
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+
+[service]
+name = "payment-service"
+internalPort = 3007
+healthcheckPath = "/health"
+
+[variables]
+PORT = "3007"
+NODE_ENV = "production" 
