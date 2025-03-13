@@ -1,16 +1,16 @@
 /**
- * HelloWorld Model Service with Claude ReAct Agent
+ * LangGraph ReAct Agent Service
  * 
- * A simple Express server that simulates a Claude ReAct agent response.
- * Uses a simulated agent but structured for easy integration with real LangGraph implementation.
+ * A simple Express server that implements a Claude ReAct agent.
+ * Uses LangGraph for handling the agent's reasoning and acting process.
  */
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
-import { processWithReActAgent } from './agent';
+import { processWithReActAgent } from './react-agent';
 
-// Load environment variables
-dotenv.config();
+// Export agent configuration types and utilities
+export * from './lib/agent-config';
+export * from './lib/create-agent';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -26,7 +26,7 @@ app.get('/health', (req, res) => {
 
 // LLM generation endpoint using ReAct agent
 app.post('/generate', async (req, res) => {
-  const { prompt } = req.body;
+  const { prompt, thread_id } = req.body;
   
   if (!prompt) {
     return res.status(400).json({ error: 'Prompt is required' });
@@ -35,7 +35,7 @@ app.post('/generate', async (req, res) => {
   try {
     // Process the prompt with our ReAct agent
     console.log(`Received prompt: "${prompt}"`);
-    const response = await processWithReActAgent(prompt);
+    const response = await processWithReActAgent(prompt, thread_id);
     
     // Return the agent's response
     res.status(200).json(response);
@@ -50,5 +50,5 @@ app.post('/generate', async (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`🤖 Claude ReAct Agent Service running at http://localhost:${PORT}`);
+  console.log(`🤖 LangGraph ReAct Agent Service running at http://localhost:${PORT}`);
 }); 
