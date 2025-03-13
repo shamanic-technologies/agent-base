@@ -69,3 +69,16 @@ npm test --filter="@helloworld/auth-service"
 ## Deployment
 
 This project is designed to be deployed on Railway. See [RAILWAY_DEPLOYMENT.md](./RAILWAY_DEPLOYMENT.md) for detailed deployment instructions.
+
+# Agent Base - Next.js App
+
+This is a Next.js application configured to deploy on Vercel.
+
+## Deployment
+
+This application is set up for deployment on Vercel with the following configuration:
+- Framework: Next.js
+- Root Directory: apps/web
+- Environment Variables: Set in Vercel project settings
+
+Last updated: March 13, 2025
