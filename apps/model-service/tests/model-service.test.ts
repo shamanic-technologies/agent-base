@@ -181,6 +181,57 @@ const tests = [
     console.log('  Testing error handling for missing prompt...');
     const response = await makeRequest('/generate', {});
     return response.statusCode === 400;
+  },
+  
+  // Test 4: Claude ReAct Agent with reasoning task
+  async function testClaudeReActAgent(): Promise<boolean> {
+    console.log('  Testing Claude ReAct Agent with a reasoning task...');
+    const complexPrompt = 'If a train travels at 120 km/h, how long will it take to travel 450 km?';
+    const response = await makeRequest('/generate', { prompt: complexPrompt });
+    
+    if (response.statusCode !== 200) {
+      console.error(`  Unexpected status code: ${response.statusCode}`);
+      return false;
+    }
+    
+    // Check for valid response structure
+    const validResponse = 
+      response.body.generated_text && 
+      response.body.model && 
+      response.body.model.includes('claude') &&
+      response.body.tokens && 
+      response.body.request_id;
+    
+    if (!validResponse) {
+      console.error('  Response is missing expected fields or incorrect model:', response.body);
+      return false;
+    }
+    
+    // Check for reasoning patterns in the response
+    const responseText = response.body.generated_text;
+    const hasReasoning = 
+      responseText.includes('Reasoning') || 
+      responseText.includes('reasoning') || 
+      responseText.includes('think') || 
+      responseText.includes('calculate');
+    
+    const hasCalculation = 
+      responseText.includes('calculator') || 
+      responseText.includes('calculation') || 
+      responseText.includes('divide') || 
+      responseText.includes('450') && responseText.includes('120');
+    
+    const hasAnswer = 
+      responseText.includes('3.75') || 
+      responseText.includes('3.75 hours') || 
+      responseText.includes('3 hours and 45 minutes');
+    
+    console.log('  Response contains reasoning:', hasReasoning);
+    console.log('  Response contains calculation:', hasCalculation);
+    console.log('  Response contains correct answer:', hasAnswer);
+    console.log('  Response excerpt:', responseText.substring(0, 100) + '...');
+    
+    return validResponse && (hasReasoning || hasCalculation) && hasAnswer;
   }
 ];
 

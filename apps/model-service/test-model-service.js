@@ -6,8 +6,8 @@
  */
 const http = require('http');
 
-// The prompt to send to the Model Service
-const testPrompt = 'Hello, World!';
+// The prompt to send to the Model Service - using a more complex reasoning task
+const testPrompt = 'If a train travels at 120 km/h, how long will it take to travel 450 km? Please show your reasoning.';
 
 // The request body
 const requestBody = JSON.stringify({
@@ -50,6 +50,35 @@ const req = http.request(options, (res) => {
       // Validate the response structure
       if (response.generated_text && response.model && response.tokens) {
         console.log('\n✅ Response structure is valid');
+        
+        // Check for reasoning patterns in the response
+        const responseText = response.generated_text;
+        const hasReasoning = 
+          responseText.includes('Reasoning') || 
+          responseText.includes('reasoning') || 
+          responseText.includes('think') || 
+          responseText.includes('calculate');
+        
+        const hasCalculation = 
+          responseText.includes('calculator') || 
+          responseText.includes('calculation') || 
+          responseText.includes('divide') || 
+          (responseText.includes('450') && responseText.includes('120'));
+        
+        const hasAnswer = 
+          responseText.includes('3.75') || 
+          responseText.includes('3.75 hours') || 
+          responseText.includes('3 hours and 45 minutes');
+        
+        console.log('  Response contains reasoning:', hasReasoning ? '✅' : '❌');
+        console.log('  Response contains calculation:', hasCalculation ? '✅' : '❌');
+        console.log('  Response contains correct answer:', hasAnswer ? '✅' : '❌');
+        
+        if (hasReasoning && hasCalculation && hasAnswer) {
+          console.log('\n✅ Claude ReAct agent is working correctly!');
+        } else {
+          console.log('\n⚠️ Claude ReAct agent response is missing expected reasoning patterns');
+        }
       } else {
         console.log('\n⚠️ Warning: Response structure is not as expected');
       }
