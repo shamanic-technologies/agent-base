@@ -1,9 +1,0 @@
-{
-  "buildCommand": "cd ../.. && pnpm build",
-  "installCommand": "cd ../.. && pnpm install",
-  "framework": "nextjs",
-  "outputDirectory": "./apps/web/.next",
-  "crons": {
-    "cleanup_expired_nonces": "0 0 * * *"
-  }
-} 

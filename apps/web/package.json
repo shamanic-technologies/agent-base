@@ -7,6 +7,7 @@
   "scripts": {
     "analyze": "ANALYZE=true pnpm run build",
     "build": "pnpm with-env next build",
+    "build:vercel": "next build",
     "build:test": "NODE_ENV=test pnpm with-env:test next build",
     "clean": "git clean -xdf .next .turbo node_modules",
     "dev": "pnpm with-env next dev --turbo | pino-pretty -c",

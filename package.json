@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "build": "turbo run build",
+    "build:web": "pnpm --filter web build",
     "build:microservices": "pnpm --filter @helloworld/auth-service build && pnpm --filter @helloworld/key-service build && pnpm --filter @helloworld/model-service build && pnpm --filter @helloworld/proxy-service build && pnpm --filter @helloworld/database-service build && pnpm --filter @helloworld/payment-service build && pnpm --filter client build",
     "dev": "turbo run dev",
     "dev:microservices": "turbo run dev --filter=@helloworld/auth-service --filter=@helloworld/key-service --filter=@helloworld/model-service --filter=@helloworld/proxy-service --filter=@helloworld/database-service --filter=@helloworld/payment-service --filter=client",
