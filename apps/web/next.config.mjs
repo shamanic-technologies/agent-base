@@ -42,6 +42,8 @@ const config = {
     '/*': ['./content/**/*'],
   },
   redirects: getRedirects,
+  // Configuration for Vercel deployment
+  output: 'standalone',
   experimental: {
     mdxRs: true,
     reactCompiler: ENABLE_REACT_COMPILER,

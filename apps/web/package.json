@@ -7,7 +7,8 @@
   "scripts": {
     "analyze": "ANALYZE=true pnpm run build",
     "build": "pnpm with-env next build",
-    "build:vercel": "next build",
+    "build:npm": "next build",
+    "build:standalone": "NODE_ENV=production next build",
     "build:test": "NODE_ENV=test pnpm with-env:test next build",
     "clean": "git clean -xdf .next .turbo node_modules",
     "dev": "pnpm with-env next dev --turbo | pino-pretty -c",
@@ -15,6 +16,7 @@
     "lint:fix": "next lint --fix",
     "format": "prettier --check \"**/*.{js,cjs,mjs,ts,tsx,md,json}\"",
     "start": "pnpm with-env next start",
+    "start:standalone": "NODE_ENV=production node .next/standalone/server.js",
     "start:test": "NODE_ENV=test pnpm with-env:test next start",
     "typecheck": "tsc --noEmit",
     "with-env": "dotenv -e ./.env.local --",

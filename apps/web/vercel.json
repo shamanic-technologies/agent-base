@@ -1,8 +1,7 @@
 {
   "framework": "nextjs",
-  "rootDirectory": "apps/web",
+  "buildCommand": "npm run build",
   "outputDirectory": ".next",
-  "buildCommand": "cd ../.. && pnpm install && cd apps/web && pnpm run build",
   "regions": ["iad1"],
   "github": {
     "silent": true
