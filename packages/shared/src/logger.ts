@@ -31,4 +31,15 @@ export function createLogger(name: string, config = {}) {
 /**
  * Pre-configured logger for common use cases
  */
-export const logger = createLogger('hello-world'); 
+export const logger = createLogger('hello-world');
+
+/**
+ * Async function to get a logger instance
+ * This is the preferred method for getting a logger in server actions and services
+ * @param name The name of the service/module using the logger (optional)
+ * @param config Custom logger configuration (optional)
+ * @returns A promise that resolves to a configured pino logger instance
+ */
+export async function getLogger(name = 'hello-world', config = {}) {
+  return createLogger(name, config);
+} 
