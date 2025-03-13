@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 const production = process.env.NODE_ENV === 'production';
+const isDevelopment = process.env.NODE_ENV === 'development';
 
 const AppConfigSchema = z
   .object({
@@ -41,8 +42,10 @@ const AppConfigSchema = z
   .refine(
     (schema) => {
       const isCI = process.env.NEXT_PUBLIC_CI;
+      const isLocalhost = schema.url.includes('localhost') || schema.url.includes('127.0.0.1');
 
-      if (isCI ?? !schema.production) {
+      // Accept HTTP for localhost or in development mode or when CI flag is set
+      if (isCI || isDevelopment || isLocalhost || !schema.production) {
         return true;
       }
 
