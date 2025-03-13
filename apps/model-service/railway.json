@@ -3,13 +3,12 @@
   "build": {
     "builder": "NIXPACKS",
     "watchPatterns": [
-      "apps/model-service/**",
-      "packages/**",
+      "**/*.ts",
       "package.json",
-      "turbo.json"
+      "tsconfig.json"
     ],
     "nixpacks": {
-      "buildCmd": "cd ../../ && npm install && npm run build"
+      "buildCmd": "npm install && npm run build"
     }
   },
   "deploy": {

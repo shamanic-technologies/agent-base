@@ -1,7 +1,13 @@
+# Root railway.toml for monorepo configuration
 [project]
 name = "helloworld-microservices"
 
+[build]
+builder = "nixpacks"
+buildCommand = "pnpm install && pnpm build"
+
 [deploy]
-startCommand = "node server.js"
+strategy = "monorepo"
+startCommand = "node apps/proxy-service/dist/index.js" # Main entrypoint service
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10 
