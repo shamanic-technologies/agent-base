@@ -96,6 +96,14 @@ app.get('/health', (req: express.Request, res: express.Response) => {
 // Get test API key endpoint (for testing only)
 app.get('/get-test-key', (req: express.Request, res: express.Response) => {
   const testKey = TEST_API_KEYS[0];
+  
+  if (!testKey) {
+    return res.status(404).json({
+      success: false,
+      error: 'No test key available'
+    });
+  }
+  
   res.status(200).json({ 
     success: true,
     apiKey: testKey.key
@@ -115,7 +123,7 @@ app.post('/api/generate', requireApiKey, async (req: express.Request, res: expre
     
     // Return the model service response
     res.status(200).json(response.data);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error forwarding request to model service:', error);
     
     // Check if it's a connection error
@@ -127,12 +135,14 @@ app.post('/api/generate', requireApiKey, async (req: express.Request, res: expre
     }
     
     // Forward the status code from the Model Service
-    const status = error.response?.status || 500;
+    const status = axios.isAxiosError(error) ? error.response?.status || 500 : 500;
     
     res.status(status).json({ 
       success: false,
       error: 'Error communicating with model service',
-      details: error.response?.data || error.message
+      details: axios.isAxiosError(error) 
+        ? error.response?.data || error.message 
+        : error instanceof Error ? error.message : 'Unknown error'
     });
   }
 });

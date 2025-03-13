@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useRef } from 'react';
+import { createContext, useCallback, useContext, useRef, PropsWithChildren } from 'react';
 
 type EmptyPayload = NonNullable<unknown>;
 
@@ -68,7 +68,7 @@ const AppEventsContext = createContext<InternalAppEventsContextType | null>(
 export function AppEventsProvider<
   T extends ConsumerProvidedEventTypes = ConsumerProvidedEventTypes,
   K extends AppEventType<T> = AppEventType<T>,
->({ children }: React.PropsWithChildren) {
+>({ children }: PropsWithChildren) {
   const listeners = useRef<Record<K, EventCallback<T, K>[]>>(
     {} as Record<K, EventCallback<T, K>[]>,
   );
@@ -77,7 +77,7 @@ export function AppEventsProvider<
     (event: AppEvent<T, K>) => {
       const eventListeners = listeners.current[event.type] ?? [];
 
-      eventListeners.forEach((callback) => callback(event));
+      eventListeners.forEach((callback: EventCallback<T, K>) => callback(event));
     },
     [listeners],
   );
@@ -93,7 +93,7 @@ export function AppEventsProvider<
     listeners.current = {
       ...listeners.current,
       [eventType]: (listeners.current[eventType] ?? []).filter(
-        (cb) => cb !== callback,
+        (cb: EventCallback<T, K>) => cb !== callback,
       ),
     };
   }, []) as AppEventsContextType<T>['off'];
