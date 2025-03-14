@@ -4,16 +4,27 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 /**
- * HelloWorld Model Service
+ * LangGraph ReAct Agent Service
  *
- * A simple Express server that simulates an LLM agent response.
- * In a real implementation, this would call an actual LLM API.
+ * A simple Express server that implements a Claude ReAct agent.
+ * Uses LangGraph for handling the agent's reasoning and acting process.
  */
+// Import and configure dotenv first
+const dotenv_1 = __importDefault(require("dotenv"));
+// Load appropriate environment variables based on NODE_ENV
+const nodeEnv = process.env.NODE_ENV || 'development';
+if (nodeEnv === 'production') {
+    console.log('🚀 Loading production environment from .env.prod');
+    dotenv_1.default.config({ path: '.env.prod' });
+}
+else {
+    console.log('🔧 Loading development environment from .env.local');
+    dotenv_1.default.config({ path: '.env.local' });
+}
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
-const dotenv_1 = __importDefault(require("dotenv"));
-// Load environment variables
-dotenv_1.default.config();
+const react_agent_1 = require("./react-agent");
+// Middleware setup
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3001;
 // Middleware
@@ -21,32 +32,36 @@ app.use((0, cors_1.default)());
 app.use(express_1.default.json());
 // Health check endpoint
 app.get('/health', (req, res) => {
-    res.status(200).json({ status: 'healthy' });
+    res.status(200).json({
+        status: 'healthy',
+        environment: nodeEnv,
+        version: process.env.npm_package_version || '1.0.0'
+    });
 });
-// LLM generation endpoint
-app.post('/generate', (req, res) => {
-    const { prompt } = req.body;
+// LLM generation endpoint using ReAct agent
+app.post('/generate', async (req, res) => {
+    const { prompt, thread_id } = req.body;
     if (!prompt) {
         return res.status(400).json({ error: 'Prompt is required' });
     }
-    // In a real implementation, this would call an actual LLM API
-    // For now, we'll just return a simple response
-    const response = {
-        model: 'hello-world-llm',
-        generated_text: `Hello, World! You asked: "${prompt}". This is a simple AI response.`,
-        tokens: {
-            prompt_tokens: prompt.split(' ').length,
-            completion_tokens: 20,
-            total_tokens: prompt.split(' ').length + 20
-        },
-        request_id: `req_${Date.now()}`
-    };
-    // Simulate some processing time
-    setTimeout(() => {
+    try {
+        // Process the prompt with our ReAct agent
+        console.log(`Received prompt: "${prompt}"`);
+        const response = await (0, react_agent_1.processWithReActAgent)(prompt, thread_id);
+        // Return the agent's response
         res.status(200).json(response);
-    }, 500);
+    }
+    catch (error) {
+        console.error('Error processing prompt with ReAct agent:', error);
+        res.status(500).json({
+            error: 'Failed to process prompt',
+            details: error instanceof Error ? error.message : 'Unknown error'
+        });
+    }
 });
 // Start server
 app.listen(PORT, () => {
-    console.log(`🤖 Model Service running at http://localhost:${PORT}`);
+    console.log(`🤖 LangGraph ReAct Agent Service running at http://localhost:${PORT}`);
+    console.log(`🌐 Environment: ${nodeEnv}`);
+    console.log(`🔑 API Key ${process.env.ANTHROPIC_API_KEY ? 'is' : 'is NOT'} configured`);
 });

@@ -6,5 +6,5 @@
  */
 
 
-// Export echo tool
-export * from './utility_helloworldecho'; 
+// Export datetime tool
+export * from './utility_get_current_datetime'; 

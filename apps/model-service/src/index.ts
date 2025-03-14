@@ -19,7 +19,7 @@ if (nodeEnv === 'production') {
 
 import express from 'express';
 import cors from 'cors';
-import { processWithReActAgent } from './react-agent';
+import { processWithReActAgent } from './lib/react-agent';
 
 // Middleware setup
 const app = express();

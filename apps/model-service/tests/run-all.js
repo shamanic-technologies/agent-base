@@ -11,9 +11,10 @@ const http = require('http');
 // Configuration
 const tests = [
   { name: 'Integration Tests', cmd: 'npm', args: ['run', 'test:integration'] },
-  { name: 'Simple API Test', cmd: 'npm', args: ['run', 'test:simple'] },
-  { name: 'ReAct Agent Test', cmd: 'npm', args: ['run', 'test:react'] },
-  { name: 'Streaming Test', cmd: 'npm', args: ['run', 'test:stream'] }
+  { name: 'API Test', cmd: 'node', args: ['tests/integration/model-service.test.js'] },
+  { name: 'ReAct Agent Test', cmd: 'node', args: ['tests/functional/react-agent.test.js'] },
+  { name: 'Stream Test', cmd: 'node', args: ['tests/functional/stream.test.js'] },
+  { name: 'Stream Modes Test', cmd: 'tsx', args: ['tests/functional/stream-modes.test.ts'] }
 ];
 
 // Results tracking

@@ -8,11 +8,12 @@
     "start": "node dist/index.js",
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc --noEmit",
-    "test": "node ./run-all-tests.js",
+    "test": "node ./tests/run-all.js",
     "test:integration": "tsx tests/index.ts",
-    "test:simple": "node test-model-service.js",
-    "test:react": "node test-reactagent.js",
-    "test:stream": "node test-stream.js",
+    "test:simple": "node tests/integration/model-service.test.js",
+    "test:react": "node tests/functional/react-agent.test.js",
+    "test:stream": "node tests/functional/stream.test.js",
+    "test:stream:modes": "tsx tests/functional/stream-modes.test.ts",
     "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
   },
   "dependencies": {

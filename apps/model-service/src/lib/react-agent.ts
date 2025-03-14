@@ -13,49 +13,28 @@ import {
   StateGraph, 
   MemorySaver,
   Annotation,
-  messagesStateReducer
+  messagesStateReducer,
+  StreamMode
 } from "@langchain/langgraph";
 import { StreamEvent } from "@langchain/core/tracers/log_stream";
 
 // Import existing tools from utility directory
-import { UtilityHelloWorldEcho } from "./lib/utility";
+import { UtilityGetCurrentDateTime } from "./utility";
+import { formatAIMessageContent } from "./utils/formatters";
 
-/**
- * Interface for React Agent configuration
- */
-interface ReactAgentConfig {
-  tools: Tool[];  /** List of tools the agent can use */
-  nodeId?: string; /** Optional ID for the agent node */
-  nodeType?: string;/** Optional type for the agent node */
-  parentNodeId?: string;  /** Optional parent node ID */
-  parentNodeType?: string; /** Optional parent node type */
-  modelName?: string;/** Model name (defaults to Claude 3.7 Sonnet) */
-  temperature?: number;  /** Temperature setting (defaults to 0) */
-  systemPrompt?: string; /** Custom system prompt */
-  conversationId?: string;/** Conversation ID for continuity */
-}
-
-/**
- * Formats AI message content into a proper string representation
- * Handles different content formats (string, array of content blocks, etc.)
- * 
- * @param content - The message content to format
- * @returns A properly formatted string
- */
-function formatAIMessageContent(content: any): string {
-  if (typeof content === 'string') {
-    return content;
-  } else if (Array.isArray(content)) {
-    // Handle array of content blocks (Claude format)
-    return content
-      .filter(block => block && typeof block === 'object' && block.type === 'text')
-      .map(block => block.text)
-      .join('\n');
-  } else {
-    // Fallback for unexpected formats
-    return JSON.stringify(content);
-  }
-}
+import {
+  ReactAgentWrapperConfig,
+  ChatAnthropicConfig,
+  ReactAgentConfig,
+  GraphStreamConfig,
+  ThreadId,
+  NodeId,
+  NodeType,
+  ParentNodeId,
+  ParentNodeType,
+  StreamAgentFunctionConfig,
+  ModelName
+} from "../types/agent-config";
 
 /**
  * Ensures tool input is always a valid dictionary (non-array object)
@@ -138,7 +117,7 @@ function preprocessMessagesForClaude(messages: any[]): any[] {
 /**
  * Creates a streamable ReAct agent with enhanced error handling
  */
-export function createReactAgentWrapper(config: ReactAgentConfig) {
+export function createReactAgentWrapper(config: ReactAgentWrapperConfig) {
   const {
     tools,
     nodeId,
@@ -147,19 +126,20 @@ export function createReactAgentWrapper(config: ReactAgentConfig) {
     parentNodeType,
     modelName = "claude-3-7-sonnet-20250219",
     temperature = 0,
-    systemPrompt,
+    overwrittingSystemPrompt: systemPrompt,
     conversationId
   } = config;
   
   // Set up conversation ID
-  const actualConversationId = conversationId || `session-${Date.now()}`;
+  const actualConversationId : ThreadId = conversationId || `session-${Date.now()}`;
+
 
   // Create the Claude model
-  const model = new ChatAnthropic({
+  const anthropicModel : ChatAnthropic = new ChatAnthropic({
     modelName,
     temperature,
     streaming: true
-  });
+  } as ChatAnthropicConfig);
 
   // Define state annotation for the graph
   const StateAnnotation = Annotation.Root({
@@ -168,13 +148,14 @@ export function createReactAgentWrapper(config: ReactAgentConfig) {
     }),
   });
 
+
   // Create the ReAct agent with optimized tool input preprocessing
   const reactAgent = createReactAgent({
-    llm: model, 
+    llm: anthropicModel, 
     tools,
-    // Apply tool preprocessing through state modifier instead
-    stateModifier: systemPrompt,
-  });
+    stateModifier: systemPrompt, // Apply tool preprocessing through state modifier in ReAct Agents
+
+  } as ReactAgentConfig);
 
   // Create a dedicated ToolNode for executing tools
   const toolNode = new ToolNode(tools);
@@ -227,15 +208,27 @@ export function createReactAgentWrapper(config: ReactAgentConfig) {
   /**
    * Streaming agent function with robust error handling
    * 
-   * @param messages - Array of messages from the user and assistant
-   * @param messageHistory - Optional message history
+   * @param config - Configuration object for streaming
+   * @param config.messages - Array of messages from the user and assistant
+   * @param config.modes - Stream modes to enable (e.g. ["messages"], ["events"], or ["messages", "events"])
+   * @param config.messageHistory - Optional message history
    * @returns AsyncGenerator that yields LangGraph event objects as JSON strings
    */
-  async function* streamAgent(
-    messages: BaseMessage[], 
-    messageHistory: BaseMessage[] = []
+  async function* streamAgentFunction(
+    config: StreamAgentFunctionConfig
   ): AsyncGenerator<string, void, unknown> {
     try {
+      const { 
+        messages,
+        modes = 'messages',
+        messageHistory = []
+      } = config;
+
+      // Validate modes
+      if (!Array.isArray(modes) || modes.length === 0) {
+        throw new Error("Modes parameter must be a non-empty array");
+      }
+      
       // Combine history with current messages if needed
       let allMessages = messages;
       if (messageHistory && messageHistory.length > 0) {
@@ -249,12 +242,10 @@ export function createReactAgentWrapper(config: ReactAgentConfig) {
       const stream = await graph.stream(
         { messages: allMessages },
         { 
+          streamMode: modes,
           configurable: { 
             thread_id: actualConversationId,
-            // Disable parallel tool use for Claude to reduce errors
-            disable_parallel_tool_use: true,
-            // Set streaming mode to include both messages and events
-            stream_mode: ["messages", "events"]
+            disable_parallel_tool_use: true // Disable parallel tool use for Claude to reduce errors
           },
           metadata: {
             node_id: nodeId,
@@ -262,7 +253,7 @@ export function createReactAgentWrapper(config: ReactAgentConfig) {
             parent_node_id: parentNodeId,
             parent_node_type: parentNodeType
           }
-        }
+        } as GraphStreamConfig
       );
 
       // Keep track of all chunks
@@ -301,7 +292,7 @@ export function createReactAgentWrapper(config: ReactAgentConfig) {
   /**
    * Invoke the agent with the given messages
    */
-  async function invokeAgent(messages: BaseMessage[]) {
+  async function invokeAgentFunction(messages: BaseMessage[]) {
     // Thoroughly preprocess messages
     const processedMessages = preprocessMessagesForClaude(messages);
     
@@ -351,8 +342,8 @@ export function createReactAgentWrapper(config: ReactAgentConfig) {
   }
   
   return {
-    invokeAgent,
-    streamAgent
+    invokeAgentFunction,
+    streamAgentFunction
   };
 }
 
@@ -360,10 +351,14 @@ export function createReactAgentWrapper(config: ReactAgentConfig) {
  * Process a user prompt with the enhanced ReAct agent using createReactAgent
  * 
  * @param prompt The user prompt to process
- * @param threadId Optional thread ID for stateful conversations
+ * @param streamMode The stream mode(s) to use (defaults to ["messages", "events"])
+ * @param conversationId Optional thread ID for stateful conversations
  * @returns A structured response with the generated text
  */
-export async function processWithReActAgent(prompt: string, conversationId?: string) {
+export async function processWithReActAgent(
+  prompt: string, 
+  conversationId?: string
+) {
   try {
     // Check if API key is available
     if (!process.env.ANTHROPIC_API_KEY) {
@@ -371,15 +366,26 @@ export async function processWithReActAgent(prompt: string, conversationId?: str
       throw new Error("Anthropic API key not found in environment variables");
     }
 
-    // Set up tools
+    const nodeId = 'agent_react' as NodeId;
+    const nodeType = NodeType.AGENT;
+    // Set up tools with conversation context
+    const UtilityGetCurrentDateTimeObj = new UtilityGetCurrentDateTime({
+      conversationId: conversationId,
+      parentNodeId: nodeId,
+      parentNodeType: nodeType
+    });
     const tools = [
-      new UtilityHelloWorldEcho()
+      UtilityGetCurrentDateTimeObj
     ];
     
     // Create the ReAct agent wrapper with enhanced error handling
-    const { invokeAgent } = createReactAgentWrapper({
+    const { invokeAgentFunction } = createReactAgentWrapper({
       tools,
-      modelName: "claude-3-7-sonnet-20250219",
+      nodeId,
+      nodeType,
+      parentNodeId: nodeId,
+      parentNodeType: nodeType,
+      modelName: ModelName.CLAUDE_3_7_SONNET_20250219,
       temperature: 0,
       conversationId: conversationId  // Pass the conversation ID to the wrapper
     });
@@ -389,7 +395,7 @@ export async function processWithReActAgent(prompt: string, conversationId?: str
     
     // Invoke the agent - no need to pass conversationId again as it's already in the wrapper
     console.log("Invoking Enhanced LangGraph ReAct agent...");
-    const { result } = await invokeAgent([message]);
+    const { result } = await invokeAgentFunction([message]);
     
     // Get the last message from the result
     const lastMessage = result.messages[result.messages.length - 1];
@@ -399,7 +405,7 @@ export async function processWithReActAgent(prompt: string, conversationId?: str
     
     // Return a formatted response
     return {
-      model: "claude-3-7-sonnet-20250219",
+      model: ModelName.CLAUDE_3_7_SONNET_20250219,
       generated_text: formattedContent,
       tokens: {
         prompt_tokens: prompt.split(/\s+/).length,
