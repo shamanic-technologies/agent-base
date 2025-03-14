@@ -23,7 +23,7 @@ else {
 }
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
-const react_agent_1 = require("./react-agent");
+const react_agent_1 = require("./lib/react-agent");
 // Middleware setup
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3001;
