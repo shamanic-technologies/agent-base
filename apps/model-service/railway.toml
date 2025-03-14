@@ -1,6 +1,6 @@
 [build]
 builder = "NIXPACKS"
-buildCommand = "npm run railway:build"
+buildCommand = "npm i -g pnpm && pnpm install --no-frozen-lockfile && pnpm build"
 
 [deploy]
 numReplicas = 1
@@ -18,4 +18,4 @@ healthcheckPath = "/health"
 [variables]
 PORT = "3001"
 NODE_ENV = "production"
-NIXPACKS_PKGS = "nodejs" 
+NIXPACKS_PKGS = "nodejs pnpm" 

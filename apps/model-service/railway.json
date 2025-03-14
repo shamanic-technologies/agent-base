@@ -8,7 +8,7 @@
       "tsconfig.json"
     ],
     "nixpacks": {
-      "buildCmd": "npm run railway:build"
+      "buildCmd": "npm i -g pnpm && pnpm install --no-frozen-lockfile && pnpm build"
     }
   },
   "deploy": {
