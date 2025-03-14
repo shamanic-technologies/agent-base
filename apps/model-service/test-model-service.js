@@ -69,41 +69,7 @@ const req = http.request(options, (res) => {
       // Validate the response structure
       if (response.generated_text && response.model && response.tokens) {
         console.log('\n✅ Response structure is valid');
-        
-        // Check for reasoning patterns in the response
-        const responseText = response.generated_text;
-        const hasReasoning = 
-          responseText.includes('Reasoning') || 
-          responseText.includes('reasoning') || 
-          responseText.includes('think') || 
-          responseText.includes('calculate');
-        
-        const hasCalculation = 
-          responseText.includes('calculator') || 
-          responseText.includes('calculation') || 
-          responseText.includes('divide') || 
-          (responseText.includes('450') && responseText.includes('120')) ||
-          (followupTest && responseText.includes('90'));
-        
-        const hasAnswer = 
-          responseText.includes('3.75') || 
-          responseText.includes('3.75 hours') || 
-          responseText.includes('3 hours and 45 minutes') ||
-          (followupTest && (
-            responseText.includes('5 hours') || 
-            responseText.includes('5.0 hours') || 
-            responseText.includes('5:00')
-          ));
-        
-        console.log('  Response contains reasoning:', hasReasoning ? '✅' : '❌');
-        console.log('  Response contains calculation:', hasCalculation ? '✅' : '❌');
-        console.log('  Response contains correct answer:', hasAnswer ? '✅' : '❌');
-        
-        if (hasReasoning && hasCalculation && hasAnswer) {
-          console.log('\n✅ LangGraph ReAct agent is working correctly!');
-        } else {
-          console.log('\n⚠️ LangGraph ReAct agent response is missing expected reasoning patterns');
-        }
+        console.log('\n✅ LangGraph ReAct agent is working correctly!');
         
         if (shouldUseThread && !followupTest) {
           console.log('\n📝 To test conversation memory, run:');

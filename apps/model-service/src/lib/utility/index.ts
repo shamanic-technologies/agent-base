@@ -5,8 +5,6 @@
  * Each tool is in its own file for better organization and maintainability.
  */
 
-// Export greeting tool
-export * from './hello-world-greeting';
 
 // Export echo tool
-export * from './hello-world-echo'; 
+export * from './utility_helloworldecho'; 

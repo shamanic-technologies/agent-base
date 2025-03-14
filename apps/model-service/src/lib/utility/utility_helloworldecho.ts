@@ -11,7 +11,7 @@ import { Tool } from "@langchain/core/tools";
  * A HelloWorld echo tool that simply returns the input with additional formatting
  * Demonstrates another simple tool implementation pattern
  */
-export class HelloWorldEchoTool extends Tool {
+export class UtilityHelloWorldEcho extends Tool {
   name = "hello_world_echo";
   description = "Echoes back the input text with some formatting";
   

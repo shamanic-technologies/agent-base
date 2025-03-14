@@ -4,14 +4,24 @@
  * A simple Express server that implements a Claude ReAct agent.
  * Uses LangGraph for handling the agent's reasoning and acting process.
  */
+// Import and configure dotenv first
+import dotenv from 'dotenv';
+
+// Load appropriate environment variables based on NODE_ENV
+const nodeEnv = process.env.NODE_ENV || 'development';
+if (nodeEnv === 'production') {
+  console.log('🚀 Loading production environment from .env.prod');
+  dotenv.config({ path: '.env.prod' });
+} else {
+  console.log('🔧 Loading development environment from .env.local');
+  dotenv.config({ path: '.env.local' });
+}
+
 import express from 'express';
 import cors from 'cors';
 import { processWithReActAgent } from './react-agent';
 
-// Export agent configuration types and utilities
-export * from './lib/agent-config';
-export * from './lib/create-agent';
-
+// Middleware setup
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -21,7 +31,11 @@ app.use(express.json());
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'healthy' });
+  res.status(200).json({ 
+    status: 'healthy',
+    environment: nodeEnv,
+    version: process.env.npm_package_version || '1.0.0'
+  });
 });
 
 // LLM generation endpoint using ReAct agent
@@ -51,4 +65,6 @@ app.post('/generate', async (req, res) => {
 // Start server
 app.listen(PORT, () => {
   console.log(`🤖 LangGraph ReAct Agent Service running at http://localhost:${PORT}`);
+  console.log(`🌐 Environment: ${nodeEnv}`);
+  console.log(`🔑 API Key ${process.env.ANTHROPIC_API_KEY ? 'is' : 'is NOT'} configured`);
 }); 
