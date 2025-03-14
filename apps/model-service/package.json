@@ -2,6 +2,7 @@
   "name": "@helloworld/model-service",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "pnpm@10.6.2",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
@@ -32,6 +33,5 @@
     "eslint": "^8.57.0",
     "tsx": "^4.7.1",
     "typescript": "^5.4.5"
-  },
-  "packageManager": "pnpm@8.15.4"
+  }
 }

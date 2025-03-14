@@ -8,7 +8,7 @@
       "tsconfig.json"
     ],
     "nixpacks": {
-      "buildCmd": "npm i -g pnpm && pnpm install --no-frozen-lockfile && pnpm build"
+      "buildCmd": "npm install -g corepack && corepack enable && corepack prepare pnpm@10.6.2 --activate && pnpm install --no-frozen-lockfile && pnpm build"
     }
   },
   "deploy": {

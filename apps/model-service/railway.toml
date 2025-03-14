@@ -1,6 +1,6 @@
 [build]
 builder = "NIXPACKS"
-buildCommand = "npm i -g pnpm && pnpm install --no-frozen-lockfile && pnpm build"
+buildCommand = "npm install -g corepack && corepack enable && corepack prepare pnpm@10.6.2 --activate && pnpm install --no-frozen-lockfile && pnpm build"
 
 [deploy]
 numReplicas = 1
