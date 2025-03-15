@@ -6,8 +6,8 @@
 
 import { Tool } from "@langchain/core/tools";
 import { z } from "zod";
-import { GitHubClient, createGitHubClientFromEnv } from "./github-client";
-import { NodeId, NodeType, ParentNodeId, ParentNodeType, ThreadId } from "../../types";
+import { GitHubClient, createGitHubClientFromEnv } from "./github-client.js";
+import { NodeId, NodeType, ParentNodeId, ParentNodeType, ThreadId } from "../../types/index.js";
 
 /**
  * Base class for GitHub utilities
@@ -116,24 +116,5 @@ export abstract class GitHubBaseUtility extends Tool {
     
     // Handle object input
     return input || {};
-  }
-  
-  /**
-   * Helper method to ensure the repository is available locally
-   */
-  protected async ensureRepository(owner?: string, repo?: string): Promise<string> {
-    // If owner and repo are provided, use them to create a new client
-    if (owner && repo) {
-      const token = process.env.GITHUB_TOKEN!;
-      const client = new GitHubClient({
-        auth: token,
-        owner,
-        repo
-      });
-      return await client.ensureRepository();
-    }
-    
-    // Otherwise use the default client
-    return await this.githubClient.ensureRepository();
   }
 } 

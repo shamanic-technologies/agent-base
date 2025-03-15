@@ -1,26 +1,21 @@
 /**
  * GitHub List Directory Utility
  * 
- * A utility that lists the contents of a directory in a GitHub repository.
+ * Lists files and directories in a GitHub repository.
  */
 
 import { z } from "zod";
-import path from "path";
-import fs from "fs/promises";
-import { NodeType, ParentNodeId, ParentNodeType, ThreadId } from "../../types";
-import { GitHubBaseUtility } from "../github/github-base-utility";
+import { GitHubBaseUtility } from "../github/github-base-utility.js";
+import { NodeId, NodeType, ParentNodeId, ParentNodeType, ThreadId } from "../../types/index.js";
 
 /**
- * A utility that lists the contents of a directory in a GitHub repository
+ * Utility for listing files and directories in a GitHub repository
  */
 export class UtilityGitHubListDirectory extends GitHubBaseUtility {
-  // Define the schema for the utility
-  private utilitySchema = this.baseSchema;
-  
-  constructor({ 
+  constructor({
     conversationId,
     parentNodeId,
-    parentNodeType
+    parentNodeType,
   }: {
     conversationId: ThreadId;
     parentNodeId: ParentNodeId;
@@ -28,53 +23,55 @@ export class UtilityGitHubListDirectory extends GitHubBaseUtility {
   }) {
     super({
       name: "utility_github_list_directory",
-      description: `
-        Use this tool to list the contents of a directory in a GitHub repository.
-        This tool will clone the repository locally if needed and list the directory contents.
-        
-        You can specify:
-        - 'owner': Repository owner (username or organization)
-        - 'repo': Repository name
-        - 'path': Directory path to list (defaults to the repository root)
-        - 'branch': Branch name (defaults to the default branch)
-        
-        If owner and repo are not specified, the tool will use the environment variables GITHUB_OWNER and GITHUB_REPO.
-      `,
+      description: "List files and directories in a GitHub repository",
       conversationId,
       parentNodeId,
-      parentNodeType
+      parentNodeType,
     });
   }
-  
-  getSchema() {
-    return this.utilitySchema;
+
+  /**
+   * Get the schema for the utility
+   */
+  getSchema(): z.ZodType<any, any> {
+    return this.baseSchema.extend({
+      owner: z.string().describe("Repository owner (username or organization)"),
+      repo: z.string().describe("Repository name"),
+      path: z.string().optional().describe("Directory path to list (defaults to repository root)"),
+      branch: z.string().optional().describe("Branch name (defaults to the default branch)"),
+      recursive: z.boolean().optional().describe("Whether to list files recursively"),
+    });
   }
-  
-  async _call(input: string | Record<string, any>): Promise<string> {
-    console.log(`Listing directory in GitHub repo:`, input);
-    
+
+  /**
+   * List files and directories in a GitHub repository
+   */
+  async _call(input: string | Record<string, unknown>): Promise<string> {
     try {
-      // Parse input
       const params = this.parseInput(input);
-      const { owner, repo, path: dirPath = '', branch } = params;
-      
-      // Get repository information
-      const octokit = this.githubClient.getOctokit();
-      const repoOwner = owner || this.githubClient.getOwner();
-      const repoName = repo || this.githubClient.getRepo();
-      
-      // Try to use the GitHub API first for better performance
+
+      // Validate input
+      const { 
+        owner, 
+        repo, 
+        path = '', 
+        branch,
+        recursive = false
+      } = this.getSchema().parse(params);
+
       try {
-        const response = await octokit.repos.getContent({
-          owner: repoOwner,
-          repo: repoName,
-          path: dirPath,
-          ref: branch || undefined,
+        // Fetch directory content using GitHub API
+        const octokit = this.githubClient.getOctokit();
+        const { data } = await octokit.repos.getContent({
+          owner,
+          repo,
+          path,
+          ref: branch,
         });
-        
-        if (Array.isArray(response.data)) {
-          // This is a directory, return the contents
-          const contents = response.data.map(item => ({
+
+        // Handle directory response
+        if (Array.isArray(data)) {
+          const files = data.map(item => ({
             name: item.name,
             path: item.path,
             type: item.type,
@@ -82,81 +79,95 @@ export class UtilityGitHubListDirectory extends GitHubBaseUtility {
             url: item.html_url
           }));
           
-          return JSON.stringify({
-            owner: repoOwner,
-            repo: repoName,
-            path: dirPath,
-            branch: branch || 'default',
-            contents
-          }, null, 2);
-        } else {
-          return `The provided path is not a directory: ${dirPath}`;
-        }
-      } catch (apiError) {
-        // If the API call fails, fall back to local file system
-        console.log(`API lookup failed, using local filesystem: ${apiError}`);
-      }
-      
-      // Clone or update the repository locally
-      const repoPath = await this.ensureRepository(repoOwner, repoName);
-      
-      // If a branch is specified, check it out
-      if (branch) {
-        const git = this.githubClient.getGit();
-        await git.checkout(branch);
-      }
-      
-      // Get the path to the directory
-      const fullPath = path.join(repoPath, dirPath);
-      
-      // Check if the path exists
-      const stats = await fs.stat(fullPath);
-      
-      if (!stats.isDirectory()) {
-        return `The provided path is not a directory: ${dirPath}`;
-      }
-      
-      // List the directory contents
-      const contents = await fs.readdir(fullPath, { withFileTypes: true });
-      
-      // Map the contents to the response format
-      const mappedContents = await Promise.all(
-        contents.map(async (item) => {
-          const itemPath = path.join(dirPath, item.name);
-          let size = 0;
-          
-          if (item.isFile()) {
-            const stats = await fs.stat(path.join(fullPath, item.name));
-            size = stats.size;
+          // If recursive listing is requested and there are directories, fetch their contents
+          if (recursive) {
+            const directories = files.filter(file => file.type === 'dir');
+            for (const dir of directories) {
+              try {
+                const subItems = await this._listDirectory(owner, repo, dir.path, branch);
+                files.push(...subItems);
+              } catch (error) {
+                console.error(`Error listing subdirectory ${dir.path}:`, error);
+              }
+            }
           }
           
-          return {
-            name: item.name,
-            path: itemPath,
-            type: item.isDirectory() ? 'dir' : 'file',
-            size: item.isDirectory() ? null : size
-          };
-        })
-      );
-      
-      // Sort by type then name
-      mappedContents.sort((a, b) => {
-        if (a.type !== b.type) {
-          return a.type === 'dir' ? -1 : 1;
+          return JSON.stringify({
+            success: true,
+            data: {
+              files,
+              path,
+              repository: `${owner}/${repo}`,
+              branch: branch || 'default'
+            }
+          });
+        } else {
+          return JSON.stringify({
+            success: false,
+            error: 'The path specified is a file, not a directory',
+          });
         }
-        return a.name.localeCompare(b.name);
-      });
-      
+      } catch (error: any) {
+        if (error.status === 404) {
+          return JSON.stringify({
+            success: false,
+            error: 'Directory not found',
+          });
+        }
+        
+        return JSON.stringify({
+          success: false,
+          error: error.message || 'Failed to list directory using GitHub API',
+        });
+      }
+    } catch (error: any) {
       return JSON.stringify({
-        owner: repoOwner,
-        repo: repoName,
-        path: dirPath,
-        branch: branch || 'default',
-        contents: mappedContents
-      }, null, 2);
+        success: false,
+        error: error.message || 'Failed to parse input',
+      });
+    }
+  }
+
+  /**
+   * Helper method to recursively list directory contents
+   */
+  private async _listDirectory(owner: string, repo: string, path: string, branch?: string): Promise<any[]> {
+    try {
+      const octokit = this.githubClient.getOctokit();
+      const { data } = await octokit.repos.getContent({
+        owner,
+        repo,
+        path,
+        ref: branch,
+      });
+
+      if (Array.isArray(data)) {
+        const files = data.map(item => ({
+          name: item.name,
+          path: item.path,
+          type: item.type,
+          size: item.size,
+          url: item.html_url
+        }));
+        
+        // Recursively get contents of subdirectories
+        const directories = files.filter(file => file.type === 'dir');
+        for (const dir of directories) {
+          try {
+            const subItems = await this._listDirectory(owner, repo, dir.path, branch);
+            files.push(...subItems);
+          } catch (error) {
+            console.error(`Error listing subdirectory ${dir.path}:`, error);
+          }
+        }
+        
+        return files;
+      }
+      
+      return [];
     } catch (error) {
-      console.error("GitHub List Directory utility error:", error);
-      return `I encountered an error while listing the directory: ${error instanceof Error ? error.message : String(error)}`;
+      console.error(`Error in _listDirectory for ${path}:`, error);
+      return [];
     }
   }
 } 

@@ -28,7 +28,8 @@ export type UtilityOperation =
   | 'utility_github_run_code'
   | 'utility_github_deploy_code'
   | 'utility_github_create_codespace'
-  | 'utility_github_destroy_codespace';
+  | 'utility_github_destroy_codespace'
+  | 'utility_github_list_codespaces';
 
 // Required types for the utility_get_current_datetime function
 export type ThreadId = string;
@@ -85,7 +86,7 @@ export interface GitHubDeployCodeRequest extends GitHubCodeRequest {
   message?: string;
 }
 
-// New Codespace types
+// Codespace types
 export interface GitHubCreateCodespaceRequest {
   owner: string;
   repo: string;
@@ -104,10 +105,13 @@ export interface GitHubDestroyCodespaceRequest {
   codespaceId: string;
 }
 
-/**
- * Add these types after the existing utility operation types
- */
+export interface GitHubListCodespacesRequest {
+  // List codespaces typically doesn't require parameters
+  // but could include filters in the future
+  repositoryId?: number;
+}
 
+// Utility info types
 export type UtilityInfo = {
   id: string;
   description: string;

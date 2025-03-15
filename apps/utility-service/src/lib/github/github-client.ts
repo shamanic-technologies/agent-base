@@ -1,8 +1,4 @@
 import { Octokit } from '@octokit/rest';
-import simpleGit from 'simple-git';
-import fs from 'fs/promises';
-import path from 'path';
-import os from 'os';
 
 /**
  * GitHub client manager that handles authentication and provides 
@@ -10,8 +6,6 @@ import os from 'os';
  */
 export class GitHubClient {
   private octokit: Octokit;
-  private localPath: string;
-  private git: ReturnType<typeof simpleGit>;
   private owner: string;
   private repo: string;
   
@@ -21,43 +15,19 @@ export class GitHubClient {
    * @param auth - GitHub personal access token
    * @param owner - Repository owner (username or organization)
    * @param repo - Repository name
-   * @param localPath - Optional local path to clone the repository
    */
   constructor({
     auth,
     owner,
-    repo,
-    localPath
+    repo
   }: {
     auth: string;
     owner: string;
     repo: string;
-    localPath?: string;
   }) {
     this.octokit = new Octokit({ auth });
     this.owner = owner;
     this.repo = repo;
-    this.localPath = localPath || path.join(os.tmpdir(), `github-${owner}-${repo}-${Date.now()}`);
-    this.git = simpleGit();
-  }
-  
-  /**
-   * Clone the repository to the local path if not already cloned
-   */
-  async ensureRepository(): Promise<string> {
-    try {
-      // Check if directory exists and has git folder
-      await fs.access(path.join(this.localPath, '.git'));
-      // If exists, pull latest changes
-      await this.git.cwd(this.localPath).pull();
-    } catch (error) {
-      // Directory doesn't exist or isn't a git repo, clone it
-      await fs.mkdir(this.localPath, { recursive: true });
-      const repoUrl = `https://github.com/${this.owner}/${this.repo}.git`;
-      await this.git.clone(repoUrl, this.localPath);
-    }
-    
-    return this.localPath;
   }
   
   /**
@@ -65,13 +35,6 @@ export class GitHubClient {
    */
   getOctokit(): Octokit {
     return this.octokit;
-  }
-  
-  /**
-   * Get the SimpleGit instance for git operations
-   */
-  getGit(): ReturnType<typeof simpleGit> {
-    return this.git.cwd(this.localPath);
   }
   
   /**
@@ -86,13 +49,6 @@ export class GitHubClient {
    */
   getRepo(): string {
     return this.repo;
-  }
-  
-  /**
-   * Get local repository path
-   */
-  getLocalPath(): string {
-    return this.localPath;
   }
 }
 

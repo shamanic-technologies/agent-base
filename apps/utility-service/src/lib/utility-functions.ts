@@ -3,20 +3,19 @@
  * 
  * Core functionality for the utility service
  */
-import { DateTimeRequest, UtilityOperation, UtilityResponse } from '../types';
-import { UtilityGetCurrentDateTime } from './utilities/utility_get_current_datetime';
-import { 
-  GitHubCreateCodespaceUtility,
-  GitHubDestroyCodespaceUtility
-} from './github/github-codespace-utilities';
-import { UtilityGitHubReadFile } from './utilities/utility_github_read_file';
-import { UtilityGitHubUpdateFile } from './utilities/utility_github_update_file';
-import { UtilityGitHubListDirectory } from './utilities/utility_github_list_directory';
-import { UtilityGitHubLintCode } from './utilities/utility_github_lint_code';
-import { UtilityGitHubCreateFile } from './utilities/utility_github_create_file';
-import { UtilityGitHubGetCode } from './utilities/utility_github_get_code';
-import { UtilityGitHubDeployCode } from './utilities/utility_github_deploy_code';
-import { UtilityGitHubRunCode } from './utilities/utility_github_run_code';
+import { DateTimeRequest, UtilityOperation, UtilityResponse } from '../types/index.js';
+import { UtilityGetCurrentDateTime } from './utilities/utility_get_current_datetime.js';
+import { UtilityGitHubReadFile } from './utilities/utility_github_read_file.js';
+import { UtilityGitHubUpdateFile } from './utilities/utility_github_update_file.js';
+import { UtilityGitHubListDirectory } from './utilities/utility_github_list_directory.js';
+import { UtilityGitHubLintCode } from './utilities/utility_github_lint_code.js';
+import { UtilityGitHubCreateFile } from './utilities/utility_github_create_file.js';
+import { UtilityGitHubGetCode } from './utilities/utility_github_get_code.js';
+import { UtilityGitHubDeployCode } from './utilities/utility_github_deploy_code.js';
+import { UtilityGitHubRunCode } from './utilities/utility_github_run_code.js';
+import { UtilityGitHubListCodespaces } from './utilities/utility_github_list_codespaces.js';
+import { UtilityGitHubCreateCodespace } from './utilities/utility_github_create_codespace.js';
+import { UtilityGitHubDestroyCodespace } from './utilities/utility_github_destroy_codespace.js';
 
 /**
  * Get current date and time in different formats
@@ -55,7 +54,7 @@ export async function getCurrentDateTime(data?: DateTimeRequest): Promise<Utilit
 export async function createGitHubCodespace(): Promise<UtilityResponse> {
   try {
     // Create a utility instance with placeholder values since we're using it directly
-    const codespaceUtility = new GitHubCreateCodespaceUtility({
+    const codespaceUtility = new UtilityGitHubCreateCodespace({
       conversationId: 'direct-api-call',
       parentNodeId: null,
       parentNodeType: null
@@ -84,7 +83,7 @@ export async function createGitHubCodespace(): Promise<UtilityResponse> {
 export async function destroyGitHubCodespace(data: any): Promise<UtilityResponse> {
   try {
     // Create a utility instance with placeholder values since we're using it directly
-    const codespaceUtility = new GitHubDestroyCodespaceUtility({
+    const codespaceUtility = new UtilityGitHubDestroyCodespace({
       conversationId: 'direct-api-call',
       parentNodeId: null,
       parentNodeType: null
@@ -322,6 +321,32 @@ export async function runGitHubCode(data: any): Promise<UtilityResponse> {
 }
 
 /**
+ * List GitHub Codespaces for the authenticated user
+ * @returns Promise with the list of codespaces
+ */
+export async function listGitHubCodespaces(): Promise<UtilityResponse> {
+  try {
+    const utility = new UtilityGitHubListCodespaces({
+      conversationId: 'direct-api-call',
+      parentNodeId: null,
+      parentNodeType: null
+    });
+    
+    const result = await utility._call({});
+    
+    return {
+      data: result
+    };
+  } catch (error) {
+    console.error("GitHub List Codespaces utility error:", error);
+    return {
+      error: "Failed to list GitHub Codespaces",
+      details: error instanceof Error ? error.message : String(error)
+    };
+  }
+}
+
+/**
  * Process utility operation
  * @param operation Operation to perform
  * @param data Optional data for the operation
@@ -339,6 +364,8 @@ export async function processUtilityOperation(
       return createGitHubCodespace();
     case 'utility_github_destroy_codespace':
       return destroyGitHubCodespace(data);
+    case 'utility_github_list_codespaces':
+      return listGitHubCodespaces();
     case 'utility_github_read_file':
       return readGitHubFile(data);
     case 'utility_github_update_file':

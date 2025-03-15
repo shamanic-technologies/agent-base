@@ -10,8 +10,8 @@ import dotenv from 'dotenv';
 // Load appropriate environment variables based on NODE_ENV
 const nodeEnv = process.env.NODE_ENV || 'development';
 if (nodeEnv === 'production') {
-  console.log('🚀 Loading production environment from .env.prod');
-  dotenv.config({ path: '.env.prod' });
+  console.log('🚀 Loading production environment from .env.production');
+  dotenv.config({ path: '.env.production' });
 } else {
   console.log('🔧 Loading development environment from .env.local');
   dotenv.config({ path: '.env.local' });
@@ -19,14 +19,8 @@ if (nodeEnv === 'production') {
 
 import express, { Request, Response } from 'express';
 import cors from 'cors';
-import { processUtilityOperation } from './lib/utility-functions';
-import { UtilityOperation, UtilityRequest, UtilityResponse } from './types';
-
-// Import GitHub Codespace utilities
-import {
-  GitHubCreateCodespaceUtility,
-  GitHubDestroyCodespaceUtility
-} from './lib/github/github-codespace-utilities';
+import { processUtilityOperation } from './lib/utility-functions.js';
+import { UtilityOperation, UtilityRequest, UtilityResponse } from './types/index.js';
 
 // Middleware setup
 const app = express();
@@ -41,7 +35,7 @@ app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({ 
     status: 'healthy',
     environment: nodeEnv,
-    version: process.env.npm_package_version || '1.0.0'
+    version: process.env.npm_package_version
   });
 });
 
