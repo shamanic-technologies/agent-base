@@ -7,7 +7,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 
 // Load environment variables from .env.local
-dotenv.config({ path: '.env.local' });
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 
 export const config = {
   // Server configuration
@@ -22,11 +22,22 @@ export const config = {
   // Database service URL
   databaseServiceUrl: process.env.DATABASE_SERVICE_URL || 'http://localhost:3006',
   
-  // Supabase configuration
-  supabase: {
-    url: process.env.SUPABASE_URL || '',
-    anonKey: process.env.SUPABASE_ANON_KEY || '',
-    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+  // Google OAuth credentials
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID || '',
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+  },
+  
+  // JWT configuration
+  jwt: {
+    secret: process.env.JWT_SECRET || 'your-jwt-secret-key-should-be-changed',
+    expiresIn: '7d', // 7 days
+  },
+  
+  // Session configuration
+  session: {
+    secret: process.env.SESSION_SECRET || 'your-session-secret-should-be-changed',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   },
   
   // Environment mode
@@ -37,9 +48,10 @@ export const config = {
 export const logConfig = () => {
   console.log('Environment configuration:');
   console.log(`- PORT: ${config.port}`);
-  console.log(`- SUPABASE_URL: ${config.supabase.url}`);
-  console.log(`- SUPABASE_ANON_KEY: ${config.supabase.anonKey ? `${config.supabase.anonKey.substring(0, 10)}...` : 'not set'}`);
-  console.log(`- SUPABASE_SERVICE_ROLE_KEY: ${config.supabase.serviceRoleKey ? `${config.supabase.serviceRoleKey.substring(0, 10)}...` : 'not set'}`);
+  console.log(`- GOOGLE_CLIENT_ID: ${config.google.clientId ? `${config.google.clientId.substring(0, 10)}...` : 'not set'}`);
+  console.log(`- GOOGLE_CLIENT_SECRET: ${config.google.clientSecret ? `${config.google.clientSecret.substring(0, 5)}...` : 'not set'}`);
+  console.log(`- JWT_SECRET: ${config.jwt.secret ? 'set (hidden)' : 'not set'}`);
+  console.log(`- SESSION_SECRET: ${config.session.secret ? 'set (hidden)' : 'not set'}`);
 };
 
 // Cookie settings

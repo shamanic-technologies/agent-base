@@ -37,11 +37,11 @@ export async function middleware(req: NextRequest) {
   const requiresAuth = PROTECTED_PATHS.some(path => pathname.startsWith(path));
   
   if (requiresAuth) {
-    // Check for the Supabase authentication cookie
-    const accessToken = req.cookies.get('sb-access-token');
+    // Check for the JWT authentication cookie
+    const authToken = req.cookies.get('auth-token');
     
-    // If no access token, redirect to the home page
-    if (!accessToken?.value) {
+    // If no auth token, redirect to the home page
+    if (!authToken?.value) {
       console.log('No authentication token found, redirecting to home');
       const url = req.nextUrl.clone();
       url.pathname = '/';

@@ -15,51 +15,21 @@ export default function Home() {
   const [testMessage, setTestMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Original demo sign-in (kept for backward compatibility)
-  const handleDemoSignIn = async () => {
-    try {
-      setIsLoading(true);
-      // Call the auth service's login endpoint
-      const response = await fetch(process.env.NEXT_PUBLIC_AUTH_SERVICE_URL + '/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // Include cookies
-        body: JSON.stringify({
-          // Using the demo user credentials from auth-service
-          username: 'demo',
-          password: 'password123',
-        }),
-      });
-
-      const data = await response.json();
-      
-      if (data.success) {
-        // The server now sets cookies, we don't need to store tokens in localStorage
-        // Redirect to chat page
-        router.push('/chat');
-      } else {
-        console.error('Sign-in failed:', data.error);
-        alert('Sign-in failed: ' + data.error);
-      }
-    } catch (error) {
-      console.error('Sign-in error:', error);
-      alert('Sign-in error. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  // Test auth service connection
   const testConnection = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(process.env.NEXT_PUBLIC_AUTH_SERVICE_URL + '/helloworld');
-      const data = await response.json();
-      setTestMessage(data.message || 'Connection successful!');
+      const response = await fetch(process.env.NEXT_PUBLIC_AUTH_SERVICE_URL + '/health');
+      
+      if (response.ok) {
+        const data = await response.json();
+        setTestMessage(`Auth service status: ${data.status || 'connected'}`);
+      } else {
+        setTestMessage('Connection failed: ' + response.statusText);
+      }
     } catch (error) {
       console.error('Connection test error:', error);
-      setTestMessage('Connection failed. Please check the console.');
+      setTestMessage('Connection failed. Please check if the auth service is running.');
     } finally {
       setIsLoading(false);
     }
@@ -74,30 +44,18 @@ export default function Home() {
         </div>
         
         <div className="mt-8 space-y-4">
+          {/* Auth Status */}
+          <div className="p-4 bg-blue-50 rounded-lg text-sm text-center">
+            <p className="text-blue-700 font-medium">Authentication Method</p>
+            <p className="text-blue-600">Passport.js with Google OAuth</p>
+          </div>
+          
           {/* Google Sign-In Button */}
-          <div className="mb-4">
+          <div className="mt-6">
             <GoogleSignInButton />
           </div>
           
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 text-gray-500 bg-white">Or continue with</span>
-            </div>
-          </div>
-          
-          {/* Original Demo Sign-In */}
-          <Button 
-            className="w-full py-6 text-lg" 
-            onClick={handleDemoSignIn}
-            disabled={isLoading}
-          >
-            {isLoading ? 'Signing In...' : 'Sign In with Demo Account'}
-          </Button>
-          
-          <div className="pt-4 border-t border-gray-200">
+          <div className="pt-4 border-t border-gray-200 mt-4">
             <Button 
               variant="outline" 
               className="w-full" 
@@ -108,13 +66,15 @@ export default function Home() {
             </Button>
             
             {testMessage && (
-              <p className="mt-2 p-2 text-sm text-center bg-gray-50 rounded">
+              <p className={`mt-2 p-2 text-sm text-center rounded ${
+                testMessage.includes('failed') ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'
+              }`}>
                 {testMessage}
               </p>
             )}
           </div>
           
-          <p className="text-center text-sm text-gray-500">
+          <p className="text-center text-sm text-gray-500 mt-4">
             By signing in, you agree to our Terms of Service and Privacy Policy
           </p>
         </div>

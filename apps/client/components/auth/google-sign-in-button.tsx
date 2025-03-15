@@ -22,9 +22,9 @@ export function GoogleSignInButton({
     try {
       setIsLoading(true);
       
-      // We'll redirect directly to the auth service for Google sign-in
-      // The auth service will handle the entire OAuth flow and redirect to Google
-      window.location.href = `${process.env.NEXT_PUBLIC_AUTH_SERVICE_URL}/auth/google`;
+      // Redirect to the auth service's OAuth endpoint
+      // Using Passport.js Google strategy
+      window.location.href = `${process.env.NEXT_PUBLIC_AUTH_SERVICE_URL}/oauth/google`;
       
     } catch (error) {
       console.error('Google sign-in error:', error);

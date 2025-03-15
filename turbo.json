@@ -1,1 +1,1 @@
-{"$schema": "https://turbo.build/schema.json","globalDependencies": ["**/.env.*local"],"tasks": {"build": {"dependsOn": ["^build"],"outputs": [".next/**", "!.next/cache/**", "dist/**"]},"dev": {"cache": false,"persistent": true},"lint": {"cache": false},"clean": {"cache": false}},"concurrency": 12}
+{"$schema": "https://turbo.build/schema.json","globalDependencies": ["**/.env.*local"],"tasks": {"build": {"dependsOn": ["^build"],"outputs": [".next/**", "!.next/cache/**", "dist/**"]},"dev": {"cache": false,"persistent": true},"lint": {"cache": false},"clean": {"cache": false}}}

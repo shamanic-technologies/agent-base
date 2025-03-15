@@ -1,7 +1,7 @@
 /**
- * Route Index
+ * Routes Index
  * 
- * Exports all routes for the application
+ * Centralizes and exports all API routes
  */
 import { Router } from 'express';
 import authRoutes from './auth.routes';
@@ -10,9 +10,9 @@ import miscRoutes from './misc.routes';
 
 const router = Router();
 
-// Mount the routes
+// Register route groups
 router.use('/', miscRoutes);
 router.use('/auth', authRoutes);
-router.use('/auth', oauthRoutes);
+router.use('/oauth', oauthRoutes);
 
 export default router; 

@@ -1,54 +1,44 @@
 /**
- * Authentication Controller - Simplified
+ * Authentication Controller
  * 
- * Handles token validation, refresh, and logout for Google OAuth
+ * Handles token validation, refresh, and logout for Passport.js authentication
  */
 import { AsyncRequestHandler } from '../utils/types';
-import { supabase } from '../utils/supabase';
 import { config } from '../config/env';
+import { verifyToken, generateToken, UserProfile } from '../utils/passport';
+import passport from '../utils/passport';
 
 /**
  * Validate the user's token
  */
 export const validateTokenHandler: AsyncRequestHandler = async (req, res) => {
-  try {
-    // Get access token from cookies
-    const accessToken = req.cookies['sb-access-token'];
-    const refreshToken = req.cookies['sb-refresh-token'];
+  passport.authenticate('jwt', { session: false }, (err, user, info) => {
+    if (err) {
+      console.error('Error in JWT validation:', err);
+      return res.status(500).json({
+        success: false,
+        error: 'Server error'
+      });
+    }
     
-    if (!accessToken) {
+    if (!user) {
       return res.status(401).json({
         success: false,
         error: 'Not authenticated'
       });
     }
-
-    // Get the user from Supabase using the token
-    const { data, error } = await supabase.auth.getUser(accessToken);
     
-    if (error || !data.user) {
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid token'
-      });
-    }
-    
+    // User is authenticated
     return res.json({
       success: true,
       data: {
-        id: data.user.id,
-        email: data.user.email,
-        user_metadata: data.user.user_metadata
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        picture: user.picture
       }
     });
-  } catch (error: any) {
-    console.error('Error validating token:', error);
-    
-    return res.status(500).json({
-      success: false,
-      error: 'Server error'
-    });
-  }
+  })(req, res);
 };
 
 /**
@@ -56,40 +46,35 @@ export const validateTokenHandler: AsyncRequestHandler = async (req, res) => {
  */
 export const refreshTokenHandler: AsyncRequestHandler = async (req, res) => {
   try {
-    const refreshToken = req.cookies['sb-refresh-token'];
+    const token = req.cookies['auth-token'];
     
-    if (!refreshToken) {
+    if (!token) {
       return res.status(401).json({
         success: false,
-        error: 'No refresh token'
+        error: 'No token'
       });
     }
 
-    // Refresh the session
-    const { data, error } = await supabase.auth.refreshSession({
-      refresh_token: refreshToken,
-    });
+    // Verify existing token
+    const userData = verifyToken(token);
     
-    if (error || !data.session) {
+    if (!userData) {
       return res.status(401).json({
         success: false,
-        error: 'Invalid refresh token'
+        error: 'Invalid token'
       });
     }
     
-    // Set the new tokens as cookies
-    res.cookie('sb-access-token', data.session.access_token, {
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      httpOnly: true,
-      secure: config.isProduction,
-      sameSite: 'lax'
-    });
+    // Generate a new token
+    const newToken = generateToken(userData);
     
-    res.cookie('sb-refresh-token', data.session.refresh_token, {
+    // Set the new token as cookie
+    res.cookie('auth-token', newToken, {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       httpOnly: true,
       secure: config.isProduction,
-      sameSite: 'lax'
+      sameSite: 'lax',
+      path: '/'
     });
     
     return res.json({
@@ -110,12 +95,18 @@ export const refreshTokenHandler: AsyncRequestHandler = async (req, res) => {
  */
 export const logoutHandler: AsyncRequestHandler = async (req, res) => {
   try {
-    // Clear Supabase session
-    await supabase.auth.signOut();
+    // Clear auth token cookie
+    res.clearCookie('auth-token', {
+      path: '/',
+      httpOnly: true,
+      secure: config.isProduction,
+      sameSite: 'lax'
+    });
     
-    // Clear cookies
-    res.clearCookie('sb-access-token');
-    res.clearCookie('sb-refresh-token');
+    // Logout from passport session if exists
+    if (req.logout) {
+      req.logout(() => {});
+    }
     
     return res.json({
       success: true

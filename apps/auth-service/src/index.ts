@@ -1,12 +1,14 @@
 /**
- * Auth Service with Supabase Auth Integration
+ * Auth Service with Passport.js Integration
  * 
- * A modern authentication service that leverages Supabase Auth
+ * A modern authentication service that leverages Passport.js
  * for user authentication and management.
  */
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import session from 'express-session';
+import passport from './utils/passport';
 import routes from './routes';
 import { config, logConfig } from './config/env';
 
@@ -25,10 +27,28 @@ app.use(cors({
 app.use(cookieParser());
 app.use(express.json());
 
+// Session configuration
+app.use(
+  session({
+    secret: config.session.secret,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: config.isProduction,
+      httpOnly: true,
+      maxAge: config.session.maxAge
+    }
+  })
+);
+
+// Initialize Passport
+app.use(passport.initialize());
+app.use(passport.session());
+
 // Register all routes
 app.use('/', routes);
 
 // Start the server
 app.listen(PORT, () => {
-  console.log(`🔐 Auth Service running on port ${PORT} (using Supabase Auth)`);
+  console.log(`🔐 Auth Service running on port ${PORT} (using Passport.js)`);
 }); 

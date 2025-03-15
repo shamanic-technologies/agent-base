@@ -15,7 +15,7 @@ router.get('/health', (req: Request, res: Response) => {
 // Hello World API Endpoint - for testing connectivity
 router.get('/helloworld', (req: Request, res: Response) => {
   res.status(200).json({ 
-    message: 'Hello from Auth Service (Supabase Auth)!',
+    message: 'Hello from Auth Service (Passport.js)!',
     service: 'auth-service',
     timestamp: new Date().toISOString() 
   });
