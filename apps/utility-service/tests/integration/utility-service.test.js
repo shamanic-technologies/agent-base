@@ -5,7 +5,7 @@
  */
 const fetch = require('node-fetch');
 
-const BASE_URL = process.env.API_URL || 'http://localhost:3001';
+const BASE_URL = process.env.API_URL || 'http://localhost:3008';
 
 async function testHealthEndpoint() {
   console.log('Testing health endpoint...');
@@ -33,96 +33,90 @@ async function testHealthEndpoint() {
   }
 }
 
-async function testEchoEndpoint() {
-  console.log('Testing echo endpoint...');
-  
-  const testData = { message: 'Hello, world!' };
+async function testDateTimeEndpoint() {
+  console.log('Testing utility_get_current_datetime endpoint...');
   
   try {
-    const response = await fetch(`${BASE_URL}/utility/process`, {
+    // Test with default format (ISO)
+    const response = await fetch(`${BASE_URL}/utility`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        operation: 'echo',
-        data: testData
+        operation: 'utility_get_current_datetime'
       })
     });
     
+    if (response.status !== 200) {
+      console.error('❌ DateTime check failed with status', response.status);
+      console.error(await response.json());
+      return false;
+    }
+    
     const data = await response.json();
     
-    if (response.status !== 200) {
-      console.error('❌ Echo test failed with status', response.status);
-      console.error(data);
+    // Verify that the data field exists and contains a string that looks like an ISO date
+    if (!data.data || typeof data.data !== 'string' || !data.data.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)) {
+      console.error('❌ DateTime check returned invalid data:', data);
       return false;
     }
     
-    if (!data.data || data.data.message !== testData.message) {
-      console.error('❌ Echo returned unexpected data:', JSON.stringify(data));
-      return false;
-    }
-    
-    console.log('✅ Echo test passed');
-    return true;
-  } catch (error) {
-    console.error('❌ Echo test failed with error:', error.message);
-    return false;
-  }
-}
-
-async function testTimestampEndpoint() {
-  console.log('Testing timestamp endpoint...');
-  
-  try {
-    const response = await fetch(`${BASE_URL}/utility/process`, {
+    // Test with custom format (unix)
+    const unixResponse = await fetch(`${BASE_URL}/utility`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        operation: 'timestamp'
+        operation: 'utility_get_current_datetime',
+        data: {
+          format: 'unix'
+        }
       })
     });
     
-    const data = await response.json();
-    
-    if (response.status !== 200) {
-      console.error('❌ Timestamp test failed with status', response.status);
-      console.error(data);
+    if (unixResponse.status !== 200) {
+      console.error('❌ DateTime (unix) check failed with status', unixResponse.status);
+      console.error(await unixResponse.json());
       return false;
     }
     
-    if (!data.timestamp) {
-      console.error('❌ Timestamp returned unexpected data:', JSON.stringify(data));
+    const unixData = await unixResponse.json();
+    
+    // Verify that the data field exists and contains a number-like string
+    if (!unixData.data || typeof unixData.data !== 'string' || !/^\d+$/.test(unixData.data)) {
+      console.error('❌ DateTime (unix) check returned invalid data:', unixData);
       return false;
     }
     
-    console.log('✅ Timestamp test passed');
+    console.log('✅ DateTime check passed');
     return true;
   } catch (error) {
-    console.error('❌ Timestamp test failed with error:', error.message);
+    console.error('❌ DateTime check failed with error:', error.message);
     return false;
   }
 }
 
 async function runTests() {
-  console.log('🧪 Running Utility Service integration tests...');
-  console.log(`API URL: ${BASE_URL}`);
+  let failures = 0;
   
-  const healthResult = await testHealthEndpoint();
-  const echoResult = await testEchoEndpoint();
-  const timestampResult = await testTimestampEndpoint();
+  if (!(await testHealthEndpoint())) {
+    failures++;
+  }
   
-  const allPassed = healthResult && echoResult && timestampResult;
+  if (!(await testDateTimeEndpoint())) {
+    failures++;
+  }
   
-  if (allPassed) {
+  if (failures > 0) {
+    console.error(`❌ ${failures} test(s) failed`);
+    process.exit(1);
+  } else {
     console.log('✅ All tests passed!');
     process.exit(0);
-  } else {
-    console.error('❌ Some tests failed');
-    process.exit(1);
   }
 }
 
+// Run the tests
 runTests(); 

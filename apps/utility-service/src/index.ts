@@ -1,8 +1,8 @@
 /**
  * Utility Service
  * 
- * A simple Express server that provides various utility functions for the application.
- * Uses LangGraph for advanced processing tasks if needed.
+ * A simple Express server that provides utility functions for the application.
+ * This service offers an API endpoint to access the utility_get_current_datetime function.
  */
 // Import and configure dotenv first
 import dotenv from 'dotenv';
@@ -17,19 +17,21 @@ if (nodeEnv === 'production') {
   dotenv.config({ path: '.env.local' });
 }
 
-import express from 'express';
+import express, { Request, Response } from 'express';
 import cors from 'cors';
+import { processUtilityOperation } from './lib/utility-functions';
+import { UtilityOperation, UtilityRequest, UtilityResponse } from './types';
 
 // Middleware setup
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3008;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({ 
     status: 'healthy',
     environment: nodeEnv,
@@ -37,42 +39,45 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Utility processing endpoint
-app.post('/utility/process', async (req, res) => {
-  const { operation, data } = req.body;
+// Define a route handler function separate from the app.post call
+const utilityHandler = async (req: Request, res: Response): Promise<void> => {
+  const { operation, data } = req.body as UtilityRequest;
   
   if (!operation) {
-    return res.status(400).json({ error: 'Operation is required' });
+    res.status(400).json({ error: 'Operation is required' });
+    return;
+  }
+  
+  // Validate operation is supported
+  if (operation !== 'utility_get_current_datetime') {
+    res.status(400).json({ error: `Unsupported operation: ${operation}` });
+    return;
   }
   
   try {
-    // Handle different types of utility operations
-    let result;
-    
-    switch (operation) {
-      case 'echo':
-        result = { message: 'Echo service', data };
-        break;
-      case 'timestamp':
-        result = { timestamp: new Date().toISOString() };
-        break;
-      default:
-        return res.status(400).json({ error: `Unknown operation: ${operation}` });
-    }
+    // Process the utility operation
+    const result = await processUtilityOperation(operation as UtilityOperation, data);
     
     // Return the result
     res.status(200).json(result);
   } catch (error) {
     console.error('Error processing utility operation:', error);
-    res.status(500).json({ 
+    
+    const response: UtilityResponse = { 
       error: 'Failed to process utility operation',
       details: error instanceof Error ? error.message : 'Unknown error'
-    });
+    };
+    
+    res.status(500).json(response);
   }
-});
+};
+
+// Utility processing endpoint
+app.post('/utility', utilityHandler);
 
 // Start server
 app.listen(PORT, () => {
   console.log(`🔧 Utility Service running at http://localhost:${PORT}`);
   console.log(`🌐 Environment: ${nodeEnv}`);
+  console.log(`🧩 Available utilities: utility_get_current_datetime`);
 }); 

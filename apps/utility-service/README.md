@@ -1,13 +1,51 @@
 # Utility Service
 
-This service provides utility functions for the application using LangGraph and other tools.
+This service provides a simple API endpoint to access utility functions.
 
 ## API Endpoints
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/health` | GET | Health check endpoint |
-| `/utility/process` | POST | Process utility functions |
+| `/utility` | POST | Access utility functions |
+
+### Utility Endpoint
+
+To use the utility endpoint, send a POST request to `/utility` with the following JSON body:
+
+```json
+{
+  "operation": "utility_get_current_datetime",
+  "data": {
+    "format": "iso" // Optional: "iso" (default), "locale", "date", "time", or "unix"
+  }
+}
+```
+
+#### Available Operations
+
+Currently supported operations:
+
+- `utility_get_current_datetime`: Get the current date and time in various formats
+
+##### utility_get_current_datetime
+
+This utility returns the current date and time in the requested format.
+
+**Parameters:**
+- `format` (optional): The format to return the date and time in
+  - `iso` (default): ISO 8601 format (e.g., '2023-12-31T08:00:00.000Z')
+  - `locale`: Human-readable format (e.g., 'December 31, 2023, 08:00:00 AM')
+  - `date`: Date only (e.g., 'December 31, 2023')
+  - `time`: Time only (e.g., '08:00:00 AM')
+  - `unix`: Unix timestamp (seconds since epoch)
+
+**Example response:**
+```json
+{
+  "data": "2023-12-31T08:00:00.000Z"
+}
+```
 
 ## Tests
 
@@ -62,6 +100,5 @@ This service is configured for deployment on Railway. To deploy:
 
 | Variable | Description |
 |----------|-------------|
-| `ANTHROPIC_API_KEY` | API key for Anthropic Claude (optional) |
 | `PORT` | Port for the server (default: 3001) |
 | `NODE_ENV` | Environment (development/production) | 
