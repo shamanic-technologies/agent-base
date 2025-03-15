@@ -1,6 +1,6 @@
 [build]
 builder = "NIXPACKS"
-buildCommand = "npm install -g corepack && corepack enable && corepack prepare pnpm@10.6.2 --activate && pnpm install --no-frozen-lockfile && pnpm build"
+buildCommand = "npm install -g pnpm@10.6.3 && pnpm install --no-frozen-lockfile && pnpm build"
 
 [deploy]
 numReplicas = 1
@@ -18,4 +18,5 @@ healthcheckPath = "/health"
 [variables]
 PORT = "3001"
 NODE_ENV = "production"
-NIXPACKS_PKGS = "nodejs pnpm" 
+NIXPACKS_PKGS = "nodejs pnpm"
+NODE_VERSION = "23.6.1" 
