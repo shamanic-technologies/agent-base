@@ -14,7 +14,8 @@ This project is organized as a monorepo using Turborepo:
 │   ├── key-service/    # API key management
 │   ├── model-service/  # AI model serving
 │   ├── payment-service/ # Payment processing
-│   └── proxy-service/  # API gateway
+│   ├── proxy-service/  # API gateway
+│   └── utility-service/ # Utility functions
 ├── packages/           # Shared code
 │   └── shared/         # Common utilities
 └── ...
@@ -57,14 +58,20 @@ npm test
 npm test --filter="@helloworld/auth-service"
 ```
 
-## Service Descriptions
+## Service Descriptions and Ports
 
-- **Model Service**: AI model inference service
-- **Key Service**: API key management and validation
-- **Proxy Service**: API gateway that routes requests to appropriate services
-- **Auth Service**: User authentication and authorization
-- **Database Service**: Data persistence layer
-- **Payment Service**: Subscription and payment processing
+| Service | Description | Port |
+|---------|-------------|------|
+| **auth-service** | User authentication and authorization | 3005 |
+| **database-service** | Data persistence layer | 3006 |
+| **key-service** | API key management and validation | 3003 |
+| **model-service** | AI model inference service | 3001 |
+| **payment-service** | Subscription and payment processing | 3007 |
+| **proxy-service** | API gateway that routes requests to appropriate services | 3004 |
+| **utility-service** | Utility functions for application features | 3008 |
+| **dev-tool** | Development tools and debugging | 3010 |
+| **web** | Main web application (Next.js) | 3000 |
+| **client** | React client application (Vite) | 5173 |
 
 ## Deployment
 

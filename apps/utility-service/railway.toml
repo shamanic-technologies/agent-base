@@ -1,0 +1,21 @@
+[build]
+builder = "NIXPACKS"
+buildCommand = "npm install -g corepack && corepack enable && corepack prepare pnpm@10.6.2 --activate && pnpm install --no-frozen-lockfile && pnpm build"
+
+[deploy]
+numReplicas = 1
+healthcheckPath = "/health"
+healthcheckTimeout = 10
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+startCommand = "pnpm start"
+
+[service]
+name = "utility-service"
+internalPort = 3008
+healthcheckPath = "/health"
+
+[variables]
+PORT = "3008"
+NODE_ENV = "production"
+NIXPACKS_PKGS = "nodejs pnpm" 
