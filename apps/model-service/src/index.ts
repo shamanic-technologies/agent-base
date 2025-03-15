@@ -137,8 +137,8 @@ app.post('/generate/stream', async (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`🤖 LangGraph ReAct Agent Service running at http://localhost:${PORT}`);
+app.listen(Number(PORT), '0.0.0.0', () => {
+  console.log(`🤖 LangGraph ReAct Agent Service running at http://0.0.0.0:${PORT}`);
   console.log(`🌐 Environment: ${nodeEnv}`);
   console.log(`🔑 API Key ${process.env.ANTHROPIC_API_KEY ? 'is' : 'is NOT'} configured`);
 }); 
