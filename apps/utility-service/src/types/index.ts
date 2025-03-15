@@ -5,7 +5,7 @@
 // Request/response types for utility operations
 export interface UtilityRequest {
   operation: string;
-  data?: any;
+  input?: any;
 }
 
 export interface UtilityResponse {
@@ -17,7 +17,18 @@ export interface UtilityResponse {
 }
 
 // Supported utility operations
-export type UtilityOperation = 'utility_get_current_datetime';
+export type UtilityOperation = 
+  | 'utility_get_current_datetime'
+  | 'utility_github_get_code'
+  | 'utility_github_list_directory'
+  | 'utility_github_read_file'
+  | 'utility_github_create_file'
+  | 'utility_github_update_file'
+  | 'utility_github_lint_code'
+  | 'utility_github_run_code'
+  | 'utility_github_deploy_code'
+  | 'utility_github_create_codespace'
+  | 'utility_github_destroy_codespace';
 
 // Required types for the utility_get_current_datetime function
 export type ThreadId = string;
@@ -34,6 +45,63 @@ export type ParentNodeType = NodeType | null;
 
 export interface DateTimeRequest {
   format?: string;
+}
+
+// GitHub utility types
+export interface GitHubCodeRequest {
+  owner?: string;
+  repo?: string;
+  path?: string;
+  branch?: string;
+  codespaceId?: string;
+}
+
+export interface GitHubListDirectoryRequest extends GitHubCodeRequest {}
+
+export interface GitHubReadFileRequest extends GitHubCodeRequest {}
+
+export interface GitHubCreateFileRequest extends GitHubCodeRequest {
+  content: string;
+  message?: string;
+}
+
+export interface GitHubUpdateFileRequest extends GitHubCreateFileRequest {
+  sha?: string;
+}
+
+export interface GitHubLintCodeRequest extends GitHubCodeRequest {
+  files?: string[];
+}
+
+export interface GitHubRunCodeRequest extends GitHubCodeRequest {
+  command?: string;
+  args?: string[];
+  input?: string;
+  timeout?: number;
+}
+
+export interface GitHubDeployCodeRequest extends GitHubCodeRequest {
+  environment?: string;
+  message?: string;
+}
+
+// New Codespace types
+export interface GitHubCreateCodespaceRequest {
+  owner: string;
+  repo: string;
+  branch?: string;
+  workDir?: string;
+}
+
+export interface GitHubCodespaceResponse {
+  codespaceId: string;
+  status: string;
+  url?: string;
+  workDir?: string;
+}
+
+export interface GitHubDestroyCodespaceRequest {
+  codespaceId: string;
 }
 
 /**

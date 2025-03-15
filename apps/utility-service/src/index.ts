@@ -2,7 +2,7 @@
  * Utility Service
  * 
  * A simple Express server that provides utility functions for the application.
- * This service offers an API endpoint to access the utility_get_current_datetime function.
+ * This service offers utilities for GitHub operations including Codespaces.
  */
 // Import and configure dotenv first
 import dotenv from 'dotenv';
@@ -21,6 +21,12 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { processUtilityOperation } from './lib/utility-functions';
 import { UtilityOperation, UtilityRequest, UtilityResponse } from './types';
+
+// Import GitHub Codespace utilities
+import {
+  GitHubCreateCodespaceUtility,
+  GitHubDestroyCodespaceUtility
+} from './lib/github/github-codespace-utilities';
 
 // Middleware setup
 const app = express();
@@ -41,22 +47,16 @@ app.get('/health', (req: Request, res: Response) => {
 
 // Define a route handler function separate from the app.post call
 const utilityHandler = async (req: Request, res: Response): Promise<void> => {
-  const { operation, data } = req.body as UtilityRequest;
+  const { operation, input } = req.body as UtilityRequest;
   
   if (!operation) {
     res.status(400).json({ error: 'Operation is required' });
     return;
   }
   
-  // Validate operation is supported
-  if (operation !== 'utility_get_current_datetime') {
-    res.status(400).json({ error: `Unsupported operation: ${operation}` });
-    return;
-  }
-  
   try {
     // Process the utility operation
-    const result = await processUtilityOperation(operation as UtilityOperation, data);
+    const result = await processUtilityOperation(operation as UtilityOperation, input);
     
     // Return the result
     res.status(200).json(result);
@@ -77,8 +77,19 @@ app.post('/utility', utilityHandler);
 
 // Endpoint to list available utilities
 app.get('/utilities', (req: Request, res: Response) => {
-  // For now, we only have the datetime utility
-  const utilities = ['utility_get_current_datetime'];
+  const utilities = [
+    'utility_get_current_datetime',
+    'utility_github_create_codespace',
+    'utility_github_destroy_codespace',
+    'utility_github_get_code',
+    'utility_github_list_directory',
+    'utility_github_read_file',
+    'utility_github_create_file',
+    'utility_github_update_file',
+    'utility_github_lint_code',
+    'utility_github_run_code',
+    'utility_github_deploy_code'
+  ];
   
   res.status(200).json({ utilities });
 });
@@ -87,30 +98,52 @@ app.get('/utilities', (req: Request, res: Response) => {
 app.get('/utility/:id', (req: Request, res: Response) => {
   const { id } = req.params;
   
-  // For now, only support the datetime utility
-  if (id === 'utility_get_current_datetime') {
-    res.status(200).json({
-      id: 'utility_get_current_datetime',
-      description: `
-        Use this tool to get the current date and time.
-        
-        You can request different formats:
-        - 'iso' (default): ISO 8601 format (e.g., '2023-12-31T08:00:00.000Z')
-        - 'locale': Human-readable format (e.g., 'December 31, 2023, 08:00:00 AM')
-        - 'date': Date only (e.g., 'December 31, 2023')
-        - 'time': Time only (e.g., '08:00:00 AM')
-        - 'unix': Unix timestamp (seconds since epoch)
-      `,
+  // Define utility information
+  const utilityInfo: Record<string, any> = {
+    utility_get_current_datetime: {
+      name: 'utility_get_current_datetime',
+      description: 'Get the current date and time in different formats',
       schema: {
-        format: {
-          type: 'string',
-          optional: true,
-          description: "Optional format for the datetime: 'iso' (default), 'locale', 'date', 'time', or 'unix'"
+        type: 'object',
+        properties: {
+          format: {
+            type: 'string',
+            description: 'Optional date format (ISO, UTC, or custom format)',
+            default: 'ISO'
+          }
         }
       }
-    });
+    },
+    utility_github_create_codespace: {
+      name: 'utility_github_create_codespace',
+      description: 'Create a GitHub Codespace using environment variables',
+      schema: {
+        type: 'object',
+        properties: {},
+        note: 'No input required. Uses GITHUB_OWNER and GITHUB_REPO from environment variables.'
+      }
+    },
+    utility_github_destroy_codespace: {
+      name: 'utility_github_destroy_codespace',
+      description: 'Destroy a GitHub Codespace',
+      schema: {
+        type: 'object',
+        properties: {
+          codespaceId: {
+            type: 'string',
+            description: 'ID of the codespace to destroy'
+          }
+        },
+        required: ['codespaceId']
+      }
+    }
+  };
+
+  // Return the utility info if it exists
+  if (utilityInfo[id]) {
+    res.status(200).json(utilityInfo[id]);
   } else {
-    res.status(404).json({ error: `Utility not found: ${id}` });
+    res.status(404).json({ error: 'Utility not found' });
   }
 });
 
@@ -118,5 +151,5 @@ app.get('/utility/:id', (req: Request, res: Response) => {
 app.listen(PORT, () => {
   console.log(`🔧 Utility Service running at http://localhost:${PORT}`);
   console.log(`🌐 Environment: ${nodeEnv}`);
-  console.log(`🧩 Available utilities: utility_get_current_datetime`);
+  console.log(`🧩 GitHub Codespaces API enabled`);
 }); 
