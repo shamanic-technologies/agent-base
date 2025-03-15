@@ -2,7 +2,7 @@
 cmds = [
   "npm install -g corepack",
   "corepack enable",
-  "corepack prepare pnpm@10.6.2 --activate",
+  "corepack prepare pnpm@10.6.3 --activate",
   "pnpm install --no-frozen-lockfile"
 ]
 
