@@ -75,6 +75,45 @@ const utilityHandler = async (req: Request, res: Response): Promise<void> => {
 // Utility processing endpoint
 app.post('/utility', utilityHandler);
 
+// Endpoint to list available utilities
+app.get('/utilities', (req: Request, res: Response) => {
+  // For now, we only have the datetime utility
+  const utilities = ['utility_get_current_datetime'];
+  
+  res.status(200).json({ utilities });
+});
+
+// Endpoint to get utility info
+app.get('/utility/:id', (req: Request, res: Response) => {
+  const { id } = req.params;
+  
+  // For now, only support the datetime utility
+  if (id === 'utility_get_current_datetime') {
+    res.status(200).json({
+      id: 'utility_get_current_datetime',
+      description: `
+        Use this tool to get the current date and time.
+        
+        You can request different formats:
+        - 'iso' (default): ISO 8601 format (e.g., '2023-12-31T08:00:00.000Z')
+        - 'locale': Human-readable format (e.g., 'December 31, 2023, 08:00:00 AM')
+        - 'date': Date only (e.g., 'December 31, 2023')
+        - 'time': Time only (e.g., '08:00:00 AM')
+        - 'unix': Unix timestamp (seconds since epoch)
+      `,
+      schema: {
+        format: {
+          type: 'string',
+          optional: true,
+          description: "Optional format for the datetime: 'iso' (default), 'locale', 'date', 'time', or 'unix'"
+        }
+      }
+    });
+  } else {
+    res.status(404).json({ error: `Utility not found: ${id}` });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`🔧 Utility Service running at http://localhost:${PORT}`);

@@ -18,8 +18,8 @@ import {
 } from "@langchain/langgraph";
 import { StreamEvent } from "@langchain/core/tracers/log_stream";
 
-// Import existing tools from utility directory
-import { UtilityGetCurrentDateTime } from "./utility/index.js";
+// Import existing utilities
+import { UtilityListUtilities, UtilityGetUtilityInfo, UtilityCallUtility } from "./utility/index.js";
 import { formatAIMessageContent } from "./utils/formatters.js";
 
 import {
@@ -33,8 +33,11 @@ import {
   ParentNodeId,
   ParentNodeType,
   StreamAgentFunctionConfig,
-  ModelName
+  ModelName,
+  ReactAgentWrapper
 } from "../types/agent-config.js";
+
+
 
 /**
  * Ensures tool input is always a valid dictionary (non-array object)
@@ -48,14 +51,21 @@ function ensureValidDictionary(input: any): object {
   if (input === null || input === undefined || 
       typeof input === 'string' || 
       typeof input === 'number' || 
-      typeof input === 'boolean' ||
-      Array.isArray(input)) {
+      typeof input === 'boolean') {
     return {};
   }
   
-  // If already a non-array object, return as is
-  if (typeof input === 'object') {
+  // If it's already an object and not an array, return it as is
+  if (typeof input === 'object' && !Array.isArray(input)) {
     return input;
+  }
+  
+  // Convert arrays to objects with numbered keys
+  if (Array.isArray(input)) {
+    return input.reduce((obj, val, idx) => {
+      obj[idx.toString()] = val;
+      return obj;
+    }, {} as Record<string, any>);
   }
   
   // Default fallback - empty object
@@ -63,61 +73,59 @@ function ensureValidDictionary(input: any): object {
 }
 
 /**
- * Process messages to ensure all tool inputs are valid objects
- * Required for Claude to avoid "Input should be a valid dictionary" errors
+ * Preprocesses messages to ensure Claude compatibility
+ * This helps prevent common Claude errors with message formatting
  * 
- * @param messages - Array of messages to process
- * @returns Processed messages with valid tool inputs
+ * @param messages - The array of messages to preprocess
+ * @returns Processed messages array
  */
-function preprocessMessagesForClaude(messages: any[]): any[] {
-  if (!Array.isArray(messages)) {
-    return messages;
-  }
-  
+function preprocessMessagesForClaude(messages: BaseMessage[]): BaseMessage[] {
   return messages.map(message => {
-    if (!message) return message;
-    
-    try {
-      // Create a deep copy to avoid mutating the original
-      const newMessage = JSON.parse(JSON.stringify(message));
-      
-      // Handle AIMessage with tool_calls field (general format)
-      if (newMessage.kwargs?.tool_calls && Array.isArray(newMessage.kwargs.tool_calls)) {
-        newMessage.kwargs.tool_calls = newMessage.kwargs.tool_calls.map((toolCall: any) => {
+    // Only process AIMessages with content
+    if (message instanceof AIMessage && message.content) {
+      // Handle tool calls
+      if (message.tool_calls && message.tool_calls.length) {
+        // Process each tool call to ensure valid dictionary
+        message.tool_calls = message.tool_calls.map(toolCall => {
           toolCall.args = ensureValidDictionary(toolCall.args);
           return toolCall;
         });
       }
       
-      // Handle content array with tool_use (Anthropic specific format)
-      if (Array.isArray(newMessage.content)) {
-        newMessage.content = newMessage.content.map((item: any) => {
+      // Handle Claude's content array format
+      if (Array.isArray(message.content)) {
+        message.content = message.content.map(item => {
           if (item.type === 'tool_use') {
             item.input = ensureValidDictionary(item.input);
           }
           return item;
         });
       }
-      
-      // Handle direct tool_calls field (modern format)
-      if (Array.isArray(newMessage.tool_calls)) {
-        newMessage.tool_calls = newMessage.tool_calls.map((toolCall: any) => {
-          toolCall.args = ensureValidDictionary(toolCall.args);
-          return toolCall;
-        });
-      }
-      
-      return newMessage;
-    } catch (e) {
-      return message; // Return original if error
     }
+    
+    return message;
   });
 }
 
+// Simple singleton implementation - will be initialized on first use
+let reactAgentWrapper: ReactAgentWrapper;
+
 /**
- * Creates a streamable ReAct agent with enhanced error handling
+ * Get or create the React Agent wrapper
  */
-export function createReactAgentWrapper(config: ReactAgentWrapperConfig): any {
+function getReactAgentWrapper(config: ReactAgentWrapperConfig): ReactAgentWrapper {
+  if (!reactAgentWrapper) {
+    reactAgentWrapper = createReactAgentWrapper(config);
+    console.log("Created React Agent wrapper");
+  }
+  return reactAgentWrapper;
+}
+
+/**
+ * Internal implementation of React Agent wrapper creation
+ * Not to be called directly - use getReactAgentWrapper instead
+ */
+function createReactAgentWrapper(config: ReactAgentWrapperConfig): ReactAgentWrapper {
   const {
     tools,
     nodeId,
@@ -126,14 +134,9 @@ export function createReactAgentWrapper(config: ReactAgentWrapperConfig): any {
     parentNodeType,
     modelName = "claude-3-7-sonnet-20250219",
     temperature = 0,
-    overwrittingSystemPrompt: systemPrompt,
-    conversationId
+    overwrittingSystemPrompt: systemPrompt
   } = config;
   
-  // Set up conversation ID
-  const actualConversationId : ThreadId = conversationId || `session-${Date.now()}`;
-
-
   // Create the Claude model
   const anthropicModel : ChatAnthropic = new ChatAnthropic({
     modelName,
@@ -148,13 +151,11 @@ export function createReactAgentWrapper(config: ReactAgentWrapperConfig): any {
     }),
   });
 
-
   // Create the ReAct agent with optimized tool input preprocessing
   const reactAgent = createReactAgent({
     llm: anthropicModel, 
     tools,
     stateModifier: systemPrompt, // Apply tool preprocessing through state modifier in ReAct Agents
-
   } as ReactAgentConfig);
 
   // Create a dedicated ToolNode for executing tools
@@ -198,6 +199,7 @@ export function createReactAgentWrapper(config: ReactAgentWrapperConfig): any {
     .addConditionalEdges("agent", shouldContinue, ["tools", "__end__"])
     .addEdge("tools", "agent");
 
+  // Create a persistent MemorySaver that will be shared across all conversations
   const checkpointer = new MemorySaver();
   
   // Compile the graph with memory
@@ -212,10 +214,12 @@ export function createReactAgentWrapper(config: ReactAgentWrapperConfig): any {
    * @param config.messages - Array of messages from the user and assistant
    * @param config.modes - Stream modes to enable (e.g. ["messages"], ["events"], or ["messages", "events"])
    * @param config.messageHistory - Optional message history
+   * @param conversationId - Thread ID for maintaining conversation state
    * @returns AsyncGenerator that yields LangGraph event objects as JSON strings
    */
   async function* streamAgentFunction(
-    config: StreamAgentFunctionConfig
+    config: StreamAgentFunctionConfig,
+    conversationId?: string
   ): AsyncGenerator<string, void, unknown> {
     try {
       const { 
@@ -223,6 +227,9 @@ export function createReactAgentWrapper(config: ReactAgentWrapperConfig): any {
         modes = 'messages',
         messageHistory = []
       } = config;
+
+      // Use provided conversationId or generate a default one
+      const actualConversationId: ThreadId = conversationId || `session-${Date.now()}`;
 
       // Validate modes
       if (!Array.isArray(modes) || modes.length === 0) {
@@ -291,8 +298,15 @@ export function createReactAgentWrapper(config: ReactAgentWrapperConfig): any {
 
   /**
    * Invoke the agent with the given messages
+   * 
+   * @param messages - The messages to process
+   * @param conversationId - Thread ID for maintaining conversation state
+   * @returns The agent response
    */
-  async function invokeAgentFunction(messages: BaseMessage[]) {
+  async function invokeAgentFunction(messages: BaseMessage[], conversationId?: string) {
+    // Use provided conversationId or generate a default one
+    const actualConversationId: ThreadId = conversationId || `session-${Date.now()}`;
+    
     // Thoroughly preprocess messages
     const processedMessages = preprocessMessagesForClaude(messages);
     
@@ -303,7 +317,7 @@ export function createReactAgentWrapper(config: ReactAgentWrapperConfig): any {
         {
           streamMode: 'values',
           configurable: {
-            // Use the same conversation ID for consistency
+            // Use the conversation ID for memory lookup
             thread_id: actualConversationId,
             // Disable parallel tool use for Claude to reduce errors
             disable_parallel_tool_use: true
@@ -338,24 +352,23 @@ export function createReactAgentWrapper(config: ReactAgentWrapperConfig): any {
       
       // Return raw result for error case as well
       return {
-        messages: [...processedMessages, fallbackResponse]
+        messages: [fallbackResponse]
       };
     }
   }
-  
+
   return {
-    invokeAgentFunction,
-    streamAgentFunction
+    streamAgentFunction,
+    invokeAgentFunction
   };
 }
 
 /**
- * Process a user prompt with the enhanced ReAct agent using createReactAgent
+ * Process a user prompt with the enhanced ReAct agent
  * 
  * @param prompt The user prompt to process
- * @param streamMode The stream mode(s) to use (defaults to ["messages", "events"])
  * @param conversationId Optional thread ID for stateful conversations
- * @returns A structured response with the generated text
+ * @returns The agent's response
  */
 export async function processWithReActAgent(
   prompt: string, 
@@ -370,34 +383,50 @@ export async function processWithReActAgent(
 
     const nodeId = 'agent_react' as NodeId;
     const nodeType = NodeType.AGENT;
-    // Set up tools with conversation context
-    const UtilityGetCurrentDateTimeObj = new UtilityGetCurrentDateTime({
+    
+    // Create utilities
+    const listUtilities = new UtilityListUtilities({
       conversationId: conversationId,
       parentNodeId: nodeId,
       parentNodeType: nodeType
     });
+    const getUtilityInfo = new UtilityGetUtilityInfo({
+      conversationId: conversationId,
+      parentNodeId: nodeId,
+      parentNodeType: nodeType
+    });
+    const callUtility = new UtilityCallUtility({
+      conversationId: conversationId,
+      parentNodeId: nodeId,
+      parentNodeType: nodeType
+    });
+    
+    // Use all utilities
     const tools = [
-      UtilityGetCurrentDateTimeObj
+      listUtilities,
+      getUtilityInfo,
+      callUtility
     ];
     
-    // Create the ReAct agent wrapper with enhanced error handling
-    const { invokeAgentFunction } = createReactAgentWrapper({
+    // Get the singleton React agent wrapper
+    const { invokeAgentFunction } = getReactAgentWrapper({
       tools,
       nodeId,
       nodeType,
       parentNodeId: nodeId,
       parentNodeType: nodeType,
       modelName: ModelName.CLAUDE_3_7_SONNET_20250219,
-      temperature: 0,
-      conversationId: conversationId  // Pass the conversation ID to the wrapper
+      temperature: 0
     });
     
     // Create a human message from the prompt
     const message = new HumanMessage(prompt);
     
-    // Invoke the agent - no need to pass conversationId again as it's already in the wrapper
-    console.log("Invoking Enhanced LangGraph ReAct agent...");
-    const response = await invokeAgentFunction([message]);
+    // Get previous conversation history if available
+    console.log(`Processing prompt with thread ID: ${conversationId || 'new session'}`);
+    
+    // Invoke the agent with the message and conversation ID
+    const response = await invokeAgentFunction([message], conversationId);
     
     // Return the raw response directly without wrapper
     return response;
@@ -429,47 +458,59 @@ export async function* streamWithReActAgent(
 
     const nodeId = 'agent_react' as NodeId;
     const nodeType = NodeType.AGENT;
-    // Set up tools with conversation context
-    const UtilityGetCurrentDateTimeObj = new UtilityGetCurrentDateTime({
+    
+    // Create utilities
+    const listUtilities = new UtilityListUtilities({
       conversationId: conversationId,
       parentNodeId: nodeId,
       parentNodeType: nodeType
     });
+    const getUtilityInfo = new UtilityGetUtilityInfo({
+      conversationId: conversationId,
+      parentNodeId: nodeId,
+      parentNodeType: nodeType
+    });
+    const callUtility = new UtilityCallUtility({
+      conversationId: conversationId,
+      parentNodeId: nodeId,
+      parentNodeType: nodeType
+    });
+    
+    // Use all utilities
     const tools = [
-      UtilityGetCurrentDateTimeObj
+      listUtilities,
+      getUtilityInfo,
+      callUtility
     ];
     
-    // Create the ReAct agent wrapper
-    const { streamAgentFunction } = createReactAgentWrapper({
+    // Get the singleton React agent wrapper
+    const { streamAgentFunction } = getReactAgentWrapper({
       tools,
       nodeId,
       nodeType,
       parentNodeId: nodeId,
       parentNodeType: nodeType,
       modelName: ModelName.CLAUDE_3_7_SONNET_20250219,
-      temperature: 0,
-      conversationId: conversationId
+      temperature: 0
     });
     
     // Create a human message from the prompt
     const message = new HumanMessage(prompt);
     
-    // Stream generator with the specified modes
-    console.log(`Streaming with LangGraph ReAct agent...`);
-    const streamGenerator = streamAgentFunction({
+    // Stream the response with the message and conversation ID
+    const stream = streamAgentFunction({
       messages: [message],
-      modes: streamModes || ["messages", "events"]
-    });
+      modes: streamModes || ['messages', 'events']
+    }, conversationId);
     
-    // Yield each chunk directly to the client
-    for await (const chunk of streamGenerator) {
+    // Yield each chunk
+    for await (const chunk of stream) {
       yield chunk;
     }
   } catch (error) {
-    console.error("Error streaming with ReAct agent:", error);
+    console.error("Error in ReAct agent streaming:", error);
     
-    // Yield error event
-    yield JSON.stringify({
+    const errorEvent = {
       event: "on_chain_error",
       name: "ReActStreamingAgent",
       run_id: `error-${Date.now()}`,
@@ -481,6 +522,8 @@ export async function* streamWithReActAgent(
       data: {
         error: error instanceof Error ? error.message : String(error)
       }
-    });
+    };
+    
+    yield JSON.stringify(errorEvent);
   }
 } 

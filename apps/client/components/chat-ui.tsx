@@ -38,8 +38,10 @@ export function ChatUI() {
       createdAt: new Date()
     }
   ]);
+  // Add thread_id state to maintain conversation context
+  const [threadId, setThreadId] = useState<string>(`thread-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [useStreaming, setUseStreaming] = useState<boolean>(true);
+  const [useStreaming, setUseStreaming] = useState<boolean>(false); // Default to regular mode instead of streaming
   const [showDebugPanel, setShowDebugPanel] = useState<boolean>(false);
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const [currentStreamingMessage, setCurrentStreamingMessage] = useState<Message | null>(null);
@@ -64,6 +66,26 @@ export function ChatUI() {
     setUseStreaming(!useStreaming);
   };
 
+  // Reset conversation to start fresh
+  const resetConversation = () => {
+    // Generate a new thread ID
+    const newThreadId = `thread-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    
+    // Reset the conversation state
+    setThreadId(newThreadId);
+    setMessages([{
+      id: '1',
+      type: 'ai',
+      text: 'Hello! I am a HelloWorld AI agent. How can I help you today?',
+      createdAt: new Date()
+    }]);
+    setCurrentStreamingMessage(null);
+    setStreamChunks([]);
+    setPrompt('');
+    
+    console.log(`Started new conversation with thread ID: ${newThreadId}`);
+  };
+
   // Toggle message expansion in debug panel
   const toggleMessageExpansion = (id: string) => {
     setExpandedMessages(prev => ({
@@ -75,6 +97,7 @@ export function ChatUI() {
   // Get all debug data for display
   const getAllDebugData = () => {
     return {
+      thread_id: threadId,
       streaming_active: !!currentStreamingMessage,
       current_streaming_chunks: streamChunks,
       current_text: currentStreamingMessage?.text || "",
@@ -108,11 +131,14 @@ export function ChatUI() {
   // Handle regular (non-streaming) API call
   const handleRegularSubmit = async (userPrompt: string) => {
     try {
-      // Make the API call with the correct parameters
+      // Make the API call with the correct parameters, including thread_id
       const response = await callAgentBase(
         '/api/generate', 
         'POST', 
-        { prompt: userPrompt }
+        { 
+          prompt: userPrompt,
+          thread_id: threadId // Pass thread_id to maintain conversation context
+        }
       );
       
       console.log("API Response:", response);
@@ -124,11 +150,20 @@ export function ChatUI() {
       // Process messages from the response
       if (Array.isArray(response.messages) && response.messages.length > 0) {
         // Skip the first message (usually the user input)
-        const aiMessages = response.messages.slice(1);
+        // Only process the most recent AI message instead of all AI messages
+        // This prevents duplicate content from previous messages
+        const userMessages = response.messages.filter((m: any) => m.type === 'constructor' && 
+            m.id && Array.isArray(m.id) && m.id[2] === 'HumanMessage');
+        
+        const aiMessages = response.messages.filter((m: any) => m.type === 'constructor' && 
+            m.id && Array.isArray(m.id) && (m.id[2] === 'AIMessageChunk' || m.id[2] === 'AIMessage'));
+        
+        // Process only the last AI message (most recent response)
+        const lastAiMessage = aiMessages.length > 0 ? [aiMessages[aiMessages.length - 1]] : [];
         
         let contentParts = [];
         
-        for (const message of aiMessages) {
+        for (const message of lastAiMessage) {
           console.log("Processing message type:", message.type);
           
           // Handle AI assistant messages (LangChain format)
@@ -161,15 +196,22 @@ export function ChatUI() {
               }
             }
           }
-          
-          // Handle tool messages (results from tool calls)
-          if (message.type === 'constructor' && message.id && Array.isArray(message.id) && 
-              message.id[2] === 'ToolMessage') {
-            const toolName = message.kwargs?.name || 'unknown tool';
-            const toolContent = message.kwargs?.content || '';
+        }
+        
+        // Separately process tool messages that might be related to this exchange
+        const toolMessages = response.messages.filter((m: any) => m.type === 'constructor' && 
+            m.id && Array.isArray(m.id) && m.id[2] === 'ToolMessage');
+        
+        // We'll take the last tool messages since the first user message
+        const latestToolMessages = toolMessages.length > userMessages.length 
+            ? toolMessages.slice(-(toolMessages.length - userMessages.length + 1)) 
+            : toolMessages;
             
-            contentParts.push(`[Tool Result: ${toolName}]\n${toolContent}`);
-          }
+        for (const message of latestToolMessages) {
+          const toolName = message.kwargs?.name || 'unknown tool';
+          const toolContent = message.kwargs?.content || '';
+          
+          contentParts.push(`[Tool Result: ${toolName}]\n${toolContent}`);
         }
         
         if (contentParts.length > 0) {
@@ -224,131 +266,103 @@ export function ChatUI() {
       createdAt: new Date(),
     };
     
-    setMessages([...messages, userMessage]);
-    
-    // Create a temporary streaming message and set it as current
-    const streamingMessage: Message = {
-      id: (Date.now() + 1).toString(),
-      type: "ai",
-      text: "", // This will be updated as chunks arrive
-      createdAt: new Date(),
-      chunks: [],
-    };
-    
-    // Reset the input field and show loading state
-    setPrompt("");
+    setMessages(prev => [...prev, userMessage]);
+    setPrompt('');
     setIsLoading(true);
-    setCurrentStreamingMessage(streamingMessage);
+
+    // Initialize a streaming message
+    const streamingMsgId = (Date.now() + 1).toString();
+    const initialStreamingMessage: Message = {
+      id: streamingMsgId,
+      type: "ai",
+      text: "",
+      chunks: [],
+      createdAt: new Date(),
+    };
+
+    setCurrentStreamingMessage(initialStreamingMessage);
+    setStreamChunks([]);
     
-    let accumulatedText = ""; // Move to parent scope for handleChunk access
-    const streamChunks: Array<{ index: number; timestamp: string; data: any }> = [];
-    
-    // Initialize our streaming
-    try {
-      const response = await fetch("/api/generate/stream", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          prompt: prompt,
-        }),
-      });
+    // Track accumulated text from stream chunks
+    let accumulatedText = "";
+
+    // Handle individual stream chunks 
+    const handleChunk = (chunk: any) => {
+      const timestamp = new Date().toISOString();
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      // Track chunks for debug panel
+      setStreamChunks(prev => [...prev, {
+        index: prev.length,
+        timestamp,
+        data: chunk
+      }]);
       
-      // Process the streaming response
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error("Failed to get reader from response");
-      }
-      
-      let activeToolCall: string | null = null;
-      
-      const handleChunk = (chunk: any) => {
-        const timestamp = new Date().toISOString();
-        
-        // Add the chunk to our array with timestamp and index
-        streamChunks.push({
-          index: streamChunks.length,
-          timestamp,
-          data: chunk
-        });
-        
-        // Update the text based on chunk type
-        if (chunk.type === "on_chat_model_stream") {
-          // Regular text output from the model
-          if (chunk.data?.chunk?.content) {
-            accumulatedText += chunk.data.chunk.content;
-          }
-        } 
-        // Handle tool calls during streaming
-        else if (chunk.data?.chunk?.tool_calls && chunk.data.chunk.tool_calls.length > 0) {
-          const toolCall = chunk.data.chunk.tool_calls[0];
-          const toolName = toolCall.name;
-          
-          if (!activeToolCall || activeToolCall !== toolName) {
-            activeToolCall = toolName;
-            accumulatedText += `\n[Starting tool: ${toolName}]\n`;
-          }
+      // Update the text based on chunk type
+      if (chunk.type === "on_chat_model_stream") {
+        // Regular text output from the model
+        if (chunk.data?.chunk?.content) {
+          accumulatedText += chunk.data.chunk.content;
         }
-        // Handle tool completion
-        else if (chunk.type === "on_tool_end") {
-          activeToolCall = null;
-          const toolName = chunk.data?.name || "unknown";
+      } 
+      // Handle tool-related chunks
+      else if (chunk.type === "on_tool_start" || chunk.type === "on_tool_end") {
+        const toolName = chunk.data?.name || "unknown";
+        
+        if (chunk.type === "on_tool_start") {
+          accumulatedText += `\n[Starting tool: ${toolName}]\n`;
+        } else if (chunk.type === "on_tool_end") {
           const result = chunk.data?.output || "";
-          
-          let formattedResult = result;
-          if (typeof result === 'object') {
-            try {
-              formattedResult = JSON.stringify(result, null, 2);
-            } catch (e) {
-              formattedResult = String(result);
-            }
-          }
+          let formattedResult = typeof result === 'object' ? 
+            JSON.stringify(result, null, 2) : String(result);
           
           accumulatedText += `\n[Tool Result: ${toolName}]\n${formattedResult}\n`;
         }
-        // Handle error chunks
-        else if (chunk.type === "error") {
-          accumulatedText += `\n[Error: ${chunk.data?.error || "Unknown error"}]\n`;
-        }
-        
-        // Update the streaming message with the new text and chunks
-        setCurrentStreamingMessage(prev => {
-          if (!prev) return null;
-          return {
-            ...prev,
-            text: accumulatedText,
-            chunks: streamChunks,
-          };
-        });
-      };
-      
-      while (true) {
-        const { done, value } = await reader.read();
-        
-        if (done) {
-          break;
-        }
-        
-        // Process the value
-        const decodedValue = new TextDecoder().decode(value);
-        const lines = decodedValue.split("\n").filter(Boolean);
-        
-        for (const line of lines) {
-          try {
-            // Parse the JSON
-            const chunk = JSON.parse(line);
-            handleChunk(chunk);
-          } catch (e) {
-            console.error("Failed to parse chunk:", line, e);
-          }
-        }
+      }
+      // Handle error chunks
+      else if (chunk.type === "error") {
+        accumulatedText += `\n[Error: ${chunk.data?.error || "Unknown error"}]\n`;
       }
       
+      // Update the streaming message with the new text
+      setCurrentStreamingMessage(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          text: accumulatedText,
+          chunks: [...(prev.chunks || []), chunk]
+        };
+      });
+    };
+
+    try {
+      // Start streaming with thread_id for conversation context
+      const cleanup = streamAgentBase(
+        '/api/generate/stream',
+        {
+          prompt: prompt.trim(),
+          thread_id: threadId, // Pass thread_id to maintain conversation context
+          stream_modes: ["messages", "events"]
+        },
+        handleChunk,
+        () => {
+          setIsLoading(false);
+          setCurrentStreamingMessage(null);
+        },
+        (error) => {
+          setIsLoading(false);
+          setCurrentStreamingMessage(null);
+          setMessages(prev => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              type: "ai",
+              text: `An error occurred: ${error.message}`,
+              createdAt: new Date(),
+            },
+          ]);
+        }
+      );
+
       // Finalizing the streaming process
       if (currentStreamingMessage) {
         setMessages(prev => [...prev, { 
@@ -410,7 +424,17 @@ export function ChatUI() {
           <Bot className="h-6 w-6 text-primary" />
           <h1 className="text-xl font-semibold">HelloWorld AI Client</h1>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <Button
+            variant="default"
+            size="sm"
+            onClick={resetConversation}
+            title="Start a new conversation with a fresh thread ID"
+            className="flex items-center gap-1"
+          >
+            <RefreshCw className="h-4 w-4 mr-1" />
+            New Conversation
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -555,6 +579,11 @@ export function ChatUI() {
             <ScrollArea className="h-full">
               <div className="p-4">
                 <h3 className="text-sm font-semibold mb-2">Debug Panel - Raw Data</h3>
+                
+                {/* Thread ID indicator */}
+                <div className="text-xs mb-3 p-2 bg-gray-100 dark:bg-gray-800 rounded-md">
+                  <span className="font-semibold">Current Thread ID:</span> {threadId}
+                </div>
                 
                 {/* Streaming status indicator */}
                 {currentStreamingMessage && (

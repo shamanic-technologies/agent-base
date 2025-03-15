@@ -63,4 +63,60 @@ for await (const chunk of stream) {
 }
 ```
 
-Different stream modes provide different information, so choose the ones that match your needs. 
+Different stream modes provide different information, so choose the ones that match your needs.
+
+## Utility Service Integration
+
+The model service integrates with the utility service through three dedicated utilities:
+
+1. **UtilityListUtilities**: Lists all available utilities from the utility service
+2. **UtilityGetUtilityInfo**: Gets detailed information about a specific utility
+3. **UtilityCallUtility**: Calls a utility with parameters and returns the result
+
+This design provides a clean separation of concerns:
+- The model service focuses on LLM interactions and provides utilities for utility discovery and usage
+- The utility service implements the actual utility functions
+
+### Using Utilities
+
+To use the utilities in your code:
+
+```typescript
+import { UtilityListUtilities, UtilityGetUtilityInfo, UtilityCallUtility } from "./utility";
+
+// Create the utilities
+const listUtilities = new UtilityListUtilities({
+  conversationId: "conversation-id",
+  parentNodeId: "parent-node-id",
+  parentNodeType: "parent-node-type"
+});
+
+const getUtilityInfo = new UtilityGetUtilityInfo({
+  conversationId: "conversation-id",
+  parentNodeId: "parent-node-id",
+  parentNodeType: "parent-node-type"
+});
+
+const callUtility = new UtilityCallUtility({
+  conversationId: "conversation-id",
+  parentNodeId: "parent-node-id",
+  parentNodeType: "parent-node-type"
+});
+
+// Add them to your agent's tools
+const tools = [
+  listUtilities,
+  getUtilityInfo,
+  callUtility
+];
+```
+
+### Utility Discovery Flow
+
+The utilities work together to create a discovery-based flow:
+
+1. The agent can use **UtilityListUtilities** to discover available utilities
+2. The agent can use **UtilityGetUtilityInfo** to learn how to use a specific utility
+3. The agent can use **UtilityCallUtility** to actually call the utility with parameters
+
+This allows the agent to dynamically discover and use utilities without hardcoding knowledge about specific utilities. 

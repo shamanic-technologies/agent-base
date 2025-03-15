@@ -34,4 +34,26 @@ export type ParentNodeType = NodeType | null;
 
 export interface DateTimeRequest {
   format?: string;
-} 
+}
+
+/**
+ * Add these types after the existing utility operation types
+ */
+
+export type UtilityInfo = {
+  id: string;
+  description: string;
+  schema: Record<string, {
+    type: string;
+    optional?: boolean;
+    description?: string;
+  }>;
+};
+
+export type UtilitiesListResponse = {
+  utilities: string[];
+};
+
+export type UtilityInfoResponse = UtilityInfo | {
+  error: string;
+}; 

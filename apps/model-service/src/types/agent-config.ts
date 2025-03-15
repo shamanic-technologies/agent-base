@@ -25,7 +25,6 @@ export interface ReactAgentWrapperConfig {
   nodeType: NodeType;/** Optional type for the agent node */
   parentNodeId: ParentNodeId;  /** Optional parent node ID */
   parentNodeType: ParentNodeType; /** Optional parent node type */
-  conversationId: ThreadId;/** Conversation ID for continuity */
   temperature?: number;  /** Temperature setting (defaults to 0) */
   modelName?: ModelName;/** Model name (defaults to Claude 3.7 Sonnet) */
   overwrittingSystemPrompt?: ReactAgentOverwrittingSystemPrompt; /** Custom system prompt */
@@ -78,4 +77,18 @@ export interface GraphStreamConfig {
     parent_node_id: ParentNodeId,
     parent_node_type: ParentNodeType
   }
+}
+
+/**
+ * Interface for the agent wrapper functions
+ */
+export interface ReactAgentWrapper {
+  streamAgentFunction: (
+    config: StreamAgentFunctionConfig,
+    conversationId?: string
+  ) => AsyncGenerator<string, void, unknown>;
+  invokeAgentFunction: (
+    messages: BaseMessage[],
+    conversationId?: string
+  ) => Promise<any>;
 }

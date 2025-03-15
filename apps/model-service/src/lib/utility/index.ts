@@ -1,10 +1,11 @@
 /**
- * Utility Tools Index
+ * Utility Index
  * 
- * This file exports all available utility tools for agent use.
- * Each tool is in its own file for better organization and maintainability.
+ * This file exports utilities that call the utility-service API.
+ * Each utility is designed for a specific task related to the utility service.
  */
 
-
-// Export datetime tool
-export * from './utility_get_current_datetime.js'; 
+// Export utilities
+export * from './utility_list_utilities.js';
+export * from './utility_get_utility_info.js';
+export * from './utility_call_utility.js'; 

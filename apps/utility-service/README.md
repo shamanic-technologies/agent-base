@@ -4,10 +4,70 @@ This service provides a simple API endpoint to access utility functions.
 
 ## API Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/health` | GET | Health check endpoint |
-| `/utility` | POST | Access utility functions |
+The utility service provides the following endpoints:
+
+### 1. GET /health
+Health check endpoint.
+
+**Response:**
+```json
+{
+  "status": "healthy",
+  "environment": "development",
+  "version": "1.0.0"
+}
+```
+
+### 2. GET /utilities
+List all available utilities.
+
+**Response:**
+```json
+{
+  "utilities": ["utility_get_current_datetime"]
+}
+```
+
+### 3. GET /utility/:id
+Get information about a specific utility.
+
+**Parameters:**
+- `id`: The ID of the utility (e.g., `utility_get_current_datetime`)
+
+**Response:**
+```json
+{
+  "id": "utility_get_current_datetime",
+  "description": "Use this tool to get the current date and time...",
+  "schema": {
+    "format": {
+      "type": "string",
+      "optional": true,
+      "description": "Optional format for the datetime: 'iso' (default), 'locale', 'date', 'time', or 'unix'"
+    }
+  }
+}
+```
+
+### 4. POST /utility
+Call a utility function.
+
+**Request Body:**
+```json
+{
+  "operation": "utility_get_current_datetime",
+  "data": {
+    "format": "iso"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "data": "2023-12-31T08:00:00.000Z"
+}
+```
 
 ### Utility Endpoint
 

@@ -6,7 +6,7 @@
  */
 
 import { HumanMessage } from "@langchain/core/messages";
-import { UtilityGetCurrentDateTime } from "../../src/lib/utility";
+import { UtilityListUtilities, UtilityGetUtilityInfo, UtilityCallUtility } from "../../src/lib/utility";
 import { createReactAgentWrapper } from "../../src/lib/react-agent";
 import { StreamMode } from "@langchain/langgraph";
 import * as dotenv from "dotenv";
@@ -50,14 +50,29 @@ async function testAllStreamModes() {
     for (const mode of ALL_STREAM_MODES) {
 
       const conversationId = `test-stream-${Date.now()}`;
-      // Set up tools with conversation context
-      const UtilityGetCurrentDateTimeObj = new UtilityGetCurrentDateTime({
+      
+      // Create utilities
+      const listUtilities = new UtilityListUtilities({
         conversationId: conversationId,
         parentNodeId: nodeId,
         parentNodeType: nodeType
       });
+      const getUtilityInfo = new UtilityGetUtilityInfo({
+        conversationId: conversationId,
+        parentNodeId: nodeId,
+        parentNodeType: nodeType
+      });
+      const callUtility = new UtilityCallUtility({
+        conversationId: conversationId,
+        parentNodeId: nodeId,
+        parentNodeType: nodeType
+      });
+      
+      // Use all utilities
       const tools = [
-        UtilityGetCurrentDateTimeObj
+        listUtilities,
+        getUtilityInfo,
+        callUtility
       ];
 
           // Create the real streaming agent
