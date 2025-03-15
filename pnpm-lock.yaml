@@ -19,10 +19,10 @@ importers:
         specifier: ^0.0.4
         version: 0.0.4
       turbo:
-        specifier: latest
+        specifier: ^2.4.4
         version: 2.4.4
       typescript:
-        specifier: ^5.4.5
+        specifier: ^5.8.2
         version: 5.8.2
 
   apps/auth-service:

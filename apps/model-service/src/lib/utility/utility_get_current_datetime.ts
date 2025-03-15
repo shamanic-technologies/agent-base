@@ -7,7 +7,7 @@
 
 import { Tool } from "@langchain/core/tools";
 import { z } from "zod";
-import { NodeId, NodeType, ParentNodeId, ParentNodeType, ThreadId } from "../../types/agent-config";
+import { NodeId, NodeType, ParentNodeId, ParentNodeType, ThreadId } from "../../types/agent-config.js";
 
 
 /**

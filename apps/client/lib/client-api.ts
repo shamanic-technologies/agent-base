@@ -41,6 +41,63 @@ export async function callAgentBase(
 }
 
 /**
+ * Makes a streaming request to the Agent Base through our secure server API
+ * @param endpoint The Agent Base endpoint path
+ * @param data Request body for the streaming POST request
+ * @param onChunk Callback function to handle each received chunk
+ * @param onDone Callback function called when streaming is complete
+ * @param onError Callback function for error handling
+ */
+export function streamAgentBase(
+  endpoint: string,
+  data: any,
+  onChunk: (chunk: any) => void,
+  onDone?: () => void,
+  onError?: (error: Error) => void
+): () => void {
+  try {
+    // Create EventSource for streaming endpoint
+    const eventSource = new EventSource('/api/proxy/stream?' + new URLSearchParams({
+      endpoint,
+      data: JSON.stringify(data)
+    }).toString());
+    
+    // Handle incoming messages
+    eventSource.onmessage = (event) => {
+      if (event.data === '[DONE]') {
+        eventSource.close();
+        onDone && onDone();
+        return;
+      }
+      
+      try {
+        const chunk = JSON.parse(event.data);
+        onChunk(chunk);
+      } catch (err) {
+        console.warn('Error parsing streaming chunk:', err);
+        onChunk({ type: 'parse_error', data: event.data });
+      }
+    };
+    
+    // Handle errors
+    eventSource.onerror = (error) => {
+      console.error(`Streaming error from ${endpoint}:`, error);
+      eventSource.close();
+      onError && onError(new Error('Stream connection error'));
+    };
+    
+    // Return a function to close the stream
+    return () => {
+      eventSource.close();
+    };
+  } catch (error: any) {
+    console.error(`Error setting up stream to ${endpoint}:`, error);
+    onError && onError(error);
+    return () => {}; // Return no-op cleanup function
+  }
+}
+
+/**
  * Tests the connection to the Agent Base
  * @returns Information about the connection status
  */

@@ -19,8 +19,8 @@ import {
 import { StreamEvent } from "@langchain/core/tracers/log_stream";
 
 // Import existing tools from utility directory
-import { UtilityGetCurrentDateTime } from "./utility";
-import { formatAIMessageContent } from "./utils/formatters";
+import { UtilityGetCurrentDateTime } from "./utility/index.js";
+import { formatAIMessageContent } from "./utils/formatters.js";
 
 import {
   ReactAgentWrapperConfig,
@@ -34,7 +34,7 @@ import {
   ParentNodeType,
   StreamAgentFunctionConfig,
   ModelName
-} from "../types/agent-config";
+} from "../types/agent-config.js";
 
 /**
  * Ensures tool input is always a valid dictionary (non-array object)
@@ -117,7 +117,7 @@ function preprocessMessagesForClaude(messages: any[]): any[] {
 /**
  * Creates a streamable ReAct agent with enhanced error handling
  */
-export function createReactAgentWrapper(config: ReactAgentWrapperConfig) {
+export function createReactAgentWrapper(config: ReactAgentWrapperConfig): any {
   const {
     tools,
     nodeId,
@@ -301,19 +301,24 @@ export function createReactAgentWrapper(config: ReactAgentWrapperConfig) {
       const result = await graph.invoke(
         { messages: processedMessages },
         {
+          streamMode: 'values',
           configurable: {
             // Use the same conversation ID for consistency
             thread_id: actualConversationId,
             // Disable parallel tool use for Claude to reduce errors
             disable_parallel_tool_use: true
+          },
+          metadata: {
+            node_id: nodeId,
+            node_type: nodeType,
+            parent_node_id: parentNodeId,
+            parent_node_type: parentNodeType
           }
         }
       );
       
-      return {
-        result,
-        conversationId: actualConversationId
-      };
+      // Return the raw result directly without wrapper
+      return result;
     } catch (error) {
       // Detailed error handling for invocation
       console.error("Agent execution error:", error);
@@ -331,12 +336,9 @@ export function createReactAgentWrapper(config: ReactAgentWrapperConfig) {
         content: fallbackContent
       });
       
+      // Return raw result for error case as well
       return {
-        result: {
-          messages: [...processedMessages, fallbackResponse]
-        },
-        conversationId: actualConversationId,
-        error: errorMessage
+        messages: [...processedMessages, fallbackResponse]
       };
     }
   }
@@ -395,27 +397,90 @@ export async function processWithReActAgent(
     
     // Invoke the agent - no need to pass conversationId again as it's already in the wrapper
     console.log("Invoking Enhanced LangGraph ReAct agent...");
-    const { result } = await invokeAgentFunction([message]);
+    const response = await invokeAgentFunction([message]);
     
-    // Get the last message from the result
-    const lastMessage = result.messages[result.messages.length - 1];
-    
-    // Format the content properly using the utility function
-    const formattedContent = formatAIMessageContent(lastMessage.content);
-    
-    // Return a formatted response
-    return {
-      model: ModelName.CLAUDE_3_7_SONNET_20250219,
-      generated_text: formattedContent,
-      tokens: {
-        prompt_tokens: prompt.split(/\s+/).length,
-        completion_tokens: formattedContent.split(/\s+/).length,
-        total_tokens: prompt.split(/\s+/).length + formattedContent.split(/\s+/).length
-      },
-      request_id: `req_${Date.now()}`
-    };
+    // Return the raw response directly without wrapper
+    return response;
   } catch (error) {
     console.error("Error in ReAct agent:", error);
     throw error;
+  }
+}
+
+/**
+ * Stream a user prompt with the enhanced ReAct agent
+ * Returns the raw stream chunks for client-side processing
+ * 
+ * @param prompt The user prompt to process
+ * @param conversationId Optional thread ID for stateful conversations
+ * @returns AsyncGenerator that yields LangGraph event objects as JSON strings
+ */
+export async function* streamWithReActAgent(
+  prompt: string,
+  conversationId?: string,
+  streamModes?: any
+): AsyncGenerator<string, void, unknown> {
+  try {
+    // Check if API key is available
+    if (!process.env.ANTHROPIC_API_KEY) {
+      console.warn("⚠️ No ANTHROPIC_API_KEY found in environment variables");
+      throw new Error("Anthropic API key not found in environment variables");
+    }
+
+    const nodeId = 'agent_react' as NodeId;
+    const nodeType = NodeType.AGENT;
+    // Set up tools with conversation context
+    const UtilityGetCurrentDateTimeObj = new UtilityGetCurrentDateTime({
+      conversationId: conversationId,
+      parentNodeId: nodeId,
+      parentNodeType: nodeType
+    });
+    const tools = [
+      UtilityGetCurrentDateTimeObj
+    ];
+    
+    // Create the ReAct agent wrapper
+    const { streamAgentFunction } = createReactAgentWrapper({
+      tools,
+      nodeId,
+      nodeType,
+      parentNodeId: nodeId,
+      parentNodeType: nodeType,
+      modelName: ModelName.CLAUDE_3_7_SONNET_20250219,
+      temperature: 0,
+      conversationId: conversationId
+    });
+    
+    // Create a human message from the prompt
+    const message = new HumanMessage(prompt);
+    
+    // Stream generator with the specified modes
+    console.log(`Streaming with LangGraph ReAct agent...`);
+    const streamGenerator = streamAgentFunction({
+      messages: [message],
+      modes: streamModes || ["messages", "events"]
+    });
+    
+    // Yield each chunk directly to the client
+    for await (const chunk of streamGenerator) {
+      yield chunk;
+    }
+  } catch (error) {
+    console.error("Error streaming with ReAct agent:", error);
+    
+    // Yield error event
+    yield JSON.stringify({
+      event: "on_chain_error",
+      name: "ReActStreamingAgent",
+      run_id: `error-${Date.now()}`,
+      tags: [],
+      metadata: {
+        error: true,
+        error_details: error instanceof Error ? error.message : String(error)
+      },
+      data: {
+        error: error instanceof Error ? error.message : String(error)
+      }
+    });
   }
 } 
