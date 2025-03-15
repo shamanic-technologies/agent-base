@@ -1,8 +1,8 @@
 /**
- * LangGraph ReAct Agent Service
+ * Simple Model Service
  * 
- * A simple Express server that implements a Claude ReAct agent.
- * Uses LangGraph for handling the agent's reasoning and acting process.
+ * A lightweight Express server that returns HelloWorld responses.
+ * Simplified version without LangGraph for testing purposes.
  */
 // Import and configure dotenv first
 import dotenv from 'dotenv';
@@ -19,7 +19,7 @@ if (nodeEnv === 'production') {
 
 import express from 'express';
 import cors from 'cors';
-import { processWithReActAgent } from './lib/react-agent';
+// Removed import for ReAct agent
 
 // Middleware setup
 const app = express();
@@ -38,7 +38,7 @@ app.get('/health', (req, res) => {
   });
 });
 
-// LLM generation endpoint using ReAct agent
+// Simplified generation endpoint that returns HelloWorld responses
 app.post('/generate', async (req, res) => {
   const { prompt, thread_id } = req.body;
   
@@ -47,16 +47,21 @@ app.post('/generate', async (req, res) => {
   }
   
   try {
-    // Process the prompt with our ReAct agent
+    // Generate a simple response
     console.log(`Received prompt: "${prompt}"`);
-    const response = await processWithReActAgent(prompt, thread_id);
     
-    // Return the agent's response
-    res.status(200).json(response);
+    // Format the response with the prompt included
+    const generated_text = `Hello! This is the HelloWorld model service.\n\nYou asked: "${prompt}"\n\nI'm a simplified version of the service for testing purposes. Once the full LangGraph implementation is ready, I'll be much smarter!`;
+    
+    // Return the formatted response
+    res.status(200).json({ 
+      generated_text,
+      thread_id: thread_id || 'default-thread'
+    });
   } catch (error) {
-    console.error('Error processing prompt with ReAct agent:', error);
+    console.error('Error generating response:', error);
     res.status(500).json({ 
-      error: 'Failed to process prompt',
+      error: 'Failed to generate response',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
   }
@@ -64,7 +69,6 @@ app.post('/generate', async (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`🤖 LangGraph ReAct Agent Service running at http://localhost:${PORT}`);
+  console.log(`🤖 Simple Model Service running at http://localhost:${PORT}`);
   console.log(`🌐 Environment: ${nodeEnv}`);
-  console.log(`🔑 API Key ${process.env.ANTHROPIC_API_KEY ? 'is' : 'is NOT'} configured`);
 }); 

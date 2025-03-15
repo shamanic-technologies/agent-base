@@ -16,6 +16,7 @@
     "clean": "turbo run clean && rm -rf node_modules"
   },
   "devDependencies": {
+    "@shadcn/ui": "^0.0.4",
     "turbo": "latest",
     "typescript": "^5.4.5"
   },

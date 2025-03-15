@@ -93,6 +93,15 @@ app.get('/health', (req: express.Request, res: express.Response) => {
   });
 });
 
+// Proxy mode endpoint - returns HelloWorld message
+app.get('/api/proxy-mode', requireApiKey, (req: express.Request, res: express.Response) => {
+  res.status(200).json({
+    success: true,
+    message: "HelloWorld",
+    user_id: res.locals.userId
+  });
+});
+
 // Get test API key endpoint (for testing only)
 app.get('/get-test-key', (req: express.Request, res: express.Response) => {
   const testKey = TEST_API_KEYS[0];
