@@ -119,9 +119,19 @@ router.get('/db/:collection', async (req: Request, res: Response): Promise<void>
       try {
         const filters = JSON.parse(query as string);
         
-        // Apply each filter as an equality condition
+        // Apply each filter, handling JSONB path queries for the data field
         const whereConditions = Object.entries(filters).map(([key, value], index) => {
           queryParams.push(value);
+          
+          // Check if this is a nested path query for data field (e.g., "data.fieldName")
+          if (key.startsWith('data.')) {
+            // Extract the path after 'data.'
+            const jsonPath = key.substring(5); // Remove 'data.'
+            // Use PostgreSQL JSONB path operator ->
+            return `data->>'${jsonPath}' = $${index + 1}`;
+          }
+          
+          // Regular field comparison for non-nested fields
           return `"${key}" = $${index + 1}`;
         });
         

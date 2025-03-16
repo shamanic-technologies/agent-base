@@ -6,6 +6,7 @@
 import { AsyncRequestHandler } from '../utils/types';
 import { config } from '../config/env';
 import { generateToken, UserProfile } from '../utils/passport';
+import { saveUserToDatabase } from '../utils/database';
 
 /**
  * Handle successful authentication
@@ -18,6 +19,15 @@ export const authSuccessHandler: AsyncRequestHandler = async (req, res) => {
     if (!user) {
       console.error('No user data found in request');
       return res.redirect(`${config.clientAppUrl}?error=auth_failed`);
+    }
+    
+    // Save user to database
+    try {
+      const dbResponse = await saveUserToDatabase(user);
+      console.log('User saved to database:', dbResponse?.data);
+    } catch (dbError) {
+      console.error('Failed to save user to database, continuing anyway:', dbError);
+      // Continue anyway - don't fail the authentication due to database issues
     }
     
     // Generate JWT token
