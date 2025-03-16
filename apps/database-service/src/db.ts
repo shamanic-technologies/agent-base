@@ -1,39 +1,89 @@
 /**
  * Database Connection Module
  * 
- * Handles PostgreSQL connection and shared database operations
+ * Handles PostgreSQL connection and operations for the database service.
  */
-import { Pool, QueryResult } from 'pg';
+import { Pool, PoolClient } from 'pg';
+import 'dotenv/config';
 
-// Initialize PostgreSQL client
-export const pgPool = new Pool({
+// Initialize PostgreSQL connection pool
+const pgPool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  // If DATABASE_URL is not set, the Pool will use the PG* env variables
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  max: 20, // Maximum number of clients in the pool
+  idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
+  connectionTimeoutMillis: 10000, // Return an error after 10 seconds if connection not established
 });
 
-// Test database connection
-export const testConnection = async (): Promise<boolean> => {
-  try {
-    await pgPool.query('SELECT NOW()');
-    console.log('Connected to PostgreSQL database');
-    return true;
-  } catch (err) {
-    console.error('Error connecting to PostgreSQL:', err);
-    return false;
-  }
-};
+// Event handlers for the connection pool
+pgPool.on('connect', () => {
+  console.log('New client connected to PostgreSQL pool');
+});
+
+pgPool.on('error', (err) => {
+  console.error('Unexpected error on idle PostgreSQL client', err);
+});
 
 /**
- * List all database tables
+ * Test the database connection
+ * @returns {Promise<boolean>} True if connection is successful
  */
-export const listTables = async (): Promise<string[]> => {
-  const query = `
-    SELECT table_name
-    FROM information_schema.tables
-    WHERE table_schema = 'public'
-    AND table_type = 'BASE TABLE'
-  `;
-  
-  const result = await pgPool.query(query);
-  return result.rows.map(row => row.table_name);
-}; 
+export async function testConnection(): Promise<boolean> {
+  let client: PoolClient | null = null;
+  try {
+    // Log connection parameters for debugging (excluding password)
+    console.log('Connecting to PostgreSQL with:');
+    console.log(`- Host: ${process.env.PGHOST}`);
+    console.log(`- Port: ${process.env.PGPORT}`);
+    console.log(`- Database: ${process.env.PGDATABASE}`);
+    console.log(`- User: ${process.env.PGUSER}`);
+    
+    client = await pgPool.connect();
+    const result = await client.query('SELECT NOW()');
+    console.log('PostgreSQL connection successful:', result.rows[0]);
+    return true;
+  } catch (error) {
+    console.error('Error connecting to PostgreSQL:', error);
+    return false;
+  } finally {
+    if (client) client.release();
+  }
+}
+
+/**
+ * List all tables in the database
+ * @returns {Promise<string[]>} Array of table names
+ */
+export async function listTables(): Promise<string[]> {
+  let client: PoolClient | null = null;
+  try {
+    client = await pgPool.connect();
+    const result = await client.query(`
+      SELECT tablename 
+      FROM pg_catalog.pg_tables 
+      WHERE schemaname != 'pg_catalog' 
+      AND schemaname != 'information_schema'
+    `);
+    return result.rows.map(row => row.tablename);
+  } catch (error) {
+    console.error('Error listing tables:', error);
+    return [];
+  } finally {
+    if (client) client.release();
+  }
+}
+
+/**
+ * Get a database client from the pool
+ * @returns {Promise<PoolClient>} Database client
+ */
+export async function getClient(): Promise<PoolClient> {
+  try {
+    return await pgPool.connect();
+  } catch (error) {
+    console.error('Error getting database client:', error);
+    throw error;
+  }
+}
+
+export { pgPool }; 

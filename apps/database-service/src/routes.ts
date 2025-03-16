@@ -313,17 +313,28 @@ router.post('/db', (req: Request, res: Response): void => {
 });
 
 /**
- * Centralized error handler for database operations
+ * Handle database errors and send appropriate response
  */
 function handleDatabaseError(error: any, res: Response, collection?: string): void {
-  console.error(`Database error:`, error);
+  console.error('Database error:', error);
   
-  // Check if table doesn't exist (PostgreSQL error code 42P01)
-  if (error.code === '42P01') {
-    res.status(404).json({
-      success: false,
-      error: collection ? `Collection not found: ${collection}` : 'Collection not found'
-    });
+  // Check if the error is about a relation not existing (table not found)
+  if (error.code === '42P01' && collection) {
+    // Try to create the table
+    createCollection(collection)
+      .then(() => {
+        res.status(404).json({
+          success: false,
+          error: `Collection "${collection}" not found but has been created. Please try again.`
+        });
+      })
+      .catch(createErr => {
+        console.error('Error creating collection:', createErr);
+        res.status(500).json({
+          success: false,
+          error: `Failed to create collection: ${createErr.message}`
+        });
+      });
     return;
   }
   
@@ -331,6 +342,26 @@ function handleDatabaseError(error: any, res: Response, collection?: string): vo
     success: false,
     error: error.message || 'Database operation failed'
   });
+}
+
+/**
+ * Create a new collection (table) if it doesn't exist
+ */
+async function createCollection(collection: string): Promise<void> {
+  const client = await pgPool.connect();
+  try {
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS ${collection} (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        data JSONB NOT NULL DEFAULT '{}'::jsonb,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+    console.log(`Created collection: ${collection}`);
+  } finally {
+    client.release();
+  }
 }
 
 export default router; 
