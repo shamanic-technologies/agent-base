@@ -75,6 +75,7 @@ app.get('/utilities', (req: Request, res: Response) => {
     'utility_get_current_datetime',
     'utility_github_create_codespace',
     'utility_github_destroy_codespace',
+    'utility_github_list_codespaces',
     'utility_github_get_code',
     'utility_github_list_directory',
     'utility_github_read_file',
@@ -82,7 +83,9 @@ app.get('/utilities', (req: Request, res: Response) => {
     'utility_github_update_file',
     'utility_github_lint_code',
     'utility_github_run_code',
-    'utility_github_deploy_code'
+    'utility_github_deploy_code',
+    'utility_firecrawl_extract_content',
+    'utility_google_search'
   ];
   
   res.status(200).json({ utilities });
@@ -129,6 +132,44 @@ app.get('/utility/:id', (req: Request, res: Response) => {
           }
         },
         required: ['codespaceId']
+      }
+    },
+    utility_firecrawl_extract_content: {
+      name: 'utility_firecrawl_extract_content',
+      description: 'Extract clean, formatted content from web pages using FireCrawl API',
+      schema: {
+        type: 'object',
+        properties: {
+          url: {
+            type: 'string',
+            description: 'The URL to fetch content from (must include http:// or https://)'
+          },
+          onlyMainContent: {
+            type: 'boolean',
+            description: 'Whether to extract only the main content without navigation, headers, footers, etc.',
+            default: true
+          }
+        },
+        required: ['url']
+      }
+    },
+    utility_google_search: {
+      name: 'utility_google_search',
+      description: 'Search the web using Google Search API',
+      schema: {
+        type: 'object',
+        properties: {
+          query: {
+            type: 'string',
+            description: 'The search query to send to Google Search'
+          },
+          limit: {
+            type: 'number',
+            description: 'Maximum number of results to return (default: 5, max: 10)',
+            default: 5
+          }
+        },
+        required: ['query']
       }
     }
   };

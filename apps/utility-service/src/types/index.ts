@@ -29,7 +29,9 @@ export type UtilityOperation =
   | 'utility_github_deploy_code'
   | 'utility_github_create_codespace'
   | 'utility_github_destroy_codespace'
-  | 'utility_github_list_codespaces';
+  | 'utility_github_list_codespaces'
+  | 'utility_firecrawl_extract_content'
+  | 'utility_google_search';
 
 // Required types for the utility_get_current_datetime function
 export type ThreadId = string;
@@ -46,6 +48,18 @@ export type ParentNodeType = NodeType | null;
 
 export interface DateTimeRequest {
   format?: string;
+}
+
+// FireCrawl utility types
+export interface FireCrawlExtractContentRequest {
+  url: string;
+  onlyMainContent?: boolean;
+}
+
+// Google Search utility types
+export interface GoogleSearchRequest {
+  query: string;
+  limit?: number;
 }
 
 // GitHub utility types

@@ -22,11 +22,29 @@ export class UtilityCallUtility extends Tool {
     - utility_id: The ID of the utility to call (e.g., "utility_get_current_datetime")
     - parameters: An object containing the parameters to pass to the utility (depends on the utility)
     
-    Example:
+    Example formats accepted:
+    
+    1. utility_get_current_datetime
     {
       "utility_id": "utility_get_current_datetime",
       "parameters": {
         "format": "iso"
+      }
+    }
+    
+    2. utility_google_search:
+    {
+      "utility_id": "utility_google_search",
+      "parameters": {
+        "query": "latest news"
+      }
+    }
+    
+    3. utility_firecrawl_extract_content:
+    {
+      "utility_id": "utility_firecrawl_extract_content",
+      "parameters": {
+        "url": "https://example.com"
       }
     }
     
@@ -43,7 +61,7 @@ export class UtilityCallUtility extends Tool {
   
   // Define the input schema for the utility
   // Expect a JSON string containing utility_id and parameters
-  utilitySchema = z.string().describe("JSON string containing utility_id and parameters");
+  utilitySchema = z.string().describe("JSON string with utility_id and parameters");
 
   // Tool configuration options for LangGraph
   configurable: { thread_id: string };
@@ -108,27 +126,50 @@ export class UtilityCallUtility extends Tool {
     let parameters: Record<string, any> = {};
     
     try {
-      // Parse the input JSON string to get utility_id and parameters
-      const parsedInput = JSON.parse(input);
+      // Parse the input JSON string 
+      let parsedInput: any;
+      
+      try {
+        parsedInput = JSON.parse(input);
+      } catch (parseError) {
+        console.error("Failed to parse input JSON:", parseError);
+        return `Error parsing input: Invalid JSON format. Expected format: {"utility_id": "utility_name", "parameters": {...}}`;
+      }
+      
+      // Handle case where LLM wraps everything in an "input" property
+      if (parsedInput.input && typeof parsedInput.input === 'string') {
+        try {
+          // Try to parse the nested input string
+          const nestedInput = JSON.parse(parsedInput.input);
+          
+          // If successful, use this as our input
+          parsedInput = nestedInput;
+          console.log("Successfully parsed nested input structure");
+        } catch (nestedParseError) {
+          console.log("Input has 'input' property but it's not valid JSON, using as is");
+        }
+      }
+      
+      // Extract utility_id and parameters
       utility_id = parsedInput.utility_id;
       parameters = parsedInput.parameters || {};
+      
+      // Check if we have valid data
+      if (!utility_id) {
+        return 'Error: utility_id is required. Expected format: {"utility_id": "utility_name", "parameters": {...}}';
+      }
     } catch (e) {
-      // If parsing fails, use the input as is (might be just the utility_id)
-      utility_id = input;
+      console.error("Error processing input:", e);
+      return `Error: Invalid input format. Expected JSON format: {"utility_id": "utility_name", "parameters": {...}}`;
     }
     
     console.log(`Calling utility-service API for utility: ${utility_id} with parameters:`, parameters);
     
     try {
-      // Validate input
-      if (!utility_id) {
-        return 'Error: utility_id is required';
-      }
-      
       // Call the utility service API
       const response = await axios.post(`${this.utilityServiceUrl}/utility`, {
         operation: utility_id,
-        data: parameters || {}
+        input: parameters || {}
       });
       
       if (response.data) {

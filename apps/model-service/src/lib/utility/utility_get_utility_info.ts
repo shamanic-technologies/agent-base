@@ -108,26 +108,8 @@ export class UtilityGetUtilityInfo extends Tool {
       const response = await axios.get(`${this.utilityServiceUrl}/utility/${utility_id}`);
       
       if (response.data) {
-        const info = response.data;
-        
-        // Format schema for display
-        let schemaText = '';
-        if (info.schema) {
-          schemaText = 'Input Parameters:\n';
-          for (const [key, value] of Object.entries(info.schema)) {
-            const param = value as any;
-            schemaText += `- ${key}${param.optional ? ' (optional)' : ''}: ${param.description || 'No description'}\n`;
-          }
-        }
-        
-        return `
-Utility: ${info.id}
-
-Description:
-${info.description?.trim() || 'No description available'}
-
-${schemaText}
-        `.trim();
+        // Return raw JSON data as a string
+        return JSON.stringify(response.data, null, 2);
       }
       
       throw new Error('Invalid response from utility service');

@@ -6,6 +6,14 @@ This service provides a simple API endpoint to access utility functions.
 
 This service now includes GitHub Codespace utilities for creating, managing and interacting with codespaces.
 
+## FireCrawl Web Content Utilities
+
+The service includes utilities for extracting clean, formatted content from web pages using the FireCrawl API.
+
+## Google Search Utilities
+
+The service provides utilities for performing web searches using Google Search API (via SerpAPI).
+
 ## API Endpoints
 
 The utility service provides the following endpoints:
@@ -39,7 +47,10 @@ List all available utilities.
     "utility_github_run_code",
     "utility_github_deploy_code",
     "utility_github_create_codespace",
-    "utility_github_destroy_codespace"
+    "utility_github_destroy_codespace",
+    "utility_github_list_codespaces",
+    "utility_firecrawl_extract_content",
+    "utility_google_search"
   ]
 }
 ```
@@ -497,6 +508,9 @@ The utility service requires the following environment variables:
   - codespaces (all)
 - `GITHUB_OWNER`: Default GitHub owner (username or organization)
 - `GITHUB_REPO`: Default GitHub repository name
+- `FIRECRAWL_API_KEY`: API key for FireCrawl web content extraction service
+- `SERPAPI_API_KEY`: API key for SerpAPI (Google Search)
+- `DATABASE_URL`: PostgreSQL connection string
 
 ## Notes on GitHub Codespaces Security
 
@@ -561,8 +575,93 @@ This service is configured for deployment on Railway. To deploy:
 
 | Variable | Description |
 |----------|-------------|
-| `PORT` | Port for the server (default: 3008) |
-| `NODE_ENV` | Environment (development/production) |
-| `GITHUB_TOKEN` | GitHub personal access token for GitHub utilities |
-| `GITHUB_OWNER` | Default GitHub repository owner (username or organization) |
-| `GITHUB_REPO` | Default GitHub repository name |
+| PORT | Port for the service to listen on |
+| ANTHROPIC_API_KEY | API key for Anthropic/Claude (for agents that use Claude) |
+| GITHUB_TOKEN | GitHub Personal Access Token with necessary scopes |
+| GITHUB_OWNER | GitHub organization or username |
+| GITHUB_REPO | GitHub repository name |
+| FIRECRAWL_API_KEY | API key for FireCrawl web content extraction service |
+| SERPAPI_API_KEY | API key for SerpAPI (Google Search) |
+| DATABASE_URL | PostgreSQL connection string |
+
+## FireCrawl Web Content Extraction Utility
+
+### utility_firecrawl_extract_content
+
+Extracts content from any web page and returns it in markdown format.
+
+**Request:**
+```json
+{
+  "operation": "utility_firecrawl_extract_content",
+  "input": {
+    "url": "https://example.com/page",
+    "onlyMainContent": true
+  }
+}
+```
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| url | string | Yes | The URL to extract content from. Must include http:// or https:// |
+| onlyMainContent | boolean | No | When true (default), extract only the main content without navigation, headers, footers, etc. |
+
+**Response:**
+```json
+{
+  "data": "# Extracted Content\n\nThis is the markdown content extracted from the web page.\n\n- Point 1\n- Point 2\n\n## Section\n\nMore content here...",
+  "timestamp": "2025-03-16T11:45:00.000Z"
+}
+```
+
+**Error Response:**
+```json
+{
+  "error": "Failed to extract web content",
+  "details": "Error message with details about what went wrong",
+  "timestamp": "2025-03-16T11:45:00.000Z"
+}
+```
+
+## Google Search Utility
+
+### utility_google_search
+
+Performs web searches using Google Search API (via SerpAPI) and returns formatted results.
+
+**Request:**
+```json
+{
+  "operation": "utility_google_search",
+  "input": {
+    "query": "mental health resources for teenagers",
+    "limit": 5
+  }
+}
+```
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| query | string | Yes | The search query to send to Google Search |
+| limit | number | No | Maximum number of results to return (default: 5, max: 10) |
+
+**Response:**
+```json
+{
+  "data": "Search results for \"mental health resources for teenagers\":\nResult 1:\nTitle: Mental Health Resources for Teens - Child Mind Institute\nLink: https://childmind.org/article/best-mental-health-resources-for-teens/\nSnippet: The Child Mind Institute offers resources, articles and guides for teenagers struggling with mental health issues, including anxiety, depression, and more.\n-------------------\nResult 2:\n...",
+  "timestamp": "2025-03-16T12:15:00.000Z"
+}
+```
+
+**Error Response:**
+```json
+{
+  "error": "Failed to perform Google Search",
+  "details": "Error message with details about what went wrong",
+  "timestamp": "2025-03-16T12:15:00.000Z"
+}
+```

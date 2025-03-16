@@ -3,7 +3,7 @@
  * 
  * Core functionality for the utility service
  */
-import { DateTimeRequest, UtilityOperation, UtilityResponse } from '../types/index.js';
+import { DateTimeRequest, FireCrawlExtractContentRequest, GoogleSearchRequest, UtilityOperation, UtilityResponse } from '../types/index.js';
 import { UtilityGetCurrentDateTime } from './utilities/utility_get_current_datetime.js';
 import { UtilityGitHubReadFile } from './utilities/utility_github_read_file.js';
 import { UtilityGitHubUpdateFile } from './utilities/utility_github_update_file.js';
@@ -16,6 +16,8 @@ import { UtilityGitHubRunCode } from './utilities/utility_github_run_code.js';
 import { UtilityGitHubListCodespaces } from './utilities/utility_github_list_codespaces.js';
 import { UtilityGitHubCreateCodespace } from './utilities/utility_github_create_codespace.js';
 import { UtilityGitHubDestroyCodespace } from './utilities/utility_github_destroy_codespace.js';
+import { UtilityFireCrawlExtractContent } from './utilities/utility_firecrawl_extract_content.js';
+import { UtilityGoogleSearch } from './utilities/utility_google_search.js';
 
 /**
  * Get current date and time in different formats
@@ -347,42 +349,175 @@ export async function listGitHubCodespaces(): Promise<UtilityResponse> {
 }
 
 /**
- * Process utility operation
- * @param operation Operation to perform
- * @param data Optional data for the operation
- * @returns Promise with the response from the operation
+ * Extract content from a web page using FireCrawl
+ * @param data Request with URL and options
+ * @returns Promise with the extracted markdown content
+ */
+export async function extractFireCrawlContent(data: FireCrawlExtractContentRequest): Promise<UtilityResponse> {
+  try {
+    // Create a utility instance with placeholder values since we're using it directly
+    const fireCrawlUtility = new UtilityFireCrawlExtractContent({
+      conversationId: 'direct-api-call',
+      parentNodeId: null,
+      parentNodeType: null
+    });
+    
+    // Call the utility function with the provided URL
+    const result = await fireCrawlUtility._call(data);
+    
+    return {
+      data: result
+    };
+  } catch (error) {
+    console.error("FireCrawl extraction error:", error);
+    return {
+      error: "Failed to extract web content",
+      details: error instanceof Error ? error.message : String(error)
+    };
+  }
+}
+
+/**
+ * Perform a Google Search
+ * @param data Request with search query and options
+ * @returns Promise with the search results
+ */
+export async function performGoogleSearch(data: GoogleSearchRequest): Promise<UtilityResponse> {
+  try {
+    // Create a utility instance with placeholder values since we're using it directly
+    const googleSearchUtility = new UtilityGoogleSearch({
+      conversationId: 'direct-api-call',
+      parentNodeId: null,
+      parentNodeType: null
+    });
+    
+    // Call the utility function with the provided search query
+    const result = await googleSearchUtility._call(data);
+    
+    return {
+      data: result
+    };
+  } catch (error) {
+    console.error("Google Search error:", error);
+    return {
+      error: "Failed to perform Google Search",
+      details: error instanceof Error ? error.message : String(error)
+    };
+  }
+}
+
+/**
+ * Process a utility operation based on the operation type
+ * @param operation The utility operation to process
+ * @param data The data for the operation
+ * @returns Promise with the operation result
  */
 export async function processUtilityOperation(
   operation: UtilityOperation, 
   data?: any
 ): Promise<UtilityResponse> {
-  switch (operation) {
-    case 'utility_get_current_datetime':
-      return getCurrentDateTime(data);
-    case 'utility_github_create_codespace':
-      // Ignore any input data for security reasons
-      return createGitHubCodespace();
-    case 'utility_github_destroy_codespace':
-      return destroyGitHubCodespace(data);
-    case 'utility_github_list_codespaces':
-      return listGitHubCodespaces();
-    case 'utility_github_read_file':
-      return readGitHubFile(data);
-    case 'utility_github_update_file':
-      return updateGitHubFile(data);
-    case 'utility_github_list_directory':
-      return listGitHubDirectory(data);
-    case 'utility_github_lint_code':
-      return lintGitHubCode(data);
-    case 'utility_github_create_file':
-      return createGitHubFile(data);
-    case 'utility_github_get_code':
-      return getGitHubCode(data);
-    case 'utility_github_deploy_code':
-      return deployGitHubCode(data);
-    case 'utility_github_run_code':
-      return runGitHubCode(data);
-    default:
-      throw new Error(`Unknown operation: ${operation}`);
+  console.log(`Processing utility operation: ${operation}`, data ? `with data: ${JSON.stringify(data).substring(0, 200)}` : "");
+  
+  const timestamp = new Date().toISOString();
+  
+  try {
+    switch (operation) {
+      case 'utility_get_current_datetime':
+        return {
+          ...await getCurrentDateTime(data),
+          timestamp
+        };
+        
+      case 'utility_github_get_code':
+        return {
+          ...await getGitHubCode(data),
+          timestamp
+        };
+        
+      case 'utility_github_list_directory':
+        return {
+          ...await listGitHubDirectory(data),
+          timestamp
+        };
+        
+      case 'utility_github_read_file':
+        return {
+          ...await readGitHubFile(data),
+          timestamp
+        };
+        
+      case 'utility_github_create_file':
+        return {
+          ...await createGitHubFile(data),
+          timestamp
+        };
+        
+      case 'utility_github_update_file':
+        return {
+          ...await updateGitHubFile(data),
+          timestamp
+        };
+        
+      case 'utility_github_lint_code':
+        return {
+          ...await lintGitHubCode(data),
+          timestamp
+        };
+        
+      case 'utility_github_run_code':
+        return {
+          ...await runGitHubCode(data),
+          timestamp
+        };
+        
+      case 'utility_github_deploy_code':
+        return {
+          ...await deployGitHubCode(data),
+          timestamp
+        };
+        
+      case 'utility_github_create_codespace':
+        return {
+          ...await createGitHubCodespace(),
+          timestamp
+        };
+        
+      case 'utility_github_destroy_codespace':
+        return {
+          ...await destroyGitHubCodespace(data),
+          timestamp
+        };
+        
+      case 'utility_github_list_codespaces':
+        return {
+          ...await listGitHubCodespaces(),
+          timestamp
+        };
+
+      case 'utility_firecrawl_extract_content':
+        return {
+          ...await extractFireCrawlContent(data),
+          timestamp
+        };
+        
+      case 'utility_google_search':
+        return {
+          ...await performGoogleSearch(data),
+          timestamp
+        };
+        
+      default:
+        return {
+          error: `Unsupported utility operation: ${operation}`,
+          timestamp
+        };
+    }
+  } catch (error) {
+    console.error(`Error processing utility operation ${operation}:`, error);
+    return {
+      error: `Failed to process utility operation: ${operation}`,
+      details: error instanceof Error ? error.message : String(error),
+      timestamp
+    };
   }
 } 
