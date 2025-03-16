@@ -1,46 +1,91 @@
 # Database Service
 
-A Supabase-based database service for storing and retrieving data. Acts as a data persistence layer for the other services.
+A simple persistence service providing a RESTful API for storing and retrieving data from a PostgreSQL database (using Railway).
 
 ## Features
 
-- RESTful API for database operations
-- Seamless integration with Supabase storage
-- JSON query support
-- Pagination
+- RESTful API for CRUD operations on any collection
+- Seamless integration with Railway PostgreSQL
+- Simple, flexible data model
+- JSON-based querying
+- Pagination support
 
-## Setup
+## Usage
 
-1. Copy `.env.example` to `.env` and fill in your Supabase credentials
-2. Install dependencies:
-   ```bash
-   pnpm install
-   ```
-3. Start the service:
-   ```bash
-   pnpm dev
-   ```
+### Environment Setup
+
+Before running the service, set up the required environment variables in a `.env.local` file:
+
+```
+# Railway PostgreSQL Configuration
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres
+PGDATABASE=postgres
+PGHOST=localhost
+PGUSER=postgres
+PGPASSWORD=postgres
+PGPORT=5432
+
+# Server Configuration
+PORT=3006
+```
+
+### Running Locally
+
+```bash
+# Install dependencies
+npm install
+
+# Start the service
+npm run dev
+```
+
+The service will be available at http://localhost:3006.
 
 ## API Endpoints
 
-- `GET /health` - Health check
-- `GET /db` - List all tables
-- `GET /db/:collection` - List items in a collection (with optional filtering and pagination)
-- `GET /db/:collection/:id` - Get a single item
-- `POST /db/:collection` - Create a new item
-- `PUT /db/:collection/:id` - Update an item
-- `DELETE /db/:collection/:id` - Delete an item
+### Health Check
+```
+GET /health
+```
 
-## Migration Notes
+### List Collections
+```
+GET /db
+```
 
-This service has been migrated from an in-memory database to Supabase storage. The API interface remains mostly compatible with the previous version, with the following changes:
+### Create Item
+```
+POST /db/:collection
+```
 
-- Table creation through the API is no longer supported (use Supabase migrations instead)
-- Timestamps now use `created_at` and `updated_at` (snake_case) instead of camelCase
-- The response structure and error codes are preserved for compatibility
+### Query Items
+```
+GET /db/:collection?query={"key":"value"}&limit=10&offset=0
+```
 
-## Security Considerations
+### Get Item
+```
+GET /db/:collection/:id
+```
 
-- This service uses a Supabase service role key for database access
-- Ensure proper environment variable management for production deployments
-- Consider implementing authentication middleware for sensitive operations 
+### Update Item
+```
+PUT /db/:collection/:id
+```
+
+### Delete Item
+```
+DELETE /db/:collection/:id
+```
+
+## Railway Integration
+
+This service is designed to work seamlessly with Railway PostgreSQL. When deploying to Railway:
+
+1. Create a new service for database-service
+2. Add a PostgreSQL plugin to your project
+3. Railway will automatically inject the required environment variables
+
+## Testing
+
+Use Postman or another API client to manually test the functionality of the database service. Example requests are provided in the API Endpoints section above. 
