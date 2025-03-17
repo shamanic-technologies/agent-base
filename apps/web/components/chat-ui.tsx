@@ -19,6 +19,7 @@
 
 import { ChatContainer } from './chat';
 
+// Simple wrapper component around ChatContainer
 export function ChatUI() {
   return <ChatContainer />;
 } 

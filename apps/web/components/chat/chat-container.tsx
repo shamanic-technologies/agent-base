@@ -25,8 +25,10 @@ export function ChatContainer() {
       createdAt: new Date()
     }
   ]);
-  // Thread ID to maintain conversation context
-  const [threadId, setThreadId] = useState<string>(`thread-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`);
+  // Thread ID to maintain conversation context - generate a unique ID
+  const [threadId, setThreadId] = useState<string>(
+    `thread-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+  );
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [useStreaming, setUseStreaming] = useState<boolean>(false);
   const [showDebugPanel, setShowDebugPanel] = useState<boolean>(false);

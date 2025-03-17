@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "pnpm run build",
   "outputDirectory": "dist",
   "framework": "vite",
   "rewrites": [
@@ -21,5 +21,6 @@
   ],
   "github": {
     "silent": true
-  }
+  },
+  "installCommand": "pnpm install"
 } 

@@ -1,7 +1,7 @@
 'use client';
 
 import { ChatUI } from '../../components/chat-ui';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 /**
@@ -11,15 +11,9 @@ import { useEffect, useState } from 'react';
  */
 export default function ChatPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState(null);
-
-  // Get test parameters from URL
-  const testMessage = searchParams.get('test');
-  const testUtility = searchParams.get('utility');
-  const conversationId = searchParams.get('conversation');
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -67,5 +61,5 @@ export default function ChatPage() {
     return null; // Will redirect in the useEffect
   }
 
-  return <ChatUI testMessage={testMessage} testUtility={testUtility} initialConversationId={conversationId} />;
+  return <ChatUI />;
 } 
