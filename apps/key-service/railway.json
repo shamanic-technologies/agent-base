@@ -9,7 +9,7 @@
       "turbo.json"
     ],
     "nixpacks": {
-      "buildCmd": "cd ../../ && npm i -g pnpm@8.15.8 && pnpm install && pnpm run build"
+      "buildCmd": "npm install -g corepack && corepack enable && corepack prepare pnpm@10.6.2 --activate && pnpm install --no-frozen-lockfile && pnpm build"
     }
   },
   "deploy": {
