@@ -8,7 +8,15 @@ import { Input } from '../../components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
 import { Badge } from '../../components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../components/ui/tooltip';
-import { Copy, Check, FileText, Clock, AlertCircle, Code, ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from '../../components/ui/dropdown-menu';
+import { Copy, Check, FileText, Clock, AlertCircle, Code, ChevronDown, ChevronRight, Loader2, CreditCard, LogOut } from 'lucide-react';
 
 /**
  * Professional Dashboard Page
@@ -56,6 +64,13 @@ export default function Dashboard() {
     if (nameParts.length === 1) return nameParts[0].substring(0, 1).toUpperCase();
     
     return (nameParts[0].substring(0, 1) + nameParts[nameParts.length - 1].substring(0, 1)).toUpperCase();
+  };
+
+  // Handle logout
+  const handleLogout = () => {
+    // In a real app, clear auth tokens, cookies, etc.
+    console.log('Logging out...');
+    router.push('/');
   };
   
   // Fake API key
@@ -188,31 +203,47 @@ export default function Dashboard() {
               Chat
             </Button>
             
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center gap-2 cursor-pointer" onClick={() => router.push('/profile')}>
-                    {isLoading ? (
-                      <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
-                          <Loader2 className="h-4 w-4 text-gray-400 animate-spin" />
-                        </div>
-                        <span className="font-medium text-sm text-gray-400">Loading...</span>
-                      </div>
-                    ) : (
-                      <>
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={user?.picture || ''} alt={user?.name || 'User'} />
-                          <AvatarFallback>{getUserInitials()}</AvatarFallback>
-                        </Avatar>
-                        <span className="font-medium text-sm">{user?.name || 'Guest'}</span>
-                      </>
-                    )}
+            {isLoading ? (
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
+                  <Loader2 className="h-4 w-4 text-gray-400 animate-spin" />
+                </div>
+                <span className="font-medium text-sm text-gray-400">Loading...</span>
+              </div>
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <div className="flex items-center gap-2 cursor-pointer">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user?.picture || ''} alt={user?.name || 'User'} />
+                      <AvatarFallback>{getUserInitials()}</AvatarFallback>
+                    </Avatar>
+                    <span className="font-medium text-sm">{user?.name || 'Guest'}</span>
+                    <ChevronDown className="h-4 w-4 text-gray-500" />
                   </div>
-                </TooltipTrigger>
-                <TooltipContent>View Profile</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => router.push('/profile')}>
+                    <Avatar className="h-4 w-4 mr-2">
+                      <AvatarImage src={user?.picture || ''} alt={user?.name || 'User'} />
+                      <AvatarFallback>{getUserInitials()}</AvatarFallback>
+                    </Avatar>
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push('/billing')}>
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Billing
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
       </header>
