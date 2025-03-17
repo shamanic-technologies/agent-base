@@ -665,3 +665,23 @@ Performs web searches using Google Search API (via SerpAPI) and returns formatte
   "timestamp": "2025-03-16T12:15:00.000Z"
 }
 ```
+
+## Xata Integration Test
+
+This project includes a simple test to demonstrate integration with Xata, a serverless database platform. The test:
+
+1. Creates a "helloworld" database in Xata
+2. Creates a "posts" table with "title" and "content" columns
+3. Inserts a "Hello World" record into the table
+
+To run the Xata test:
+
+```bash
+pnpm test:xata
+```
+
+Prerequisites:
+- A valid Xata API key (set in .env.local as XATA_API_KEY)
+- A Xata workspace (set in .env.local as XATA_WORKSPACE_SLUG)
+
+The test demonstrates using the Xata REST API directly, rather than the Xata SDK, to perform database operations.

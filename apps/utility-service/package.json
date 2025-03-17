@@ -13,6 +13,7 @@
     "test": "node ./tests/run-all.js",
     "test:integration": "tsx tests/index.ts",
     "test:simple": "node tests/integration/utility-service.test.js",
+    "test:xata": "node tests/integration/xata-helloworld.js",
     "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist",
     "railway:build": "curl -fsSL https://get.pnpm.io/install.sh | sh - && pnpm install --no-frozen-lockfile && pnpm build"
   },
