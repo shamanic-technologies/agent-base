@@ -24,8 +24,6 @@
   },
   "installCommand": "pnpm install",
   "env": {
-    "ENABLE_EXPERIMENTAL_COREPACK": "1",
-    "COREPACK_ENABLE_STRICT": "0",
-    "NODE_OPTIONS": "--max-old-space-size=4096"
+    "ENABLE_EXPERIMENTAL_COREPACK": "1"
   }
 } 
