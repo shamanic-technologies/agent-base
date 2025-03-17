@@ -7,20 +7,21 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * HelloWorld Key Service
  *
  * A simple service for managing API keys.
- * Uses in-memory storage for demonstration purposes.
+ * Uses database-service for persistent storage.
  */
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const crypto_1 = require("crypto");
 const uuid_1 = require("uuid");
+const axios_1 = __importDefault(require("axios"));
 // Load environment variables
 dotenv_1.default.config();
 // Initialize Express app
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3002;
-// In-memory database
-const apiKeys = [];
+// Database service URL
+const DB_SERVICE_URL = process.env.DB_SERVICE_URL || 'http://localhost:3006';
 // Middleware
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
@@ -63,18 +64,22 @@ app.post('/keys', async (req, res) => {
         const keyHash = hashApiKey(apiKey);
         const keyPrefix = apiKey.substring(0, 16);
         const id = (0, uuid_1.v4)();
-        // Store in in-memory database
+        // Store in database
         const keyData = {
-            id,
             userId,
             name,
             keyPrefix,
             keyHash,
+            id,
             createdAt: new Date().toISOString(),
             lastUsed: null,
             active: true
         };
-        apiKeys.push(keyData);
+        // Save to database service
+        const response = await axios_1.default.post(`${DB_SERVICE_URL}/api-keys`, keyData);
+        if (!response.data.success) {
+            throw new Error('Failed to store API key in database');
+        }
         return res.status(201).json({
             success: true,
             apiKey, // Full API key - only shown once
@@ -97,100 +102,180 @@ app.post('/keys', async (req, res) => {
 /**
  * Get API key information (without exposing the actual key)
  */
-app.get('/keys/:id', (req, res) => {
-    const { id } = req.params;
-    const apiKey = apiKeys.find(key => key.id === id);
-    if (!apiKey) {
-        return res.status(404).json({
-            success: false,
-            error: 'API key not found'
+app.get('/keys/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        // Query database for key by ID
+        const response = await axios_1.default.get(`${DB_SERVICE_URL}/db/api_keys`, {
+            params: {
+                query: JSON.stringify({ 'data.id': id })
+            }
+        });
+        if (!response.data.success || response.data.data.items.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'API key not found'
+            });
+        }
+        const apiKey = response.data.data.items[0].data;
+        return res.status(200).json({
+            success: true,
+            data: {
+                id: apiKey.id,
+                name: apiKey.name,
+                keyPrefix: apiKey.keyPrefix,
+                createdAt: apiKey.createdAt,
+                lastUsed: apiKey.lastUsed,
+                active: apiKey.active
+            }
         });
     }
-    return res.status(200).json({
-        success: true,
-        data: {
-            id: apiKey.id,
-            name: apiKey.name,
-            keyPrefix: apiKey.keyPrefix,
-            createdAt: apiKey.createdAt,
-            lastUsed: apiKey.lastUsed,
-            active: apiKey.active
-        }
-    });
+    catch (error) {
+        console.error('Error fetching API key:', error);
+        return res.status(500).json({
+            success: false,
+            error: 'Failed to retrieve API key'
+        });
+    }
 });
 /**
  * List all API keys for a user
  */
-app.get('/keys', (req, res) => {
-    const { userId } = req.query;
-    if (!userId) {
-        return res.status(400).json({
-            success: false,
-            error: 'User ID is required'
+app.get('/keys', async (req, res) => {
+    try {
+        const { userId } = req.query;
+        if (!userId) {
+            return res.status(400).json({
+                success: false,
+                error: 'User ID is required'
+            });
+        }
+        // Fetch keys from database service
+        const response = await axios_1.default.get(`${DB_SERVICE_URL}/api-keys`, {
+            params: { userId }
+        });
+        if (!response.data.success) {
+            throw new Error('Failed to fetch API keys from database');
+        }
+        const userKeys = response.data.data.items.map((item) => {
+            const keyData = item.data;
+            return {
+                id: keyData.id,
+                name: keyData.name,
+                keyPrefix: keyData.keyPrefix,
+                createdAt: keyData.createdAt,
+                lastUsed: keyData.lastUsed,
+                active: keyData.active
+            };
+        });
+        return res.status(200).json({
+            success: true,
+            data: userKeys
         });
     }
-    const userKeys = apiKeys
-        .filter(key => key.userId === userId)
-        .map(key => ({
-        id: key.id,
-        name: key.name,
-        keyPrefix: key.keyPrefix,
-        createdAt: key.createdAt,
-        lastUsed: key.lastUsed,
-        active: key.active
-    }));
-    return res.status(200).json({
-        success: true,
-        data: userKeys
-    });
+    catch (error) {
+        console.error('Error listing API keys:', error);
+        return res.status(500).json({
+            success: false,
+            error: 'Failed to list API keys'
+        });
+    }
 });
 /**
  * Revoke (deactivate) an API key
  */
-app.delete('/keys/:id', (req, res) => {
-    const { id } = req.params;
-    const keyIndex = apiKeys.findIndex(key => key.id === id);
-    if (keyIndex === -1) {
-        return res.status(404).json({
-            success: false,
-            error: 'API key not found'
+app.delete('/keys/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        // Find the key
+        const response = await axios_1.default.get(`${DB_SERVICE_URL}/db/api_keys`, {
+            params: {
+                query: JSON.stringify({ 'data.id': id })
+            }
+        });
+        if (!response.data.success || response.data.data.items.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'API key not found'
+            });
+        }
+        const keyRecord = response.data.data.items[0];
+        const keyData = keyRecord.data;
+        // Update the key to be inactive
+        keyData.active = false;
+        keyData.updated_at = new Date().toISOString();
+        // Update in database
+        await axios_1.default.put(`${DB_SERVICE_URL}/db/api_keys/${keyRecord.id}`, {
+            data: keyData
+        });
+        return res.status(200).json({
+            success: true,
+            message: 'API key revoked successfully'
         });
     }
-    // Deactivate the key
-    apiKeys[keyIndex].active = false;
-    return res.status(200).json({
-        success: true,
-        message: 'API key revoked successfully'
-    });
+    catch (error) {
+        console.error('Error revoking API key:', error);
+        return res.status(500).json({
+            success: false,
+            error: 'Failed to revoke API key'
+        });
+    }
 });
 /**
  * Validate an API key
  */
-app.post('/keys/validate', (req, res) => {
-    const { apiKey } = req.body;
-    if (!apiKey) {
-        return res.status(400).json({
-            success: false,
-            error: 'API key is required'
-        });
-    }
-    const keyHash = hashApiKey(apiKey);
-    const matchingKey = apiKeys.find(key => key.keyHash === keyHash && key.active);
-    if (!matchingKey) {
-        return res.status(401).json({
-            success: false,
-            error: 'Invalid or revoked API key'
-        });
-    }
-    // Update last used timestamp
-    matchingKey.lastUsed = new Date().toISOString();
-    return res.status(200).json({
-        success: true,
-        data: {
-            userId: matchingKey.userId,
-            keyId: matchingKey.id
+app.post('/keys/validate', async (req, res) => {
+    try {
+        const { apiKey } = req.body;
+        if (!apiKey) {
+            return res.status(400).json({
+                success: false,
+                error: 'API key is required'
+            });
         }
-    });
+        const keyHash = hashApiKey(apiKey);
+        // Query database for key by hash
+        const response = await axios_1.default.get(`${DB_SERVICE_URL}/db/api_keys`, {
+            params: {
+                query: JSON.stringify({ 'data.keyHash': keyHash })
+            }
+        });
+        if (!response.data.success || response.data.data.items.length === 0) {
+            return res.status(401).json({
+                success: false,
+                error: 'Invalid or revoked API key'
+            });
+        }
+        const keyRecord = response.data.data.items[0];
+        const keyData = keyRecord.data;
+        // Check if key is active
+        if (!keyData.active) {
+            return res.status(401).json({
+                success: false,
+                error: 'API key has been revoked'
+            });
+        }
+        // Update last used timestamp
+        keyData.lastUsed = new Date().toISOString();
+        // Update in database
+        await axios_1.default.put(`${DB_SERVICE_URL}/db/api_keys/${keyRecord.id}`, {
+            data: keyData
+        });
+        return res.status(200).json({
+            success: true,
+            data: {
+                userId: keyData.userId,
+                keyId: keyData.id
+            }
+        });
+    }
+    catch (error) {
+        console.error('Error validating API key:', error);
+        return res.status(500).json({
+            success: false,
+            error: 'Failed to validate API key'
+        });
+    }
 });
 // Start the server
 app.listen(PORT, () => {

@@ -41,6 +41,109 @@ router.get('/db', async (req: Request, res: Response): Promise<void> => {
 });
 
 /**
+ * Get API keys for a specific user
+ * Specialized endpoint for API keys with user filtering
+ */
+router.get('/api-keys', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { userId } = req.query;
+    
+    if (!userId) {
+      res.status(400).json({
+        success: false,
+        error: 'userId query parameter is required'
+      });
+      return;
+    }
+    
+    // Ensure api_keys collection exists
+    await createCollection('api_keys');
+    
+    // Query keys by userId
+    const query = `
+      SELECT * FROM "api_keys"
+      WHERE data->>'userId' = $1
+      ORDER BY data->>'createdAt' DESC
+    `;
+    
+    const result = await pgPool.query(query, [userId]);
+    
+    res.status(200).json({
+      success: true,
+      data: {
+        items: result.rows,
+        total: result.rowCount,
+        limit: 100,
+        offset: 0
+      }
+    });
+  } catch (error: any) {
+    handleDatabaseError(error, res, 'api_keys');
+  }
+});
+
+/**
+ * Create a new API key
+ * Specialized endpoint for storing API keys
+ */
+router.post('/api-keys', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { userId, name, keyPrefix, keyHash, id, createdAt, active } = req.body;
+    
+    if (!userId || !name || !keyPrefix || !keyHash) {
+      res.status(400).json({
+        success: false,
+        error: 'userId, name, keyPrefix, and keyHash are required'
+      });
+      return;
+    }
+    
+    // Ensure api_keys collection exists
+    await createCollection('api_keys');
+    
+    // Prepare key data
+    const keyData = {
+      userId,
+      name,
+      keyPrefix,
+      keyHash,
+      id: id || uuidv4(),
+      createdAt: createdAt || new Date().toISOString(),
+      lastUsed: null,
+      active: active !== undefined ? active : true
+    };
+    
+    // Insert the new key
+    const item = {
+      id: uuidv4(),
+      data: keyData,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    
+    // Build query with dynamic column names
+    const columns = Object.keys(item);
+    const values = Object.values(item);
+    const placeholders = columns.map((_, idx) => `$${idx + 1}`).join(', ');
+    
+    const query = `
+      INSERT INTO "api_keys" (${columns.map(c => `"${c}"`).join(', ')})
+      VALUES (${placeholders})
+      RETURNING *
+    `;
+    
+    const result = await pgPool.query(query, values);
+    
+    res.status(201).json({
+      success: true,
+      data: result.rows[0]
+    });
+  } catch (error: any) {
+    handleDatabaseError(error, res, 'api_keys');
+  }
+});
+
+/**
  * Create a new item in a collection
  */
 router.post('/db/:collection', async (req: Request, res: Response): Promise<void> => {
@@ -361,7 +464,7 @@ async function createCollection(collection: string): Promise<void> {
   const client = await pgPool.connect();
   try {
     await client.query(`
-      CREATE TABLE IF NOT EXISTS ${collection} (
+      CREATE TABLE IF NOT EXISTS "${collection}" (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         data JSONB NOT NULL DEFAULT '{}'::jsonb,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
