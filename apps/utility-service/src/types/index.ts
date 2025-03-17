@@ -31,7 +31,13 @@ export type UtilityOperation =
   | 'utility_github_destroy_codespace'
   | 'utility_github_list_codespaces'
   | 'utility_firecrawl_extract_content'
-  | 'utility_google_search';
+  | 'utility_google_search'
+  | 'utility_get_database'
+  | 'utility_create_table'
+  | 'utility_alter_table'
+  | 'utility_delete_table'
+  | 'utility_get_table'
+  | 'utility_query_table';
 
 // Required types for the utility_get_current_datetime function
 export type ThreadId = string;
@@ -123,6 +129,37 @@ export interface GitHubListCodespacesRequest {
   // List codespaces typically doesn't require parameters
   // but could include filters in the future
   repositoryId?: number;
+}
+
+// Database utility types
+export interface DatabaseTableSchema {
+  [field: string]: string;
+}
+
+export interface CreateTableRequest {
+  name: string;
+  description: string;
+  schema: DatabaseTableSchema;
+}
+
+export interface AlterTableRequest {
+  table_id: string;
+  new_name?: string;
+  new_description?: string;
+  new_schema?: DatabaseTableSchema;
+}
+
+export interface DeleteTableRequest {
+  table_id: string;
+}
+
+export interface GetTableRequest {
+  table_id: string;
+}
+
+export interface QueryTableRequest {
+  table_id: string;
+  query: string | Record<string, any>;
 }
 
 // Utility info types

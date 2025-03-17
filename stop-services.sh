@@ -10,10 +10,13 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-echo -e "${BLUE}Stopping HelloWorld Microservices...${NC}"
+# Get the directory where the script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+echo -e "${BLUE}Stopping Microservices...${NC}"
 
 # Check if pids directory exists
-if [ ! -d "pids" ]; then
+if [ ! -d "$SCRIPT_DIR/pids" ]; then
   echo -e "${RED}PID directory not found. No services are running or they were started manually.${NC}"
   exit 1
 fi
@@ -21,7 +24,7 @@ fi
 # Function to stop a service
 stop_service() {
   local service_name=$1
-  local pid_file="pids/$service_name.pid"
+  local pid_file="$SCRIPT_DIR/pids/$service_name.pid"
   
   if [ -f "$pid_file" ]; then
     local pid=$(cat "$pid_file")
@@ -38,7 +41,7 @@ stop_service() {
     # Remove PID file
     rm "$pid_file"
   else
-    echo -e "${RED}No PID file found for $service_name${NC}"
+    echo -e "${YELLOW}No PID file found for $service_name${NC}"
   fi
 }
 
@@ -49,5 +52,10 @@ stop_service "proxy-service"
 stop_service "auth-service"
 stop_service "database-service"
 stop_service "payment-service"
+stop_service "utility-service"
+stop_service "web"
+stop_service "client"
+stop_service "dev-tool"
 
-echo -e "${BLUE}All services stopped!${NC}" 
+echo -e "${BLUE}All services stopped!${NC}"
+echo -e "${YELLOW}Logs are still available in $SCRIPT_DIR/logs/ directory${NC}" 

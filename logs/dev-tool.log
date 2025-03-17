@@ -1,0 +1,12 @@
+
+> dev-tool@0.1.0 dev
+> next dev --turbo --port=3010 | pino-pretty -c
+
+   ▲ Next.js 15.2.2 (Turbopack)
+   - Local:        http://localhost:3010
+   - Network:      http://192.168.1.191:3010
+   - Experiments (use with caution):
+     ✓ reactCompiler
+
+ ✓ Starting...
+ ✓ Ready in 955ms

@@ -24,7 +24,7 @@ export const authSuccessHandler: AsyncRequestHandler = async (req, res) => {
     // Save user to database
     try {
       const dbResponse = await saveUserToDatabase(user);
-      console.log('User saved to database:', dbResponse?.data);
+      console.log('User saved to database:', dbResponse);
     } catch (dbError) {
       console.error('Failed to save user to database, continuing anyway:', dbError);
       // Continue anyway - don't fail the authentication due to database issues

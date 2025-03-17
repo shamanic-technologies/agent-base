@@ -83,6 +83,14 @@ app.get('/health', (req, res) => {
         }
     });
 });
+// Proxy mode endpoint - returns HelloWorld message
+app.get('/api/proxy-mode', requireApiKey, (req, res) => {
+    res.status(200).json({
+        success: true,
+        message: "HelloWorld",
+        user_id: res.locals.userId
+    });
+});
 // Get test API key endpoint (for testing only)
 app.get('/get-test-key', (req, res) => {
     const testKey = TEST_API_KEYS[0];
@@ -127,6 +135,65 @@ app.post('/api/generate', requireApiKey, async (req, res) => {
                 ? error.response?.data || error.message
                 : error instanceof Error ? error.message : 'Unknown error'
         });
+    }
+});
+// Proxy streaming requests to the model service
+app.post('/api/generate/stream', requireApiKey, async (req, res) => {
+    try {
+        // Set headers for SSE
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        // Add user ID to request body for tracking
+        const requestBody = {
+            ...req.body,
+            user_id: res.locals.userId
+        };
+        // Forward the request to the model service using axios with response type 'stream'
+        const response = await axios_1.default.post(`${MODEL_SERVICE_URL}/generate/stream`, requestBody, {
+            responseType: 'stream'
+        });
+        // Forward each chunk from the model service to the client
+        response.data.on('data', (chunk) => {
+            // Forward chunk to client
+            res.write(chunk);
+        });
+        response.data.on('end', () => {
+            // End the response when the model service stream ends
+            res.end();
+        });
+        // Handle client disconnect
+        req.on('close', () => {
+            // Close the axios stream if client disconnects
+            response.data.destroy();
+        });
+    }
+    catch (error) {
+        console.error('Error forwarding streaming request to model service:', error);
+        // Handle streaming errors by sending SSE-formatted error messages
+        if (axios_1.default.isAxiosError(error) && !error.response) {
+            // Connection error
+            res.write(`data: ${JSON.stringify({
+                success: false,
+                error: 'Could not connect to Model Service',
+                user_id: res.locals.userId
+            })}\n\n`);
+        }
+        else {
+            // Other error
+            const errorDetails = axios_1.default.isAxiosError(error)
+                ? error.response?.data || error.message
+                : error instanceof Error ? error.message : 'Unknown error';
+            res.write(`data: ${JSON.stringify({
+                success: false,
+                error: 'Error communicating with model service',
+                details: errorDetails,
+                user_id: res.locals.userId
+            })}\n\n`);
+        }
+        // End the stream with DONE marker
+        res.write(`data: [DONE]\n\n`);
+        res.end();
     }
 });
 // Start server

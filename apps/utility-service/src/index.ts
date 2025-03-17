@@ -85,7 +85,13 @@ app.get('/utilities', (req: Request, res: Response) => {
     'utility_github_run_code',
     'utility_github_deploy_code',
     'utility_firecrawl_extract_content',
-    'utility_google_search'
+    'utility_google_search',
+    'utility_get_database',
+    'utility_create_table',
+    'utility_alter_table',
+    'utility_delete_table',
+    'utility_get_table',
+    'utility_query_table'
   ];
   
   res.status(200).json({ utilities });
@@ -170,6 +176,109 @@ app.get('/utility/:id', (req: Request, res: Response) => {
           }
         },
         required: ['query']
+      }
+    },
+    utility_get_database: {
+      name: 'utility_get_database',
+      description: 'Get information about the database, including tables and schemas',
+      schema: {
+        type: 'object',
+        properties: {},
+        note: 'No input required. Returns database information with tables.'
+      }
+    },
+    utility_create_table: {
+      name: 'utility_create_table',
+      description: 'Create a new table in the database',
+      schema: {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+            description: 'The name of the table to create'
+          },
+          description: {
+            type: 'string',
+            description: 'A description of the table\'s purpose'
+          },
+          schema: {
+            type: 'object',
+            description: 'The schema definition for the table as a key-value object of field names and types'
+          }
+        },
+        required: ['name', 'description', 'schema']
+      }
+    },
+    utility_alter_table: {
+      name: 'utility_alter_table',
+      description: 'Alter an existing table in the database',
+      schema: {
+        type: 'object',
+        properties: {
+          table_id: {
+            type: 'string',
+            description: 'The ID of the table to alter'
+          },
+          new_name: {
+            type: 'string',
+            description: 'The new name for the table (optional)'
+          },
+          new_description: {
+            type: 'string',
+            description: 'The new description for the table (optional)'
+          },
+          new_schema: {
+            type: 'object',
+            description: 'The new schema definition for the table (optional)'
+          }
+        },
+        required: ['table_id']
+      }
+    },
+    utility_delete_table: {
+      name: 'utility_delete_table',
+      description: 'Delete an existing table from the database',
+      schema: {
+        type: 'object',
+        properties: {
+          table_id: {
+            type: 'string',
+            description: 'The ID of the table to delete'
+          }
+        },
+        required: ['table_id']
+      }
+    },
+    utility_get_table: {
+      name: 'utility_get_table',
+      description: 'Get information about a specific table in the database',
+      schema: {
+        type: 'object',
+        properties: {
+          table_id: {
+            type: 'string',
+            description: 'The ID of the table to retrieve'
+          }
+        },
+        required: ['table_id']
+      }
+    },
+    utility_query_table: {
+      name: 'utility_query_table',
+      description: 'Execute a query against a specific table in the database',
+      schema: {
+        type: 'object',
+        properties: {
+          table_id: {
+            type: 'string',
+            description: 'The ID of the table to query'
+          },
+          query: {
+            type: ['string', 'object'],
+            description: 'The query to execute (can be a string or an object)'
+          }
+        },
+        required: ['table_id', 'query']
       }
     }
   };

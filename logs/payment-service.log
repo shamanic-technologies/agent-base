@@ -1,0 +1,5 @@
+
+> @helloworld/payment-service@1.0.0 dev
+> tsx watch src/index.ts
+
+💰 Payment Service running on port 3007

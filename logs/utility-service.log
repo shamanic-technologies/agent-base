@@ -1,0 +1,9 @@
+npm warn config ignoring workspace config at /Users/kevinlourd/Business/agent-base-new/apps/utility-service/.npmrc
+
+> @helloworld/utility-service@1.0.0 dev
+> tsx watch src/index.ts
+
+🔧 Loading development environment from .env.local
+🔧 Utility Service running at http://localhost:3008
+🌐 Environment: development
+🧩 GitHub Codespaces API enabled

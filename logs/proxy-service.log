@@ -1,0 +1,7 @@
+
+> @helloworld/proxy-service@1.0.0 dev
+> tsx watch src/index.ts
+
+🔐 Proxy Service running on port 3002
+🔄 Forwarding requests to Model Service at http://localhost:3001
+🔑 Using Key Service at http://localhost:3003

@@ -1,0 +1,5 @@
+
+> @helloworld/key-service@1.0.0 dev
+> tsx watch src/index.ts
+
+Key Service running on port 3003

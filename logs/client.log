@@ -1,0 +1,19 @@
+npm warn config ignoring workspace config at /Users/kevinlourd/Business/agent-base-new/apps/client/.npmrc
+
+> client@1.0.0 dev
+> next dev
+
+   ▲ Next.js 15.2.2
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.1.191:3000
+   - Environments: .env
+
+ ✓ Starting...
+ ✓ Ready in 2.3s
+ ✓ Compiled /middleware in 232ms (146 modules)
+ ○ Compiling / ...
+ ✓ Compiled / in 793ms (712 modules)
+ GET / 200 in 1055ms
+ ○ Compiling /chat ...
+ ✓ Compiled /chat in 725ms (937 modules)
+ GET /chat 200 in 846ms

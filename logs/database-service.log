@@ -1,0 +1,12 @@
+
+> @helloworld/database-service@1.0.0 dev
+> tsx watch src/index.ts
+
+Connecting to PostgreSQL with:
+- Host: hopper.proxy.rlwy.net
+- Port: 20042
+- Database: railway
+- User: postgres
+New client connected to PostgreSQL pool
+PostgreSQL connection successful: { now: 2025-03-17T03:05:56.161Z }
+💾 Database Service running on port 3006 with Railway PostgreSQL storage
