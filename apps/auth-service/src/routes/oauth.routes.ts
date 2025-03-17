@@ -13,9 +13,17 @@ import {
 const router = Router();
 
 // Google OAuth login route
-router.get('/google', passport.authenticate('google', { 
-  scope: ['profile', 'email'] 
-}));
+router.get('/google', (req, res, next) => {
+  // Get the origin URL from the referer or query parameter
+  const originParam = req.query.origin || req.headers.referer || '';
+  const origin = typeof originParam === 'string' ? originParam : '';
+  
+  // Start Google OAuth authentication with state parameter to store origin
+  passport.authenticate('google', { 
+    scope: ['profile', 'email'],
+    state: origin
+  })(req, res, next);
+});
 
 // Google OAuth callback
 router.get('/google/callback', 
