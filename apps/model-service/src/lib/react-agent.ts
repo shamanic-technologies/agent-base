@@ -34,7 +34,8 @@ import {
   ParentNodeType,
   StreamAgentFunctionConfig,
   ModelName,
-  ReactAgentWrapper
+  ReactAgentWrapper,
+  InvokeAgentFunctionConfig
 } from "../types/agent-config.js";
 
 
@@ -214,18 +215,20 @@ function createReactAgentWrapper(config: ReactAgentWrapperConfig): ReactAgentWra
    * @param config.messages - Array of messages from the user and assistant
    * @param config.modes - Stream modes to enable (e.g. ["messages"], ["events"], or ["messages", "events"])
    * @param config.messageHistory - Optional message history
-   * @param conversationId - Thread ID for maintaining conversation state
+   * @param config.userId - User ID for tracking and personalization
+   * @param config.conversationId - Thread ID for maintaining conversation state
    * @returns AsyncGenerator that yields LangGraph event objects as JSON strings
    */
   async function* streamAgentFunction(
-    config: StreamAgentFunctionConfig,
-    conversationId?: string
+    config: StreamAgentFunctionConfig
   ): AsyncGenerator<string, void, unknown> {
     try {
       const { 
         messages,
         modes = 'messages',
-        messageHistory = []
+        messageHistory = [],
+        userId,
+        conversationId
       } = config;
 
       // Use provided conversationId or generate a default one
@@ -258,7 +261,8 @@ function createReactAgentWrapper(config: ReactAgentWrapperConfig): ReactAgentWra
             node_id: nodeId,
             node_type: nodeType,
             parent_node_id: parentNodeId,
-            parent_node_type: parentNodeType
+            parent_node_type: parentNodeType,
+            user_id: userId
           }
         } as GraphStreamConfig
       );
@@ -301,9 +305,18 @@ function createReactAgentWrapper(config: ReactAgentWrapperConfig): ReactAgentWra
    * 
    * @param messages - The messages to process
    * @param conversationId - Thread ID for maintaining conversation state
+   * @param userId - User ID for tracking and personalization
    * @returns The agent response
    */
-  async function invokeAgentFunction(messages: BaseMessage[], conversationId?: string) {
+  async function invokeAgentFunction(
+    config: InvokeAgentFunctionConfig
+  ) {
+    const {
+      messages,
+      conversationId,
+      userId
+    } = config;
+
     // Use provided conversationId or generate a default one
     const actualConversationId: ThreadId = conversationId || `session-${Date.now()}`;
     
@@ -326,7 +339,8 @@ function createReactAgentWrapper(config: ReactAgentWrapperConfig): ReactAgentWra
             node_id: nodeId,
             node_type: nodeType,
             parent_node_id: parentNodeId,
-            parent_node_type: parentNodeType
+            parent_node_type: parentNodeType,
+            user_id: userId
           }
         }
       );
@@ -364,15 +378,16 @@ function createReactAgentWrapper(config: ReactAgentWrapperConfig): ReactAgentWra
 }
 
 /**
- * Process a user prompt with the enhanced ReAct agent
- * 
- * @param prompt The user prompt to process
+ * Process a text prompt with the ReAct agent
+ * @param prompt The text prompt to process
  * @param conversationId Optional thread ID for stateful conversations
+ * @param userId Optional user ID for tracking and personalization
  * @returns The agent's response
  */
 export async function processWithReActAgent(
   prompt: string, 
-  conversationId?: string
+  conversationId?: string,
+  userId?: string
 ) {
   try {
     // Check if API key is available
@@ -388,17 +403,20 @@ export async function processWithReActAgent(
     const listUtilities = new UtilityListUtilities({
       conversationId: conversationId,
       parentNodeId: nodeId,
-      parentNodeType: nodeType
+      parentNodeType: nodeType,
+      userId: userId
     });
     const getUtilityInfo = new UtilityGetUtilityInfo({
       conversationId: conversationId,
       parentNodeId: nodeId,
-      parentNodeType: nodeType
+      parentNodeType: nodeType,
+      userId: userId
     });
     const callUtility = new UtilityCallUtility({
       conversationId: conversationId,
       parentNodeId: nodeId,
-      parentNodeType: nodeType
+      parentNodeType: nodeType,
+      userId: userId
     });
     
     // Use all utilities
@@ -426,7 +444,11 @@ export async function processWithReActAgent(
     console.log(`Processing prompt with thread ID: ${conversationId || 'new session'}`);
     
     // Invoke the agent with the message and conversation ID
-    const response = await invokeAgentFunction([message], conversationId);
+    const response = await invokeAgentFunction({
+      messages: [message],
+      conversationId: conversationId,
+      userId: userId
+    });
     
     // Return the raw response directly without wrapper
     return response;
@@ -442,12 +464,15 @@ export async function processWithReActAgent(
  * 
  * @param prompt The user prompt to process
  * @param conversationId Optional thread ID for stateful conversations
+ * @param streamModes Optional array of stream modes
+ * @param userId Optional user ID for tracking and personalization
  * @returns AsyncGenerator that yields LangGraph event objects as JSON strings
  */
 export async function* streamWithReActAgent(
   prompt: string,
   conversationId?: string,
-  streamModes?: any
+  streamModes?: any,
+  userId?: string
 ): AsyncGenerator<string, void, unknown> {
   try {
     // Check if API key is available
@@ -463,17 +488,20 @@ export async function* streamWithReActAgent(
     const listUtilities = new UtilityListUtilities({
       conversationId: conversationId,
       parentNodeId: nodeId,
-      parentNodeType: nodeType
+      parentNodeType: nodeType,
+      userId: userId
     });
     const getUtilityInfo = new UtilityGetUtilityInfo({
       conversationId: conversationId,
       parentNodeId: nodeId,
-      parentNodeType: nodeType
+      parentNodeType: nodeType,
+      userId: userId
     });
     const callUtility = new UtilityCallUtility({
       conversationId: conversationId,
       parentNodeId: nodeId,
-      parentNodeType: nodeType
+      parentNodeType: nodeType,
+      userId: userId
     });
     
     // Use all utilities
@@ -500,8 +528,10 @@ export async function* streamWithReActAgent(
     // Stream the response with the message and conversation ID
     const stream = streamAgentFunction({
       messages: [message],
-      modes: streamModes || ['messages', 'events']
-    }, conversationId);
+      modes: streamModes || ['messages', 'events'],
+      userId: userId,
+      conversationId: conversationId
+    });
     
     // Yield each chunk
     for await (const chunk of stream) {

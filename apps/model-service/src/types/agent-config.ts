@@ -34,7 +34,16 @@ export interface StreamAgentFunctionConfig {
   messages: BaseMessage[];
   messageHistory?: BaseMessage[];
   modes?: StreamMode[];
+  userId?: string;
+  conversationId?: string;
 }
+
+export interface InvokeAgentFunctionConfig {
+  messages: BaseMessage[];
+  conversationId?: string;
+  userId?: string;
+}
+
 
 export interface ChatAnthropicConfig {
   modelName: string;
@@ -75,7 +84,8 @@ export interface GraphStreamConfig {
     node_id: NodeId,
     node_type: NodeType,
     parent_node_id: ParentNodeId,
-    parent_node_type: ParentNodeType
+    parent_node_type: ParentNodeType,
+    user_id?: string
   }
 }
 
@@ -84,11 +94,9 @@ export interface GraphStreamConfig {
  */
 export interface ReactAgentWrapper {
   streamAgentFunction: (
-    config: StreamAgentFunctionConfig,
-    conversationId?: string
+    config: StreamAgentFunctionConfig
   ) => AsyncGenerator<string, void, unknown>;
   invokeAgentFunction: (
-    messages: BaseMessage[],
-    conversationId?: string
+    config: InvokeAgentFunctionConfig
   ) => Promise<any>;
 }
