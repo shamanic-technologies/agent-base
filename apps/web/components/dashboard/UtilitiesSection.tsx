@@ -22,6 +22,40 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../components/ui/tooltip';
 import { UtilityCategory } from './utility-data';
 
+// Custom test messages for each utility
+const TEST_MESSAGES: Record<string, string> = {
+  // Database utilities
+  utility_create_table: "I want to inventory my products, can you create a personalized table for me to store that information?",
+  utility_query_table: "Insert in database a new product: Apple Macbook Air M4. If the product table doesn't exist then create it!",
+  utility_get_table: "Can you get the information of the \"product\" table? If it doesn't exist then create it!",
+  utility_alter_table: "Can you add a column \"brand\" to my \"product\" table? If the table doesn't exist then create it!",
+  utility_delete_table: "Can you delete my \"product\" table?",
+  utility_get_database: "What info do you have in my database?",
+  
+  // GitHub utilities
+  utility_github_get_code: "Can you fetch the README.md file from the main branch of the repository hello-world/demo?",
+  utility_github_create_file: "Can you create a new file called greeting.js with a simple hello world function in my repository?",
+  utility_github_update_file: "Can you update my app.js file to add error handling to the main function?",
+  utility_github_read_file: "Can you read the content of my package.json file and explain what dependencies I'm using?",
+  utility_github_list_directory: "Can you list all the files in my src directory?",
+  utility_github_run_code: "Can you run my tests.js file and tell me if all tests pass?",
+  utility_github_lint_code: "Can you lint my JavaScript files and tell me about any style issues?",
+  utility_github_deploy_code: "Can you deploy my app to production after running tests?",
+  utility_github_create_codespace: "Can you create a new codespace for my project so I can start development?",
+  utility_github_list_codespaces: "Can you list all my active codespaces?",
+  utility_github_destroy_codespace: "Can you delete the codespace I created yesterday for the demo project?",
+  
+  // Web browsing utilities
+  utility_google_search: "Can you search for the latest news about artificial intelligence?",
+  utility_firecrawl_extract_content: "Can you extract the main content from the webpage at https://example.com?",
+  
+  // Other utilities
+  utility_get_current_datetime: "What's the current date and time?",
+  
+  // Default message for any utilities not explicitly defined
+  default: "Can you help me test this utility?"
+};
+
 interface UtilitiesSectionProps {
   utilityCategories: UtilityCategory[];
   sendMessage?: (message: string) => void;
@@ -42,9 +76,11 @@ export function UtilitiesSection({ utilityCategories, sendMessage }: UtilitiesSe
   };
 
   // Handle test button click
-  const handleTestClick = (utilityName: string) => {
+  const handleTestClick = (utility: string) => {
     if (sendMessage) {
-      sendMessage(`HelloWorld`);
+      // Get the custom message for this utility, or use the default if not found
+      const message = TEST_MESSAGES[utility] || TEST_MESSAGES.default;
+      sendMessage(message);
     }
   };
   
@@ -100,7 +136,7 @@ export function UtilitiesSection({ utilityCategories, sendMessage }: UtilitiesSe
                                 className="h-8 px-2 text-xs"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleTestClick(utility.name);
+                                  handleTestClick(utility.utility);
                                 }}
                               >
                                 <PlayCircle className="h-3 w-3 mr-1" />

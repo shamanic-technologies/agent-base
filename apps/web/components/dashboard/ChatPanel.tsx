@@ -4,16 +4,15 @@
  * Displays a chat interface for interacting with AI agents
  */
 import { useState, useRef, useEffect, forwardRef, useImperativeHandle, ForwardRefRenderFunction } from 'react';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../../components/ui/card';
-import { Button } from '../../components/ui/button';
-import { Input } from '../../components/ui/input';
-import { SendHorizontal, Bot, User, Loader2, AlertCircle } from 'lucide-react';
-import * as proxyService from '../../services/proxyService';
-
-interface Message {
-  role: 'user' | 'assistant';
-  content: string;
-}
+import { Card } from '../../components/ui/card';
+import { ScrollArea } from '../../components/ui/scroll-area';
+import { MessageItem } from './MessageItem';
+import { ChatHeader } from './ChatHeader';
+import { ChatInput } from './ChatInput';
+import { DebugPanel } from './DebugPanel';
+import { cn } from '../../lib/utils';
+import { Message } from '../../lib/chat/types';
+import * as chatService from '../../services/chatService';
 
 export interface ChatPanelRef {
   sendMessage: (message: string) => void;
@@ -28,15 +27,31 @@ interface ChatPanelProps {
  */
 const ChatPanelComponent: ForwardRefRenderFunction<ChatPanelRef, ChatPanelProps> = (props, ref) => {
   const { apiKey } = props;
+  
+  // Thread ID to maintain conversation context
+  const [threadId, setThreadId] = useState<string>(`thread-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`);
+  
+  // Message state
   const [messages, setMessages] = useState<Message[]>([
     {
-      role: 'assistant',
-      content: 'Hello! I\'m your AI assistant. How can I help you today?'
+      id: '1',
+      type: 'ai',
+      text: 'Hello! I\'m your AI assistant. How can I help you today?',
+      createdAt: new Date()
     }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Streaming state
+  const [useStreaming, setUseStreaming] = useState<boolean>(false);
+  const [currentStreamingMessage, setCurrentStreamingMessage] = useState<Message | null>(null);
+  const [streamChunks, setStreamChunks] = useState<any[]>([]);
+  
+  // Debug panel state
+  const [showDebugPanel, setShowDebugPanel] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Expose methods via ref
@@ -46,68 +61,52 @@ const ChatPanelComponent: ForwardRefRenderFunction<ChatPanelRef, ChatPanelProps>
     }
   }));
 
-  // Scroll to the bottom of the chat whenever messages change
+  // Auto-scroll to bottom of messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, currentStreamingMessage]);
 
-  /**
-   * Process a response from the proxy service and extract the assistant's message
-   */
-  const processProxyResponse = (response: any): string => {
-    // Handle proxy service response format
-    if (response && response.messages && response.messages.length > 0) {
-      // Find the first AI message in the response
-      const aiMessage = response.messages.find(
-        (msg: any) => msg.type === 'constructor' && 
-                     msg.id[2] === 'AIMessageChunk'
-      );
-      
-      if (aiMessage && aiMessage.kwargs && aiMessage.kwargs.content) {
-        // Extract the text content from the first text chunk
-        const textContent = aiMessage.kwargs.content.find(
-          (content: any) => content.type === 'text'
-        );
-        
-        if (textContent) {
-          return textContent.text;
-        }
-      }
-    }
-    
-    // Fallback response if we can't parse the structure
-    return "I received your message, but I couldn't process my response correctly.";
+  // Toggle debug panel
+  const toggleDebugPanel = () => {
+    setShowDebugPanel(!showDebugPanel);
   };
 
-  /**
-   * Send a message to the proxy service and handle the response
-   */
-  const sendMessageToProxy = async (messageText: string): Promise<string> => {
-    if (!apiKey) {
-      return "I can't process your request because no API key is available. Please configure an API key in your settings.";
-    }
-    
-    try {
-      const response = await proxyService.sendMessage(messageText, apiKey);
-      return processProxyResponse(response);
-    } catch (error) {
-      console.error('Error sending message to proxy:', error);
-      if (error instanceof Error) {
-        setError(error.message);
-        return `Sorry, I encountered an error: ${error.message}`;
-      }
-      return "Sorry, I encountered an unknown error while processing your request.";
-    }
+  // Toggle streaming mode
+  const toggleStreaming = () => {
+    setUseStreaming(!useStreaming);
   };
 
-  // Handle messages sent from external components
+  // Reset conversation to start fresh
+  const resetConversation = () => {
+    // Generate a new thread ID
+    const newThreadId = `thread-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    
+    // Reset the conversation state
+    setThreadId(newThreadId);
+    setMessages([{
+      id: '1',
+      type: 'ai',
+      text: 'Hello! I\'m your AI assistant. How can I help you today?',
+      createdAt: new Date()
+    }]);
+    setCurrentStreamingMessage(null);
+    setStreamChunks([]);
+    setInput('');
+    setError(null);
+    
+    console.log(`Started new conversation with thread ID: ${newThreadId}`);
+  };
+
+  // Handle external messages (like from tool test buttons)
   const handleExternalMessage = async (message: string) => {
-    if (!message.trim()) return;
+    if (!message.trim() || isLoading) return;
     
     // Add user message to chat
     const userMessage: Message = {
-      role: 'user',
-      content: message
+      id: Date.now().toString(),
+      type: 'user',
+      text: message,
+      createdAt: new Date()
     };
     
     setMessages(prev => [...prev, userMessage]);
@@ -115,30 +114,32 @@ const ChatPanelComponent: ForwardRefRenderFunction<ChatPanelRef, ChatPanelProps>
     setError(null);
     
     try {
-      // Get response from proxy service
-      const responseText = await sendMessageToProxy(message);
+      if (!apiKey) {
+        throw new Error("API key is not configured");
+      }
       
-      const aiMessage: Message = {
-        role: 'assistant',
-        content: responseText
-      };
-      
+      // Get response from service
+      const aiMessage = await chatService.sendChatMessage(message, apiKey, threadId);
       setMessages(prev => [...prev, aiMessage]);
     } catch (error) {
       console.error('Error handling external message:', error);
+      setError(error instanceof Error ? error.message : String(error));
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Handle sending a message from input
-  const handleSendMessage = async () => {
-    if (!input.trim()) return;
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!input.trim() || isLoading) return;
     
     // Add user message to chat
     const userMessage: Message = {
-      role: 'user',
-      content: input
+      id: Date.now().toString(),
+      type: 'user',
+      text: input,
+      createdAt: new Date()
     };
     
     setMessages(prev => [...prev, userMessage]);
@@ -147,17 +148,16 @@ const ChatPanelComponent: ForwardRefRenderFunction<ChatPanelRef, ChatPanelProps>
     setError(null);
     
     try {
-      // Get response from proxy service
-      const responseText = await sendMessageToProxy(input);
+      if (!apiKey) {
+        throw new Error("API key is not configured");
+      }
       
-      const aiMessage: Message = {
-        role: 'assistant',
-        content: responseText
-      };
-      
+      // Get response from service
+      const aiMessage = await chatService.sendChatMessage(input, apiKey, threadId);
       setMessages(prev => [...prev, aiMessage]);
     } catch (error) {
       console.error('Error sending message:', error);
+      setError(error instanceof Error ? error.message : String(error));
     } finally {
       setIsLoading(false);
     }
@@ -165,71 +165,92 @@ const ChatPanelComponent: ForwardRefRenderFunction<ChatPanelRef, ChatPanelProps>
 
   return (
     <Card className="flex flex-col h-full">
-      <CardHeader>
-        <CardTitle>AI Chat</CardTitle>
-      </CardHeader>
-      <CardContent className="flex-1 overflow-y-auto max-h-[500px]">
-        <div className="space-y-4">
-          {messages.map((message, index) => (
-            <div 
-              key={index} 
-              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div 
-                className={`px-4 py-2 rounded-lg max-w-[80%] flex items-start gap-2 ${
-                  message.role === 'user' 
-                    ? 'bg-blue-600 text-white ml-10' 
-                    : 'bg-gray-100 text-gray-800 mr-10'
-                }`}
-              >
-                {message.role === 'assistant' && (
-                  <Bot className="h-5 w-5 mt-1 flex-shrink-0" />
-                )}
-                <div className="break-words">{message.content}</div>
-                {message.role === 'user' && (
-                  <User className="h-5 w-5 mt-1 flex-shrink-0" />
-                )}
-              </div>
+      <ChatHeader
+        resetConversation={resetConversation}
+        toggleStreaming={toggleStreaming}
+        toggleDebugPanel={toggleDebugPanel}
+        useStreaming={useStreaming}
+        showDebugPanel={showDebugPanel}
+      />
+      
+      <div className="flex-1 overflow-hidden relative flex">
+        {/* Main chat area */}
+        <div className={cn("flex-1 relative", showDebugPanel && "border-r")}>
+          <ScrollArea className="h-full">
+            <div className="flex flex-col gap-4 p-4 pb-20">
+              {/* Render all messages */}
+              {messages.map((message) => (
+                <MessageItem
+                  key={message.id}
+                  message={message}
+                />
+              ))}
+              
+              {/* Currently streaming message */}
+              {currentStreamingMessage && (
+                <MessageItem
+                  message={currentStreamingMessage}
+                  isLoading={true}
+                />
+              )}
+              
+              {/* Loading indicator */}
+              {isLoading && !currentStreamingMessage && (
+                <div className="flex justify-start">
+                  <div className="px-4 py-3 rounded-lg bg-gray-100 text-gray-800">
+                    <div className="animate-pulse flex items-center gap-2">
+                      <div className="h-2 w-2 bg-gray-400 rounded-full"></div>
+                      <div className="h-2 w-2 bg-gray-400 rounded-full"></div>
+                      <div className="h-2 w-2 bg-gray-400 rounded-full"></div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Error message */}
+              {error && (
+                <div className="flex justify-center">
+                  <div className="px-4 py-2 rounded-lg bg-red-50 text-red-800 text-sm">
+                    {error}
+                  </div>
+                </div>
+              )}
+              
+              <div ref={messagesEndRef} />
             </div>
-          ))}
-          {isLoading && (
-            <div className="flex justify-start">
-              <div className="px-4 py-3 rounded-lg bg-gray-100 text-gray-800">
-                <Loader2 className="h-5 w-5 animate-spin" />
-              </div>
-            </div>
-          )}
-          {error && (
-            <div className="flex justify-center">
-              <div className="px-4 py-2 rounded-lg bg-red-50 text-red-800 flex items-center gap-2">
-                <AlertCircle className="h-4 w-4" />
-                <span>{error}</span>
-              </div>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
+          </ScrollArea>
         </div>
-      </CardContent>
-      <CardFooter className="border-t">
-        <div className="flex w-full items-center gap-2">
-          <Input
-            placeholder="Type your message..."
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSendMessage();
-              }
-            }}
-            className="flex-1"
-          />
-          <Button onClick={handleSendMessage} disabled={isLoading || !input.trim()}>
-            <SendHorizontal className="h-4 w-4" />
-            <span className="sr-only">Send</span>
-          </Button>
-        </div>
-      </CardFooter>
+        
+        {/* Debug Panel */}
+        {showDebugPanel && (
+          <div className="w-1/3 border-l">
+            <DebugPanel 
+              debugData={{
+                thread_id: threadId,
+                streaming_active: useStreaming && !!currentStreamingMessage,
+                current_streaming_chunks: streamChunks,
+                current_text: currentStreamingMessage?.text || "",
+                message_history: messages.map(m => ({
+                  id: m.id,
+                  type: m.type,
+                  text: m.text,
+                  timestamp: m.createdAt.toISOString(),
+                  raw: m.rawResponse
+                }))
+              }}
+            />
+          </div>
+        )}
+      </div>
+      
+      <div className="border-t p-4 bg-background">
+        <ChatInput 
+          input={input}
+          setInput={setInput}
+          onSubmit={handleSubmit}
+          isLoading={isLoading}
+        />
+      </div>
     </Card>
   );
 };

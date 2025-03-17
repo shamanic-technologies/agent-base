@@ -107,7 +107,7 @@ export class UtilityCallUtility extends Tool {
     };
     
     // Get the utility service URL from environment variables
-    this.utilityServiceUrl = process.env.UTILITY_SERVICE_URL || 'http://localhost:3008';
+    this.utilityServiceUrl = process.env.UTILITY_SERVICE_URL;
   }
   
   // Method to get metadata
