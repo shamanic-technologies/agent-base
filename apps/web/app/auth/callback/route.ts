@@ -1,18 +1,9 @@
-import { redirect } from 'next/navigation';
-import type { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-import { createAuthCallbackService } from '@kit/supabase/auth';
-import { getSupabaseServerClient } from '@kit/supabase/server-client';
-
-import pathsConfig from '~/config/paths.config';
-
+/**
+ * Super simple callback handler for auth-service
+ */
 export async function GET(request: NextRequest) {
-  const service = createAuthCallbackService(getSupabaseServerClient());
-
-  const { nextPath } = await service.exchangeCodeForSession(request, {
-    joinTeamPath: pathsConfig.app.joinTeam,
-    redirectPath: pathsConfig.app.home,
-  });
-
-  return redirect(nextPath);
+  // Just redirect to /home - auth-service has already set the cookie
+  return NextResponse.redirect(new URL('/home', request.url));
 }
