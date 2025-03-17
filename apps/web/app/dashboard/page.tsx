@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../../components/ui/card';
@@ -8,7 +8,7 @@ import { Input } from '../../components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
 import { Badge } from '../../components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../components/ui/tooltip';
-import { Copy, Check, FileText, Clock, AlertCircle, Code, ChevronDown, ChevronRight } from 'lucide-react';
+import { Copy, Check, FileText, Clock, AlertCircle, Code, ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
 
 /**
  * Professional Dashboard Page
@@ -19,6 +19,44 @@ export default function Dashboard() {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
+  const [user, setUser] = useState<{ name: string; picture: string; email: string } | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Fetch user data
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        // Endpoint would typically be secured and use authentication
+        const response = await fetch('http://localhost:3006/db/users');
+        const data = await response.json();
+        
+        if (data.success && data.data.items.length > 0) {
+          const userData = data.data.items[0].data;
+          setUser({
+            name: userData.name,
+            picture: userData.picture,
+            email: userData.email
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchUserData();
+  }, []);
+  
+  // Get user initials for avatar fallback
+  const getUserInitials = () => {
+    if (!user?.name) return 'U';
+    
+    const nameParts = user.name.split(' ');
+    if (nameParts.length === 1) return nameParts[0].substring(0, 1).toUpperCase();
+    
+    return (nameParts[0].substring(0, 1) + nameParts[nameParts.length - 1].substring(0, 1)).toUpperCase();
+  };
   
   // Fake API key
   const apiKey = 'agent_base_sk_b8e92a71f9d64e3b95c1a97d19b7b32c';
@@ -154,11 +192,22 @@ export default function Dashboard() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="flex items-center gap-2 cursor-pointer" onClick={() => router.push('/profile')}>
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src="https://github.com/shadcn.png" />
-                      <AvatarFallback>JD</AvatarFallback>
-                    </Avatar>
-                    <span className="font-medium text-sm">John Doe</span>
+                    {isLoading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
+                          <Loader2 className="h-4 w-4 text-gray-400 animate-spin" />
+                        </div>
+                        <span className="font-medium text-sm text-gray-400">Loading...</span>
+                      </div>
+                    ) : (
+                      <>
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={user?.picture || ''} alt={user?.name || 'User'} />
+                          <AvatarFallback>{getUserInitials()}</AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium text-sm">{user?.name || 'Guest'}</span>
+                      </>
+                    )}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>View Profile</TooltipContent>
