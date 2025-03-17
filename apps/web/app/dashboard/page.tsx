@@ -187,7 +187,7 @@ export default function Dashboard() {
           
           {/* Right Column - Chat Interface */}
           <div className="space-y-6 lg:h-[calc(100vh-150px)]">
-            <ChatPanel ref={chatPanelRef} />
+            <ChatPanel ref={chatPanelRef} apiKey={apiKey} />
           </div>
         </div>
       </main>

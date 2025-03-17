@@ -7,7 +7,8 @@ import { useState, useRef, useEffect, forwardRef, useImperativeHandle, ForwardRe
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { SendHorizontal, Bot, User, Loader2 } from 'lucide-react';
+import { SendHorizontal, Bot, User, Loader2, AlertCircle } from 'lucide-react';
+import * as proxyService from '../../services/proxyService';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -18,12 +19,15 @@ export interface ChatPanelRef {
   sendMessage: (message: string) => void;
 }
 
-interface ChatPanelProps {}
+interface ChatPanelProps {
+  apiKey?: string;
+}
 
 /**
  * Chat panel component for interacting with AI agents
  */
 const ChatPanelComponent: ForwardRefRenderFunction<ChatPanelRef, ChatPanelProps> = (props, ref) => {
+  const { apiKey } = props;
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
@@ -32,6 +36,7 @@ const ChatPanelComponent: ForwardRefRenderFunction<ChatPanelRef, ChatPanelProps>
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Expose methods via ref
@@ -46,8 +51,57 @@ const ChatPanelComponent: ForwardRefRenderFunction<ChatPanelRef, ChatPanelProps>
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  /**
+   * Process a response from the proxy service and extract the assistant's message
+   */
+  const processProxyResponse = (response: any): string => {
+    // Handle proxy service response format
+    if (response && response.messages && response.messages.length > 0) {
+      // Find the first AI message in the response
+      const aiMessage = response.messages.find(
+        (msg: any) => msg.type === 'constructor' && 
+                     msg.id[2] === 'AIMessageChunk'
+      );
+      
+      if (aiMessage && aiMessage.kwargs && aiMessage.kwargs.content) {
+        // Extract the text content from the first text chunk
+        const textContent = aiMessage.kwargs.content.find(
+          (content: any) => content.type === 'text'
+        );
+        
+        if (textContent) {
+          return textContent.text;
+        }
+      }
+    }
+    
+    // Fallback response if we can't parse the structure
+    return "I received your message, but I couldn't process my response correctly.";
+  };
+
+  /**
+   * Send a message to the proxy service and handle the response
+   */
+  const sendMessageToProxy = async (messageText: string): Promise<string> => {
+    if (!apiKey) {
+      return "I can't process your request because no API key is available. Please configure an API key in your settings.";
+    }
+    
+    try {
+      const response = await proxyService.sendMessage(messageText, apiKey);
+      return processProxyResponse(response);
+    } catch (error) {
+      console.error('Error sending message to proxy:', error);
+      if (error instanceof Error) {
+        setError(error.message);
+        return `Sorry, I encountered an error: ${error.message}`;
+      }
+      return "Sorry, I encountered an unknown error while processing your request.";
+    }
+  };
+
   // Handle messages sent from external components
-  const handleExternalMessage = (message: string) => {
+  const handleExternalMessage = async (message: string) => {
     if (!message.trim()) return;
     
     // Add user message to chat
@@ -58,17 +112,23 @@ const ChatPanelComponent: ForwardRefRenderFunction<ChatPanelRef, ChatPanelProps>
     
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
+    setError(null);
     
-    // Simulate AI response after delay
-    setTimeout(() => {
+    try {
+      // Get response from proxy service
+      const responseText = await sendMessageToProxy(message);
+      
       const aiMessage: Message = {
         role: 'assistant',
-        content: `I received your message: "${message}". This is a placeholder response as the real AI integration is not implemented in this demo.`
+        content: responseText
       };
       
       setMessages(prev => [...prev, aiMessage]);
+    } catch (error) {
+      console.error('Error handling external message:', error);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   // Handle sending a message from input
@@ -84,17 +144,23 @@ const ChatPanelComponent: ForwardRefRenderFunction<ChatPanelRef, ChatPanelProps>
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
+    setError(null);
     
-    // Simulate AI response after delay
-    setTimeout(() => {
+    try {
+      // Get response from proxy service
+      const responseText = await sendMessageToProxy(input);
+      
       const aiMessage: Message = {
         role: 'assistant',
-        content: `I received your message: "${input}". This is a placeholder response as the real AI integration is not implemented in this demo.`
+        content: responseText
       };
       
       setMessages(prev => [...prev, aiMessage]);
+    } catch (error) {
+      console.error('Error sending message:', error);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -130,6 +196,14 @@ const ChatPanelComponent: ForwardRefRenderFunction<ChatPanelRef, ChatPanelProps>
             <div className="flex justify-start">
               <div className="px-4 py-3 rounded-lg bg-gray-100 text-gray-800">
                 <Loader2 className="h-5 w-5 animate-spin" />
+              </div>
+            </div>
+          )}
+          {error && (
+            <div className="flex justify-center">
+              <div className="px-4 py-2 rounded-lg bg-red-50 text-red-800 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                <span>{error}</span>
               </div>
             </div>
           )}
