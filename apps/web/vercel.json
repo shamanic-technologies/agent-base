@@ -1,16 +1,16 @@
 {
   "buildCommand": "pnpm run build",
-  "outputDirectory": "dist",
-  "framework": "vite",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "/index.html"
+      "destination": "/$1"
     }
   ],
   "headers": [
     {
-      "source": "/assets/(.*)",
+      "source": "/_next/static/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
@@ -22,5 +22,10 @@
   "github": {
     "silent": true
   },
-  "installCommand": "pnpm install"
+  "installCommand": "pnpm install",
+  "env": {
+    "ENABLE_EXPERIMENTAL_COREPACK": "1",
+    "COREPACK_ENABLE_STRICT": "0",
+    "NODE_OPTIONS": "--max-old-space-size=4096"
+  }
 } 
