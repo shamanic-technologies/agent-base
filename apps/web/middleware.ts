@@ -8,7 +8,7 @@ import type { NextRequest } from 'next/server';
 /**
  * Protected paths that require authentication
  */
-const PROTECTED_PATHS = ['/chat'];
+const PROTECTED_PATHS = ['/chat', '/dashboard'];
 
 /**
  * Public paths that don't need to check authentication

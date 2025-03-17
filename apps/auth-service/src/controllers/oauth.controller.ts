@@ -43,7 +43,7 @@ export const authSuccessHandler: AsyncRequestHandler = async (req, res) => {
     });
     
     // Determine the redirect URL based on the state parameter
-    let redirectUrl = `${config.clientAppUrl}/chat`;
+    let redirectUrl = `${config.clientAppUrl}/dashboard`;
     
     // Get the origin from the state parameter
     const state = req.query.state as string;
@@ -53,7 +53,7 @@ export const authSuccessHandler: AsyncRequestHandler = async (req, res) => {
         const originUrl = new URL(state);
         // Check if the origin is from a trusted domain (localhost with any port)
         if (originUrl.hostname === 'localhost') {
-          redirectUrl = `${originUrl.origin}/chat`;
+          redirectUrl = `${originUrl.origin}/dashboard`;
         }
       } catch (error) {
         console.error('Invalid state parameter, using default redirect URL:', error);
