@@ -17,74 +17,38 @@ const PORT = process.env.PORT;
 const MODEL_SERVICE_URL = process.env.MODEL_SERVICE_URL || 'http://localhost:3001';
 const KEY_SERVICE_URL = process.env.KEY_SERVICE_URL || 'http://localhost:3003';
 
-// In-memory API key storage (for testing only)
-const TEST_API_KEYS = [
-  {
-    id: 'test-key-123',
-    userId: 'test-user',
-    key: 'helloworld_test123',
-    active: true
-  }
-];
-
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// API key validation function
+/**
+ * Validates an API key against the Key Service
+ * Returns the validation result and user ID if valid
+ */
 const validateApiKey = async (apiKey: string): Promise<{valid: boolean, userId?: string}> => {
   try {
-    // First try to validate using the Key Service
     const response = await axios.post(`${KEY_SERVICE_URL}/keys/validate`, { apiKey });
     
     if (response.data.success) {
-      return { 
-        valid: true, 
-        userId: response.data.data.userId 
+      return {
+        valid: true,
+        userId: response.data.userId
       };
     }
+    
+    return { valid: false };
   } catch (error) {
-    console.log('Could not validate with Key Service, using fallback validation');
+    console.error('Error validating API key:', error);
+    return { valid: false };
   }
-
-  // Fallback to local validation for testing
-  const matchingKey = TEST_API_KEYS.find(k => k.key === apiKey && k.active);
-  
-  if (matchingKey) {
-    return { valid: true, userId: matchingKey.userId };
-  }
-
-  return { valid: false };
 };
 
-// API key middleware
-const requireApiKey = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-  const apiKey = req.headers['x-api-key'] as string;
-
-  if (!apiKey) {
-    return res.status(401).json({ 
-      success: false,
-      error: 'API key is required' 
-    });
-  }
-
-  const { valid, userId } = await validateApiKey(apiKey);
-
-  if (!valid) {
-    return res.status(403).json({ 
-      success: false,
-      error: 'Invalid API key' 
-    });
-  }
-
-  // Add userId to request for logging/tracking
-  res.locals.userId = userId;
-  next();
-};
-
-// Health check endpoint
+/**
+ * Health check endpoint
+ * Returns the status of the proxy service and its connections
+ */
 app.get('/health', (req: express.Request, res: express.Response) => {
-  res.status(200).json({ 
+  res.status(200).json({
     status: 'healthy',
     services: {
       model: MODEL_SERVICE_URL,
@@ -93,46 +57,43 @@ app.get('/health', (req: express.Request, res: express.Response) => {
   });
 });
 
-// Proxy mode endpoint - returns HelloWorld message
-app.get('/api/proxy-mode', requireApiKey, (req: express.Request, res: express.Response) => {
-  res.status(200).json({
-    success: true,
-    message: "HelloWorld",
-    user_id: res.locals.userId
-  });
-});
-
-// Get test API key endpoint (for testing only)
-app.get('/get-test-key', (req: express.Request, res: express.Response) => {
-  const testKey = TEST_API_KEYS[0];
+/**
+ * Generate endpoint
+ * Validates API key and forwards request to model service
+ */
+app.post('/generate', async (req: express.Request, res: express.Response) => {
+  const apiKey = req.headers['x-api-key'] as string;
   
-  if (!testKey) {
-    return res.status(404).json({
+  // Check if API key is provided
+  if (!apiKey) {
+    return res.status(401).json({
       success: false,
-      error: 'No test key available'
+      error: 'API key is required'
     });
   }
   
-  res.status(200).json({ 
-    success: true,
-    apiKey: testKey.key
-  });
-});
-
-// Proxy the request to the model service
-app.post('/api/generate', requireApiKey, async (req: express.Request, res: express.Response) => {
+  // Validate the API key
+  const validation = await validateApiKey(apiKey);
+  
+  if (!validation.valid) {
+    return res.status(401).json({
+      success: false,
+      error: 'Invalid API key'
+    });
+  }
+  
   try {
     // Forward the request to the model service
     const response = await axios.post(`${MODEL_SERVICE_URL}/generate`, req.body);
     
-    // Add usage tracking info
+    // Add user ID tracking info
     if (response.data) {
-      response.data.user_id = res.locals.userId;
+      response.data.user_id = validation.userId;
     }
     
     // Return the model service response
     res.status(200).json(response.data);
-  } catch (error: unknown) {
+  } catch (error) {
     console.error('Error forwarding request to model service:', error);
     
     // Check if it's a connection error
@@ -153,72 +114,6 @@ app.post('/api/generate', requireApiKey, async (req: express.Request, res: expre
         ? error.response?.data || error.message 
         : error instanceof Error ? error.message : 'Unknown error'
     });
-  }
-});
-
-// Proxy streaming requests to the model service
-app.post('/api/generate/stream', requireApiKey, async (req: express.Request, res: express.Response) => {
-  try {
-    // Set headers for SSE
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    
-    // Add user ID to request body for tracking
-    const requestBody = {
-      ...req.body,
-      user_id: res.locals.userId
-    };
-    
-    // Forward the request to the model service using axios with response type 'stream'
-    const response = await axios.post(`${MODEL_SERVICE_URL}/generate/stream`, requestBody, {
-      responseType: 'stream'
-    });
-    
-    // Forward each chunk from the model service to the client
-    response.data.on('data', (chunk: Buffer) => {
-      // Forward chunk to client
-      res.write(chunk);
-    });
-    
-    response.data.on('end', () => {
-      // End the response when the model service stream ends
-      res.end();
-    });
-    
-    // Handle client disconnect
-    req.on('close', () => {
-      // Close the axios stream if client disconnects
-      response.data.destroy();
-    });
-  } catch (error: unknown) {
-    console.error('Error forwarding streaming request to model service:', error);
-    
-    // Handle streaming errors by sending SSE-formatted error messages
-    if (axios.isAxiosError(error) && !error.response) {
-      // Connection error
-      res.write(`data: ${JSON.stringify({
-        success: false,
-        error: 'Could not connect to Model Service',
-        user_id: res.locals.userId
-      })}\n\n`);
-    } else {
-      // Other error
-      const errorDetails = axios.isAxiosError(error) 
-        ? error.response?.data || error.message 
-        : error instanceof Error ? error.message : 'Unknown error';
-      
-      res.write(`data: ${JSON.stringify({
-        success: false,
-        error: 'Error communicating with model service',
-        details: errorDetails,
-        user_id: res.locals.userId
-      })}\n\n`);
-    }
-    
-    // End the stream with DONE marker
-    res.write(`data: [DONE]\n\n`);
-    res.end();
   }
 });
 
