@@ -13,7 +13,7 @@ import axios from 'axios';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3004;
+const PORT = process.env.PORT;
 const MODEL_SERVICE_URL = process.env.MODEL_SERVICE_URL || 'http://localhost:3001';
 const KEY_SERVICE_URL = process.env.KEY_SERVICE_URL || 'http://localhost:3003';
 
