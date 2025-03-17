@@ -3,3 +3,10 @@
 > tsx watch src/index.ts
 
 💰 Payment Service running on port 3007
+npm error Lifecycle script `dev` failed with error:
+npm error code 143
+npm error path /Users/kevinlourd/Business/agent-base-new/apps/payment-service
+npm error workspace @helloworld/payment-service@1.0.0
+npm error location /Users/kevinlourd/Business/agent-base-new/apps/payment-service
+npm error command failed
+npm error command sh -c tsx watch src/index.ts

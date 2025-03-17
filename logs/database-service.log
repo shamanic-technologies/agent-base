@@ -8,5 +8,12 @@ Connecting to PostgreSQL with:
 - Database: railway
 - User: postgres
 New client connected to PostgreSQL pool
-PostgreSQL connection successful: { now: 2025-03-17T03:05:56.161Z }
+PostgreSQL connection successful: { now: 2025-03-17T03:19:13.484Z }
 💾 Database Service running on port 3006 with Railway PostgreSQL storage
+npm error Lifecycle script `dev` failed with error:
+npm error code 143
+npm error path /Users/kevinlourd/Business/agent-base-new/apps/database-service
+npm error workspace @helloworld/database-service@1.0.0
+npm error location /Users/kevinlourd/Business/agent-base-new/apps/database-service
+npm error command failed
+npm error command sh -c tsx watch src/index.ts

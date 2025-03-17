@@ -16,5 +16,14 @@
      ⨯ reactCompiler
 
  ✓ Starting...
- ✓ Compiled in 3.6s
- ✓ Ready in 4.5s
+ ✓ Compiled in 1789ms
+ ✓ Ready in 2.7s
+sh: line 1: 45117 Done                    pnpm with-env next dev --turbo
+     45118 Terminated: 15          | pino-pretty -c
+npm error Lifecycle script `dev` failed with error:
+npm error code 143
+npm error path /Users/kevinlourd/Business/agent-base-new/apps/web
+npm error workspace web@0.1.0
+npm error location /Users/kevinlourd/Business/agent-base-new/apps/web
+npm error command failed
+npm error command sh -c pnpm with-env next dev --turbo | pino-pretty -c

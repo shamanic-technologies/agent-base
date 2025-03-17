@@ -9,11 +9,31 @@ npm warn config ignoring workspace config at /Users/kevinlourd/Business/agent-ba
    - Environments: .env
 
  ✓ Starting...
- ✓ Ready in 2.3s
- ✓ Compiled /middleware in 232ms (146 modules)
- ○ Compiling / ...
- ✓ Compiled / in 793ms (712 modules)
- GET / 200 in 1055ms
+ ✓ Ready in 2s
+ ✓ Compiled /middleware in 246ms (146 modules)
  ○ Compiling /chat ...
- ✓ Compiled /chat in 725ms (937 modules)
- GET /chat 200 in 846ms
+ ✓ Compiled /chat in 1134ms (928 modules)
+ GET /chat 200 in 1363ms
+ ✓ Compiled /api/proxy in 424ms (948 modules)
+Error calling /api/generate: Error: API call failed: Unauthorized
+    at callServerProxyApi (lib/api.ts:43:12)
+    at async POST (app/api/proxy/route.ts:24:19)
+  41 |     
+  42 |     if (!response.ok) {
+> 43 |       throw new Error(`API call failed: ${response.statusText}`);
+     |            ^
+  44 |     }
+  45 |     
+  46 |     return await response.json();
+Proxy API error: Error: API call failed: Unauthorized
+    at callServerProxyApi (lib/api.ts:43:12)
+    at async POST (app/api/proxy/route.ts:24:19)
+  41 |     
+  42 |     if (!response.ok) {
+> 43 |       throw new Error(`API call failed: ${response.statusText}`);
+     |            ^
+  44 |     }
+  45 |     
+  46 |     return await response.json();
+ POST /api/proxy 500 in 736ms
+[?25h

@@ -7,3 +7,10 @@ npm warn config ignoring workspace config at /Users/kevinlourd/Business/agent-ba
 🔧 Utility Service running at http://localhost:3008
 🌐 Environment: development
 🧩 GitHub Codespaces API enabled
+npm error Lifecycle script `dev` failed with error:
+npm error code 143
+npm error path /Users/kevinlourd/Business/agent-base-new/apps/utility-service
+npm error workspace @helloworld/utility-service@1.0.0
+npm error location /Users/kevinlourd/Business/agent-base-new/apps/utility-service
+npm error command failed
+npm error command sh -c tsx watch src/index.ts

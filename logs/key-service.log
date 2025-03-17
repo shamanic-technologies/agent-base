@@ -3,3 +3,10 @@
 > tsx watch src/index.ts
 
 Key Service running on port 3003
+npm error Lifecycle script `dev` failed with error:
+npm error code 143
+npm error path /Users/kevinlourd/Business/agent-base-new/apps/key-service
+npm error workspace @helloworld/key-service@1.0.0
+npm error location /Users/kevinlourd/Business/agent-base-new/apps/key-service
+npm error command failed
+npm error command sh -c tsx watch src/index.ts

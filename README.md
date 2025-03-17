@@ -70,8 +70,8 @@ npm test --filter="@helloworld/auth-service"
 | **proxy-service** | API gateway that routes requests to appropriate services | 3004 |
 | **utility-service** | Utility functions for application features | 3008 |
 | **dev-tool** | Development tools and debugging | 3010 |
-| **web** | Main web application (Next.js) | 3000 |
-| **client** | React client application (Vite) | 5173 |
+| **web** | Main web application (Next.js) | 3020 |
+| **client** | React client application (Vite) | 3000 |
 
 ## Deployment
 

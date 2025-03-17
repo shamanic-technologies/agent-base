@@ -9,19 +9,10 @@ Environment configuration:
 - JWT_SECRET: set (hidden)
 - SESSION_SECRET: set (hidden)
 🔐 Auth Service running on port 3005 (using Passport.js)
-Sending user data to database service: http://localhost:3006/db/users
-User with provider ID 107245792881208469416 exists, updating...
-Successfully updated user with provider ID 107245792881208469416 in database
-User saved to database: {
-  id: '175ca78d-5d97-4593-a7bd-aeb08e9f374c',
-  data: {
-    name: 'Kevin Lourd',
-    email: 'kevin.lourd@gmail.com',
-    picture: 'https://lh3.googleusercontent.com/a/ACg8ocLTGYpdpNSEkhZS1mxpEoZvm7zGMJmCjVG6p6xeZcDauf72-mQMdg=s96-c',
-    provider: 'google',
-    last_login: '2025-03-17T03:06:06.093Z',
-    providerId: '107245792881208469416'
-  },
-  created_at: '2025-03-16T11:40:39.341Z',
-  updated_at: '2025-03-17T03:06:06.102Z'
-}
+npm error Lifecycle script `dev` failed with error:
+npm error code 143
+npm error path /Users/kevinlourd/Business/agent-base-new/apps/auth-service
+npm error workspace @helloworld/auth-service@1.0.0
+npm error location /Users/kevinlourd/Business/agent-base-new/apps/auth-service
+npm error command failed
+npm error command sh -c tsx watch src/index.ts

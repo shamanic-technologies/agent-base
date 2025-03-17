@@ -9,4 +9,13 @@
      ✓ reactCompiler
 
  ✓ Starting...
- ✓ Ready in 955ms
+ ✓ Ready in 790ms
+sh: line 1: 45209 Done                    next dev --turbo --port=3010
+     45210 Terminated: 15          | pino-pretty -c
+npm error Lifecycle script `dev` failed with error:
+npm error code 143
+npm error path /Users/kevinlourd/Business/agent-base-new/apps/dev-tool
+npm error workspace dev-tool@0.1.0
+npm error location /Users/kevinlourd/Business/agent-base-new/apps/dev-tool
+npm error command failed
+npm error command sh -c next dev --turbo --port=3010 | pino-pretty -c
