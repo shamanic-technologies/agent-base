@@ -83,10 +83,18 @@ app.post('/generate', async (req: express.Request, res: express.Response) => {
   }
   
   try {
-    // Forward the request to the model service
-    const response = await axios.post(`${MODEL_SERVICE_URL}/generate`, req.body);
+    // Create a new request body that includes the user ID
+    const enrichedRequestBody = {
+      ...req.body,
+      user_id: validation.userId
+    };
     
-    // Add user ID tracking info
+    console.log(`Forwarding request for user ID: ${validation.userId}`);
+    
+    // Forward the enriched request to the model service
+    const response = await axios.post(`${MODEL_SERVICE_URL}/generate`, enrichedRequestBody);
+    
+    // Add user ID tracking info (in case it's not already included in response)
     if (response.data) {
       response.data.user_id = validation.userId;
     }
