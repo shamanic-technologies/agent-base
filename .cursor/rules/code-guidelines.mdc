@@ -9,3 +9,4 @@ alwaysApply: true
 - Don't use fallback in the code. Instead rather an error. I prefer the code to crash properly than to not be aware of an issue.
 - User "pnpm -workspace" always in apps, otherwise your command won't work
 - Don't try to re-run services when not asked. It creates port issues. Instead assume the services are always running.
+- Ne propose pas de git push si on est dans une situation où le code ne marche pas

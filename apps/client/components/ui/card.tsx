@@ -2,7 +2,6 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-// Updated React components to work with React 19 typing
 const Card = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
@@ -74,12 +73,4 @@ const CardFooter = React.forwardRef<
 ))
 CardFooter.displayName = "CardFooter"
 
-// Export as JSX.Element factories for React 19
-export {
-  Card as Card,
-  CardHeader as CardHeader,
-  CardFooter as CardFooter,
-  CardTitle as CardTitle,
-  CardDescription as CardDescription,
-  CardContent as CardContent 
-}
+export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }
