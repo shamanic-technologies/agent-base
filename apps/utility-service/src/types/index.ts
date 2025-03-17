@@ -6,6 +6,8 @@
 export interface UtilityRequest {
   operation: string;
   input?: any;
+  user_id?: string;
+  conversation_id?: string;
 }
 
 export interface UtilityResponse {

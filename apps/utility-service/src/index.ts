@@ -41,16 +41,31 @@ app.get('/health', (req: Request, res: Response) => {
 
 // Define a route handler function separate from the app.post call
 const utilityHandler = async (req: Request, res: Response): Promise<void> => {
-  const { operation, input } = req.body as UtilityRequest;
+  const { operation, input, user_id, conversation_id } = req.body as UtilityRequest;
   
   if (!operation) {
     res.status(400).json({ error: 'Operation is required' });
     return;
   }
   
+  if (!user_id) {
+    res.status(400).json({ error: 'user_id is required' });
+    return;
+  }
+  
+  if (!conversation_id) {
+    res.status(400).json({ error: 'conversation_id is required' });
+    return;
+  }
+  
   try {
     // Process the utility operation
-    const result = await processUtilityOperation(operation as UtilityOperation, input);
+    const result = await processUtilityOperation(
+      operation as UtilityOperation, 
+      user_id,
+      conversation_id,
+      input
+    );
     
     // Return the result
     res.status(200).json(result);
@@ -71,6 +86,25 @@ app.post('/utility', utilityHandler);
 
 // Endpoint to list available utilities
 app.get('/utilities', (req: Request, res: Response) => {
+  // Extract user_id and conversation_id from query parameters
+  const user_id = req.query.user_id as string;
+  const conversation_id = req.query.conversation_id as string;
+  
+  // Ensure user_id and conversation_id are provided
+  if (!user_id) {
+    res.status(400).json({ error: 'user_id is required' });
+    return;
+  }
+  
+  if (!conversation_id) {
+    res.status(400).json({ error: 'conversation_id is required' });
+    return;
+  }
+  
+  // Log user and conversation context
+  console.log(`Listing utilities for user: ${user_id}`);
+  console.log(`Conversation context: ${conversation_id}`);
+  
   const utilities = [
     'utility_get_current_datetime',
     'utility_github_create_codespace',
@@ -100,6 +134,25 @@ app.get('/utilities', (req: Request, res: Response) => {
 // Endpoint to get utility info
 app.get('/utility/:id', (req: Request, res: Response) => {
   const { id } = req.params;
+  
+  // Extract user_id and conversation_id from query parameters
+  const user_id = req.query.user_id as string;
+  const conversation_id = req.query.conversation_id as string;
+  
+  // Ensure user_id and conversation_id are provided
+  if (!user_id) {
+    res.status(400).json({ error: 'user_id is required' });
+    return;
+  }
+  
+  if (!conversation_id) {
+    res.status(400).json({ error: 'conversation_id is required' });
+    return;
+  }
+  
+  // Log user and conversation context
+  console.log(`Getting utility info for user: ${user_id}`);
+  console.log(`Conversation context: ${conversation_id}`);
   
   // Define utility information
   const utilityInfo: Record<string, any> = {
