@@ -89,10 +89,10 @@ export function UtilitiesSection({ utilityCategories, sendMessage }: UtilitiesSe
       <CardHeader>
         <div className="flex items-center gap-2">
           <AlertCircle className="h-5 w-5 text-indigo-600" />
-          <CardTitle>Available Utilities</CardTitle>
+          <CardTitle>Available Tools</CardTitle>
         </div>
         <CardDescription>
-          Pre-configured utilities for your agents to leverage
+          Pre-configured tools for your agents to leverage
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -103,7 +103,7 @@ export function UtilitiesSection({ utilityCategories, sendMessage }: UtilitiesSe
                 className="flex items-center gap-2 cursor-pointer"
                 onClick={() => toggleCategory(category.name)}
               >
-                <div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center">
+                <div className="h-8 w-8 rounded-lg bg-white flex items-center justify-center">
                   {category.icon}
                 </div>
                 <div className="font-medium">{category.name}</div>

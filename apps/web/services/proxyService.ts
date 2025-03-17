@@ -12,9 +12,10 @@ const PROXY_SERVICE_URL = 'http://localhost:3002';
  * 
  * @param prompt - The message to send to the AI
  * @param apiKey - The API key for authentication
+ * @param threadId - Optional thread ID for conversation context
  * @returns The AI response
  */
-export async function sendMessage(prompt: string, apiKey: string): Promise<any> {
+export async function sendMessage(prompt: string, apiKey: string, threadId?: string): Promise<any> {
   try {
     const response = await fetch(`${PROXY_SERVICE_URL}/generate`, {
       method: 'POST',
@@ -22,7 +23,10 @@ export async function sendMessage(prompt: string, apiKey: string): Promise<any> 
         'Content-Type': 'application/json',
         'x-api-key': apiKey
       },
-      body: JSON.stringify({ prompt })
+      body: JSON.stringify({ 
+        prompt,
+        conversation_id: threadId 
+      })
     });
 
     if (!response.ok) {

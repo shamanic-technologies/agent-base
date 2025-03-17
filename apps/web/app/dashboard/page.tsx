@@ -37,17 +37,28 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        // Endpoint would typically be secured and use authentication
-        const response = await fetch('http://localhost:3006/db/users');
+        setIsLoading(true);
+        
+        // Instead of redirection logic when auth fails, we'll use a direct database approach
+        // for development purposes. In production, this would use proper auth.
+        const response = await fetch(`${process.env.NEXT_PUBLIC_DB_SERVICE_URL || 'http://localhost:3006'}/db/users`);
+        
+        if (!response.ok) {
+          console.error('Failed to fetch users data');
+          return;
+        }
+        
         const data = await response.json();
         
         if (data.success && data.data.items.length > 0) {
-          const userData = data.data.items[0];
+          // Use the most recently created user
+          const userData = data.data.items[data.data.items.length - 1];
+          
           setUser({
             id: userData.id,
-            name: userData.data.name,
-            picture: userData.data.picture,
-            email: userData.data.email
+            name: userData.data.name || "User",
+            picture: userData.data.picture || "",
+            email: userData.data.email || ""
           });
           
           // Fetch API key after getting user data
@@ -70,7 +81,8 @@ export default function Dashboard() {
     setIsLoadingKey(true);
     try {
       // First, check if user already has keys
-      const existingKeysResponse = await fetch(`http://localhost:3003/keys?userId=${userId}`);
+      const KEYS_SERVICE_URL = process.env.NEXT_PUBLIC_KEYS_SERVICE_URL || 'http://localhost:3003';
+      const existingKeysResponse = await fetch(`${KEYS_SERVICE_URL}/keys?userId=${userId}`);
       const existingKeysData = await existingKeysResponse.json();
       
       if (existingKeysData.success && existingKeysData.data && existingKeysData.data.length > 0) {
@@ -78,7 +90,7 @@ export default function Dashboard() {
         setApiKey(`helloworld_xxxx_${existingKeysData.data[0].keyPrefix.substring(10)}`);
       } else {
         // Create new key for user
-        const response = await fetch('http://localhost:3003/keys', {
+        const response = await fetch(`${KEYS_SERVICE_URL}/keys`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -94,14 +106,13 @@ export default function Dashboard() {
         if (data.success && data.apiKey) {
           setApiKey(data.apiKey);
         } else {
-          // Fallback to a placeholder if API fails
-          setApiKey('helloworld_sk_b8e92a71f9d64e3b95c1a97d19b7b32c');
+          console.error('Failed to generate API key');
+          setApiKey(''); // Set empty API key on failure
         }
       }
     } catch (error) {
       console.error('Error fetching API key:', error);
-      // Fallback to a placeholder if API fails
-      setApiKey('helloworld_sk_b8e92a71f9d64e3b95c1a97d19b7b32c');
+      setApiKey(''); // Set empty API key on error
     } finally {
       setIsLoadingKey(false);
     }
@@ -113,7 +124,8 @@ export default function Dashboard() {
     
     setIsLoadingKey(true);
     try {
-      const response = await fetch('http://localhost:3003/keys', {
+      const KEYS_SERVICE_URL = process.env.NEXT_PUBLIC_KEYS_SERVICE_URL || 'http://localhost:3003';
+      const response = await fetch(`${KEYS_SERVICE_URL}/keys`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -130,6 +142,8 @@ export default function Dashboard() {
         setApiKey(data.apiKey);
         // Set key to be visible when regenerated
         setIsKeyVisible(true);
+      } else {
+        console.error('Failed to regenerate API key');
       }
     } catch (error) {
       console.error('Error regenerating API key:', error);

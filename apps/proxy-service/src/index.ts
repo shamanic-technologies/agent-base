@@ -38,7 +38,7 @@ const validateApiKey = async (apiKey: string): Promise<{valid: boolean, userId?:
     
     return { valid: false };
   } catch (error) {
-    console.error('Error validating API key:', error);
+    console.error('Proxy Service: Error validating API key:', error);
     return { valid: false };
   }
 };
@@ -70,7 +70,7 @@ app.post('/generate', async (req: express.Request, res: express.Response) => {
   if (!apiKey) {
     return res.status(401).json({
       success: false,
-      error: 'API key is required'
+      error: 'Proxy Service: API key is required'
     });
   }
   
@@ -78,7 +78,7 @@ app.post('/generate', async (req: express.Request, res: express.Response) => {
   if (!conversation_id) {
     return res.status(400).json({
       success: false,
-      error: 'conversation_id is required'
+      error: 'Proxy Service: conversation_id is required'
     });
   }
   
@@ -88,7 +88,7 @@ app.post('/generate', async (req: express.Request, res: express.Response) => {
   if (!validation.valid) {
     return res.status(401).json({
       success: false,
-      error: 'Invalid API key'
+      error: 'Proxy Service: Invalid API key'
     });
   }
   
@@ -119,7 +119,7 @@ app.post('/generate', async (req: express.Request, res: express.Response) => {
     if (axios.isAxiosError(error) && !error.response) {
       return res.status(502).json({ 
         success: false,
-        error: 'Could not connect to Model Service'
+        error: 'Proxy Service: Could not connect to Model Service'
       });
     }
     
@@ -128,7 +128,7 @@ app.post('/generate', async (req: express.Request, res: express.Response) => {
     
     res.status(status).json({ 
       success: false,
-      error: 'Error communicating with model service',
+      error: 'Proxy Service: Error communicating with model service',
       details: axios.isAxiosError(error) 
         ? error.response?.data || error.message 
         : error instanceof Error ? error.message : 'Unknown error'

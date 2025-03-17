@@ -26,7 +26,7 @@ export async function sendChatMessage(
     };
 
     // Get response from the proxy service
-    const response = await proxyService.sendMessage(prompt, apiKey);
+    const response = await proxyService.sendMessage(prompt, apiKey, threadId);
     
     // Process the response to extract text
     let formattedContent = "I processed your request.";
