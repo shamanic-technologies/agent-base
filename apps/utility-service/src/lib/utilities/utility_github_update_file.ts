@@ -16,17 +16,20 @@ export class UtilityGitHubUpdateFile extends GitHubBaseUtility {
     conversationId,
     parentNodeId,
     parentNodeType,
+    userId
   }: {
     conversationId: ThreadId;
     parentNodeId: ParentNodeId;
     parentNodeType: ParentNodeType;
+    userId?: string;
   }) {
     super({
       name: "utility_github_update_file",
-      description: "Update an existing file in a GitHub repository",
+      description: "Update a file in a GitHub repository",
       conversationId,
       parentNodeId,
       parentNodeType,
+      userId
     });
   }
 

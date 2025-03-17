@@ -22,10 +22,12 @@ export class UtilityGitHubRunCode extends GitHubBaseUtility {
     conversationId,
     parentNodeId,
     parentNodeType,
+    userId
   }: {
     conversationId: ThreadId;
     parentNodeId: ParentNodeId;
     parentNodeType: ParentNodeType;
+    userId?: string;
   }) {
     super({
       name: "utility_github_run_code",
@@ -33,6 +35,7 @@ export class UtilityGitHubRunCode extends GitHubBaseUtility {
       conversationId,
       parentNodeId,
       parentNodeType,
+      userId
     });
   }
 

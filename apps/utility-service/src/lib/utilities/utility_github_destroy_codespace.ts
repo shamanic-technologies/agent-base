@@ -19,10 +19,12 @@ export class UtilityGitHubDestroyCodespace extends GitHubBaseUtility {
     conversationId,
     parentNodeId,
     parentNodeType,
+    userId
   }: {
     conversationId: ThreadId;
     parentNodeId: ParentNodeId;
     parentNodeType: ParentNodeType;
+    userId?: string;
   }) {
     super({
       name: "utility_github_destroy_codespace",
@@ -30,6 +32,7 @@ export class UtilityGitHubDestroyCodespace extends GitHubBaseUtility {
       conversationId,
       parentNodeId,
       parentNodeType,
+      userId
     });
   }
 

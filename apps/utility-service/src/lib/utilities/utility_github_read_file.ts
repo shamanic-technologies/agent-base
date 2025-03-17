@@ -16,10 +16,12 @@ export class UtilityGitHubReadFile extends GitHubBaseUtility {
     conversationId,
     parentNodeId,
     parentNodeType,
+    userId
   }: {
     conversationId: ThreadId;
     parentNodeId: ParentNodeId;
     parentNodeType: ParentNodeType;
+    userId?: string;
   }) {
     super({
       name: "utility_github_read_file",
@@ -27,6 +29,7 @@ export class UtilityGitHubReadFile extends GitHubBaseUtility {
       conversationId,
       parentNodeId,
       parentNodeType,
+      userId
     });
   }
 

@@ -37,15 +37,11 @@ export class UtilityGoogleSearch extends Tool {
   nodeType = NodeType.UTILITY;
   parentNodeId: ParentNodeId;
   parentNodeType: ParentNodeType;
+  userId?: string;
   
   // Define the input schema for the utility
   utilitySchema = z.object({
-    query: z.string().describe(
-      "The search query to send to Google Search. Be specific and include relevant keywords for better results."
-    ),
-    limit: z.number().min(1).max(10).optional().describe(
-      "Maximum number of results to return (default: 5, max: 10)"
-    )
+    query: z.string().describe("The search query to perform")
   });
 
   // Tool configuration options for LangGraph
@@ -57,16 +53,19 @@ export class UtilityGoogleSearch extends Tool {
     node_type: NodeType;
     parent_node_id: ParentNodeId;
     parent_node_type: ParentNodeType;
+    user_id?: string;
   };
   
   constructor({ 
     conversationId,
     parentNodeId,
-    parentNodeType
+    parentNodeType,
+    userId
   }: {
     conversationId: ThreadId;
     parentNodeId: ParentNodeId;
     parentNodeType: ParentNodeType;
+    userId?: string;
   }) {
     super();
     
@@ -74,6 +73,7 @@ export class UtilityGoogleSearch extends Tool {
     this.conversationId = conversationId;
     this.parentNodeId = parentNodeId;
     this.parentNodeType = parentNodeType;
+    this.userId = userId;
     
     // Set the configurable options
     this.configurable = {
@@ -86,6 +86,7 @@ export class UtilityGoogleSearch extends Tool {
       node_type: this.nodeType,
       parent_node_id: this.parentNodeId,
       parent_node_type: this.parentNodeType,
+      user_id: this.userId
     };
   }
   

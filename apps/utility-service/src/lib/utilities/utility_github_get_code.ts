@@ -16,17 +16,20 @@ export class UtilityGitHubGetCode extends GitHubBaseUtility {
     conversationId,
     parentNodeId,
     parentNodeType,
+    userId
   }: {
     conversationId: ThreadId;
     parentNodeId: ParentNodeId;
     parentNodeType: ParentNodeType;
+    userId?: string;
   }) {
     super({
       name: "utility_github_get_code",
-      description: "Retrieve file content from a GitHub repository",
+      description: "Get code from a GitHub repository",
       conversationId,
       parentNodeId,
       parentNodeType,
+      userId
     });
   }
 

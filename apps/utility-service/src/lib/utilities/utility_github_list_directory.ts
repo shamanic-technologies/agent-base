@@ -16,17 +16,20 @@ export class UtilityGitHubListDirectory extends GitHubBaseUtility {
     conversationId,
     parentNodeId,
     parentNodeType,
+    userId
   }: {
     conversationId: ThreadId;
     parentNodeId: ParentNodeId;
     parentNodeType: ParentNodeType;
+    userId?: string;
   }) {
     super({
       name: "utility_github_list_directory",
-      description: "List files and directories in a GitHub repository",
+      description: "List contents of a directory in a GitHub repository",
       conversationId,
       parentNodeId,
       parentNodeType,
+      userId
     });
   }
 

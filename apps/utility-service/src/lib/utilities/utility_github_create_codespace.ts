@@ -20,17 +20,20 @@ export class UtilityGitHubCreateCodespace extends GitHubBaseUtility {
     conversationId,
     parentNodeId,
     parentNodeType,
+    userId
   }: {
     conversationId: ThreadId;
     parentNodeId: ParentNodeId;
     parentNodeType: ParentNodeType;
+    userId?: string;
   }) {
     super({
       name: "utility_github_create_codespace",
-      description: "Create a GitHub Codespace using environment variables (no input required)",
+      description: "Create a GitHub Codespace in the default repository",
       conversationId,
       parentNodeId,
       parentNodeType,
+      userId
     });
   }
 

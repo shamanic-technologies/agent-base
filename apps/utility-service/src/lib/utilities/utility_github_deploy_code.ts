@@ -16,10 +16,12 @@ export class UtilityGitHubDeployCode extends GitHubBaseUtility {
     conversationId,
     parentNodeId,
     parentNodeType,
+    userId
   }: {
     conversationId: ThreadId;
     parentNodeId: ParentNodeId;
     parentNodeType: ParentNodeType;
+    userId?: string;
   }) {
     super({
       name: "utility_github_deploy_code",
@@ -27,6 +29,7 @@ export class UtilityGitHubDeployCode extends GitHubBaseUtility {
       conversationId,
       parentNodeId,
       parentNodeType,
+      userId
     });
   }
 

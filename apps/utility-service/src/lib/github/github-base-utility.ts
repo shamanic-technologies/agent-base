@@ -23,6 +23,7 @@ export abstract class GitHubBaseUtility extends Tool {
   nodeType = NodeType.UTILITY;
   parentNodeId: ParentNodeId;
   parentNodeType: ParentNodeType;
+  userId?: string;
   
   // GitHub client
   protected githubClient: GitHubClient;
@@ -44,6 +45,7 @@ export abstract class GitHubBaseUtility extends Tool {
     node_type: NodeType;
     parent_node_id: ParentNodeId;
     parent_node_type: ParentNodeType;
+    user_id?: string;
   };
   
   constructor({ 
@@ -52,6 +54,7 @@ export abstract class GitHubBaseUtility extends Tool {
     conversationId,
     parentNodeId,
     parentNodeType,
+    userId,
     githubClient
   }: {
     name: string;
@@ -59,6 +62,7 @@ export abstract class GitHubBaseUtility extends Tool {
     conversationId: ThreadId;
     parentNodeId: ParentNodeId;
     parentNodeType: ParentNodeType;
+    userId?: string;
     githubClient?: GitHubClient;
   }) {
     super();
@@ -72,6 +76,7 @@ export abstract class GitHubBaseUtility extends Tool {
     this.nodeId = this.name as NodeId;
     this.parentNodeId = parentNodeId;
     this.parentNodeType = parentNodeType;
+    this.userId = userId;
     
     // Set the configurable options
     this.configurable = {
@@ -84,6 +89,7 @@ export abstract class GitHubBaseUtility extends Tool {
       node_type: this.nodeType,
       parent_node_id: this.parentNodeId,
       parent_node_type: this.parentNodeType,
+      user_id: this.userId
     };
     
     // Initialize GitHub client

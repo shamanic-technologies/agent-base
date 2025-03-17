@@ -17,17 +17,20 @@ export class UtilityGitHubListCodespaces extends GitHubBaseUtility {
     conversationId,
     parentNodeId,
     parentNodeType,
+    userId
   }: {
     conversationId: ThreadId;
     parentNodeId: ParentNodeId;
     parentNodeType: ParentNodeType;
+    userId?: string;
   }) {
     super({
       name: "utility_github_list_codespaces",
-      description: "List GitHub Codespaces for the authenticated user",
+      description: "List available GitHub Codespaces",
       conversationId,
       parentNodeId,
       parentNodeType,
+      userId
     });
   }
 

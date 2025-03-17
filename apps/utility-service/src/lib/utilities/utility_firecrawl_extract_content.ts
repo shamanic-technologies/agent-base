@@ -38,15 +38,11 @@ export class UtilityFireCrawlExtractContent extends Tool {
   nodeType = NodeType.UTILITY;
   parentNodeId: ParentNodeId;
   parentNodeType: ParentNodeType;
+  userId?: string;
   
   // Define the input schema for the utility
   utilitySchema = z.object({
-    url: z.string().describe(
-      "The URL to fetch content from. Must be a valid URL including the protocol (http:// or https://)."
-    ),
-    onlyMainContent: z.boolean().optional().describe(
-      "Whether to extract only the main content (default: true). When true, navigational elements, headers, footers, etc. are excluded."
-    )
+    url: z.string().url().describe("URL to extract content from")
   });
 
   // Tool configuration options for LangGraph
@@ -58,16 +54,19 @@ export class UtilityFireCrawlExtractContent extends Tool {
     node_type: NodeType;
     parent_node_id: ParentNodeId;
     parent_node_type: ParentNodeType;
+    user_id?: string;
   };
   
   constructor({ 
     conversationId,
     parentNodeId,
-    parentNodeType
+    parentNodeType,
+    userId
   }: {
     conversationId: ThreadId;
     parentNodeId: ParentNodeId;
     parentNodeType: ParentNodeType;
+    userId?: string;
   }) {
     super();
     
@@ -75,6 +74,7 @@ export class UtilityFireCrawlExtractContent extends Tool {
     this.conversationId = conversationId;
     this.parentNodeId = parentNodeId;
     this.parentNodeType = parentNodeType;
+    this.userId = userId;
     
     // Set the configurable options
     this.configurable = {
@@ -87,6 +87,7 @@ export class UtilityFireCrawlExtractContent extends Tool {
       node_type: this.nodeType,
       parent_node_id: this.parentNodeId,
       parent_node_type: this.parentNodeType,
+      user_id: this.userId
     };
   }
   
