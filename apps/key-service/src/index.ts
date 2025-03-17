@@ -16,10 +16,11 @@ dotenv.config();
 
 // Initialize Express app
 const app = express();
-const PORT = process.env.PORT || 3002;
+const PORT = process.env.PORT || 3003;
 
-// Database service URL
+// Database service URL - make sure this is correctly set in .env.local
 const DB_SERVICE_URL = process.env.DB_SERVICE_URL || 'http://localhost:3006';
+console.log(`Using database service at: ${DB_SERVICE_URL}`);
 
 // Middleware
 app.use(cors());
@@ -70,7 +71,7 @@ app.post('/keys', async (req: express.Request, res: express.Response) => {
     const keyPrefix = apiKey.substring(0, 16);
     const id = uuidv4();
     
-    // Store in database
+    // Prepare data for database storage
     const keyData = {
       userId,
       name,
@@ -82,11 +83,16 @@ app.post('/keys', async (req: express.Request, res: express.Response) => {
       active: true
     };
     
+    console.log(`Creating API key for user ${userId} with name: ${name}`);
+    
     // Save to database service
     const response = await axios.post(`${DB_SERVICE_URL}/api-keys`, keyData);
     
     if (!response.data.success) {
+      console.error('Failed to store API key in database:', response.data);
       throw new Error('Failed to store API key in database');
+    } else {
+      console.log('Successfully stored API key in database:', response.data.data.id);
     }
 
     return res.status(201).json({
@@ -116,14 +122,17 @@ app.get('/keys/:id', async (req: express.Request, res: express.Response) => {
   try {
     const { id } = req.params;
     
-    // Query database for key by ID
+    console.log(`Fetching API key with ID: ${id}`);
+    
+    // Query database for key by ID - use the proper endpoint
     const response = await axios.get(`${DB_SERVICE_URL}/db/api_keys`, {
       params: {
         query: JSON.stringify({ 'data.id': id })
       }
     });
     
-    if (!response.data.success || response.data.data.items.length === 0) {
+    if (!response.data.success || !response.data.data || response.data.data.items.length === 0) {
+      console.log('API key not found in database');
       return res.status(404).json({
         success: false,
         error: 'API key not found'
@@ -131,6 +140,7 @@ app.get('/keys/:id', async (req: express.Request, res: express.Response) => {
     }
     
     const apiKey = response.data.data.items[0].data;
+    console.log(`Found API key: ${apiKey.id}`);
     
     return res.status(200).json({
       success: true,
@@ -167,15 +177,19 @@ app.get('/keys', async (req: express.Request, res: express.Response) => {
       });
     }
     
+    console.log(`Fetching API keys for user: ${userId}`);
+    
     // Fetch keys from database service
     const response = await axios.get(`${DB_SERVICE_URL}/api-keys`, {
       params: { userId }
     });
     
     if (!response.data.success) {
+      console.error('Failed to fetch API keys from database:', response.data);
       throw new Error('Failed to fetch API keys from database');
     }
     
+    // Transform the response to match our API format
     const userKeys = response.data.data.items.map((item: any) => {
       const keyData = item.data;
       return {
@@ -187,6 +201,8 @@ app.get('/keys', async (req: express.Request, res: express.Response) => {
         active: keyData.active
       };
     });
+    
+    console.log(`Found ${userKeys.length} API keys for user ${userId}`);
   
     return res.status(200).json({
       success: true,
@@ -209,6 +225,8 @@ app.delete('/keys/:id', async (req: express.Request, res: express.Response) => {
   try {
     const { id } = req.params;
     
+    console.log(`Revoking API key with ID: ${id}`);
+    
     // Find the key
     const response = await axios.get(`${DB_SERVICE_URL}/db/api_keys`, {
       params: {
@@ -216,7 +234,8 @@ app.delete('/keys/:id', async (req: express.Request, res: express.Response) => {
       }
     });
     
-    if (!response.data.success || response.data.data.items.length === 0) {
+    if (!response.data.success || !response.data.data.items.length) {
+      console.log('API key not found for revocation');
       return res.status(404).json({
         success: false,
         error: 'API key not found'
@@ -229,6 +248,8 @@ app.delete('/keys/:id', async (req: express.Request, res: express.Response) => {
     // Update the key to be inactive
     keyData.active = false;
     keyData.updated_at = new Date().toISOString();
+    
+    console.log(`Updating API key ${id} to inactive`);
     
     // Update in database
     await axios.put(`${DB_SERVICE_URL}/db/api_keys/${keyRecord.id}`, {
@@ -264,6 +285,7 @@ app.post('/keys/validate', async (req: express.Request, res: express.Response) =
     }
     
     const keyHash = hashApiKey(apiKey);
+    console.log(`Validating API key (hash: ${keyHash.substring(0, 10)}...)`);
     
     // Query database for key by hash
     const response = await axios.get(`${DB_SERVICE_URL}/db/api_keys`, {
@@ -272,7 +294,8 @@ app.post('/keys/validate', async (req: express.Request, res: express.Response) =
       }
     });
     
-    if (!response.data.success || response.data.data.items.length === 0) {
+    if (!response.data.success || !response.data.data.items.length) {
+      console.log('Invalid API key - not found in database');
       return res.status(401).json({
         success: false,
         error: 'Invalid or revoked API key'
@@ -284,6 +307,7 @@ app.post('/keys/validate', async (req: express.Request, res: express.Response) =
     
     // Check if key is active
     if (!keyData.active) {
+      console.log('API key is revoked');
       return res.status(401).json({
         success: false,
         error: 'API key has been revoked'
@@ -292,6 +316,7 @@ app.post('/keys/validate', async (req: express.Request, res: express.Response) =
     
     // Update last used timestamp
     keyData.lastUsed = new Date().toISOString();
+    console.log(`Updating last used timestamp for API key ${keyData.id}`);
     
     // Update in database
     await axios.put(`${DB_SERVICE_URL}/db/api_keys/${keyRecord.id}`, {
@@ -318,4 +343,5 @@ app.post('/keys/validate', async (req: express.Request, res: express.Response) =
 // Start the server
 app.listen(PORT, () => {
   console.log(`Key Service running on port ${PORT}`);
+  console.log(`Using database service at: ${DB_SERVICE_URL}`);
 }); 
