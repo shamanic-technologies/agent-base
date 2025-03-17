@@ -16,7 +16,18 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from '../../components/ui/dropdown-menu';
-import { Copy, Check, FileText, Clock, AlertCircle, Code, ChevronDown, ChevronRight, Loader2, CreditCard, LogOut } from 'lucide-react';
+import { Copy, Check, FileText, Clock, AlertCircle, Code, ChevronDown, ChevronRight, Loader2, CreditCard, LogOut, Eye, EyeOff, RefreshCw } from 'lucide-react';
+
+// Define Badge component inline since we can't find the import
+const Badge = ({ children, variant, className }: { children: React.ReactNode; variant?: string; className?: string }) => {
+  return (
+    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors ${
+      variant === 'outline' ? 'border-gray-200 text-gray-900' : 'bg-gray-100 text-gray-900 border-transparent'
+    } ${className || ''}`}>
+      {children}
+    </span>
+  );
+};
 
 /**
  * Professional Dashboard Page
@@ -27,8 +38,11 @@ export default function Dashboard() {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
-  const [user, setUser] = useState<{ name: string; picture: string; email: string } | null>(null);
+  const [user, setUser] = useState<{ name: string; picture: string; email: string; id?: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [apiKey, setApiKey] = useState('');
+  const [isKeyVisible, setIsKeyVisible] = useState(false);
+  const [isLoadingKey, setIsLoadingKey] = useState(false);
   
   // Fetch user data
   useEffect(() => {
@@ -39,12 +53,16 @@ export default function Dashboard() {
         const data = await response.json();
         
         if (data.success && data.data.items.length > 0) {
-          const userData = data.data.items[0].data;
+          const userData = data.data.items[0];
           setUser({
-            name: userData.name,
-            picture: userData.picture,
-            email: userData.email
+            id: userData.id,
+            name: userData.data.name,
+            picture: userData.data.picture,
+            email: userData.data.email
           });
+          
+          // Fetch API key after getting user data
+          fetchApiKey(userData.id);
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
@@ -55,6 +73,81 @@ export default function Dashboard() {
     
     fetchUserData();
   }, []);
+  
+  // Fetch API key for user
+  const fetchApiKey = async (userId: string) => {
+    if (!userId) return;
+    
+    setIsLoadingKey(true);
+    try {
+      // First, check if user already has keys
+      const existingKeysResponse = await fetch(`http://localhost:3003/keys?userId=${userId}`);
+      const existingKeysData = await existingKeysResponse.json();
+      
+      if (existingKeysData.success && existingKeysData.data && existingKeysData.data.length > 0) {
+        // User already has a key, use the existing one
+        setApiKey(`helloworld_xxxx_${existingKeysData.data[0].keyPrefix.substring(10)}`);
+      } else {
+        // Create new key for user
+        const response = await fetch('http://localhost:3003/keys', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId,
+            name: 'Default HelloWorld Key'
+          }),
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.apiKey) {
+          setApiKey(data.apiKey);
+        } else {
+          // Fallback to a placeholder if API fails
+          setApiKey('helloworld_sk_b8e92a71f9d64e3b95c1a97d19b7b32c');
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching API key:', error);
+      // Fallback to a placeholder if API fails
+      setApiKey('helloworld_sk_b8e92a71f9d64e3b95c1a97d19b7b32c');
+    } finally {
+      setIsLoadingKey(false);
+    }
+  };
+  
+  // Regenerate API key
+  const regenerateApiKey = async () => {
+    if (!user?.id) return;
+    
+    setIsLoadingKey(true);
+    try {
+      const response = await fetch('http://localhost:3003/keys', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          name: 'Regenerated HelloWorld Key'
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success && data.apiKey) {
+        setApiKey(data.apiKey);
+        // Set key to be visible when regenerated
+        setIsKeyVisible(true);
+      }
+    } catch (error) {
+      console.error('Error regenerating API key:', error);
+    } finally {
+      setIsLoadingKey(false);
+    }
+  };
   
   // Get user initials for avatar fallback
   const getUserInitials = () => {
@@ -73,9 +166,26 @@ export default function Dashboard() {
     router.push('/');
   };
   
-  // Fake API key
-  const apiKey = 'agent_base_sk_b8e92a71f9d64e3b95c1a97d19b7b32c';
+  // Toggle password visibility
+  const toggleKeyVisibility = () => {
+    setIsKeyVisible(!isKeyVisible);
+  };
   
+  // Copy API key to clipboard
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(apiKey);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  // Toggle category expansion
+  const toggleCategory = (categoryName: string) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [categoryName]: !prev[categoryName]
+    }));
+  };
+
   // PostgreSQL SVG icon
   const PostgresIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 0 25.6 25.6" width="20" className="h-5 w-5">
@@ -167,21 +277,6 @@ export default function Dashboard() {
     }
   ];
 
-  // Copy API key to clipboard
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(apiKey);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  // Toggle category expansion
-  const toggleCategory = (categoryName: string) => {
-    setExpandedCategories(prev => ({
-      ...prev,
-      [categoryName]: !prev[categoryName]
-    }));
-  };
-
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       {/* Header */}
@@ -256,8 +351,28 @@ export default function Dashboard() {
             {/* Welcome and API Key Section */}
             <Card>
               <CardHeader>
-                <CardTitle>Welcome to Agent Base</CardTitle>
-                <CardDescription>Your AI agent infrastructure dashboard</CardDescription>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Welcome to Agent Base</CardTitle>
+                    <CardDescription>Your AI agent infrastructure dashboard</CardDescription>
+                  </div>
+                  {user?.id && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={regenerateApiKey}
+                      disabled={isLoadingKey}
+                      className="flex items-center gap-1"
+                    >
+                      {isLoadingKey ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-3 w-3" />
+                      )}
+                      <span>New Key</span>
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -270,13 +385,21 @@ export default function Dashboard() {
                       <Input 
                         readOnly 
                         value={apiKey}
-                        type="password"
+                        type={isKeyVisible ? "text" : "password"}
                         className="font-mono text-sm bg-gray-50 rounded-r-none focus-visible:ring-0 focus-visible:ring-offset-0"
                       />
                       <Button 
                         variant="outline" 
                         size="icon" 
-                        className="rounded-l-none border-l-0"
+                        className="rounded-none border-l-0 border-r-0"
+                        onClick={toggleKeyVisibility}
+                      >
+                        {isKeyVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        className="rounded-l-none"
                         onClick={copyToClipboard}
                       >
                         {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
@@ -314,7 +437,7 @@ export default function Dashboard() {
                       <code className="text-sm font-mono whitespace-pre">{`import { AgentBase } from '@agent-base/sdk';
 
 const agentBase = new AgentBase({ 
-  apiKey: '${apiKey}'
+  apiKey: '${isKeyVisible ? apiKey : '********************************'}'
 });`}</code>
                     </div>
                   </div>
@@ -350,44 +473,57 @@ console.log(response.content);`}</code>
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Available Utilities</CardTitle>
-                <CardDescription>Powerful tools to enhance your AI agents</CardDescription>
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5 text-indigo-600" />
+                  <CardTitle>Available Utilities</CardTitle>
+                </div>
+                <CardDescription>
+                  Pre-configured utilities for your agents to leverage
+                </CardDescription>
               </CardHeader>
-              <CardContent className="p-4">
-                <div className="space-y-6">
+              <CardContent>
+                <div className="space-y-4">
                   {utilityCategories.map((category) => (
-                    <div key={category.name} className="space-y-3">
+                    <div key={category.name} className="space-y-2">
                       <div 
-                        className="flex items-center gap-2 pb-2 border-b cursor-pointer hover:bg-gray-50 rounded-md px-2"
+                        className="flex items-center gap-2 cursor-pointer"
                         onClick={() => toggleCategory(category.name)}
                       >
-                        {category.icon}
-                        <h3 className="font-medium">{category.name}</h3>
-                        <Badge variant="outline" className="ml-auto mr-2">
-                          {category.utilities.length}
-                        </Badge>
-                        {expandedCategories[category.name] ? 
-                          <ChevronDown className="h-4 w-4 text-gray-500" /> : 
-                          <ChevronRight className="h-4 w-4 text-gray-500" />
-                        }
+                        <div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center">
+                          {category.icon}
+                        </div>
+                        <div className="font-medium">{category.name}</div>
+                        <div className="ml-auto">
+                          {expandedCategories[category.name] ? 
+                            <ChevronDown className="h-4 w-4" /> : 
+                            <ChevronRight className="h-4 w-4" />
+                          }
+                        </div>
                       </div>
                       
                       {expandedCategories[category.name] && (
-                        <div className="grid grid-cols-1 gap-3 pl-2">
+                        <div className="ml-10 space-y-2 mt-2">
                           {category.utilities.map((utility) => (
-                            <div key={utility.utility} className="flex items-start justify-between p-3 border rounded-lg bg-white hover:shadow-sm transition-shadow">
-                              <div className="flex items-start gap-2">
-                                <div className="mt-0.5 shrink-0">
-                                  {category.icon}
-                                </div>
-                                <div>
-                                  <h3 className="font-medium">{utility.name}</h3>
-                                  <p className="text-sm text-gray-500">{utility.description}</p>
-                                </div>
+                            <div 
+                              key={utility.utility} 
+                              className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
+                            >
+                              <div>
+                                <div className="font-medium text-sm">{utility.name}</div>
+                                <div className="text-xs text-gray-500">{utility.description}</div>
                               </div>
-                              <Button variant="outline" size="sm" className="shrink-0">
-                                Test
-                              </Button>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6">
+                                      <Copy className="h-3 w-3" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Copy utility ID</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             </div>
                           ))}
                         </div>
