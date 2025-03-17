@@ -13,7 +13,7 @@ import {
 } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
-import { Copy, Check, Eye, EyeOff, RefreshCw, Loader2, Key, ShieldAlert } from 'lucide-react';
+import { Copy, Check, Eye, EyeOff, RefreshCw, Loader2 } from 'lucide-react';
 import { Badge } from '../../components/ui/badge';
 
 interface APIKeySectionProps {
@@ -24,7 +24,7 @@ interface APIKeySectionProps {
 }
 
 /**
- * API Key display and management section with enhanced professional styling
+ * API Key display and management section
  */
 export function APIKeySection({ userId, apiKey, isLoadingKey, regenerateApiKey }: APIKeySectionProps) {
   const [isKeyVisible, setIsKeyVisible] = useState(false);
@@ -43,15 +43,12 @@ export function APIKeySection({ userId, apiKey, isLoadingKey, regenerateApiKey }
   };
   
   return (
-    <Card className="border-0 shadow-md overflow-hidden">
-      <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 pb-4">
+    <Card>
+      <CardHeader>
         <div className="flex justify-between items-center">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Key className="h-5 w-5 text-blue-600" />
-              <CardTitle>Welcome to Agent Base</CardTitle>
-            </div>
-            <CardDescription className="text-gray-600">Your AI agent infrastructure dashboard</CardDescription>
+          <div>
+            <CardTitle>Welcome to Agent Base</CardTitle>
+            <CardDescription>Your AI agent infrastructure dashboard</CardDescription>
           </div>
           {userId && (
             <Button 
@@ -59,55 +56,51 @@ export function APIKeySection({ userId, apiKey, isLoadingKey, regenerateApiKey }
               size="sm" 
               onClick={regenerateApiKey}
               disabled={isLoadingKey}
-              className="flex items-center gap-1 shadow-sm hover:shadow transition-all h-9 bg-white"
+              className="flex items-center gap-1"
             >
               {isLoadingKey ? (
                 <Loader2 className="h-3 w-3 animate-spin" />
               ) : (
                 <RefreshCw className="h-3 w-3" />
               )}
-              <span>Regenerate Key</span>
+              <span>New Key</span>
             </Button>
           )}
         </div>
       </CardHeader>
-      <CardContent className="p-5">
+      <CardContent>
         <div className="space-y-4">
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
-                Your API Key
-                <ShieldAlert className="h-3.5 w-3.5 text-amber-500 ml-1" />
-              </label>
-              <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">Secret</Badge>
+              <label className="text-sm font-medium">Your API Key</label>
+              <Badge variant="outline" className="text-xs">Secret</Badge>
             </div>
-            <div className="flex shadow-sm rounded-md overflow-hidden border border-gray-200">
+            <div className="flex">
               <Input 
                 readOnly 
                 value={apiKey}
                 type={isKeyVisible ? "text" : "password"}
-                className="font-mono text-sm bg-gray-50 rounded-r-none focus-visible:ring-0 focus-visible:ring-offset-0 border-0"
+                className="font-mono text-sm bg-gray-50 rounded-r-none focus-visible:ring-0 focus-visible:ring-offset-0"
               />
               <Button 
-                variant="ghost" 
+                variant="outline" 
                 size="icon" 
-                className="rounded-none border-x border-gray-200 hover:bg-gray-100 h-10 w-10"
+                className="rounded-none border-l-0 border-r-0"
                 onClick={toggleKeyVisibility}
               >
-                {isKeyVisible ? <EyeOff className="h-4 w-4 text-gray-500" /> : <Eye className="h-4 w-4 text-gray-500" />}
+                {isKeyVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </Button>
               <Button 
-                variant="ghost" 
+                variant="outline" 
                 size="icon" 
-                className="rounded-l-none hover:bg-gray-100 h-10 w-10"
+                className="rounded-l-none"
                 onClick={copyToClipboard}
               >
-                {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4 text-gray-500" />}
+                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               </Button>
             </div>
-            <p className="mt-3 text-xs text-gray-500 flex items-center">
-              <ShieldAlert className="h-3 w-3 text-amber-500 mr-1 inline-block" />
-              This key grants full access to your account. Keep it secure and never share it publicly.
+            <p className="mt-2 text-xs text-gray-500">
+              This key is used to authenticate your API requests. Keep it secure!
             </p>
           </div>
         </div>

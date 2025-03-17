@@ -1,18 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   Header, 
   APIKeySection, 
-  ToolsSection,
+  UtilitiesSection,
   ChatPanel,
-  toolCategories 
+  utilityCategories 
 } from '../../components/dashboard';
+import type { ChatPanelRef } from '../../components/dashboard/ChatPanel';
 
 /**
  * Professional Dashboard Page
- * Displays user's API key, available tools, and an integrated chat interface
+ * Displays user's API key, available utilities, and an integrated chat interface
  */
 export default function Dashboard() {
   const router = useRouter();
@@ -22,6 +23,16 @@ export default function Dashboard() {
   const [isKeyVisible, setIsKeyVisible] = useState(false);
   const [isLoadingKey, setIsLoadingKey] = useState(false);
   
+  // Reference to the ChatPanel component
+  const chatPanelRef = useRef<ChatPanelRef>(null);
+  
+  // Function to send message to chat
+  const sendMessageToChat = (message: string) => {
+    if (chatPanelRef.current) {
+      chatPanelRef.current.sendMessage(message);
+    }
+  };
+
   // Fetch user data
   useEffect(() => {
     const fetchUserData = async () => {
@@ -157,7 +168,7 @@ export default function Dashboard() {
       {/* Main Content - Two Column Layout */}
       <main className="flex-1 container py-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left Column - API Key and Tools */}
+          {/* Left Column - API Key and Utilities */}
           <div className="space-y-6">
             {/* Welcome and API Key Section */}
             <APIKeySection 
@@ -167,13 +178,16 @@ export default function Dashboard() {
               regenerateApiKey={regenerateApiKey} 
             />
 
-            {/* Available Tools */}
-            <ToolsSection utilityCategories={toolCategories} />
+            {/* Available Utilities */}
+            <UtilitiesSection 
+              utilityCategories={utilityCategories} 
+              sendMessage={sendMessageToChat}
+            />
           </div>
           
           {/* Right Column - Chat Interface */}
           <div className="space-y-6 lg:h-[calc(100vh-150px)]">
-            <ChatPanel />
+            <ChatPanel ref={chatPanelRef} />
           </div>
         </div>
       </main>

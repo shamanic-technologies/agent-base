@@ -1,7 +1,7 @@
 /**
- * Tools Section Component
+ * Utilities Section Component
  * 
- * Displays available AI tools organized by category
+ * Displays available utilities organized by category
  */
 import { useState } from 'react';
 import { 
@@ -17,24 +17,21 @@ import {
   ChevronDown, 
   ChevronRight, 
   Copy,
-  Check,
-  Wrench
+  PlayCircle
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../components/ui/tooltip';
-import { Badge } from '../../components/ui/badge';
 import { UtilityCategory } from './utility-data';
 
-interface ToolsSectionProps {
+interface UtilitiesSectionProps {
   utilityCategories: UtilityCategory[];
+  sendMessage?: (message: string) => void;
 }
 
 /**
- * Section displaying available tools organized by category
- * Professional UI with improved visuals and interactions
+ * Section displaying available utilities organized by category
  */
-export function ToolsSection({ utilityCategories }: ToolsSectionProps) {
+export function UtilitiesSection({ utilityCategories, sendMessage }: UtilitiesSectionProps) {
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
-  const [copiedTools, setCopiedTools] = useState<Record<string, boolean>>({});
   
   // Toggle category expansion
   const toggleCategory = (categoryName: string) => {
@@ -43,87 +40,97 @@ export function ToolsSection({ utilityCategories }: ToolsSectionProps) {
       [categoryName]: !prev[categoryName]
     }));
   };
-  
-  // Copy tool ID to clipboard with feedback
-  const copyToolId = (toolId: string) => {
-    navigator.clipboard.writeText(toolId);
-    setCopiedTools(prev => ({ ...prev, [toolId]: true }));
-    
-    // Reset copied state after 2 seconds
-    setTimeout(() => {
-      setCopiedTools(prev => ({ ...prev, [toolId]: false }));
-    }, 2000);
+
+  // Handle test button click
+  const handleTestClick = (utilityName: string) => {
+    if (sendMessage) {
+      sendMessage(`HelloWorld`);
+    }
   };
   
   return (
-    <Card className="border-0 shadow-md overflow-hidden">
-      <CardHeader className="bg-gradient-to-r from-indigo-50 to-blue-50 pb-4">
+    <Card>
+      <CardHeader>
         <div className="flex items-center gap-2">
-          <Wrench className="h-5 w-5 text-indigo-600" />
-          <CardTitle>Available Tools</CardTitle>
+          <AlertCircle className="h-5 w-5 text-indigo-600" />
+          <CardTitle>Available Utilities</CardTitle>
         </div>
-        <CardDescription className="text-gray-600">
-          Pre-configured tools for your agents to leverage
+        <CardDescription>
+          Pre-configured utilities for your agents to leverage
         </CardDescription>
       </CardHeader>
-      <CardContent className="p-0">
-        <div className="divide-y divide-gray-100">
+      <CardContent>
+        <div className="space-y-4">
           {utilityCategories.map((category) => (
-            <div key={category.name} className="overflow-hidden">
+            <div key={category.name} className="space-y-2">
               <div 
-                className="flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-2 cursor-pointer"
                 onClick={() => toggleCategory(category.name)}
               >
-                <div className="h-10 w-10 rounded-lg bg-indigo-600 flex items-center justify-center shadow-sm">
+                <div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center">
                   {category.icon}
                 </div>
-                <div className="font-medium text-gray-800">{category.name}</div>
-                <Badge variant="outline" className="ml-2 font-mono text-xs">
-                  {category.utilities.length}
-                </Badge>
+                <div className="font-medium">{category.name}</div>
                 <div className="ml-auto">
                   {expandedCategories[category.name] ? 
-                    <ChevronDown className="h-5 w-5 text-gray-400" /> : 
-                    <ChevronRight className="h-5 w-5 text-gray-400" />
+                    <ChevronDown className="h-4 w-4" /> : 
+                    <ChevronRight className="h-4 w-4" />
                   }
                 </div>
               </div>
               
               {expandedCategories[category.name] && (
-                <div className="bg-gray-50 border-t border-gray-100">
+                <div className="ml-10 space-y-2 mt-2">
                   {category.utilities.map((utility) => (
                     <div 
                       key={utility.utility} 
-                      className="flex items-center justify-between p-3 pl-14 hover:bg-gray-100 transition-colors"
+                      className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
                     >
-                      <div className="pr-4">
-                        <div className="font-medium text-sm text-gray-700">{utility.name}</div>
-                        <div className="text-xs text-gray-500 mt-0.5">{utility.description}</div>
+                      <div>
+                        <div className="font-medium text-sm">{utility.name}</div>
+                        <div className="text-xs text-gray-500">{utility.description}</div>
                       </div>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-8 px-2"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                copyToolId(utility.utility);
-                              }}
-                            >
-                              <span className="text-xs font-mono text-gray-500 mr-2">{utility.utility}</span>
-                              {copiedTools[utility.utility] ? 
-                                <Check className="h-3.5 w-3.5 text-green-500" /> : 
-                                <Copy className="h-3.5 w-3.5 text-gray-400" />
-                              }
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{copiedTools[utility.utility] ? "Copied!" : "Copy tool ID"}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                      <div className="flex items-center gap-2">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-8 px-2 text-xs"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleTestClick(utility.name);
+                                }}
+                              >
+                                <PlayCircle className="h-3 w-3 mr-1" />
+                                Test Me
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Test this utility</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-6 w-6"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Copy className="h-3 w-3" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Copy utility ID</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
                     </div>
                   ))}
                 </div>
