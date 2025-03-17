@@ -1,6 +1,16 @@
+[variables]
+NODE_VERSION = "18.x"
+
+[phases.setup]
+aptPkgs = ["nodejs"]
+cmds = [
+  "npm install -g corepack",
+  "corepack enable",
+  "corepack prepare pnpm@10.6.2 --activate"
+]
+
 [phases.install]
 cmds = [
-  "npm install -g pnpm@10.6.2",
   "pnpm install --no-frozen-lockfile"
 ]
 
