@@ -1,6 +1,6 @@
 {
   "databaseURL": "https://helloworld-database-url.us-east-1.xata.sh/db/helloworld",
   "codegen": {
-    "output": "src/xata.ts"
+    "output": "src/lib/xata-client.ts"
   }
 } 

@@ -40,10 +40,18 @@ app.get('/health', (req, res) => {
 
 // LLM generation endpoint using ReAct agent
 app.post('/generate', async (req, res) => {
-  const { prompt, thread_id } = req.body;
+  const { prompt, user_id, conversation_id } = req.body;
   
   if (!prompt) {
     return res.status(400).json({ error: 'Prompt is required' });
+  }
+  
+  if (!user_id) {
+    return res.status(400).json({ error: 'user_id is required' });
+  }
+
+  if (!conversation_id) {
+    return res.status(400).json({ error: 'conversation_id is required' });
   }
   
   try {
@@ -55,13 +63,13 @@ app.post('/generate', async (req, res) => {
       // Return a simplified response as fallback
       return res.status(200).json({
         generated_text: `Hello! This is the HelloWorld model service (simplified mode).\n\nYou asked: "${prompt}"\n\nI'm running in fallback mode because the API key for Claude is not configured. Please set the ANTHROPIC_API_KEY environment variable to enable the full LangGraph ReAct agent.`,
-        thread_id: thread_id || 'default-thread'
+        conversation_id
       });
     }
     
     // Process the prompt with our ReAct agent
-    console.log(`Received prompt: "${prompt}"`);
-    const response = await processWithReActAgent(prompt, thread_id);
+    console.log(`Received prompt: "${prompt}" from user: ${user_id}, conversation: ${conversation_id}`);
+    const response = await processWithReActAgent(prompt, user_id, conversation_id);
     
     // Return the raw agent response without additional formatting
     res.status(200).json(response);
@@ -78,10 +86,18 @@ app.post('/generate', async (req, res) => {
 
 // Streaming LLM generation endpoint using ReAct agent
 app.post('/generate/stream', async (req, res) => {
-  const { prompt, thread_id, stream_modes = ['messages', 'events'] } = req.body;
+  const { prompt, user_id, stream_modes = ['messages', 'events'], conversation_id } = req.body;
   
   if (!prompt) {
     return res.status(400).json({ error: 'Prompt is required' });
+  }
+  
+  if (!user_id) {
+    return res.status(400).json({ error: 'user_id is required' });
+  }
+
+  if (!conversation_id) {
+    return res.status(400).json({ error: 'conversation_id is required' });
   }
   
   // Set headers for SSE
@@ -99,7 +115,7 @@ app.post('/generate/stream', async (req, res) => {
       res.write(`data: ${JSON.stringify({
         type: 'simplified_fallback',
         generated_text: `Hello! This is the HelloWorld model service (simplified mode).\n\nYou asked: "${prompt}"\n\nI'm running in fallback mode because the API key for Claude is not configured. Please set the ANTHROPIC_API_KEY environment variable to enable the full LangGraph ReAct agent.`,
-        thread_id: thread_id || 'default-thread'
+        conversation_id
       })}\n\n`);
       
       res.write(`data: [DONE]\n\n`);
@@ -107,10 +123,10 @@ app.post('/generate/stream', async (req, res) => {
     }
     
     // Process the prompt with our streaming ReAct agent
-    console.log(`Streaming prompt: "${prompt}" with modes: ${stream_modes.join(', ')}`);
+    console.log(`Streaming prompt: "${prompt}" with modes: ${stream_modes.join(', ')}, conversation: ${conversation_id}`);
     
     // Get the streaming generator
-    const stream = await streamWithReActAgent(prompt, thread_id, stream_modes);
+    const stream = await streamWithReActAgent(prompt, stream_modes, user_id, conversation_id);
     
     // Stream each raw chunk directly to the client without any additional processing
     for await (const chunk of stream) {

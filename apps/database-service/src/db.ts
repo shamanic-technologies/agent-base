@@ -86,4 +86,56 @@ export async function getClient(): Promise<PoolClient> {
   }
 }
 
+/**
+ * Remove all tables that are not in the whitelist
+ * @param {string[]} whitelistedTables - Array of table names to keep
+ * @returns {Promise<string[]>} Array of dropped table names
+ */
+export async function removeNonWhitelistedTables(whitelistedTables: string[]): Promise<string[]> {
+  let client: PoolClient | null = null;
+  const droppedTables: string[] = [];
+  
+  try {
+    // Get all current tables
+    const allTables = await listTables();
+    
+    // Find tables that aren't in the whitelist
+    const tablesToDrop = allTables.filter(table => !whitelistedTables.includes(table));
+    
+    if (tablesToDrop.length === 0) {
+      console.log('No tables to drop - all tables are whitelisted');
+      return [];
+    }
+    
+    // Drop each non-whitelisted table
+    client = await pgPool.connect();
+    for (const tableName of tablesToDrop) {
+      try {
+        await client.query(`DROP TABLE IF EXISTS "${tableName}" CASCADE`);
+        console.log(`Dropped table: ${tableName}`);
+        droppedTables.push(tableName);
+      } catch (dropError) {
+        console.error(`Error dropping table ${tableName}:`, dropError);
+      }
+    }
+    
+    return droppedTables;
+  } catch (error) {
+    console.error('Error removing non-whitelisted tables:', error);
+    return droppedTables;
+  } finally {
+    if (client) client.release();
+  }
+}
+
+/**
+ * Execute removal of non-whitelisted tables
+ * @param {string[]} whitelistedTables - Tables to keep, all others will be removed
+ * @returns {Promise<string[]>} List of dropped tables
+ */
+export async function cleanupTables(whitelistedTables: string[] = []): Promise<string[]> {
+  console.log(`Removing all tables except whitelist: [${whitelistedTables.join(', ')}]`);
+  return removeNonWhitelistedTables(whitelistedTables);
+}
+
 export { pgPool }; 

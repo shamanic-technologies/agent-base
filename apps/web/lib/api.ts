@@ -3,7 +3,7 @@
  */
 
 // Default proxy-service URL from environment variables
-const AGENT_BASE_URL = process.env.NEXT_PUBLIC_AGENT_BASE_URL || 'http://localhost:3002';
+const AGENT_BASE_URL = process.env.NEXT_PUBLIC_AGENT_BASE_URL;
 
 /**
  * Makes a server-side authenticated request to the proxy-service

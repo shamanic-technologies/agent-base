@@ -20,14 +20,15 @@ import { HumanMessage, AIMessage, BaseMessage, SystemMessage, ToolMessage } from
  * Interface for React Agent configuration
  */
 export interface ReactAgentWrapperConfig {
-  tools: Tool[];  /** List of tools the agent can use */
-  nodeId: NodeId; /** Optional ID for the agent node */
-  nodeType: NodeType;/** Optional type for the agent node */
-  parentNodeId: ParentNodeId;  /** Optional parent node ID */
-  parentNodeType: ParentNodeType; /** Optional parent node type */
-  temperature?: number;  /** Temperature setting (defaults to 0) */
-  modelName?: ModelName;/** Model name (defaults to Claude 3.7 Sonnet) */
-  overwrittingSystemPrompt?: ReactAgentOverwrittingSystemPrompt; /** Custom system prompt */
+  modelName: ModelName;
+  temperature?: number;
+  maxTokens?: number;
+  tools: Tool[];
+  nodeId: NodeId; 
+  nodeType: NodeType;
+  parentNodeId: ParentNodeId;
+  parentNodeType: ParentNodeType;
+  overwrittingSystemPrompt: SystemMessage | null;
 }
 
 export interface StreamAgentFunctionConfig {
@@ -99,4 +100,12 @@ export interface ReactAgentWrapper {
   invokeAgentFunction: (
     config: InvokeAgentFunctionConfig
   ) => Promise<any>;
+}
+
+export interface ToolMetadata {
+  node_id: NodeId;
+  node_type: NodeType;
+  parent_node_id: ParentNodeId;
+  parent_node_type: ParentNodeType;
+  user_id: string;
 }

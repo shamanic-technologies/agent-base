@@ -19,7 +19,7 @@ export default function ChatPage() {
   // Get test parameters from URL
   const testMessage = searchParams.get('test');
   const testUtility = searchParams.get('utility');
-  const threadId = searchParams.get('thread');
+  const conversationId = searchParams.get('conversation');
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -67,5 +67,5 @@ export default function ChatPage() {
     return null; // Will redirect in the useEffect
   }
 
-  return <ChatUI testMessage={testMessage} testUtility={testUtility} initialThreadId={threadId} />;
+  return <ChatUI testMessage={testMessage} testUtility={testUtility} initialConversationId={conversationId} />;
 } 

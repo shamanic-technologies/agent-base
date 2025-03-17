@@ -6,8 +6,8 @@
 export interface UtilityRequest {
   operation: string;
   input?: any;
-  user_id?: string;
-  conversation_id?: string;
+  user_id: string;
+  conversation_id: string;
 }
 
 export interface UtilityResponse {
@@ -161,7 +161,7 @@ export interface GetTableRequest {
 
 export interface QueryTableRequest {
   table_id: string;
-  query: string | Record<string, any>;
+  query: string;
 }
 
 // Utility info types
@@ -181,4 +181,14 @@ export type UtilitiesListResponse = {
 
 export type UtilityInfoResponse = UtilityInfo | {
   error: string;
-}; 
+};
+
+/**
+ * Base constructor params for all utility tools
+ */
+export interface UtilityToolParams {
+  conversationId: ThreadId;
+  parentNodeId: ParentNodeId;
+  parentNodeType: ParentNodeType;
+  userId: string;
+} 

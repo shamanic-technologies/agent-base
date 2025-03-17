@@ -28,6 +28,7 @@ export class UtilityListUtilities extends Tool {
   nodeType = NodeType.UTILITY;
   parentNodeId: ParentNodeId;
   parentNodeType: ParentNodeType;
+  userId?: string;
   
   // Define the input schema for the utility
   utilitySchema = z.object({}).describe(
@@ -43,6 +44,7 @@ export class UtilityListUtilities extends Tool {
     node_type: NodeType;
     parent_node_id: ParentNodeId;
     parent_node_type: ParentNodeType;
+    user_id: string;
   };
   
   // Utility service URL from environment variables
@@ -51,11 +53,13 @@ export class UtilityListUtilities extends Tool {
   constructor({ 
     conversationId,
     parentNodeId,
-    parentNodeType
+    parentNodeType,
+    userId
   }: {
     conversationId: ThreadId;
     parentNodeId: ParentNodeId;
     parentNodeType: ParentNodeType;
+    userId: string;
   }) {
     super();
     
@@ -63,6 +67,7 @@ export class UtilityListUtilities extends Tool {
     this.conversationId = conversationId;
     this.parentNodeId = parentNodeId;
     this.parentNodeType = parentNodeType;
+    this.userId = userId;
     
     // Set the configurable options
     this.configurable = {
@@ -75,6 +80,7 @@ export class UtilityListUtilities extends Tool {
       node_type: this.nodeType,
       parent_node_id: this.parentNodeId,
       parent_node_type: this.parentNodeType,
+      user_id: this.userId
     };
     
     // Get the utility service URL from environment variables
@@ -97,7 +103,12 @@ export class UtilityListUtilities extends Tool {
     
     try {
       // Call the utility service API to list utilities
-      const response = await axios.get(`${this.utilityServiceUrl}/utilities`);
+      const response = await axios.get(`${this.utilityServiceUrl}/utilities`, {
+        params: {
+          user_id: this.userId,
+          conversation_id: this.conversationId
+        }
+      });
       
       if (response.data && response.data.utilities) {
         const utilities = response.data.utilities;

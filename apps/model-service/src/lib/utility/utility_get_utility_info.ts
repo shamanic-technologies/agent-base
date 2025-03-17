@@ -29,6 +29,7 @@ export class UtilityGetUtilityInfo extends Tool {
   nodeType = NodeType.UTILITY;
   parentNodeId: ParentNodeId;
   parentNodeType: ParentNodeType;
+  userId?: string;
   
   // Define the input schema for the utility
   // Simplified: directly expect a string which is the utility_id
@@ -43,6 +44,7 @@ export class UtilityGetUtilityInfo extends Tool {
     node_type: NodeType;
     parent_node_id: ParentNodeId;
     parent_node_type: ParentNodeType;
+    user_id: string;
   };
   
   // Utility service URL from environment variables
@@ -51,11 +53,13 @@ export class UtilityGetUtilityInfo extends Tool {
   constructor({ 
     conversationId,
     parentNodeId,
-    parentNodeType
+    parentNodeType,
+    userId
   }: {
     conversationId: ThreadId;
     parentNodeId: ParentNodeId;
     parentNodeType: ParentNodeType;
+    userId: string;
   }) {
     super();
     
@@ -63,6 +67,7 @@ export class UtilityGetUtilityInfo extends Tool {
     this.conversationId = conversationId;
     this.parentNodeId = parentNodeId;
     this.parentNodeType = parentNodeType;
+    this.userId = userId;
     
     // Set the configurable options
     this.configurable = {
@@ -75,6 +80,7 @@ export class UtilityGetUtilityInfo extends Tool {
       node_type: this.nodeType,
       parent_node_id: this.parentNodeId,
       parent_node_type: this.parentNodeType,
+      user_id: this.userId
     };
     
     // Get the utility service URL from environment variables
@@ -105,7 +111,12 @@ export class UtilityGetUtilityInfo extends Tool {
       }
       
       // Call the utility service API to get utility info
-      const response = await axios.get(`${this.utilityServiceUrl}/utility/${utility_id}`);
+      const response = await axios.get(`${this.utilityServiceUrl}/utility/${utility_id}`, {
+        params: {
+          user_id: this.userId,
+          conversation_id: this.conversationId
+        }
+      });
       
       if (response.data) {
         // Return raw JSON data as a string

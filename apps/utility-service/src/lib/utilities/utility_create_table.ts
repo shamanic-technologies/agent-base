@@ -15,7 +15,7 @@ import { NodeId, NodeType, ParentNodeId, ParentNodeType, ThreadId } from "../../
 export class UtilityCreateTable extends Tool {
   name = "utility_create_table";
   description = `
-    Use this tool to create a new table in the database.
+    Create a new table in the user's dedicated database.
     
     Parameters:
     - name: The name of the table

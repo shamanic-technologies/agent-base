@@ -5,7 +5,7 @@
  */
 import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { pgPool, listTables } from './db';
+import { pgPool, listTables, cleanupTables } from './db';
 
 const router = Router();
 
@@ -423,6 +423,32 @@ router.post('/db', (req: Request, res: Response): void => {
     success: false,
     error: 'Creating tables through the API is not supported. Please use migrations instead.'
   });
+});
+
+/**
+ * Remove all tables except whitelisted ones
+ */
+router.delete('/db/cleanup', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { whitelist = [] } = req.body;
+    
+    console.log(`Starting table cleanup via API with whitelist: [${whitelist.join(', ')}]`);
+    const droppedTables = await cleanupTables(whitelist);
+    
+    res.status(200).json({
+      success: true,
+      data: {
+        message: `Successfully dropped ${droppedTables.length} tables`,
+        droppedTables
+      }
+    });
+  } catch (error: any) {
+    console.error('Error during table cleanup:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to cleanup tables'
+    });
+  }
 });
 
 /**

@@ -15,7 +15,7 @@ import { NodeId, NodeType, ParentNodeId, ParentNodeType, ThreadId } from "../../
 export class UtilityAlterTable extends Tool {
   name = "utility_alter_table";
   description = `
-    Use this tool to alter an existing table in the database.
+    Alter an existing table in the user's dedicated database.
     
     Parameters:
     - table_id: The ID of the table to alter

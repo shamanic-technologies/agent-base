@@ -135,7 +135,7 @@ function createReactAgentWrapper(config: ReactAgentWrapperConfig): ReactAgentWra
     parentNodeType,
     modelName = "claude-3-7-sonnet-20250219",
     temperature = 0,
-    overwrittingSystemPrompt: systemPrompt
+    overwrittingSystemPrompt
   } = config;
   
   // Create the Claude model
@@ -156,7 +156,7 @@ function createReactAgentWrapper(config: ReactAgentWrapperConfig): ReactAgentWra
   const reactAgent = createReactAgent({
     llm: anthropicModel, 
     tools,
-    stateModifier: systemPrompt, // Apply tool preprocessing through state modifier in ReAct Agents
+    stateModifier: overwrittingSystemPrompt, // Apply tool preprocessing through state modifier in ReAct Agents
   } as ReactAgentConfig);
 
   // Create a dedicated ToolNode for executing tools
@@ -380,14 +380,14 @@ function createReactAgentWrapper(config: ReactAgentWrapperConfig): ReactAgentWra
 /**
  * Process a text prompt with the ReAct agent
  * @param prompt The text prompt to process
- * @param conversationId Optional thread ID for stateful conversations
- * @param userId Optional user ID for tracking and personalization
+ * @param userId User ID for tracking and personalization
+ * @param conversationId Conversation ID for stateful conversations
  * @returns The agent's response
  */
 export async function processWithReActAgent(
-  prompt: string, 
-  conversationId?: string,
-  userId?: string
+  prompt: SystemMessage, 
+  userId: string,
+  conversationId: string
 ) {
   try {
     // Check if API key is available
@@ -429,13 +429,16 @@ export async function processWithReActAgent(
     // Get the singleton React agent wrapper
     const { invokeAgentFunction } = getReactAgentWrapper({
       tools,
-      nodeId,
-      nodeType,
+      nodeId: nodeId,
+      nodeType: nodeType,
       parentNodeId: nodeId,
       parentNodeType: nodeType,
       modelName: ModelName.CLAUDE_3_7_SONNET_20250219,
-      temperature: 0
-    });
+      overwrittingSystemPrompt: prompt,
+      temperature: 0,
+      conversationId: conversationId,
+      userId: userId
+    } as ReactAgentWrapperConfig);
     
     // Create a human message from the prompt
     const message = new HumanMessage(prompt);
@@ -463,16 +466,16 @@ export async function processWithReActAgent(
  * Returns the raw stream chunks for client-side processing
  * 
  * @param prompt The user prompt to process
- * @param conversationId Optional thread ID for stateful conversations
  * @param streamModes Optional array of stream modes
  * @param userId Optional user ID for tracking and personalization
+ * @param conversation_id Optional conversation ID for stateful conversations
  * @returns AsyncGenerator that yields LangGraph event objects as JSON strings
  */
 export async function* streamWithReActAgent(
-  prompt: string,
-  conversationId?: string,
-  streamModes?: any,
-  userId?: string
+  prompt: SystemMessage,
+  streamModes: any,
+  userId: string,
+  conversationId: string
 ): AsyncGenerator<string, void, unknown> {
   try {
     // Check if API key is available
@@ -514,13 +517,14 @@ export async function* streamWithReActAgent(
     // Get the singleton React agent wrapper
     const { streamAgentFunction } = getReactAgentWrapper({
       tools,
-      nodeId,
-      nodeType,
+      nodeId: nodeId,
+      nodeType: nodeType,
       parentNodeId: nodeId,
       parentNodeType: nodeType,
       modelName: ModelName.CLAUDE_3_7_SONNET_20250219,
-      temperature: 0
-    });
+      temperature: 0,
+      overwrittingSystemPrompt: prompt
+    } as ReactAgentWrapperConfig);
     
     // Create a human message from the prompt
     const message = new HumanMessage(prompt);

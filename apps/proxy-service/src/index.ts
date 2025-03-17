@@ -14,8 +14,8 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT;
-const MODEL_SERVICE_URL = process.env.MODEL_SERVICE_URL || 'http://localhost:3001';
-const KEY_SERVICE_URL = process.env.KEY_SERVICE_URL || 'http://localhost:3003';
+const MODEL_SERVICE_URL = process.env.MODEL_SERVICE_URL;
+const KEY_SERVICE_URL = process.env.KEY_SERVICE_URL;
 
 // Middleware
 app.use(cors());
@@ -32,7 +32,7 @@ const validateApiKey = async (apiKey: string): Promise<{valid: boolean, userId?:
     if (response.data.success) {
       return {
         valid: true,
-        userId: response.data.userId
+        userId: response.data.data.userId
       };
     }
     
@@ -60,15 +60,25 @@ app.get('/health', (req: express.Request, res: express.Response) => {
 /**
  * Generate endpoint
  * Validates API key and forwards request to model service
+ * Requires both API key and conversation_id
  */
 app.post('/generate', async (req: express.Request, res: express.Response) => {
   const apiKey = req.headers['x-api-key'] as string;
+  const { conversation_id } = req.body;
   
   // Check if API key is provided
   if (!apiKey) {
     return res.status(401).json({
       success: false,
       error: 'API key is required'
+    });
+  }
+  
+  // Check if conversation_id is provided
+  if (!conversation_id) {
+    return res.status(400).json({
+      success: false,
+      error: 'conversation_id is required'
     });
   }
   
@@ -83,13 +93,14 @@ app.post('/generate', async (req: express.Request, res: express.Response) => {
   }
   
   try {
-    // Create a new request body that includes the user ID
+    // Create a new request body that includes the user ID and conversation_id
     const enrichedRequestBody = {
       ...req.body,
-      user_id: validation.userId
+      user_id: validation.userId,
+      conversation_id
     };
     
-    console.log(`Forwarding request for user ID: ${validation.userId}`);
+    console.log(`Forwarding request for user ID: ${validation.userId}, conversation ID: ${conversation_id}`);
     
     // Forward the enriched request to the model service
     const response = await axios.post(`${MODEL_SERVICE_URL}/generate`, enrichedRequestBody);

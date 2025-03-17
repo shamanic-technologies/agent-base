@@ -2,20 +2,21 @@
  * Database Information Utility Tool
  * 
  * Returns database information including name, table info (ids, name, description, schema)
- * This is a HelloWorld implementation for demonstration purposes.
+ * Uses Xata to manage databases for users.
  */
 
 import { Tool } from "@langchain/core/tools";
 import { z } from "zod";
-import { NodeId, NodeType, ParentNodeId, ParentNodeType, ThreadId } from "../../types/index.js";
+import { NodeId, NodeType, ParentNodeId, ParentNodeType, ThreadId, UtilityToolParams } from "../../types/index.js";
+import { getUserDatabase } from "../utils/database-utils.js";
 
 /**
- * A utility tool that provides database information
+ * A utility tool that provides database information and manages Xata databases
  */
 export class UtilityGetDatabase extends Tool {
   name = "utility_get_database";
   description = `
-    Use this tool to get information about the database.
+    Get information about the user's dedicated database.
     
     Returns database information including:
     - Database name
@@ -28,10 +29,12 @@ export class UtilityGetDatabase extends Tool {
   nodeType = NodeType.UTILITY;
   parentNodeId: ParentNodeId;
   parentNodeType: ParentNodeType;
-  userId?: string;
+  userId: string;
   
   // Define the input schema for the utility
-  utilitySchema = z.object({});
+  utilitySchema = z.object({
+    // No parameters needed - user_id is already available from constructor
+  });
 
   // Tool configuration options for LangGraph
   configurable: { thread_id: string };
@@ -42,7 +45,7 @@ export class UtilityGetDatabase extends Tool {
     node_type: NodeType;
     parent_node_id: ParentNodeId;
     parent_node_type: ParentNodeType;
-    user_id?: string;
+    user_id: string;
   };
 
   constructor({ 
@@ -50,12 +53,7 @@ export class UtilityGetDatabase extends Tool {
     parentNodeId,
     parentNodeType,
     userId
-  }: {
-    conversationId: ThreadId;
-    parentNodeId: ParentNodeId;
-    parentNodeType: ParentNodeType;
-    userId?: string;
-  }) {
+  }: UtilityToolParams) {
     super();
     
     // Initialize conversation info
@@ -87,38 +85,22 @@ export class UtilityGetDatabase extends Tool {
     return this.utilitySchema;
   }
 
-  async _call(_input: string | object): Promise<string> {
-    // Mock database information response
-    const mockDatabaseInfo = {
-      database_name: "HelloWorld Database",
-      tables: [
-        {
-          id: "table_001",
-          name: "users",
-          description: "Contains user information",
-          schema: {
-            id: "string",
-            name: "string",
-            email: "string",
-            created_at: "datetime"
-          }
-        },
-        {
-          id: "table_002",
-          name: "products",
-          description: "Product catalog",
-          schema: {
-            id: "string",
-            name: "string",
-            price: "number",
-            category: "string",
-            in_stock: "boolean"
-          }
-        }
-      ]
-    };
-    
-    // Return formatted response
-    return JSON.stringify(mockDatabaseInfo, null, 2);
+  async _call(input: string | object): Promise<string> {
+    try {
+      // Use the user_id from the constructor - it's now required
+      const userId = this.userId;
+      
+      // Use the extracted getUserDatabase function to handle all the database operations
+      const databaseInfo = await getUserDatabase(userId);
+      
+      // Return formatted response
+      return JSON.stringify(databaseInfo, null, 2);
+    } catch (error) {
+      console.error("Error in utility_get_database:", error);
+      return JSON.stringify({
+        error: "Failed to get database information",
+        details: error instanceof Error ? error.message : String(error)
+      }, null, 2);
+    }
   }
 } 

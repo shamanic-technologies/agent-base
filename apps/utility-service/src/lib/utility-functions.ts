@@ -38,16 +38,23 @@ import { UtilityQueryTable } from './utilities/utility_query_table.js';
 
 /**
  * Get current date and time in different formats
+ * @param userId User ID for tracking
+ * @param conversationId Conversation ID for context
  * @param data Request with optional format
  * @returns Promise with the formatted date and time response
  */
-export async function getCurrentDateTime(data?: DateTimeRequest): Promise<UtilityResponse> {
+export async function getCurrentDateTime(
+  userId: string,
+  conversationId: string,
+  data?: DateTimeRequest
+): Promise<UtilityResponse> {
   try {
-    // Create a utility instance with placeholder values since we're using it directly
+    // Create a utility instance
     const dateTimeUtility = new UtilityGetCurrentDateTime({
-      conversationId: 'direct-api-call',
+      conversationId: conversationId,
       parentNodeId: null,
-      parentNodeType: null
+      parentNodeType: null,
+      userId: userId
     });
     
     // Call the utility function with the provided format
@@ -70,13 +77,17 @@ export async function getCurrentDateTime(data?: DateTimeRequest): Promise<Utilit
  * Uses environment variables for security (no input required)
  * @returns Promise with the created codespace information
  */
-export async function createGitHubCodespace(): Promise<UtilityResponse> {
+export async function createGitHubCodespace(
+  userId: string,
+  conversationId: string
+): Promise<UtilityResponse> {
   try {
     // Create a utility instance with placeholder values since we're using it directly
     const codespaceUtility = new UtilityGitHubCreateCodespace({
-      conversationId: 'direct-api-call',
+      conversationId: conversationId,
       parentNodeId: null,
-      parentNodeType: null
+      parentNodeType: null,
+      userId: userId
     });
     
     // Call the utility function with empty input (will use environment variables)
@@ -99,13 +110,18 @@ export async function createGitHubCodespace(): Promise<UtilityResponse> {
  * @param data Request with the codespaceId
  * @returns Promise with the destruction result
  */
-export async function destroyGitHubCodespace(data: any): Promise<UtilityResponse> {
+export async function destroyGitHubCodespace(
+  userId: string,
+  conversationId: string,
+  data: any
+): Promise<UtilityResponse> {
   try {
-    // Create a utility instance with placeholder values since we're using it directly
+    // Create a utility instance
     const codespaceUtility = new UtilityGitHubDestroyCodespace({
-      conversationId: 'direct-api-call',
+      conversationId: conversationId,
       parentNodeId: null,
-      parentNodeType: null
+      parentNodeType: null,
+      userId: userId
     });
     
     // Call the utility function with the provided data
@@ -128,12 +144,17 @@ export async function destroyGitHubCodespace(data: any): Promise<UtilityResponse
  * @param data Request with repository and file details
  * @returns Promise with the file content
  */
-export async function readGitHubFile(data: any): Promise<UtilityResponse> {
+export async function readGitHubFile(
+  userId: string,
+  conversationId: string,
+  data: any
+): Promise<UtilityResponse> {
   try {
     const utility = new UtilityGitHubReadFile({
-      conversationId: 'direct-api-call',
+      conversationId: conversationId,
       parentNodeId: null,
-      parentNodeType: null
+      parentNodeType: null,
+      userId: userId
     });
     
     const result = await utility._call(data || {});
@@ -155,12 +176,17 @@ export async function readGitHubFile(data: any): Promise<UtilityResponse> {
  * @param data Request with repository, file details and content
  * @returns Promise with the update result
  */
-export async function updateGitHubFile(data: any): Promise<UtilityResponse> {
+export async function updateGitHubFile(
+  userId: string,
+  conversationId: string,
+  data: any
+): Promise<UtilityResponse> {
   try {
     const utility = new UtilityGitHubUpdateFile({
-      conversationId: 'direct-api-call',
+      conversationId: conversationId,
       parentNodeId: null,
-      parentNodeType: null
+      parentNodeType: null,
+      userId: userId
     });
     
     const result = await utility._call(data || {});
@@ -182,12 +208,17 @@ export async function updateGitHubFile(data: any): Promise<UtilityResponse> {
  * @param data Request with repository and directory details
  * @returns Promise with the directory contents
  */
-export async function listGitHubDirectory(data: any): Promise<UtilityResponse> {
+export async function listGitHubDirectory(
+  userId: string,
+  conversationId: string,
+  data: any
+): Promise<UtilityResponse> {
   try {
     const utility = new UtilityGitHubListDirectory({
-      conversationId: 'direct-api-call',
+      conversationId: conversationId,
       parentNodeId: null,
-      parentNodeType: null
+      parentNodeType: null,
+      userId: userId
     });
     
     const result = await utility._call(data || {});
@@ -209,12 +240,17 @@ export async function listGitHubDirectory(data: any): Promise<UtilityResponse> {
  * @param data Request with repository and code details
  * @returns Promise with the lint results
  */
-export async function lintGitHubCode(data: any): Promise<UtilityResponse> {
+export async function lintGitHubCode(
+  userId: string,
+  conversationId: string,
+  data: any
+): Promise<UtilityResponse> {
   try {
     const utility = new UtilityGitHubLintCode({
-      conversationId: 'direct-api-call',
+      conversationId: conversationId,
       parentNodeId: null,
-      parentNodeType: null
+      parentNodeType: null,
+      userId: userId
     });
     
     const result = await utility._call(data || {});
@@ -236,12 +272,17 @@ export async function lintGitHubCode(data: any): Promise<UtilityResponse> {
  * @param data Request with repository, file details and content
  * @returns Promise with the creation result
  */
-export async function createGitHubFile(data: any): Promise<UtilityResponse> {
+export async function createGitHubFile(
+  userId: string,
+  conversationId: string,
+  data: any
+): Promise<UtilityResponse> {
   try {
     const utility = new UtilityGitHubCreateFile({
-      conversationId: 'direct-api-call',
+      conversationId: conversationId,
       parentNodeId: null,
-      parentNodeType: null
+      parentNodeType: null,
+      userId: userId
     });
     
     const result = await utility._call(data || {});
@@ -263,12 +304,17 @@ export async function createGitHubFile(data: any): Promise<UtilityResponse> {
  * @param data Request with repository details
  * @returns Promise with the repository code
  */
-export async function getGitHubCode(data: any): Promise<UtilityResponse> {
+export async function getGitHubCode(
+  userId: string,
+  conversationId: string,
+  data: any
+): Promise<UtilityResponse> {
   try {
     const utility = new UtilityGitHubGetCode({
-      conversationId: 'direct-api-call',
+      conversationId: conversationId,
       parentNodeId: null,
-      parentNodeType: null
+      parentNodeType: null,
+      userId: userId
     });
     
     const result = await utility._call(data || {});
@@ -290,12 +336,17 @@ export async function getGitHubCode(data: any): Promise<UtilityResponse> {
  * @param data Request with repository and deployment details
  * @returns Promise with the deployment result
  */
-export async function deployGitHubCode(data: any): Promise<UtilityResponse> {
+export async function deployGitHubCode(
+  userId: string,
+  conversationId: string,
+  data: any
+): Promise<UtilityResponse> {
   try {
     const utility = new UtilityGitHubDeployCode({
-      conversationId: 'direct-api-call',
+      conversationId: conversationId,
       parentNodeId: null,
-      parentNodeType: null
+      parentNodeType: null,
+      userId: userId
     });
     
     const result = await utility._call(data || {});
@@ -317,12 +368,17 @@ export async function deployGitHubCode(data: any): Promise<UtilityResponse> {
  * @param data Request with repository and code details
  * @returns Promise with the execution result
  */
-export async function runGitHubCode(data: any): Promise<UtilityResponse> {
+export async function runGitHubCode(
+  userId: string,
+  conversationId: string,
+  data: any
+): Promise<UtilityResponse> {
   try {
     const utility = new UtilityGitHubRunCode({
-      conversationId: 'direct-api-call',
+      conversationId: conversationId,
       parentNodeId: null,
-      parentNodeType: null
+      parentNodeType: null,
+      userId: userId
     });
     
     const result = await utility._call(data || {});
@@ -343,12 +399,16 @@ export async function runGitHubCode(data: any): Promise<UtilityResponse> {
  * List GitHub Codespaces for the authenticated user
  * @returns Promise with the list of codespaces
  */
-export async function listGitHubCodespaces(): Promise<UtilityResponse> {
+export async function listGitHubCodespaces(
+  userId: string,
+  conversationId: string
+): Promise<UtilityResponse> {
   try {
     const utility = new UtilityGitHubListCodespaces({
-      conversationId: 'direct-api-call',
+      conversationId: conversationId,
       parentNodeId: null,
-      parentNodeType: null
+      parentNodeType: null,
+      userId: userId
     });
     
     const result = await utility._call({});
@@ -370,13 +430,18 @@ export async function listGitHubCodespaces(): Promise<UtilityResponse> {
  * @param data Request with URL and options
  * @returns Promise with the extracted markdown content
  */
-export async function extractFireCrawlContent(data: FireCrawlExtractContentRequest): Promise<UtilityResponse> {
+export async function extractFireCrawlContent(
+  userId: string,
+  conversationId: string,
+  data: FireCrawlExtractContentRequest
+): Promise<UtilityResponse> {
   try {
     // Create a utility instance with placeholder values since we're using it directly
     const fireCrawlUtility = new UtilityFireCrawlExtractContent({
-      conversationId: 'direct-api-call',
+      conversationId: conversationId,
       parentNodeId: null,
-      parentNodeType: null
+      parentNodeType: null,
+      userId: userId
     });
     
     // Call the utility function with the provided URL
@@ -399,13 +464,18 @@ export async function extractFireCrawlContent(data: FireCrawlExtractContentReque
  * @param data Request with search query and options
  * @returns Promise with the search results
  */
-export async function performGoogleSearch(data: GoogleSearchRequest): Promise<UtilityResponse> {
+export async function performGoogleSearch(
+  userId: string,
+  conversationId: string,
+  data: GoogleSearchRequest
+): Promise<UtilityResponse> {
   try {
     // Create a utility instance with placeholder values since we're using it directly
     const googleSearchUtility = new UtilityGoogleSearch({
-      conversationId: 'direct-api-call',
+      conversationId: conversationId,
       parentNodeId: null,
-      parentNodeType: null
+      parentNodeType: null,
+      userId: userId
     });
     
     // Call the utility function with the provided search query
@@ -427,13 +497,17 @@ export async function performGoogleSearch(data: GoogleSearchRequest): Promise<Ut
  * Get database information including tables and schemas
  * @returns Promise with the database information response
  */
-export async function getDatabase(): Promise<UtilityResponse> {
+export async function getDatabase(
+  userId: string,
+  conversationId: string
+): Promise<UtilityResponse> {
   try {
     // Create a utility instance with placeholder values
     const databaseUtility = new UtilityGetDatabase({
-      conversationId: 'direct-api-call',
+      conversationId: conversationId,
       parentNodeId: null,
-      parentNodeType: null
+      parentNodeType: null,
+      userId: userId
     });
     
     // Call the utility function to get database information
@@ -456,13 +530,18 @@ export async function getDatabase(): Promise<UtilityResponse> {
  * @param data Request with table name, description, and schema
  * @returns Promise with the table creation response
  */
-export async function createTable(data: CreateTableRequest): Promise<UtilityResponse> {
+export async function createTable(
+  userId: string,
+  conversationId: string,
+  data: CreateTableRequest
+): Promise<UtilityResponse> {
   try {
     // Create a utility instance with placeholder values
     const createTableUtility = new UtilityCreateTable({
-      conversationId: 'direct-api-call',
+      conversationId: conversationId,
       parentNodeId: null,
-      parentNodeType: null
+      parentNodeType: null,
+      userId: userId
     });
     
     // Call the utility function to create a table
@@ -485,13 +564,18 @@ export async function createTable(data: CreateTableRequest): Promise<UtilityResp
  * @param data Request with table ID and optional new name, description, and schema
  * @returns Promise with the table alteration response
  */
-export async function alterTable(data: AlterTableRequest): Promise<UtilityResponse> {
+export async function alterTable(
+  userId: string,
+  conversationId: string,
+  data: AlterTableRequest
+): Promise<UtilityResponse> {
   try {
     // Create a utility instance with placeholder values
     const alterTableUtility = new UtilityAlterTable({
-      conversationId: 'direct-api-call',
+      conversationId: conversationId,
       parentNodeId: null,
-      parentNodeType: null
+      parentNodeType: null,
+      userId: userId
     });
     
     // Call the utility function to alter a table
@@ -510,17 +594,22 @@ export async function alterTable(data: AlterTableRequest): Promise<UtilityRespon
 }
 
 /**
- * Delete an existing table from the database
+ * Delete a table from the database
  * @param data Request with table ID
- * @returns Promise with the table deletion response
+ * @returns Promise with the deletion response
  */
-export async function deleteTable(data: DeleteTableRequest): Promise<UtilityResponse> {
+export async function deleteTable(
+  userId: string,
+  conversationId: string,
+  data: DeleteTableRequest
+): Promise<UtilityResponse> {
   try {
     // Create a utility instance with placeholder values
     const deleteTableUtility = new UtilityDeleteTable({
-      conversationId: 'direct-api-call',
+      conversationId: conversationId,
       parentNodeId: null,
-      parentNodeType: null
+      parentNodeType: null,
+      userId: userId
     });
     
     // Call the utility function to delete a table
@@ -543,13 +632,18 @@ export async function deleteTable(data: DeleteTableRequest): Promise<UtilityResp
  * @param data Request with table ID
  * @returns Promise with the table information response
  */
-export async function getTable(data: GetTableRequest): Promise<UtilityResponse> {
+export async function getTable(
+  userId: string,
+  conversationId: string,
+  data: GetTableRequest
+): Promise<UtilityResponse> {
   try {
     // Create a utility instance with placeholder values
     const getTableUtility = new UtilityGetTable({
-      conversationId: 'direct-api-call',
+      conversationId: conversationId,
       parentNodeId: null,
-      parentNodeType: null
+      parentNodeType: null,
+      userId: userId
     });
     
     // Call the utility function to get table information
@@ -572,13 +666,18 @@ export async function getTable(data: GetTableRequest): Promise<UtilityResponse> 
  * @param data Request with table ID and query
  * @returns Promise with the query results
  */
-export async function queryTable(data: QueryTableRequest): Promise<UtilityResponse> {
+export async function queryTable(
+  userId: string,
+  conversationId: string,
+  data: QueryTableRequest
+): Promise<UtilityResponse> {
   try {
     // Create a utility instance with placeholder values
     const queryTableUtility = new UtilityQueryTable({
-      conversationId: 'direct-api-call',
+      conversationId: conversationId,
       parentNodeId: null,
-      parentNodeType: null
+      parentNodeType: null,
+      userId: userId
     });
     
     // Call the utility function to query a table
@@ -597,64 +696,83 @@ export async function queryTable(data: QueryTableRequest): Promise<UtilityRespon
 }
 
 /**
- * Process utility operation request
- * @param operation The utility operation to perform
+ * Process a utility operation based on the provided operation name and data
+ * 
+ * @param operation The utility operation to process
+ * @param userId Required user ID for tracking and personalization
+ * @param conversationId Required conversation ID for context
  * @param data Optional data for the operation
- * @returns Promise with the operation response
+ * @returns Promise with the utility response
  */
 export async function processUtilityOperation(
-  operation: UtilityOperation, 
+  operation: UtilityOperation,
+  userId: string,
+  conversationId: string,
   data?: any
 ): Promise<UtilityResponse> {
+  // Log the operation
+  console.log(`Processing utility operation: ${operation}`);
+  console.log(`Input data:`, data);
+  console.log(`User ID: ${userId}`);
+  console.log(`Conversation ID: ${conversationId}`);
+  
+  // Create utility instances with conversation data
+  const dateTimeUtility = new UtilityGetCurrentDateTime({
+    conversationId: conversationId,
+    parentNodeId: null,
+    parentNodeType: null,
+    userId: userId
+  });
+
   try {
     // Process based on operation type
     switch (operation) {
       case 'utility_get_current_datetime':
-        return await getCurrentDateTime(data);
+        return await getCurrentDateTime(userId, conversationId, data);
       
       // GitHub Operations
       case 'utility_github_read_file':
-        return await readGitHubFile(data);
+        return await readGitHubFile(userId, conversationId, data);
       case 'utility_github_update_file':
-        return await updateGitHubFile(data);
+        return await updateGitHubFile(userId, conversationId, data);
       case 'utility_github_list_directory':
-        return await listGitHubDirectory(data);
+        return await listGitHubDirectory(userId, conversationId, data);
       case 'utility_github_lint_code':
-        return await lintGitHubCode(data);
+        return await lintGitHubCode(userId, conversationId, data);
       case 'utility_github_create_file':
-        return await createGitHubFile(data);
+        return await createGitHubFile(userId, conversationId, data);
       case 'utility_github_get_code':
-        return await getGitHubCode(data);
+        return await getGitHubCode(userId, conversationId, data);
       case 'utility_github_deploy_code':
-        return await deployGitHubCode(data);
+        return await deployGitHubCode(userId, conversationId, data);
       case 'utility_github_run_code':
-        return await runGitHubCode(data);
+        return await runGitHubCode(userId, conversationId, data);
       case 'utility_github_create_codespace':
-        return await createGitHubCodespace();
+        return await createGitHubCodespace(userId, conversationId);
       case 'utility_github_destroy_codespace':
-        return await destroyGitHubCodespace(data);
+        return await destroyGitHubCodespace(userId, conversationId, data);
       case 'utility_github_list_codespaces':
-        return await listGitHubCodespaces();
+        return await listGitHubCodespaces(userId, conversationId);
         
       // Content and Search Operations
       case 'utility_firecrawl_extract_content':
-        return await extractFireCrawlContent(data);
+        return await extractFireCrawlContent(userId, conversationId, data);
       case 'utility_google_search':
-        return await performGoogleSearch(data);
+        return await performGoogleSearch(userId, conversationId, data);
         
       // Database Operations
       case 'utility_get_database':
-        return await getDatabase();
+        return await getDatabase(userId, conversationId);
       case 'utility_create_table':
-        return await createTable(data);
+        return await createTable(userId, conversationId, data);
       case 'utility_alter_table':
-        return await alterTable(data);
+        return await alterTable(userId, conversationId, data);
       case 'utility_delete_table':
-        return await deleteTable(data);
+        return await deleteTable(userId, conversationId, data);
       case 'utility_get_table':
-        return await getTable(data);
+        return await getTable(userId, conversationId, data);
       case 'utility_query_table':
-        return await queryTable(data);
+        return await queryTable(userId, conversationId, data);
         
       default:
         return {
