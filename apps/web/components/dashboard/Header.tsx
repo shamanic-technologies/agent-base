@@ -20,7 +20,6 @@ import {
   DropdownMenuTrigger 
 } from '../../components/ui/dropdown-menu';
 import { 
-  FileText, 
   ChevronDown, 
   Loader2, 
   CreditCard, 
@@ -65,15 +64,6 @@ export function Header({ user, isLoading, getUserInitials, handleLogout }: Heade
             <BookOpen className="h-4 w-4" />
             Documentation
             <ExternalLink className="h-3 w-3 ml-1 opacity-70" />
-          </Button>
-          
-          <Button 
-            variant="ghost" 
-            onClick={() => router.push('/chat')}
-            className="flex items-center gap-2"
-          >
-            <FileText className="h-4 w-4" />
-            Chat
           </Button>
           
           {isLoading ? (

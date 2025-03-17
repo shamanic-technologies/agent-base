@@ -5,15 +5,14 @@ import { useRouter } from 'next/navigation';
 import { 
   Header, 
   APIKeySection, 
-  QuickStartGuide, 
-  UtilitiesSection,
-  utilityCategories 
+  ToolsSection,
+  ChatPanel,
+  toolCategories 
 } from '../../components/dashboard';
 
 /**
  * Professional Dashboard Page
- * Displays user's API key, getting started instructions, available utilities,
- * and provides navigation to the chat interface
+ * Displays user's API key, available tools, and an integrated chat interface
  */
 export default function Dashboard() {
   const router = useRouter();
@@ -158,7 +157,7 @@ export default function Dashboard() {
       {/* Main Content - Two Column Layout */}
       <main className="flex-1 container py-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left Column - Getting Started */}
+          {/* Left Column - API Key and Tools */}
           <div className="space-y-6">
             {/* Welcome and API Key Section */}
             <APIKeySection 
@@ -168,16 +167,13 @@ export default function Dashboard() {
               regenerateApiKey={regenerateApiKey} 
             />
 
-            {/* Quick Start Guide */}
-            <QuickStartGuide 
-              apiKey={apiKey} 
-              isKeyVisible={isKeyVisible} 
-            />
+            {/* Available Tools */}
+            <ToolsSection utilityCategories={toolCategories} />
           </div>
           
-          {/* Right Column - Available Utilities */}
-          <div className="space-y-6">
-            <UtilitiesSection utilityCategories={utilityCategories} />
+          {/* Right Column - Chat Interface */}
+          <div className="space-y-6 lg:h-[calc(100vh-150px)]">
+            <ChatPanel />
           </div>
         </div>
       </main>

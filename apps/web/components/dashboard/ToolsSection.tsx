@@ -13,7 +13,6 @@ import {
 } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { 
-  AlertCircle, 
   ChevronDown, 
   ChevronRight, 
   Copy,
@@ -22,10 +21,10 @@ import {
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../components/ui/tooltip';
 import { Badge } from '../../components/ui/badge';
-import { UtilityCategory } from './utility-data';
+import { ToolCategory } from './tools-data';
 
 interface ToolsSectionProps {
-  utilityCategories: UtilityCategory[];
+  utilityCategories: ToolCategory[];
 }
 
 /**
