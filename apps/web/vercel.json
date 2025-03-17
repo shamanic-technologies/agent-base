@@ -1,29 +1,5 @@
 {
-  "buildCommand": "pnpm run build",
-  "outputDirectory": ".next",
   "framework": "nextjs",
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/$1"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/_next/static/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    }
-  ],
-  "github": {
-    "silent": true
-  },
-  "installCommand": "pnpm install",
-  "env": {
-    "ENABLE_EXPERIMENTAL_COREPACK": "1"
-  }
+  "installCommand": "npm install",
+  "buildCommand": "npm run build"
 } 
