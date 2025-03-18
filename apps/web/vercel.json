@@ -1,7 +1,7 @@
 {
   "framework": "nextjs",
-  "buildCommand": "pnpm run build",
-  "installCommand": "npm i -g pnpm@8.15.8 && pnpm install",
+  "buildCommand": "cd ../../ && pnpm install --no-frozen-lockfile && cd apps/web && pnpm run build",
+  "installCommand": "npm i -g pnpm@8.15.8",
   "outputDirectory": ".next",
   "regions": ["iad1"],
   "github": {
