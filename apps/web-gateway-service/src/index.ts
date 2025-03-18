@@ -63,13 +63,15 @@ async function forwardRequest(targetUrl: string, req: express.Request, res: expr
       },
       // Forward cookies for authentication
       withCredentials: true,
+      // Never follow redirects, always pass them through to the client
+      maxRedirects: 0,
     });
     
     // Forward the response status, headers, and data
     res.status(response.status);
     
     // Forward relevant headers
-    const headersToForward = ['content-type', 'set-cookie', 'authorization'];
+    const headersToForward = ['content-type', 'set-cookie', 'authorization', 'location'];
     headersToForward.forEach(header => {
       if (response.headers[header]) {
         res.setHeader(header, response.headers[header]);
@@ -84,6 +86,19 @@ async function forwardRequest(targetUrl: string, req: express.Request, res: expr
     
     if (axiosError.response) {
       // Forward the error status and response from the microservice
+      
+      // Preserve any redirect status and headers
+      if (axiosError.response.status >= 300 && axiosError.response.status < 400) {
+        res.status(axiosError.response.status);
+        
+        // Copy all headers from the response
+        Object.entries(axiosError.response.headers).forEach(([key, value]) => {
+          if (value) res.setHeader(key, value);
+        });
+        
+        return res.end();
+      }
+      
       return res.status(axiosError.response.status).send(axiosError.response.data);
     } else if (axiosError.request) {
       // The request was made but no response was received
@@ -133,7 +148,12 @@ authRouter.all('*', (req, res) => {
 
 // OAuth route handler
 oauthRouter.all('*', (req, res) => {
-  return forwardRequest(AUTH_SERVICE_URL, req, res);
+  // When a request comes to /oauth/google, inside this handler req.url is just '/google'
+  // We need to add back the '/oauth' prefix for the auth service to recognize the route
+  const modifiedReq = Object.assign({}, req, {
+    url: `/oauth${req.url}`
+  });
+  return forwardRequest(AUTH_SERVICE_URL, modifiedReq, res);
 });
 
 // Database service route handler
