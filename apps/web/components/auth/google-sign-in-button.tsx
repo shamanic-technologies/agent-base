@@ -8,7 +8,7 @@ import { useState } from 'react';
 import { Button } from '../../components/ui/button';
 
 /**
- * Sign in with Google using auth-service
+ * Sign in with Google using auth-service via the web gateway
  * @param onSuccess Optional callback when sign-in is successful
  */
 export function GoogleSignInButton({ 
@@ -25,9 +25,11 @@ export function GoogleSignInButton({
       // Get the current origin to pass to auth service
       const origin = window.location.origin;
       
-      // Redirect to the auth service's OAuth endpoint
-      // Using Passport.js Google strategy
-      window.location.href = `${process.env.NEXT_PUBLIC_AUTH_SERVICE_URL}/oauth/google?origin=${encodeURIComponent(origin)}`;
+      // Use the web gateway URL for auth service requests
+      const webGatewayUrl = process.env.NEXT_PUBLIC_WEB_GATEWAY_URL;
+      
+      // Redirect to the auth service's OAuth endpoint via the web gateway
+      window.location.href = `${webGatewayUrl}/oauth/google?origin=${encodeURIComponent(origin)}`;
       
     } catch (error) {
       console.error('Google sign-in error:', error);

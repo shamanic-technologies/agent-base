@@ -1,0 +1,21 @@
+[build]
+builder = "NIXPACKS"
+buildCommand = "npm install && npm run build"
+
+[deploy]
+numReplicas = 1
+healthcheckPath = "/health"
+healthcheckTimeout = 10
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+
+[service]
+name = "web-gateway-service"
+internalPort = 3030
+healthcheckPath = "/health"
+domains = ["gateway.agent-base.ai"]
+
+[variables]
+PORT = "3030"
+NODE_ENV = "production"
+ALLOWED_ORIGINS = "https://www.agent-base.ai,https://agent-base.ai" 

@@ -3,7 +3,7 @@
   "build": {
     "builder": "NIXPACKS",
     "watchPatterns": [
-      "apps/proxy-service/**",
+      "apps/api-gateway-service/**",
       "packages/**",
       "package.json",
       "turbo.json"

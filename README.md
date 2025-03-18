@@ -67,7 +67,8 @@ npm test --filter="@helloworld/auth-service"
 | **key-service** | API key management and validation | 3003 |
 | **model-service** | AI model inference service | 3001 |
 | **payment-service** | Subscription and payment processing | 3007 |
-| **proxy-service** | API gateway that routes requests to appropriate services | 3002 |
+| **api-gateway-service** | API gateway that routes requests to appropriate services | 3002 |
+| **web-gateway-service** | Web gateway that routes requests to appropriate services | 3030 |
 | **utility-service** | Utility functions for application features | 3008 |
 | **dev-tool** | Development tools and debugging | 3010 |
 | **web** | Main web application (Next.js) | 3020 |

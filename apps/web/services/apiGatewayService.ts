@@ -1,14 +1,14 @@
 /**
- * Proxy Service API
+ * API Gateway Service API
  * 
- * Handles interactions with the HelloWorld Proxy Service
+ * Handles interactions with the HelloWorld API Gateway Service
  */
 
-// Proxy service URL (should be moved to environment variables in production)
-const PROXY_SERVICE_URL = 'http://localhost:3002';
+// API Gateway service URL from environment variables
+const API_GATEWAY_URL = process.env.NEXT_PUBLIC_API_GATEWAY_URL;
 
 /**
- * Send a message to the AI model via the proxy service
+ * Send a message to the AI model via the API gateway service
  * 
  * @param prompt - The message to send to the AI
  * @param apiKey - The API key for authentication
@@ -17,7 +17,7 @@ const PROXY_SERVICE_URL = 'http://localhost:3002';
  */
 export async function sendMessage(prompt: string, apiKey: string, threadId?: string): Promise<any> {
   try {
-    const response = await fetch(`${PROXY_SERVICE_URL}/generate`, {
+    const response = await fetch(`${API_GATEWAY_URL}/generate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -36,27 +36,27 @@ export async function sendMessage(prompt: string, apiKey: string, threadId?: str
 
     return await response.json();
   } catch (error) {
-    console.error('Error sending message to proxy service:', error);
+    console.error('Error sending message to API gateway service:', error);
     throw error;
   }
 }
 
 /**
- * Check if the proxy service is healthy
+ * Check if the API gateway service is healthy
  * 
- * @returns Health status of the proxy service
+ * @returns Health status of the API gateway service
  */
 export async function checkHealth(): Promise<{ status: string, services: Record<string, string> }> {
   try {
-    const response = await fetch(`${PROXY_SERVICE_URL}/health`);
+    const response = await fetch(`${API_GATEWAY_URL}/health`);
     
     if (!response.ok) {
-      throw new Error('Proxy service health check failed');
+      throw new Error('API gateway service health check failed');
     }
     
     return await response.json();
   } catch (error) {
-    console.error('Error checking proxy service health:', error);
+    console.error('Error checking API gateway service health:', error);
     throw error;
   }
 } 

@@ -1,12 +1,12 @@
 /**
  * Chat Service
- * Handles interactions with the proxy service for chat functionality
+ * Handles interactions with the API gateway service for chat functionality
  */
 import { Message } from "../lib/chat/types";
-import * as proxyService from "./proxyService";
+import * as apiGatewayService from "./apiGatewayService";
 
 /**
- * Sends a message to the proxy service and formats the response
+ * Sends a message to the API gateway service and formats the response
  * 
  * @param prompt User's message
  * @param apiKey API key for authentication
@@ -25,8 +25,8 @@ export async function sendChatMessage(
       thread_id: threadId
     };
 
-    // Get response from the proxy service
-    const response = await proxyService.sendMessage(prompt, apiKey, threadId);
+    // Get response from the API gateway service
+    const response = await apiGatewayService.sendMessage(prompt, apiKey, threadId);
     
     // Process the response to extract text
     let formattedContent = "I processed your request.";

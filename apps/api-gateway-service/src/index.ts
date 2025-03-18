@@ -1,5 +1,5 @@
 /**
- * HelloWorld Proxy Service
+ * HelloWorld API Gateway Service
  * 
  * A service that validates API keys and forwards requests to the Model Service.
  * This acts as a security layer between clients and the actual model.
@@ -38,14 +38,14 @@ const validateApiKey = async (apiKey: string): Promise<{valid: boolean, userId?:
     
     return { valid: false };
   } catch (error) {
-    console.error('Proxy Service: Error validating API key:', error);
+    console.error('API Gateway Service: Error validating API key:', error);
     return { valid: false };
   }
 };
 
 /**
  * Health check endpoint
- * Returns the status of the proxy service and its connections
+ * Returns the status of the API gateway service and its connections
  */
 app.get('/health', (req: express.Request, res: express.Response) => {
   res.status(200).json({
@@ -70,7 +70,7 @@ app.post('/generate', async (req: express.Request, res: express.Response) => {
   if (!apiKey) {
     return res.status(401).json({
       success: false,
-      error: 'Proxy Service: API key is required'
+      error: 'API Gateway Service: API key is required'
     });
   }
   
@@ -78,7 +78,7 @@ app.post('/generate', async (req: express.Request, res: express.Response) => {
   if (!conversation_id) {
     return res.status(400).json({
       success: false,
-      error: 'Proxy Service: conversation_id is required'
+      error: 'API Gateway Service: conversation_id is required'
     });
   }
   
@@ -88,7 +88,7 @@ app.post('/generate', async (req: express.Request, res: express.Response) => {
   if (!validation.valid) {
     return res.status(401).json({
       success: false,
-      error: 'Proxy Service: Invalid API key'
+      error: 'API Gateway Service: Invalid API key'
     });
   }
   
@@ -119,7 +119,7 @@ app.post('/generate', async (req: express.Request, res: express.Response) => {
     if (axios.isAxiosError(error) && !error.response) {
       return res.status(502).json({ 
         success: false,
-        error: 'Proxy Service: Could not connect to Model Service'
+        error: 'API Gateway Service: Could not connect to Model Service'
       });
     }
     
@@ -128,7 +128,7 @@ app.post('/generate', async (req: express.Request, res: express.Response) => {
     
     res.status(status).json({ 
       success: false,
-      error: 'Proxy Service: Error communicating with model service',
+      error: 'API Gateway Service: Error communicating with model service',
       details: axios.isAxiosError(error) 
         ? error.response?.data || error.message 
         : error instanceof Error ? error.message : 'Unknown error'
@@ -138,7 +138,7 @@ app.post('/generate', async (req: express.Request, res: express.Response) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`🔐 Proxy Service running on port ${PORT}`);
+  console.log(`🔐 API Gateway Service running on port ${PORT}`);
   console.log(`🔄 Forwarding requests to Model Service at ${MODEL_SERVICE_URL}`);
   console.log(`🔑 Using Key Service at ${KEY_SERVICE_URL}`);
 }); 

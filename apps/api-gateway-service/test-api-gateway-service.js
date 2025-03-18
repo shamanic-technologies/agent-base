@@ -1,16 +1,16 @@
 /**
- * Proxy Service Test Script
+ * API Gateway Service Test Script
  * 
- * Tests the Proxy Service API gateway functionality.
+ * Tests the API Gateway Service functionality.
  */
 const http = require('http');
 
 // Configuration
 const SERVICE_HOST = 'localhost';
-const SERVICE_PORT = 3002; // Proxy Service typically runs on port 3002
+const SERVICE_PORT = 3002; // API Gateway Service typically runs on port 3002
 
 // Test prompt for the model service
-const TEST_PROMPT = "Hello, testing the proxy service!";
+const TEST_PROMPT = "Hello, testing the API gateway service!";
 
 // Utility function to make HTTP requests
 function makeRequest(path, method, headers = {}, data = null) {
@@ -69,7 +69,7 @@ function makeRequest(path, method, headers = {}, data = null) {
 
 // Main test function
 async function runTests() {
-  console.log('🧪 PROXY SERVICE TEST SUITE 🧪');
+  console.log('🧪 API GATEWAY SERVICE TEST SUITE 🧪');
   console.log(`Testing service at http://${SERVICE_HOST}:${SERVICE_PORT}\n`);
   
   try {
@@ -82,7 +82,7 @@ async function runTests() {
     } else {
       console.log(`❌ Health check failed with status: ${healthResponse.statusCode}`);
       console.log('Response:', healthResponse.body);
-      console.log('\nIs the Proxy Service running? Make sure to start it with: cd apps/proxy-service && npm run dev');
+      console.log('\nIs the API Gateway Service running? Make sure to start it with: cd apps/api-gateway-service && npm run dev');
       return;
     }
     
@@ -137,7 +137,7 @@ async function runTests() {
     
   } catch (e) {
     console.error('\n❌ Error during testing:', e.message);
-    console.log('Is the Proxy Service running at the correct port?');
+    console.log('Is the API Gateway Service running at the correct port?');
   }
 }
 
@@ -145,5 +145,5 @@ async function runTests() {
 runTests().catch(console.error);
 
 console.log('\n📋 Running this test:');
-console.log('1. Make sure the Proxy Service is running (cd apps/proxy-service && npm run dev)');
-console.log('2. Execute this test with: node test-proxy-service.js'); 
+console.log('1. Make sure the API Gateway Service is running (cd apps/api-gateway-service && npm run dev)');
+console.log('2. Execute this test with: node test-api-gateway-service.js'); 

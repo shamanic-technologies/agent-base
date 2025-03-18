@@ -23,7 +23,20 @@ const TEST_USER = {
 };
 const TEST_PROMPT = "Hello from the end-to-end test!";
 
+// Generate a conversation ID for this test session
+const conversationId = `conversation-${crypto.randomBytes(4).toString('hex')}`;
+
 // Utility function to make HTTP requests
+/**
+ * Make an HTTP request
+ * @param {string} host - The host to connect to
+ * @param {number} port - The port to connect to
+ * @param {string} path - The URL path
+ * @param {string} method - The HTTP method
+ * @param {Object} headers - HTTP headers
+ * @param {Object|null} data - Request body data
+ * @returns {Promise<Object>} - Response data
+ */
 function makeRequest(host, port, path, method, headers = {}, data = null) {
   return new Promise((resolve, reject) => {
     const requestBody = data ? JSON.stringify(data) : '';
@@ -56,11 +69,12 @@ function makeRequest(host, port, path, method, headers = {}, data = null) {
             body: parsedData
           });
         } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
           resolve({
             statusCode: res.statusCode,
             headers: res.headers,
             body: responseData,
-            error: `Failed to parse response: ${error.message}`
+            error: `Failed to parse response: ${errorMessage}`
           });
         }
       });
@@ -79,23 +93,45 @@ function makeRequest(host, port, path, method, headers = {}, data = null) {
 }
 
 // Log with colorful output
+/**
+ * Log a step in the test process
+ * @param {number} step - Step number
+ * @param {string} message - Message to log
+ */
 function logStep(step, message) {
-  const now = new Date().toISOString().split('T')[1].slice(0, 8);
-  console.log(`\n\x1b[36m[${now}] 🔷 STEP ${step}: ${message}\x1b[0m`);
+  const now = new Date().toISOString().split('T')[1];
+  const timestamp = now ? now.slice(0, 8) : '';
+  console.log(`\n\x1b[36m[${timestamp}] 🔷 STEP ${step}: ${message}\x1b[0m`);
 }
 
+/**
+ * Log a success message
+ * @param {string} message - Success message
+ */
 function logSuccess(message) {
   console.log(`\x1b[32m✅ ${message}\x1b[0m`);
 }
 
+/**
+ * Log an error message
+ * @param {string} message - Error message
+ */
 function logError(message) {
   console.log(`\x1b[31m❌ ${message}\x1b[0m`);
 }
 
+/**
+ * Log an info message
+ * @param {string} message - Info message
+ */
 function logInfo(message) {
   console.log(`\x1b[90m→ ${message}\x1b[0m`);
 }
 
+/**
+ * Log a response object
+ * @param {Object} response - Response object
+ */
 function logResponse(response) {
   console.log('\x1b[90m→ Response:\x1b[0m', JSON.stringify(response.body, null, 2));
 }

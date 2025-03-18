@@ -1,10 +1,10 @@
 /**
  * Auth Service Client
  * 
- * A utility for interacting with the auth service API
+ * A utility for interacting with the auth service API via web gateway
  */
 
-const AUTH_SERVICE_URL = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || 'http://localhost:3005';
+const WEB_GATEWAY_URL = process.env.NEXT_PUBLIC_WEB_GATEWAY_URL || 'http://localhost:3030';
 
 /**
  * Logout the current user by calling the auth service
@@ -12,7 +12,7 @@ const AUTH_SERVICE_URL = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || 'http://loc
  */
 export async function logout(): Promise<boolean> {
   try {
-    const response = await fetch(`${AUTH_SERVICE_URL}/auth/logout`, {
+    const response = await fetch(`${WEB_GATEWAY_URL}/auth/logout`, {
       method: 'POST',
       credentials: 'include', // Include cookies
       headers: {
@@ -38,7 +38,7 @@ export async function logout(): Promise<boolean> {
  */
 export async function validateAuth() {
   try {
-    const response = await fetch(`${AUTH_SERVICE_URL}/auth/validate`, {
+    const response = await fetch(`${WEB_GATEWAY_URL}/auth/validate`, {
       method: 'POST',
       credentials: 'include',
       headers: {
@@ -76,7 +76,7 @@ export async function updateUserPresence(): Promise<boolean> {
   try {
     // This endpoint doesn't exist yet in the auth service,
     // but we're preparing the client-side for when it's added
-    const response = await fetch(`${AUTH_SERVICE_URL}/auth/presence`, {
+    const response = await fetch(`${WEB_GATEWAY_URL}/auth/presence`, {
       method: 'POST',
       credentials: 'include',
       headers: {

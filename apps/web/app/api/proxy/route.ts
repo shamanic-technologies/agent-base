@@ -3,7 +3,7 @@
  * This keeps the API key secure on the server side
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { callServerProxyApi } from '../../../lib/api';
+import { callServerApiGateway } from '../../../lib/api';
 
 // POST handler for proxy requests
 export async function POST(request: NextRequest) {
@@ -20,16 +20,16 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Call the proxy service
-    const result = await callServerProxyApi(endpoint, method, data);
+    // Call the API gateway service
+    const result = await callServerApiGateway(endpoint, method, data);
     
     // Return the result
     return NextResponse.json(result);
   } catch (error: any) {
-    console.error('Proxy API error:', error);
+    console.error('API Gateway error:', error);
     
     return NextResponse.json(
-      { error: error.message || 'An error occurred while calling the proxy service' },
+      { error: error.message || 'An error occurred while calling the API gateway service' },
       { status: 500 }
     );
   }
@@ -38,8 +38,8 @@ export async function POST(request: NextRequest) {
 // GET handler for testing connection
 export async function GET() {
   try {
-    // Test the connection to the proxy service
-    const result = await callServerProxyApi('/api/proxy-mode', 'GET');
+    // Test the connection to the API gateway service
+    const result = await callServerApiGateway('/api/proxy-mode', 'GET');
     
     return NextResponse.json({
       status: 'connected',

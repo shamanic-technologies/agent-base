@@ -1,19 +1,19 @@
 /**
- * API utilities for communicating with the proxy-service
+ * API utilities for communicating with the api-gateway-service
  */
 
-// Default proxy-service URL from environment variables
+// Default api-gateway-service URL from environment variables
 const AGENT_BASE_URL = process.env.NEXT_PUBLIC_AGENT_BASE_URL;
 
 /**
- * Makes a server-side authenticated request to the proxy-service
+ * Makes a server-side authenticated request to the api-gateway-service
  * This should only be called from server-side code (Server Components, Route Handlers, Server Actions)
  * @param endpoint The API endpoint path
  * @param method HTTP method (GET, POST, etc.)
  * @param body Optional request body for POST/PUT requests
  * @returns The response data
  */
-export async function callServerProxyApi(
+export async function callServerApiGateway(
   endpoint: string, 
   method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
   body?: any
@@ -51,15 +51,15 @@ export async function callServerProxyApi(
 }
 
 /**
- * Tests the connection to the proxy-service
+ * Tests the connection to the api-gateway-service
  * @returns A boolean indicating whether the connection was successful
  */
-export async function testProxyConnection(): Promise<boolean> {
+export async function testApiGatewayConnection(): Promise<boolean> {
   try {
-    const result = await callServerProxyApi('/api/proxy-mode');
+    const result = await callServerApiGateway('/api/proxy-mode');
     return !!result.success;
   } catch (error) {
-    console.error('Failed to connect to proxy-service:', error);
+    console.error('Failed to connect to api-gateway-service:', error);
     return false;
   }
 } 
