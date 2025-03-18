@@ -3,7 +3,7 @@
  * This keeps the API key secure on the server side
  */
 import { NextRequest } from 'next/server';
-import { callServerProxyApi } from '../../../../lib/api';
+import { callServerApiGateway } from '../../../../lib/api';
 
 // Define response headers for Server-Sent Events (SSE)
 const sseHeaders = {
@@ -47,11 +47,11 @@ export async function GET(request: NextRequest) {
   }
   
   try {
-    // Create a TransformStream to forward the proxy service's SSE responses
+    // Create a TransformStream to forward the api-gateway-service's SSE responses
     const stream = new TransformStream();
     const writer = stream.writable.getWriter();
     
-    // Start the streaming request to the proxy service
+    // Start the streaming request to the api-gateway-service
     const proxyEndpoint = '/api/generate/stream';
     const proxyUrl = process.env.NEXT_PUBLIC_AGENT_BASE_URL + proxyEndpoint;
     const apiKey = process.env.AGENT_BASE_API_KEY || '';
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
       return new Response(stream.readable, { headers: sseHeaders });
     }
     
-    // Make the request to the proxy service
+    // Make the request to the api-gateway-service
     const fetchController = new AbortController();
     const fetchPromise = fetch(proxyUrl, {
       method: 'POST',
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
     
     if (!response.ok) {
       await writer.write(encoder.encode(createSSEMessage(JSON.stringify({
-        error: `Proxy service error: ${response.status} ${response.statusText}`
+        error: `API Gateway service error: ${response.status} ${response.statusText}`
       }))));
       await writer.write(encoder.encode(createSSEMessage('[DONE]')));
       await writer.close();
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
     // Set up the response stream reader
     const reader = response.body!.getReader();
     
-    // Forward chunks from the proxy service to the client
+    // Forward chunks from the api-gateway-service to the client
     try {
       // Process stream chunks
       const decoder = new TextDecoder();
@@ -147,11 +147,11 @@ export async function GET(request: NextRequest) {
     
     return new Response(stream.readable, { headers: sseHeaders });
   } catch (error) {
-    console.error('Proxy API error:', error);
+    console.error('API Gateway error:', error);
     
     return new Response(
       createSSEMessage(JSON.stringify({
-        error: error instanceof Error ? error.message : 'An error occurred while calling the proxy service'
+        error: error instanceof Error ? error.message : 'An error occurred while calling the api-gateway service'
       })) + createSSEMessage('[DONE]'),
       { 
         status: 500, 
