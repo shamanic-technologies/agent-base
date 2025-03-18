@@ -11,11 +11,13 @@ restartPolicyMaxRetries = 5
 
 [service]
 name = "web-gateway-service"
-internalPort = 3030
+# Use Railway's standard port
+internalPort = 8080
 healthcheckPath = "/health"
 domains = ["gateway.agent-base.ai"]
 
 [variables]
-PORT = "3030"
+# Set PORT env variable to match Railway's standard port
+PORT = "8080"
 NODE_ENV = "production"
 ALLOWED_ORIGINS = "https://www.agent-base.ai,https://agent-base.ai" 

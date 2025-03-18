@@ -14,20 +14,37 @@ import { rateLimit } from 'express-rate-limit';
 // Load environment variables
 dotenv.config();
 
+// Check required environment variables
+const requiredEnvVars = [
+  'PORT',
+  'AUTH_SERVICE_URL',
+  'DB_SERVICE_URL',
+  'MODEL_SERVICE_URL',
+  'API_GATEWAY_SERVICE_URL',
+  'KEYS_SERVICE_URL',
+  'PAYMENT_SERVICE_URL',
+  'GATEWAY_API_KEY'
+];
+
+const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+if (missingEnvVars.length > 0) {
+  throw new Error(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
+}
+
 // Constants and configuration
 const app = express();
 const PORT = process.env.PORT;
 
-// Service URLs
-const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:3005';
-const DB_SERVICE_URL = process.env.DB_SERVICE_URL || 'http://localhost:3006';
-const MODEL_SERVICE_URL = process.env.MODEL_SERVICE_URL || 'http://localhost:3001';
-const API_GATEWAY_SERVICE_URL = process.env.API_GATEWAY_SERVICE_URL || 'http://localhost:3002';
-const KEYS_SERVICE_URL = process.env.KEYS_SERVICE_URL || 'http://localhost:3003';
-const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL || 'http://localhost:3007';
+// Service URLs with non-null assertion to handle TypeScript
+const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL!;
+const DB_SERVICE_URL = process.env.DB_SERVICE_URL!;
+const MODEL_SERVICE_URL = process.env.MODEL_SERVICE_URL!;
+const API_GATEWAY_SERVICE_URL = process.env.API_GATEWAY_SERVICE_URL!;
+const KEYS_SERVICE_URL = process.env.KEYS_SERVICE_URL!;
+const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL!;
 
 // API key for gateway access
-const API_KEY = process.env.GATEWAY_API_KEY;
+const API_KEY = process.env.GATEWAY_API_KEY!;
 
 // Middleware
 app.use(cors({
