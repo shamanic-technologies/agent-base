@@ -9,6 +9,7 @@ import {
   authSuccessHandler, 
   authFailureHandler 
 } from '../controllers/oauth.controller';
+import { config } from '../config/env';
 
 const router = Router();
 

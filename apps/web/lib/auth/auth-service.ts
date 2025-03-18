@@ -1,10 +1,33 @@
 /**
  * Auth Service Client
  * 
- * A utility for interacting with the auth service API via web gateway
+ * A utility for interacting with the auth service API via server-side routes
  */
 
-const WEB_GATEWAY_URL = process.env.NEXT_PUBLIC_WEB_GATEWAY_URL || 'http://localhost:3030';
+/**
+ * Log in with email and password
+ * @param email User's email
+ * @param password User's password
+ * @returns Success status and user data if successful
+ */
+export async function login(email: string, password: string) {
+  try {
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    });
+    
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Login error:', error);
+    return { success: false, error: 'Login failed' };
+  }
+}
 
 /**
  * Logout the current user by calling the auth service
@@ -12,9 +35,9 @@ const WEB_GATEWAY_URL = process.env.NEXT_PUBLIC_WEB_GATEWAY_URL || 'http://local
  */
 export async function logout(): Promise<boolean> {
   try {
-    const response = await fetch(`${WEB_GATEWAY_URL}/auth/logout`, {
+    const response = await fetch('/api/auth/logout', {
       method: 'POST',
-      credentials: 'include', // Include cookies
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
       }
@@ -38,7 +61,7 @@ export async function logout(): Promise<boolean> {
  */
 export async function validateAuth() {
   try {
-    const response = await fetch(`${WEB_GATEWAY_URL}/auth/validate`, {
+    const response = await fetch('/api/auth/validate', {
       method: 'POST',
       credentials: 'include',
       headers: {
@@ -69,14 +92,11 @@ export async function getCurrentUser() {
 
 /**
  * Update user presence status
- * This can be called periodically to indicate the user is active
  * @returns Success or failure
  */
 export async function updateUserPresence(): Promise<boolean> {
   try {
-    // This endpoint doesn't exist yet in the auth service,
-    // but we're preparing the client-side for when it's added
-    const response = await fetch(`${WEB_GATEWAY_URL}/auth/presence`, {
+    const response = await fetch('/api/auth/presence', {
       method: 'POST',
       credentials: 'include',
       headers: {

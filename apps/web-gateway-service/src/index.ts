@@ -26,6 +26,9 @@ const API_GATEWAY_SERVICE_URL = process.env.API_GATEWAY_SERVICE_URL || 'http://l
 const KEYS_SERVICE_URL = process.env.KEYS_SERVICE_URL || 'http://localhost:3003';
 const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL || 'http://localhost:3007';
 
+// API key for gateway access
+const API_KEY = process.env.GATEWAY_API_KEY;
+
 // Middleware
 app.use(cors({
   origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : '*',
@@ -45,6 +48,51 @@ const apiLimiter = rateLimit({
 
 // Apply rate limiting to all routes
 app.use(apiLimiter);
+
+/**
+ * API Key Authentication Middleware
+ * Ensures only authorized clients can access the gateway
+ */
+app.use((req, res, next) => {
+  // Skip API key check for health endpoint
+  if (req.path === '/health') {
+    return next();
+  }
+
+  // Define a whitelist of allowed OAuth paths
+  const ALLOWED_OAUTH_PATHS = [
+    '/oauth/google',          // Initial OAuth redirect to Google
+    '/oauth/google/callback', // Callback from Google after authentication
+    // Add other provider paths here as needed
+  ];
+
+  // Use exact path matching for allowed OAuth endpoints
+  if (ALLOWED_OAUTH_PATHS.includes(req.path)) {
+    // For callback endpoints, validate basic OAuth parameters if it's a callback
+    if (req.path.includes('/callback') && !req.query.code) {
+      console.warn(`Invalid OAuth callback request: missing code parameter`);
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid OAuth callback request'
+      });
+    }
+    
+    // Allow the OAuth flow to proceed without API key
+    return next();
+  }
+  
+  // For all other endpoints, require API key
+  const apiKey = req.headers['x-api-key'] as string;
+  if (API_KEY && (!apiKey || apiKey !== API_KEY)) {
+    console.warn(`Unauthorized gateway access attempt from ${req.ip}`);
+    return res.status(403).json({
+      success: false,
+      error: 'Unauthorized access to gateway'
+    });
+  }
+  
+  next();
+});
 
 /**
  * Helper function to forward requests to microservices
@@ -70,13 +118,27 @@ async function forwardRequest(targetUrl: string, req: express.Request, res: expr
     // Forward the response status, headers, and data
     res.status(response.status);
     
-    // Forward relevant headers
-    const headersToForward = ['content-type', 'set-cookie', 'authorization', 'location'];
+    // Forward all relevant headers, especially important for OAuth redirects
+    const headersToForward = [
+      'content-type', 
+      'set-cookie', 
+      'authorization', 
+      'location', 
+      'cache-control',
+      'pragma',
+      'expires'
+    ];
+    
     headersToForward.forEach(header => {
       if (response.headers[header]) {
         res.setHeader(header, response.headers[header]);
       }
     });
+    
+    // For redirect responses (like OAuth redirects), just send the response without a body
+    if (response.status >= 300 && response.status < 400) {
+      return res.end();
+    }
     
     return res.send(response.data);
   } catch (error) {
@@ -153,6 +215,7 @@ oauthRouter.all('*', (req, res) => {
   const modifiedReq = Object.assign({}, req, {
     url: `/oauth${req.url}`
   });
+  
   return forwardRequest(AUTH_SERVICE_URL, modifiedReq, res);
 });
 
@@ -201,6 +264,6 @@ app.listen(PORT, () => {
   console.log(`🔐 Auth Service: ${AUTH_SERVICE_URL}`);
   console.log(`💾 Database Service: ${DB_SERVICE_URL}`);
   console.log(`🔑 Keys Service: ${KEYS_SERVICE_URL}`);
-  console.log(`�� Model Service (via API Gateway): ${API_GATEWAY_SERVICE_URL}`);
+  console.log(`🔄 Model Service (via API Gateway): ${API_GATEWAY_SERVICE_URL}`);
   console.log(`💳 Payment Service: ${PAYMENT_SERVICE_URL}`);
 }); 

@@ -49,7 +49,7 @@ passport.use(
     {
       clientID: config.google.clientId,
       clientSecret: config.google.clientSecret,
-      callbackURL: `${config.authServiceUrl}/oauth/google/callback`,
+      callbackURL: config.google.redirectUri,
       scope: ['profile', 'email'],
     },
     (accessToken, refreshToken, profile, done) => {

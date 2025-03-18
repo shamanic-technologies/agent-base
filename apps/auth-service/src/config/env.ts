@@ -16,8 +16,11 @@ export const config = {
   // Client app URL for redirects
   clientAppUrl: process.env.CLIENT_APP_URL || 'http://localhost:3000',
   
-  // Auth service URL for callbacks
+  // Auth service URL (direct)
   authServiceUrl: process.env.AUTH_SERVICE_URL || 'http://localhost:3005',
+  
+  // Web gateway URL (for callbacks)
+  webGatewayUrl: process.env.WEB_GATEWAY_URL || 'http://localhost:3030',
   
   // Database service URL
   databaseServiceUrl: process.env.DATABASE_SERVICE_URL || 'http://localhost:3006',
@@ -26,6 +29,7 @@ export const config = {
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID || '',
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+    redirectUri: process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3030/oauth/google/callback',
   },
   
   // JWT configuration
@@ -48,8 +52,11 @@ export const config = {
 export const logConfig = () => {
   console.log('Environment configuration:');
   console.log(`- PORT: ${config.port}`);
+  console.log(`- AUTH_SERVICE_URL: ${config.authServiceUrl}`);
+  console.log(`- WEB_GATEWAY_URL: ${config.webGatewayUrl}`);
   console.log(`- GOOGLE_CLIENT_ID: ${config.google.clientId ? `${config.google.clientId.substring(0, 10)}...` : 'not set'}`);
   console.log(`- GOOGLE_CLIENT_SECRET: ${config.google.clientSecret ? `${config.google.clientSecret.substring(0, 5)}...` : 'not set'}`);
+  console.log(`- GOOGLE_REDIRECT_URI: ${config.google.redirectUri}`);
   console.log(`- JWT_SECRET: ${config.jwt.secret ? 'set (hidden)' : 'not set'}`);
   console.log(`- SESSION_SECRET: ${config.session.secret ? 'set (hidden)' : 'not set'}`);
 };

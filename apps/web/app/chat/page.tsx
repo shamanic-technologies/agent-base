@@ -3,6 +3,7 @@
 import { ChatUI } from '../../components/chat-ui';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { validateAuth } from '../../lib/auth/auth-service';
 
 /**
  * Chat Page Component
@@ -18,25 +19,15 @@ export default function ChatPage() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // The auth service now uses cookies, so we don't need to send the token
-        const response = await fetch(`${process.env.NEXT_PUBLIC_WEB_GATEWAY_URL}/auth/validate`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          // Important: include credentials to send cookies with the request
-          credentials: 'include',
-        });
+        const userData = await validateAuth();
         
-        const data = await response.json();
-        
-        if (!data.success) {
+        if (!userData) {
           router.push('/');
           return;
         }
         
         // User is authenticated
-        setUser(data.data);
+        setUser(userData);
         setIsAuthenticated(true);
       } catch (error) {
         console.error('Authentication check error:', error);
