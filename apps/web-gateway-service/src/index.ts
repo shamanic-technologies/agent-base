@@ -10,9 +10,21 @@ import dotenv from 'dotenv';
 import axios, { AxiosError } from 'axios';
 import cookieParser from 'cookie-parser';
 import { rateLimit } from 'express-rate-limit';
+import path from 'path';
+import fs from 'fs';
 
-// Load environment variables
-dotenv.config();
+// Load environment variables based on NODE_ENV
+const NODE_ENV = process.env.NODE_ENV || 'development';
+const envFile = NODE_ENV === 'production' 
+  ? path.resolve(process.cwd(), '.env.production')
+  : path.resolve(process.cwd(), '.env.local');
+
+if (fs.existsSync(envFile)) {
+  console.log(`Loading environment from ${envFile}`);
+  dotenv.config({ path: envFile });
+} else {
+  throw new Error(`Environment file ${envFile} not found. Please create it first.`);
+}
 
 // Check required environment variables
 const requiredEnvVars = [
