@@ -11,11 +11,11 @@ restartPolicyMaxRetries = 5
 
 [service]
 name = "auth-service"
-internalPort = 3005
+internalPort = 8080
 healthcheckPath = "/health"
 domains = ["auth.helloworld.example.com"]
 
 [variables]
-PORT = "3005"
+PORT = "8080"
 NODE_ENV = "production"
 JWT_SECRET = "${JWT_SECRET}" 
