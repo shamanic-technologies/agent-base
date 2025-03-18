@@ -39,9 +39,8 @@ export default function Dashboard() {
       try {
         setIsLoading(true);
         
-        // Instead of redirection logic when auth fails, we'll use a direct database approach
-        // for development purposes. In production, this would use proper auth.
-        const response = await fetch(`${process.env.NEXT_PUBLIC_WEB_GATEWAY_URL}/database/db/users`);
+        // Call our server-side API route instead of directly calling web gateway
+        const response = await fetch('/api/users');
         
         if (!response.ok) {
           console.error('Failed to fetch users data');
@@ -80,9 +79,8 @@ export default function Dashboard() {
     
     setIsLoadingKey(true);
     try {
-      // First, check if user already has keys
-      const webGatewayUrl = process.env.NEXT_PUBLIC_WEB_GATEWAY_URL;
-      const existingKeysResponse = await fetch(`${webGatewayUrl}/keys/keys?userId=${userId}`);
+      // Call our server-side API route instead of directly calling web gateway
+      const existingKeysResponse = await fetch(`/api/keys?userId=${userId}`);
       const existingKeysData = await existingKeysResponse.json();
       
       if (existingKeysData.success && existingKeysData.data && existingKeysData.data.length > 0) {
@@ -90,7 +88,7 @@ export default function Dashboard() {
         setApiKey(`helloworld_xxxx_${existingKeysData.data[0].keyPrefix.substring(10)}`);
       } else {
         // Create new key for user
-        const response = await fetch(`${webGatewayUrl}/keys/keys`, {
+        const response = await fetch('/api/keys', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -124,8 +122,8 @@ export default function Dashboard() {
     
     setIsLoadingKey(true);
     try {
-      const webGatewayUrl = process.env.NEXT_PUBLIC_WEB_GATEWAY_URL;
-      const response = await fetch(`${webGatewayUrl}/keys/keys`, {
+      // Call our server-side API route instead of directly calling web gateway
+      const response = await fetch('/api/keys', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

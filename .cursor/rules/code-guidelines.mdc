@@ -12,3 +12,5 @@ alwaysApply: true
 - Don't try to re-run microservices when not asked. It creates port issues. Instead assume the services are always running.
 - Ne propose pas de git push si on est dans une situation où le code ne marche pas
 - When adding a new package, search we first to get the latest version
+- When youn find unused code, or deprecated code, or when you replace old code by new code: delete the unused!
+- When a file is longer than ~200 lines, be proactive in splitting it in several files
