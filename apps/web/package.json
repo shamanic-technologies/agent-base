@@ -5,6 +5,7 @@
   "packageManager": "pnpm@8.15.8",
   "scripts": {
     "dev": "next dev -p 3020",
+    "prebuild": "pnpm install --no-frozen-lockfile",
     "build": "next build",
     "start": "next start -p 3020",
     "lint": "next lint",
