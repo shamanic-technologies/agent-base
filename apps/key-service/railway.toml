@@ -17,4 +17,4 @@ healthcheckPath = "/health"
 [variables]
 PORT = "8080"
 NODE_ENV = "production"
-DB_SERVICE_URL=http://database-service.railway.internal:8080
+DB_SERVICE_URL="http://database-service.railway.internal:8080"
