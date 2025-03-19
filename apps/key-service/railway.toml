@@ -11,9 +11,10 @@ restartPolicyMaxRetries = 5
 
 [service]
 name = "key-service"
-internalPort = 3003
+internalPort = 8080
 healthcheckPath = "/health"
 
 [variables]
-PORT = "3003"
-NODE_ENV = "production" 
+PORT = "8080"
+NODE_ENV = "production"
+DB_SERVICE_URL=http://database-service.railway.internal:8080

@@ -11,11 +11,11 @@ restartPolicyMaxRetries = 5
 
 [service]
 name = "database-service"
-internalPort = 3006
+internalPort = 8080
 healthcheckPath = "/health"
 
 [variables]
-PORT = "3006"
+PORT = "8080"
 NODE_ENV = "production"
 
 # Railway will automatically inject the Postgres connection variables
