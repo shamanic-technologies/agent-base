@@ -10,6 +10,7 @@ import dotenv from 'dotenv';
 import axios from 'axios';
 import path from 'path';
 import fs from 'fs';
+import fetch from 'node-fetch';
 
 // Load environment variables based on NODE_ENV
 const NODE_ENV = process.env.NODE_ENV || 'development';
@@ -32,10 +33,127 @@ const PORT = process.env.PORT;
 const MODEL_SERVICE_URL = process.env.MODEL_SERVICE_URL;
 const UTILITY_SERVICE_URL = process.env.UTILITY_SERVICE_URL;
 const KEY_SERVICE_URL = process.env.KEY_SERVICE_URL;
+const LOGGING_SERVICE_URL = process.env.LOGGING_SERVICE_URL || 'http://localhost:3900';
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+/**
+ * API Logger Middleware
+ * Logs API requests with API keys to the logging service
+ */
+const apiLoggerMiddleware = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  const startTime = Date.now();
+  const apiKey = req.headers['x-api-key'] as string;
+  const originalSend = res.send;
+  let responseBody: any = null;
+
+  // Only log requests with API keys
+  if (!apiKey) {
+    return next();
+  }
+
+  // Capture response body
+  res.send = function (body) {
+    responseBody = body;
+    return originalSend.call(this, body);
+  };
+
+  // Process request when it completes
+  res.on('finish', async () => {
+    try {
+      const duration = Date.now() - startTime;
+      
+      // Parse request and response bodies if they're JSON strings
+      let parsedRequestBody = req.body;
+      let parsedResponseBody = null;
+      
+      try {
+        if (responseBody && typeof responseBody === 'string') {
+          parsedResponseBody = JSON.parse(responseBody);
+        } else {
+          parsedResponseBody = responseBody;
+        }
+      } catch (e) {
+        // If parsing fails, use the raw body
+        parsedResponseBody = { raw: responseBody ? String(responseBody).substring(0, 500) : null };
+      }
+      
+      // Sanitize bodies to prevent sensitive data logging (password, tokens, etc.)
+      const sanitizedRequestBody = sanitizeBody(parsedRequestBody);
+      const sanitizedResponseBody = sanitizeBody(parsedResponseBody);
+      
+      // Log the API call
+      await fetch(`${LOGGING_SERVICE_URL}/log`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          apiKey,
+          endpoint: req.originalUrl,
+          method: req.method,
+          statusCode: res.statusCode,
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent'],
+          requestId: req.headers['x-request-id'] as string,
+          requestBody: sanitizedRequestBody,
+          responseBody: sanitizedResponseBody,
+          durationMs: duration
+        })
+      }).catch(error => {
+        console.error('Failed to log API call:', error);
+        // Don't block the response if logging fails
+      });
+    } catch (error) {
+      console.error('Failed to log API call:', error);
+      // Don't block the response if logging fails
+    }
+  });
+
+  next();
+};
+
+/**
+ * Sanitize request/response bodies to prevent logging sensitive data
+ */
+function sanitizeBody(body: any): any {
+  if (!body) return null;
+  
+  // If it's not an object, return as is
+  if (typeof body !== 'object') return body;
+  
+  // Clone the body to avoid modifying the original
+  const sanitized = Array.isArray(body) ? [...body] : { ...body };
+  
+  // List of sensitive fields to redact
+  const sensitiveFields = [
+    'password', 'token', 'secret', 'api_key', 'apiKey', 'authorization',
+    'credit_card', 'creditCard', 'ssn', 'social_security', 'socialSecurity'
+  ];
+  
+  // Function to recursively sanitize an object
+  const sanitizeObject = (obj: any) => {
+    if (!obj || typeof obj !== 'object') return;
+    
+    Object.keys(obj).forEach(key => {
+      const lowerKey = key.toLowerCase();
+      
+      // Check if this is a sensitive field
+      if (sensitiveFields.some(field => lowerKey.includes(field))) {
+        obj[key] = '[REDACTED]';
+      } 
+      // Recursively sanitize nested objects
+      else if (obj[key] && typeof obj[key] === 'object') {
+        sanitizeObject(obj[key]);
+      }
+    });
+  };
+  
+  sanitizeObject(sanitized);
+  return sanitized;
+}
 
 /**
  * Validates an API key against the Key Service
@@ -228,6 +346,10 @@ app.post('/utility/*', async (req: express.Request, res: express.Response) => {
   
   res.status(result.status).json(result.data);
 });
+
+// Apply API logger middleware to all routes that use API keys
+app.use('/generate', apiLoggerMiddleware);
+app.use('/utility', apiLoggerMiddleware);
 
 // Start server
 app.listen(PORT, () => {

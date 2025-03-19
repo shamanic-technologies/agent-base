@@ -14,3 +14,4 @@ alwaysApply: true
 - When adding a new package, search we first to get the latest version
 - When youn find unused code, or deprecated code, or when you replace old code by new code: delete the unused!
 - When a file is longer than ~200 lines, be proactive in splitting it in several files
+- When "git add" then prefer "git add -A" at once always
