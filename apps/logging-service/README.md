@@ -1,12 +1,11 @@
 # Logging Service
 
-A microservice for recording and managing API Gateway requests with API keys.
+A microservice for recording and managing API Gateway requests with API keys. All logs are permanently stored for payment monitoring purposes.
 
 ## Features
 
 - Logs API calls with API key information
 - Provides access to historical API usage data
-- Implements automatic log cleanup with configurable retention
 - Exposes metrics for monitoring
 - Built as a stateless service that uses the database-service for persistence
 
@@ -14,7 +13,6 @@ A microservice for recording and managing API Gateway requests with API keys.
 
 - **POST /log** - Log an API call
 - **GET /logs/:apiKey** - Get logs for a specific API key (with pagination)
-- **POST /logs/cleanup** - Manually trigger log cleanup
 - **GET /health** - Health check endpoint
 - **GET /metrics** - Service metrics
 
@@ -26,7 +24,6 @@ A microservice for recording and managing API Gateway requests with API keys.
 | `DATABASE_SERVICE_URL` | URL of the database service | `http://localhost:3006` |
 | `NODE_ENV` | Environment (development/production) | `development` |
 | `LOG_LEVEL` | Logging level (debug/info/warn/error) | `info` |
-| `LOG_RETENTION_DAYS` | Number of days to retain logs (0 = no deletion) | `90` |
 
 ## Setup and Running
 

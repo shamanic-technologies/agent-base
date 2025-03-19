@@ -187,63 +187,6 @@ async function getApiKeyLogs(apiKey: string, limit = 100, offset = 0): Promise<a
   }
 }
 
-/**
- * Clean up old logs based on retention policy
- * @param retentionDays Number of days to keep logs (0 = no deletion)
- * @returns Number of deleted log entries
- */
-async function cleanupOldLogs(retentionDays: number): Promise<number> {
-  if (retentionDays <= 0) {
-    return 0; // No cleanup needed
-  }
-  
-  try {
-    // Get all logs
-    const response = await fetch(`${DB_SERVICE_URL}/db/api_logs`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      }
-    });
-    
-    if (!response.ok) {
-      logger.error(`Failed to get API logs for cleanup: ${response.status}`);
-      return 0;
-    }
-    
-    const data = await response.json() as any;
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
-    
-    // Find logs older than retention period
-    const oldLogs = data.data.filter((log: any) => {
-      const logDate = new Date(log.data.timestamp);
-      return logDate < cutoffDate;
-    });
-    
-    // Delete old logs
-    let deleteCount = 0;
-    for (const log of oldLogs) {
-      const deleteResponse = await fetch(`${DB_SERVICE_URL}/db/api_logs/${log.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-      
-      if (deleteResponse.ok) {
-        deleteCount++;
-      }
-    }
-    
-    logger.info(`Cleaned up ${deleteCount} log entries older than ${retentionDays} days`);
-    return deleteCount;
-  } catch (error) {
-    logger.error('Error cleaning up old logs', error);
-    return 0;
-  }
-}
-
 // API Routes
 
 /**
@@ -341,35 +284,6 @@ router.get('/logs/:apiKey', async (req: Request, res: Response) => {
 });
 
 /**
- * Manually trigger log cleanup
- */
-router.post('/logs/cleanup', async (req: Request, res: Response) => {
-  try {
-    const { retentionDays } = req.body;
-    
-    if (!retentionDays || typeof retentionDays !== 'number' || retentionDays < 0) {
-      return res.status(400).json({
-        success: false,
-        error: 'Valid retentionDays is required (>= 0)'
-      });
-    }
-    
-    const deletedCount = await cleanupOldLogs(retentionDays);
-    
-    res.status(200).json({
-      success: true,
-      data: { deletedCount }
-    });
-  } catch (error) {
-    logger.error('Error in /logs/cleanup endpoint', error);
-    res.status(500).json({
-      success: false,
-      error: 'Internal server error'
-    });
-  }
-});
-
-/**
  * Metrics endpoint (for monitoring)
  */
 router.get('/metrics', async (req: Request, res: Response) => {
@@ -388,7 +302,7 @@ app.use(router);
 server.listen(port, async () => {
   logger.info(`Logging service listening on port ${port}`);
   
-  // Initialize database and set up scheduled cleanup
+  // Initialize database
   const initialized = await initDatabase();
   
   if (!initialized) {
@@ -401,22 +315,5 @@ server.listen(port, async () => {
         logger.info('Successfully initialized database on retry');
       }
     }, 60000); // Retry every minute
-  }
-  
-  // Set up scheduled cleanup based on environment variable
-  const retentionDays = parseInt(process.env.LOG_RETENTION_DAYS || '90');
-  
-  if (retentionDays > 0) {
-    logger.info(`Setting up scheduled log cleanup with ${retentionDays} days retention`);
-    
-    // Run cleanup daily
-    setInterval(async () => {
-      try {
-        const deletedCount = await cleanupOldLogs(retentionDays);
-        logger.info(`Scheduled cleanup: removed ${deletedCount} old log entries`);
-      } catch (error) {
-        logger.error('Error in scheduled cleanup', error);
-      }
-    }, 24 * 60 * 60 * 1000); // Once per day
   }
 }); 
