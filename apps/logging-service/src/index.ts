@@ -284,6 +284,48 @@ router.get('/logs/:apiKey', async (req: Request, res: Response) => {
 });
 
 /**
+ * Get all logs with pagination
+ */
+router.get('/logs/all', async (req: Request, res: Response) => {
+  try {
+    const limit = parseInt(req.query.limit as string || '100');
+    const offset = parseInt(req.query.offset as string || '0');
+    
+    // Get all logs from the database service
+    const response = await fetch(`${DB_SERVICE_URL}/db/api_logs`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      logger.error(`Failed to get API logs: ${response.status}`);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to get logs'
+      });
+    }
+    
+    const data = await response.json() as any;
+    const logs = data.data
+      .sort((a: any, b: any) => new Date(b.data.timestamp).getTime() - new Date(a.data.timestamp).getTime())
+      .slice(offset, offset + limit);
+    
+    res.status(200).json({
+      success: true,
+      data: logs
+    });
+  } catch (error) {
+    logger.error('Error in /logs/all endpoint', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+});
+
+/**
  * Metrics endpoint (for monitoring)
  */
 router.get('/metrics', async (req: Request, res: Response) => {

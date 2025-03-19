@@ -13,8 +13,14 @@ A microservice for recording and managing API Gateway requests with API keys. Al
 
 - **POST /log** - Log an API call
 - **GET /logs/:apiKey** - Get logs for a specific API key (with pagination)
+- **GET /logs/all** - Get all logs with pagination (sorted by newest first)
 - **GET /health** - Health check endpoint
 - **GET /metrics** - Service metrics
+
+### Pagination Parameters
+For endpoints that support pagination:
+- `limit` - Maximum number of logs to return (default: 100)
+- `offset` - Number of logs to skip (default: 0)
 
 ## Environment Variables
 
