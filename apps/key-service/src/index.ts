@@ -44,7 +44,8 @@ app.use(express.json());
 // Helper function to generate API key
 function generateApiKey(): string {
   const keyBuffer = randomBytes(32);
-  return `helloworld_${keyBuffer.toString('hex')}`;
+  const timestamp = Date.now().toString(36); // Convert timestamp to base36 for compactness
+  return `agbase_${timestamp}_${keyBuffer.toString('hex')}`;
 }
 
 // Helper function to hash API key
