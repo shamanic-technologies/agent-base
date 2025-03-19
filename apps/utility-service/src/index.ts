@@ -6,15 +6,23 @@
  */
 // Import and configure dotenv first
 import dotenv from 'dotenv';
+import path from 'path';
+import fs from 'fs';
 
-// Load appropriate environment variables based on NODE_ENV
+// Load environment variables based on NODE_ENV
 const nodeEnv = process.env.NODE_ENV || 'development';
-if (nodeEnv === 'production') {
-  console.log('🚀 Loading production environment from .env.production');
-  dotenv.config({ path: '.env.production' });
+
+// Only load from .env file in development
+if (nodeEnv === 'development') {
+  const envFile = path.resolve(process.cwd(), '.env.local');
+  if (fs.existsSync(envFile)) {
+    console.log('🔧 Loading development environment from .env.local');
+    dotenv.config({ path: envFile });
+  } else {
+    console.log(`Environment file ${envFile} not found, using default environment variables.`);
+  }
 } else {
-  console.log('🔧 Loading development environment from .env.local');
-  dotenv.config({ path: '.env.local' });
+  console.log('🚀 Production environment detected, using Railway configuration.');
 }
 
 import express, { Request, Response } from 'express';

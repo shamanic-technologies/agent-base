@@ -15,15 +15,18 @@ import fs from 'fs';
 
 // Load environment variables based on NODE_ENV
 const NODE_ENV = process.env.NODE_ENV || 'development';
-const envFile = NODE_ENV === 'production' 
-  ? path.resolve(process.cwd(), '.env.production')
-  : path.resolve(process.cwd(), '.env.local');
 
-if (fs.existsSync(envFile)) {
-  console.log(`Loading environment from ${envFile}`);
-  dotenv.config({ path: envFile });
+// Only load from .env file in development
+if (NODE_ENV === 'development') {
+  const envFile = path.resolve(process.cwd(), '.env.local');
+  if (fs.existsSync(envFile)) {
+    console.log(`Loading environment from ${envFile}`);
+    dotenv.config({ path: envFile });
+  } else {
+    console.log(`Environment file ${envFile} not found, using default environment variables.`);
+  }
 } else {
-  throw new Error(`Environment file ${envFile} not found. Please create it first.`);
+  console.log('Production environment detected, using Railway configuration.');
 }
 
 // Check required environment variables

@@ -5,9 +5,23 @@
  */
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 
-// Load environment variables from .env.local
-dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+// Load environment variables based on NODE_ENV
+const NODE_ENV = process.env.NODE_ENV || 'development';
+
+// Only load from .env file in development
+if (NODE_ENV === 'development') {
+  const envFile = path.resolve(process.cwd(), '.env.local');
+  if (fs.existsSync(envFile)) {
+    console.log(`Loading environment from ${envFile}`);
+    dotenv.config({ path: envFile });
+  } else {
+    console.log(`Environment file ${envFile} not found, using default environment variables.`);
+  }
+} else {
+  console.log('Production environment detected, using Railway configuration.');
+}
 
 export const config = {
   // Server configuration

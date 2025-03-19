@@ -11,12 +11,13 @@ restartPolicyMaxRetries = 5
 
 [service]
 name = "api-gateway-service"
-internalPort = 3004
+internalPort = 8080
 healthcheckPath = "/health"
 domains = ["api.helloworld.example.com"]
 
 [variables]
-PORT = "3004"
+PORT = "8080"
 NODE_ENV = "production"
-MODEL_SERVICE_URL = "${MODEL_SERVICE_URL}"
-KEY_SERVICE_URL = "${KEY_SERVICE_URL}" 
+MODEL_SERVICE_URL = "http://model-service.railway.internal:8080"
+UTILITY_SERVICE_URL = "http://utility-service.railway.internal:8080"
+KEY_SERVICE_URL = "http://key-service.railway.internal:8080" 

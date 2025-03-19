@@ -20,4 +20,13 @@ domains = ["gateway.agent-base.ai"]
 # Set PORT env variable to match Railway's standard port
 PORT = "8080"
 NODE_ENV = "production"
-ALLOWED_ORIGINS = "https://www.agent-base.ai,https://agent-base.ai" 
+ALLOWED_ORIGINS = "https://www.agent-base.ai,https://agent-base.ai"
+# Service URLs
+AUTH_SERVICE_URL = "http://auth-service.railway.internal:8080"
+DB_SERVICE_URL = "http://database-service.railway.internal:8080"
+MODEL_SERVICE_URL = "http://model-service.railway.internal:8080"
+API_GATEWAY_SERVICE_URL = "http://api-gateway-service.railway.internal:8080"
+KEYS_SERVICE_URL = "http://key-service.railway.internal:8080"
+PAYMENT_SERVICE_URL = "http://payment-service.railway.internal:8080"
+# Security
+GATEWAY_API_KEY = "g4t3way-k3y-e5e821f89a2d4c3b" 
