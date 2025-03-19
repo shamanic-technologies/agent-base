@@ -38,7 +38,7 @@ const requiredEnvVars = [
   'API_GATEWAY_SERVICE_URL',
   'KEYS_SERVICE_URL',
   'PAYMENT_SERVICE_URL',
-  'GATEWAY_API_KEY'
+  'WEB_GATEWAY_API_KEY'
 ];
 
 const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
@@ -59,7 +59,7 @@ const KEYS_SERVICE_URL = process.env.KEYS_SERVICE_URL!;
 const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL!;
 
 // API key for gateway access
-const API_KEY = process.env.GATEWAY_API_KEY!;
+const API_KEY = process.env.WEB_GATEWAY_API_KEY!;
 
 // Middleware
 app.use(cors({
