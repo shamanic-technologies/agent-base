@@ -56,6 +56,7 @@ export interface ApiLogEntry {
   durationMs?: number;
   errorMessage?: string;
   timestamp?: string;
+  price?: number;  // New field for pricing
 }
 
 /**
@@ -121,6 +122,14 @@ async function logApiCall(logEntry: ApiLogEntry): Promise<string | null> {
       throw new Error('[LOGGING SERVICE] userId is required for logging API calls');
     }
 
+    // Calculate price based on endpoint
+    let price = 0;
+    if (logEntry.endpoint.startsWith('/utility')) {
+      price = 0.01;
+    } else if (logEntry.endpoint.startsWith('/generate')) {
+      price = 0.20;
+    }
+
     const response = await fetch(`${DB_SERVICE_URL}/db/api_logs`, {
       method: 'POST',
       headers: {
@@ -141,6 +150,7 @@ async function logApiCall(logEntry: ApiLogEntry): Promise<string | null> {
           response_body: logEntry.responseBody,
           duration_ms: logEntry.durationMs,
           error_message: logEntry.errorMessage,
+          price: logEntry.price || price,  // Use provided price or calculated price
           timestamp
         }
       })

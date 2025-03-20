@@ -94,7 +94,10 @@ export const apiLoggerMiddleware = (req: Request, res: Response, next: NextFunct
           requestId: req.headers['x-request-id'] as string || (req as any).id,
           requestBody: sanitizedRequestBody,
           responseBody: sanitizedResponseBody,
-          durationMs: duration
+          durationMs: duration,
+          // Calculate price based on endpoint
+          price: req.originalUrl.startsWith('/utility') ? 0.01 : 
+                 req.originalUrl.startsWith('/generate') ? 0.20 : 0
         })
       });
     } catch (error) {
