@@ -76,19 +76,24 @@ export class UtilityCallUtility extends Tool {
     user_id: string;
   };
   
-  // Utility service URL from environment variables
-  private utilityServiceUrl: string;
+  // API Gateway URL from environment variables
+  private apiGatewayUrl: string;
+  
+  // API key for authentication
+  private apiKey?: string;
   
   constructor({ 
     conversationId,
     parentNodeId,
     parentNodeType,
-    userId
+    userId,
+    apiKey
   }: {
     conversationId: ThreadId;
     parentNodeId: ParentNodeId;
     parentNodeType: ParentNodeType;
     userId: string;
+    apiKey?: string;
   }) {
     super();
     
@@ -97,6 +102,7 @@ export class UtilityCallUtility extends Tool {
     this.parentNodeId = parentNodeId;
     this.parentNodeType = parentNodeType;
     this.userId = userId;
+    this.apiKey = apiKey;
     
     // Set the configurable options
     this.configurable = {
@@ -112,8 +118,8 @@ export class UtilityCallUtility extends Tool {
       user_id: this.userId
     };
     
-    // Get the utility service URL from environment variables
-    this.utilityServiceUrl = process.env.UTILITY_SERVICE_URL;
+    // Get the API Gateway URL from environment variables
+    this.apiGatewayUrl = process.env.API_GATEWAY_URL;
   }
   
   // Method to get metadata
@@ -126,7 +132,7 @@ export class UtilityCallUtility extends Tool {
     return this.utilitySchema;
   }
   
-  // Implementation that calls the utility service API
+  // Implementation that calls the API Gateway to reach the utility service
   async _call(input: string): Promise<string> {
     let utility_id: string | undefined;
     let parameters: Record<string, any> = {};
@@ -169,16 +175,27 @@ export class UtilityCallUtility extends Tool {
       return `Error: Invalid input format. Expected JSON format: {"utility_id": "utility_name", "parameters": {...}}`;
     }
     
-    console.log(`Calling utility-service API for utility: ${utility_id} with parameters:`, parameters);
+    console.log(`Calling API Gateway for utility: ${utility_id} with parameters:`, parameters);
     
     try {
-      // Call the utility service API
-      const response = await axios.post(`${this.utilityServiceUrl}/utility`, {
+      // Set up headers with Bearer token authentication
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.apiKey}`
+      };
+      
+      if (!this.apiKey) {
+        console.error('No API key provided when calling utility_call_utility');
+        throw new Error('Authentication required: API key is missing');
+      }
+      
+      // Call the API Gateway to forward to the utility service
+      const response = await axios.post(`${this.apiGatewayUrl}/utility/utility`, {
         operation: utility_id,
-        input: parameters || {},
+        input: parameters,
         user_id: this.userId,
         conversation_id: this.conversationId
-      });
+      }, { headers });
       
       if (response.data) {
         // If there's an error, throw it
@@ -196,14 +213,14 @@ export class UtilityCallUtility extends Tool {
         return JSON.stringify(response.data, null, 2);
       }
       
-      throw new Error('Invalid response from utility service');
+      throw new Error('Invalid response from API Gateway');
     } catch (error) {
       console.error(`Error calling utility ${utility_id}:`, error);
       
       if (axios.isAxiosError(error)) {
         // Handle network errors or API errors
         if (!error.response) {
-          return `Network error: Failed to connect to utility service at ${this.utilityServiceUrl}`;
+          return `Network error: Failed to connect to API Gateway at ${this.apiGatewayUrl}`;
         }
         
         // Handle 404 separately
@@ -211,7 +228,7 @@ export class UtilityCallUtility extends Tool {
           return `Utility not found: ${utility_id}`;
         }
         
-        return `Utility service error: ${error.response.status} - ${error.response.data?.error || error.message}`;
+        return `API Gateway error: ${error.response.status} - ${error.response.data?.error || error.message}`;
       }
       
       // Generic error

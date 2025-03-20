@@ -47,19 +47,24 @@ export class UtilityGetUtilityInfo extends Tool {
     user_id: string;
   };
   
-  // Utility service URL from environment variables
-  private utilityServiceUrl: string;
+  // API Gateway URL from environment variables
+  private apiGatewayUrl: string;
+  
+  // API key for authentication
+  private apiKey?: string;
   
   constructor({ 
     conversationId,
     parentNodeId,
     parentNodeType,
-    userId
+    userId,
+    apiKey
   }: {
     conversationId: ThreadId;
     parentNodeId: ParentNodeId;
     parentNodeType: ParentNodeType;
     userId: string;
+    apiKey?: string;
   }) {
     super();
     
@@ -68,6 +73,7 @@ export class UtilityGetUtilityInfo extends Tool {
     this.parentNodeId = parentNodeId;
     this.parentNodeType = parentNodeType;
     this.userId = userId;
+    this.apiKey = apiKey;
     
     // Set the configurable options
     this.configurable = {
@@ -83,8 +89,8 @@ export class UtilityGetUtilityInfo extends Tool {
       user_id: this.userId
     };
     
-    // Get the utility service URL from environment variables
-    this.utilityServiceUrl = process.env.UTILITY_SERVICE_URL || 'http://localhost:3008';
+    // Get the API Gateway URL from environment variables
+    this.apiGatewayUrl = process.env.API_GATEWAY_URL;
   }
   
   // Method to get metadata
@@ -97,25 +103,34 @@ export class UtilityGetUtilityInfo extends Tool {
     return this.utilitySchema;
   }
   
-  // Implementation that calls the utility service API
-  // Simplified: directly accept the string as input
-  async _call(input: string): Promise<string> {
-    // The input is directly the utility_id
-    const utility_id = input;
-    console.log(`Calling utility-service API to get info for utility: ${utility_id}`);
+  // Implementation that calls the API Gateway to reach the utility service
+  async _call(utilityId: string): Promise<string> {
+    console.log(`Calling API Gateway to get information on utility: ${utilityId}`);
     
     try {
       // Validate input
-      if (!utility_id) {
+      if (!utilityId) {
         return 'Error: utility_id is required';
       }
       
-      // Call the utility service API to get utility info
-      const response = await axios.get(`${this.utilityServiceUrl}/utility/${utility_id}`, {
+      // Set up headers with Bearer token authentication
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.apiKey}`
+      };
+      
+      if (!this.apiKey) {
+        console.error('No API key provided when calling utility_get_utility_info');
+        throw new Error('Authentication required: API key is missing');
+      }
+      
+      // Call the API Gateway endpoint for getting utility information
+      const response = await axios.get(`${this.apiGatewayUrl}/utility/utility/${utilityId}`, {
         params: {
           user_id: this.userId,
           conversation_id: this.conversationId
-        }
+        },
+        headers
       });
       
       if (response.data) {
@@ -123,22 +138,22 @@ export class UtilityGetUtilityInfo extends Tool {
         return JSON.stringify(response.data, null, 2);
       }
       
-      throw new Error('Invalid response from utility service');
+      throw new Error('Invalid response from API Gateway');
     } catch (error) {
-      console.error(`Error getting info for utility ${utility_id}:`, error);
+      console.error(`Error getting info for utility ${utilityId}:`, error);
       
       if (axios.isAxiosError(error)) {
         // Handle network errors or API errors
         if (!error.response) {
-          return `Network error: Failed to connect to utility service at ${this.utilityServiceUrl}`;
+          return `Network error: Failed to connect to API Gateway at ${this.apiGatewayUrl}`;
         }
         
         // Handle 404 separately
         if (error.response.status === 404) {
-          return `Utility not found: ${utility_id}`;
+          return `Utility not found: ${utilityId}`;
         }
         
-        return `Utility service error: ${error.response.status} - ${error.response.data?.error || error.message}`;
+        return `API Gateway error: ${error.response.status} - ${error.response.data?.error || error.message}`;
       }
       
       // Generic error
