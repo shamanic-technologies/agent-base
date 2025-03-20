@@ -17,7 +17,21 @@ const LOGGING_SERVICE_URL = process.env.LOGGING_SERVICE_URL || 'http://localhost
  */
 export const apiLoggerMiddleware = (req: Request, res: Response, next: NextFunction) => {
   const startTime = Date.now();
-  const apiKey = req.headers['x-api-key'] as string;
+  
+  // Extract API key from Authorization header (Bearer token)
+  const authHeader = req.headers['authorization'] as string;
+  let apiKey = null;
+  
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    apiKey = authHeader.substring(7);
+  } else {
+    console.error('[API Gateway] Authentication error: Missing or invalid Authorization header');
+    return res.status(401).json({
+      success: false,
+      error: '[API Gateway] Bearer token is required'
+    });
+  }
+  
   const originalSend = res.send;
   let responseBody: any = null;
 
