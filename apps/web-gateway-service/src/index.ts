@@ -134,49 +134,90 @@ app.use((req, res, next) => {
 async function forwardRequest(targetUrl: string, req: express.Request, res: express.Response) {
   const requestUrl = `${targetUrl}${req.url}`;
   
+  // Debug log for auth validation endpoint
+  if (req.url.includes('/auth/validate')) {
+    console.log(`[Web Gateway] Forward request to ${requestUrl}`);
+    console.log(`[Web Gateway] Request method: ${req.method}`);
+    
+    // Fix: Add null check for req.headers
+    if (req.headers) {
+      console.log(`[Web Gateway] Request headers before axios:`, 
+                  Object.keys(req.headers).map(key => 
+                    `${key}: ${key.toLowerCase() === 'authorization' ? 
+                      (typeof req.headers[key] === 'string' ? 
+                       req.headers[key].substring(0, 10) + '...' : 'complex value') : 
+                      'masked'}`
+                  ));
+    } else {
+      console.log(`[Web Gateway] Request headers are undefined or null`);
+    }
+  }
+  
   try {
-    const response = await axios({
+    const axiosConfig = {
       method: req.method,
       url: requestUrl,
       data: req.method !== 'GET' ? req.body : undefined,
       headers: {
-        ...req.headers as any,
+        ...(req.headers || {}), // Fix: Provide default empty object if headers are undefined
         host: new URL(targetUrl).host
       },
       // Forward cookies for authentication
       withCredentials: true,
       // Never follow redirects, always pass them through to the client
       maxRedirects: 0,
-    });
+    };
+    
+    // Debug log axios config for auth validation endpoint
+    if (req.url.includes('/auth/validate')) {
+      console.log(`[Web Gateway] Axios config headers:`, 
+                  axiosConfig.headers ? Object.keys(axiosConfig.headers).map(key => 
+                    `${key}: ${key.toLowerCase() === 'authorization' ? 
+                      (typeof axiosConfig.headers[key] === 'string' ? 
+                       axiosConfig.headers[key].substring(0, 10) + '...' : 'complex value') : 
+                      'masked'}`
+                  ) : 'No headers');
+      console.log(`[Web Gateway] Axios request body:`, axiosConfig.data ? 'present' : 'none');
+    }
+    
+    const response = await axios(axiosConfig);
     
     // Forward the response status, headers, and data
     res.status(response.status);
     
-    // Forward all relevant headers, especially important for OAuth redirects
-    const headersToForward = [
-      'content-type', 
-      'set-cookie', 
-      'authorization', 
-      'location', 
-      'cache-control',
-      'pragma',
-      'expires'
-    ];
-    
-    headersToForward.forEach(header => {
-      if (response.headers[header]) {
-        res.setHeader(header, response.headers[header]);
+    // Forward all headers from the response, with special handling for cookies
+    Object.entries(response.headers).forEach(([key, value]) => {
+      if (value) {
+        // For set-cookie headers, ensure they are properly preserved
+        if (key.toLowerCase() === 'set-cookie') {
+          console.log(`[Web Gateway] Found Set-Cookie header: ${typeof value}`, 
+                      Array.isArray(value) ? `Array with ${value.length} items` : 'Single value');
+          
+          if (Array.isArray(value)) {
+            value.forEach((cookie, i) => {
+              console.log(`[Web Gateway] Setting cookie[${i}]:`, cookie.substring(0, 30) + '...');
+              res.append('Set-Cookie', cookie);
+            });
+          } else {
+            console.log(`[Web Gateway] Setting cookie:`, value.substring(0, 30) + '...');
+            res.append('Set-Cookie', value);
+          }
+        } else {
+          res.setHeader(key, value);
+        }
       }
     });
     
     // For redirect responses (like OAuth redirects), just send the response without a body
     if (response.status >= 300 && response.status < 400) {
+      console.log(`[Web Gateway] Forwarding ${response.status} redirect to: ${response.headers.location}`);
+      console.log(`[Web Gateway] Response headers:`, Object.fromEntries(Object.entries(res.getHeaders())));
       return res.end();
     }
     
     return res.send(response.data);
   } catch (error) {
-    console.error(`Error forwarding request to ${targetUrl}${req.url}:`, error);
+    console.error(`[Web Gateway] Error forwarding request to ${targetUrl}${req.url}:`, error);
     
     const axiosError = error as AxiosError;
     
@@ -186,12 +227,32 @@ async function forwardRequest(targetUrl: string, req: express.Request, res: expr
       // Preserve any redirect status and headers
       if (axiosError.response.status >= 300 && axiosError.response.status < 400) {
         res.status(axiosError.response.status);
+        console.log(`[Web Gateway] Handling error redirect (${axiosError.response.status}) to: ${axiosError.response.headers.location}`);
         
         // Copy all headers from the response
         Object.entries(axiosError.response.headers).forEach(([key, value]) => {
-          if (value) res.setHeader(key, value);
+          if (value) {
+            // Special handling for Set-Cookie headers
+            if (key.toLowerCase() === 'set-cookie') {
+              console.log(`[Web Gateway] Found Set-Cookie header: ${typeof value}`, 
+                         Array.isArray(value) ? `Array with ${value.length} items` : 'Single value');
+              
+              if (Array.isArray(value)) {
+                value.forEach((cookie, i) => {
+                  console.log(`[Web Gateway] Setting cookie[${i}]:`, cookie.substring(0, 30) + '...');
+                  res.append('Set-Cookie', cookie);
+                });
+              } else {
+                console.log(`[Web Gateway] Setting cookie:`, typeof value === 'string' ? value.substring(0, 30) + '...' : value);
+                res.append('Set-Cookie', value);
+              }
+            } else {
+              res.setHeader(key, value);
+            }
+          }
         });
         
+        console.log(`[Web Gateway] Response headers after processing:`, Object.fromEntries(Object.entries(res.getHeaders())));
         return res.end();
       }
       
@@ -200,13 +261,13 @@ async function forwardRequest(targetUrl: string, req: express.Request, res: expr
       // The request was made but no response was received
       return res.status(502).json({
         success: false,
-        error: `Web Gateway Service: Could not connect to ${new URL(targetUrl).hostname}`
+        error: `[Web Gateway] Could not connect to ${new URL(targetUrl).hostname}`
       });
     } else {
       // Something happened in setting up the request
       return res.status(500).json({
         success: false,
-        error: 'Web Gateway Service: Internal error'
+        error: '[Web Gateway] Internal error'
       });
     }
   }
@@ -240,7 +301,28 @@ const loggingRouter = express.Router();
 
 // Auth service route handler
 authRouter.all('*', (req, res) => {
-  return forwardRequest(AUTH_SERVICE_URL, req, res);
+  // Log headers for debugging, especially for /auth/validate endpoint
+  if (req.url === '/validate') {
+    console.log(`[Web Gateway] Forwarding to auth/validate with headers:`, 
+      req.headers ? Object.keys(req.headers).map(key => `${key}: ${key.toLowerCase() === 'authorization' ? 'Bearer ***' : '***'}`) : 'No headers');
+    
+    if (req.headers && req.headers.authorization) {
+      console.log(`[Web Gateway] Authorization header is present and starts with:`, 
+        req.headers.authorization.substring(0, 10) + '...');
+    } else {
+      console.log(`[Web Gateway] No Authorization header found in request to auth service`);
+    }
+  }
+  
+  // When a request comes to /auth/validate, inside this handler req.url is just '/validate'
+  // We need to add back the '/auth' prefix for the auth service to recognize the route
+  const modifiedReq = Object.assign({}, req, {
+    url: `/auth${req.url}`,
+    // Ensure headers exists to prevent null reference errors
+    headers: req.headers || {}
+  });
+  
+  return forwardRequest(AUTH_SERVICE_URL, modifiedReq, res);
 });
 
 // OAuth route handler
@@ -294,7 +376,7 @@ app.use('/logging', loggingRouter);
 app.use((req, res) => {
   res.status(404).json({
     success: false,
-    error: 'Web Gateway Service: Endpoint not found'
+    error: '[Web Gateway] Endpoint not found'
   });
 });
 

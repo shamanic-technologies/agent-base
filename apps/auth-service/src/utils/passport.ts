@@ -22,18 +22,8 @@ export interface UserProfile {
 passport.use(
   new JwtStrategy(
     {
-      jwtFromRequest: ExtractJwt.fromExtractors([
-        // Extract JWT from the auth-token cookie
-        (req) => {
-          let token = null;
-          if (req && req.cookies) {
-            token = req.cookies['auth-token'];
-          }
-          return token;
-        },
-        // Also check Authorization header
-        ExtractJwt.fromAuthHeaderAsBearerToken(),
-      ]),
+      // Only use Bearer token authentication
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       secretOrKey: config.jwt.secret,
     },
     (jwtPayload, done) => {

@@ -10,11 +10,36 @@ import passport from '../utils/passport';
 
 /**
  * Validate the user's token
+ * Only uses Authorization Bearer header
  */
 export const validateTokenHandler: AsyncRequestHandler = async (req, res) => {
+  // Extract token from Authorization header
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    console.log('[Auth Service] No valid Authorization header found');
+    return res.status(401).json({
+      success: false,
+      error: 'No valid Authorization header found'
+    });
+  }
+  
+  const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+  
+  if (!token) {
+    console.log('[Auth Service] No token provided for validation');
+    return res.status(401).json({
+      success: false,
+      error: 'No token provided'
+    });
+  }
+  
+  console.log('[Auth Service] Token validation attempt with token length:', token.length);
+  
+  // Validate token using passport jwt strategy
   passport.authenticate('jwt', { session: false }, (err, user, info) => {
     if (err) {
-      console.error('Error in JWT validation:', err);
+      console.error('[Auth Service] Error in JWT validation:', err);
       return res.status(500).json({
         success: false,
         error: 'Server error'

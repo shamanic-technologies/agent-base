@@ -15,3 +15,4 @@ alwaysApply: true
 - When youn find unused code, or deprecated code, or when you replace old code by new code: delete the unused!
 - When a file is longer than ~200 lines, be proactive in splitting it in several files
 - When "git add" then prefer "git add -A" at once always
+- Authentication flow across all services using Bearer tokens exclusively, making it more secure and aligned with REST API best practices

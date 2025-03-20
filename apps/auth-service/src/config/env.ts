@@ -81,5 +81,6 @@ export const cookieSettings = {
   secure: config.isProduction,
   sameSite: 'lax' as const,
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-  path: '/'
+  path: '/',
+  domain: process.env.NODE_ENV === 'development' ? 'localhost' : undefined // Use root domain in development
 }; 
