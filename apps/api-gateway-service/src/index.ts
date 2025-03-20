@@ -71,26 +71,52 @@ const validateApiKey = async (apiKey: string): Promise<{valid: boolean, userId: 
 };
 
 /**
- * Forwards a validated request to the specified service
+ * Forwards a request to a service
+ * Enriches the request body with user_id and passes API key via headers
  * Handles error responses and formatting
  */
 const forwardRequest = async (
   serviceUrl: string, 
   endpoint: string, 
-  requestBody: any, 
-  userId: string
+  requestData: any, 
+  userId: string,
+  authHeader: string
 ): Promise<{status: number, data: any}> => {
   try {
-    // Create an enriched request body with the user ID
-    const enrichedRequestBody = {
-      ...requestBody,
-      user_id: userId  // Always include user_id in the forwarded request
+    // Determine if we're dealing with query params or body data
+    const isQueryParams = typeof requestData === 'object' && 'user_id' in requestData;
+    
+    // Create headers with Bearer token
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': authHeader
     };
     
-    console.log(`Forwarding request to ${serviceUrl}${endpoint} for user ID: ${userId}`);
+    // Handle different HTTP methods appropriately
+    let response;
     
-    // Forward the enriched request to the service
-    const response = await axios.post(`${serviceUrl}${endpoint}`, enrichedRequestBody);
+    if (endpoint.startsWith('/utilities') && isQueryParams) {
+      // For GET requests to /utilities endpoint
+      response = await axios.get(`${serviceUrl}${endpoint}`, {
+        params: {
+          ...requestData,
+          user_id: userId // Always include user_id in the params
+        },
+        headers
+      });
+    } else {
+      // For POST and other requests
+      // Create an enriched request body with the user ID
+      const enrichedRequestData = {
+        ...requestData,
+        user_id: userId  // Always include user_id in the forwarded request
+      };
+      
+      console.log(`Forwarding request to ${serviceUrl}${endpoint} for user ID: ${userId}`);
+      
+      // Forward the enriched request to the service
+      response = await axios.post(`${serviceUrl}${endpoint}`, enrichedRequestData, { headers });
+    }
     
     // Add user ID tracking info (in case it's not already included in response)
     if (response.data && typeof response.data === 'object') {
@@ -139,16 +165,22 @@ const createRequestHandler = (
   requireConversationId: boolean = true
 ) => {
   return async (req: express.Request, res: express.Response) => {
-    const apiKey = req.headers['x-api-key'] as string;
+    // Extract API key from Authorization header
+    const authHeader = req.headers['authorization'] as string;
     const { conversation_id } = req.body;
     
-    // Check if API key is provided
-    if (!apiKey) {
+    // Check if Authorization header is provided
+    if (!authHeader) {
       return res.status(401).json({
         success: false,
-        error: 'API Gateway Service: API key is required'
+        error: 'API Gateway Service: Authorization header is required'
       });
     }
+    
+    // Extract token from Bearer format
+    const apiKey = authHeader.startsWith('Bearer ') 
+      ? authHeader.substring(7) 
+      : authHeader;
     
     // Check if conversation_id is provided if required
     if (requireConversationId && !conversation_id) {
@@ -177,7 +209,8 @@ const createRequestHandler = (
         serviceUrl,
         endpoint,
         req.body,
-        validation.userId
+        validation.userId,
+        authHeader // Pass the full Authorization header to downstream services
       );
       
       res.status(result.status).json(result.data);
@@ -220,15 +253,21 @@ app.post('/generate', createRequestHandler(MODEL_SERVICE_URL, '/generate'));
  */
 // Forward all utility endpoints with the common pattern /utility/* to the utility service
 app.post('/utility/*', async (req: express.Request, res: express.Response) => {
-  const apiKey = req.headers['x-api-key'] as string;
+  // Extract API key from Authorization header
+  const authHeader = req.headers['authorization'] as string;
   
-  // Check if API key is provided
-  if (!apiKey) {
+  // Check if Authorization header is provided
+  if (!authHeader) {
     return res.status(401).json({
       success: false,
-      error: 'API Gateway Service: API key is required'
+      error: 'API Gateway Service: Authorization header is required'
     });
   }
+  
+  // Extract token from Bearer format
+  const apiKey = authHeader.startsWith('Bearer ') 
+    ? authHeader.substring(7) 
+    : authHeader;
   
   try {
     // Validate the API key
@@ -252,7 +291,8 @@ app.post('/utility/*', async (req: express.Request, res: express.Response) => {
       UTILITY_SERVICE_URL,
       utilityPath,
       req.body,
-      validation.userId
+      validation.userId,
+      authHeader // Pass the full Authorization header
     );
     
     res.status(result.status).json(result.data);
@@ -262,6 +302,60 @@ app.post('/utility/*', async (req: express.Request, res: express.Response) => {
       success: false,
       error: 'API Gateway Service: Server error',
       details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Add a GET handler for utility endpoints
+app.get('/utility/*', async (req: express.Request, res: express.Response) => {
+  // Extract API key from Authorization header
+  const authHeader = req.headers['authorization'] as string;
+  
+  // Check if Authorization header is provided
+  if (!authHeader) {
+    return res.status(401).json({
+      success: false,
+      error: 'API Gateway Service: Authorization header is required'
+    });
+  }
+  
+  // Extract token from Bearer format
+  const apiKey = authHeader.startsWith('Bearer ') 
+    ? authHeader.substring(7) 
+    : authHeader;
+  
+  try {
+    // Validate the API key
+    const validation = await validateApiKey(apiKey);
+    
+    if (!validation.valid) {
+      return res.status(401).json({
+        success: false,
+        error: 'API Gateway Service: Invalid API key'
+      });
+    }
+    
+    // Set userId in the request object for the logging middleware
+    (req as any).userId = validation.userId;
+    
+    // Extract the path after /utility to forward to the utility service
+    const utilityPath = req.path.replace('/utility', '');
+    
+    // Forward the request to the utility service
+    const result = await forwardRequest(
+      UTILITY_SERVICE_URL,
+      utilityPath,
+      req.query, // For GET requests, forward query parameters
+      validation.userId,
+      authHeader // Pass the full Authorization header
+    );
+    
+    return res.status(result.status).json(result.data);
+  } catch (error) {
+    console.error('Error processing utility request:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'API Gateway Service: Internal server error'
     });
   }
 });

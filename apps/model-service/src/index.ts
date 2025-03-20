@@ -49,24 +49,26 @@ app.get('/health', (req, res) => {
 // LLM generation endpoint using ReAct agent
 app.post('/generate', async (req, res) => {
   const { prompt, user_id, conversation_id } = req.body;
+  // Extract the API key from headers
+  const authHeader = req.headers['authorization'] as string;
   
   if (!prompt) {
-    return res.status(400).json({ error: 'Prompt is required' });
+    return res.status(400).json({ error: '[Model Service] Prompt is required' });
   }
   
   if (!user_id) {
-    return res.status(400).json({ error: 'user_id is required' });
+    return res.status(400).json({ error: '[Model Service] user_id is required' });
   }
 
   if (!conversation_id) {
-    return res.status(400).json({ error: 'conversation_id is required' });
+    return res.status(400).json({ error: '[Model Service] conversation_id is required' });
   }
   
   try {
     // Check if we have an API key configured
     if (!process.env.ANTHROPIC_API_KEY) {
       // Fallback to simplified response if no API key
-      console.log(`No ANTHROPIC_API_KEY found, using fallback response for prompt: "${prompt}"`);
+      console.log(`[Model Service] No ANTHROPIC_API_KEY found, using fallback response for prompt: "${prompt}"`);
       
       // Return a simplified response as fallback
       return res.status(200).json({
@@ -75,9 +77,15 @@ app.post('/generate', async (req, res) => {
       });
     }
     
-    // Process the prompt with our ReAct agent
+    // Extract API key from Authorization header if it exists
+    let apiKey = null;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      apiKey = authHeader.substring(7);
+    }
+    
+    // Process the prompt with our ReAct agent, passing along the API key
     console.log(`Received prompt: "${prompt}" from user: ${user_id}, conversation: ${conversation_id}`);
-    const response = await processWithReActAgent(prompt, user_id, conversation_id);
+    const response = await processWithReActAgent(prompt, user_id, conversation_id, apiKey);
     
     // Return the raw agent response without additional formatting
     res.status(200).json(response);
@@ -95,6 +103,8 @@ app.post('/generate', async (req, res) => {
 // Streaming LLM generation endpoint using ReAct agent
 app.post('/generate/stream', async (req, res) => {
   const { prompt, user_id, stream_modes = ['messages', 'events'], conversation_id } = req.body;
+  // Extract the API key from the Authorization header
+  const authHeader = req.headers['authorization'] as string;
   
   if (!prompt) {
     return res.status(400).json({ error: 'Prompt is required' });
@@ -130,11 +140,17 @@ app.post('/generate/stream', async (req, res) => {
       return res.end();
     }
     
+    // Extract API key from Authorization header if it exists
+    let apiKey = null;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      apiKey = authHeader.substring(7);
+    }
+    
     // Process the prompt with our streaming ReAct agent
     console.log(`Streaming prompt: "${prompt}" with modes: ${stream_modes.join(', ')}, conversation: ${conversation_id}`);
     
-    // Get the streaming generator
-    const stream = await streamWithReActAgent(prompt, stream_modes, user_id, conversation_id);
+    // Get the streaming generator with API key
+    const stream = await streamWithReActAgent(prompt, stream_modes, user_id, conversation_id, apiKey);
     
     // Stream each raw chunk directly to the client without any additional processing
     for await (const chunk of stream) {

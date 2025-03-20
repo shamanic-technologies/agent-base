@@ -382,12 +382,14 @@ function createReactAgentWrapper(config: ReactAgentWrapperConfig): ReactAgentWra
  * @param prompt The text prompt to process
  * @param userId User ID for tracking and personalization
  * @param conversationId Conversation ID for stateful conversations
+ * @param apiKey Optional API key for utilities
  * @returns The agent's response
  */
 export async function processWithReActAgent(
-  prompt: SystemMessage, 
+  prompt: string, 
   userId: string,
-  conversationId: string
+  conversationId: string,
+  apiKey?: string
 ) {
   try {
     // Check if API key is available
@@ -399,24 +401,27 @@ export async function processWithReActAgent(
     const nodeId = 'agent_react' as NodeId;
     const nodeType = NodeType.AGENT;
     
-    // Create utilities
+    // Create utilities and pass the apiKey to them
     const listUtilities = new UtilityListUtilities({
       conversationId: conversationId,
       parentNodeId: nodeId,
       parentNodeType: nodeType,
-      userId: userId
+      userId: userId,
+      apiKey: apiKey
     });
     const getUtilityInfo = new UtilityGetUtilityInfo({
       conversationId: conversationId,
       parentNodeId: nodeId,
       parentNodeType: nodeType,
-      userId: userId
+      userId: userId,
+      apiKey: apiKey
     });
     const callUtility = new UtilityCallUtility({
       conversationId: conversationId,
       parentNodeId: nodeId,
       parentNodeType: nodeType,
-      userId: userId
+      userId: userId,
+      apiKey: apiKey
     });
     
     // Use all utilities
@@ -467,15 +472,17 @@ export async function processWithReActAgent(
  * 
  * @param prompt The user prompt to process
  * @param streamModes Optional array of stream modes
- * @param userId Optional user ID for tracking and personalization
- * @param conversation_id Optional conversation ID for stateful conversations
+ * @param userId User ID for tracking and personalization
+ * @param conversationId Conversation ID for stateful conversations
+ * @param apiKey Optional API key for authenticated requests to external services
  * @returns AsyncGenerator that yields LangGraph event objects as JSON strings
  */
 export async function* streamWithReActAgent(
   prompt: SystemMessage,
   streamModes: any,
   userId: string,
-  conversationId: string
+  conversationId: string,
+  apiKey?: string
 ): AsyncGenerator<string, void, unknown> {
   try {
     // Check if API key is available
@@ -487,24 +494,27 @@ export async function* streamWithReActAgent(
     const nodeId = 'agent_react' as NodeId;
     const nodeType = NodeType.AGENT;
     
-    // Create utilities
+    // Create utilities with API key
     const listUtilities = new UtilityListUtilities({
       conversationId: conversationId,
       parentNodeId: nodeId,
       parentNodeType: nodeType,
-      userId: userId
+      userId: userId,
+      apiKey
     });
     const getUtilityInfo = new UtilityGetUtilityInfo({
       conversationId: conversationId,
       parentNodeId: nodeId,
       parentNodeType: nodeType,
-      userId: userId
+      userId: userId,
+      apiKey
     });
     const callUtility = new UtilityCallUtility({
       conversationId: conversationId,
       parentNodeId: nodeId,
       parentNodeType: nodeType,
-      userId: userId
+      userId: userId,
+      apiKey
     });
     
     // Use all utilities

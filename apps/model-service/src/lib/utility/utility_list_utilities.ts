@@ -1,7 +1,7 @@
 /**
  * Utility List Utilities
  * 
- * A tool that calls the utility service API to list all available utility functions.
+ * A tool that calls the API gateway to list all available utility functions.
  * This provides an agent with the ability to discover what utilities are available.
  */
 
@@ -11,7 +11,7 @@ import axios from 'axios';
 import { NodeId, NodeType, ParentNodeId, ParentNodeType, ThreadId } from "../../types/agent-config.js";
 
 /**
- * A utility that lists all available utilities from the utility service
+ * A utility that lists all available utilities through the API gateway
  */
 export class UtilityListUtilities extends Tool {
   name = "utility_list_utilities";
@@ -47,19 +47,24 @@ export class UtilityListUtilities extends Tool {
     user_id: string;
   };
   
-  // Utility service URL from environment variables
-  private utilityServiceUrl: string;
+  // API Gateway URL from environment variables
+  private apiGatewayUrl: string;
+  
+  // API key for authentication
+  private apiKey?: string;
   
   constructor({ 
     conversationId,
     parentNodeId,
     parentNodeType,
-    userId
+    userId,
+    apiKey
   }: {
     conversationId: ThreadId;
     parentNodeId: ParentNodeId;
     parentNodeType: ParentNodeType;
     userId: string;
+    apiKey?: string;
   }) {
     super();
     
@@ -68,6 +73,7 @@ export class UtilityListUtilities extends Tool {
     this.parentNodeId = parentNodeId;
     this.parentNodeType = parentNodeType;
     this.userId = userId;
+    this.apiKey = apiKey;
     
     // Set the configurable options
     this.configurable = {
@@ -83,8 +89,8 @@ export class UtilityListUtilities extends Tool {
       user_id: this.userId
     };
     
-    // Get the utility service URL from environment variables
-    this.utilityServiceUrl = process.env.UTILITY_SERVICE_URL || 'http://localhost:3008';
+    // Get the API Gateway URL from environment variables
+    this.apiGatewayUrl = process.env.API_GATEWAY_URL;
   }
   
   // Method to get metadata
@@ -97,17 +103,30 @@ export class UtilityListUtilities extends Tool {
     return this.utilitySchema;
   }
   
-  // Implementation that calls the utility service API
+  // Implementation that calls the API Gateway to reach the utility service
   async _call(_input: string): Promise<string> {
-    console.log(`Calling utility-service API to list available utilities`);
+    console.log(`Calling API Gateway to list available utilities`);
     
     try {
-      // Call the utility service API to list utilities
-      const response = await axios.get(`${this.utilityServiceUrl}/utilities`, {
+      // Set up headers with Bearer token authentication
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.apiKey}`
+      };
+      
+      if (!this.apiKey) {
+        console.error('No API key provided when calling utility_list_utilities');
+        throw new Error('Authentication required: API key is missing');
+      }
+      
+      // Call the API Gateway endpoint for listing utilities using GET
+      // The utility service has a GET /utilities endpoint, not POST
+      const response = await axios.get(`${this.apiGatewayUrl}/utility/utilities`, {
         params: {
           user_id: this.userId,
           conversation_id: this.conversationId
-        }
+        },
+        headers
       });
       
       if (response.data && response.data.utilities) {
@@ -120,17 +139,17 @@ export class UtilityListUtilities extends Tool {
         return `Available utilities: ${utilities.join(', ')}`;
       }
       
-      throw new Error('Invalid response from utility service');
+      throw new Error('Invalid response from API Gateway');
     } catch (error) {
       console.error("Error listing utilities:", error);
       
       if (axios.isAxiosError(error)) {
         // Handle network errors or API errors
         if (!error.response) {
-          return `Network error: Failed to connect to utility service at ${this.utilityServiceUrl}`;
+          return `Network error: Failed to connect to API Gateway at ${this.apiGatewayUrl}`;
         }
         
-        return `Utility service error: ${error.response.status} - ${error.response.data?.error || error.message}`;
+        return `API Gateway error: ${error.response.status} - ${error.response.data?.error || error.message}`;
       }
       
       // Generic error
