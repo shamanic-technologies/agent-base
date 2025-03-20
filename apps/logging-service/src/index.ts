@@ -44,6 +44,7 @@ const logger = pino({
 export interface ApiLogEntry {
   id?: string;
   apiKey: string;
+  userId: string;  // Required user_id field
   endpoint: string;
   method: string;
   statusCode?: number;
@@ -87,6 +88,7 @@ async function initDatabase(): Promise<boolean> {
       const dummyLog: ApiLogEntry = {
         id: uuidv4(),
         apiKey: 'setup',
+        userId: 'setup',
         endpoint: '/setup',
         method: 'GET',
         statusCode: 200,
@@ -114,6 +116,11 @@ async function logApiCall(logEntry: ApiLogEntry): Promise<string | null> {
     const id = logEntry.id || uuidv4();
     const timestamp = logEntry.timestamp || new Date().toISOString();
     
+    // Validate required userId
+    if (!logEntry.userId) {
+      throw new Error('[LOGGING SERVICE] userId is required for logging API calls');
+    }
+
     const response = await fetch(`${DB_SERVICE_URL}/db/api_logs`, {
       method: 'POST',
       headers: {
@@ -123,6 +130,7 @@ async function logApiCall(logEntry: ApiLogEntry): Promise<string | null> {
         id,
         data: {
           api_key: logEntry.apiKey,
+          user_id: logEntry.userId,  // Store user_id in the log
           endpoint: logEntry.endpoint,
           method: logEntry.method,
           status_code: logEntry.statusCode,
@@ -152,17 +160,21 @@ async function logApiCall(logEntry: ApiLogEntry): Promise<string | null> {
 }
 
 /**
- * Get logs for a specific API key
- * @param apiKey The API key to filter by
+ * Get logs for a specific user
+ * @param userId The user ID to filter by
  * @param limit Maximum number of logs to return
  * @param offset Pagination offset
- * @returns The logs for the API key
+ * @returns The logs for the user
  */
-async function getApiKeyLogs(apiKey: string, limit = 100, offset = 0): Promise<any[] | null> {
+async function getUserLogs(userId: string, limit = 100, offset = 0): Promise<any[] | null> {
   try {
-    // Database service doesn't directly support filtering, so we'll need to get all logs
-    // and filter them in memory, or alternatively, implement a custom endpoint in the database service
-    const response = await fetch(`${DB_SERVICE_URL}/db/api_logs`, {
+    // Use the database service's query parameter to filter by user_id
+    // This creates a proper SQL query for the JSONB data field
+    const queryParam = encodeURIComponent(JSON.stringify({ "data.user_id": userId }));
+    
+    logger.info(`Getting logs for user ${userId} with query: ${queryParam}`);
+    
+    const response = await fetch(`${DB_SERVICE_URL}/db/api_logs?query=${queryParam}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -175,14 +187,22 @@ async function getApiKeyLogs(apiKey: string, limit = 100, offset = 0): Promise<a
     }
     
     const data = await response.json() as any;
-    const logs = data.data
-      .filter((log: any) => log.data.api_key === apiKey)
+    logger.info(`Found ${data.data?.items?.length || 0} logs for user ${userId}`);
+    
+    if (!data.success || !data.data || !data.data.items) {
+      logger.error('Unexpected response structure from database service');
+      return null;
+    }
+    
+    // The items are already filtered by the database query
+    // Just sort and paginate them
+    const logs = data.data.items
       .sort((a: any, b: any) => new Date(b.data.timestamp).getTime() - new Date(a.data.timestamp).getTime())
       .slice(offset, offset + limit);
     
     return logs;
   } catch (error) {
-    logger.error('Error getting API key logs', error);
+    logger.error('Error getting user logs', error);
     return null;
   }
 }
@@ -207,10 +227,10 @@ router.post('/log', async (req: Request, res: Response) => {
     const logEntry = req.body as ApiLogEntry;
     
     // Validate required fields
-    if (!logEntry.apiKey || !logEntry.endpoint || !logEntry.method) {
+    if (!logEntry.apiKey || !logEntry.userId || !logEntry.endpoint || !logEntry.method) {
       return res.status(400).json({
         success: false,
-        error: 'Missing required fields: apiKey, endpoint, method'
+        error: 'Missing required fields: apiKey, userId, endpoint, method'
       });
     }
     
@@ -246,22 +266,15 @@ router.post('/log', async (req: Request, res: Response) => {
 });
 
 /**
- * Get logs for an API key
+ * Get logs for a user
  */
-router.get('/logs/:apiKey', async (req: Request, res: Response) => {
+router.get('/logs/user/:userId', async (req: Request, res: Response) => {
   try {
-    const { apiKey } = req.params;
-    const limit = parseInt(req.query.limit as string || '100');
-    const offset = parseInt(req.query.offset as string || '0');
+    const { userId } = req.params;
+    const limit = parseInt(req.query.limit as string) || 100;
+    const offset = parseInt(req.query.offset as string) || 0;
     
-    if (!apiKey) {
-      return res.status(400).json({
-        success: false,
-        error: 'API key is required'
-      });
-    }
-    
-    const logs = await getApiKeyLogs(apiKey, limit, offset);
+    const logs = await getUserLogs(userId, limit, offset);
     
     if (logs === null) {
       return res.status(500).json({
@@ -275,7 +288,7 @@ router.get('/logs/:apiKey', async (req: Request, res: Response) => {
       data: logs
     });
   } catch (error) {
-    logger.error('Error in /logs/:apiKey endpoint', error);
+    logger.error('Error in /logs/user endpoint', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error'
@@ -290,6 +303,8 @@ router.get('/logs/all', async (req: Request, res: Response) => {
   try {
     const limit = parseInt(req.query.limit as string || '100');
     const offset = parseInt(req.query.offset as string || '0');
+    
+    logger.info(`Getting all logs with limit: ${limit}, offset: ${offset}`);
     
     // Get all logs from the database service
     const response = await fetch(`${DB_SERVICE_URL}/db/api_logs`, {
@@ -308,7 +323,20 @@ router.get('/logs/all', async (req: Request, res: Response) => {
     }
     
     const data = await response.json() as any;
-    const logs = data.data
+    
+    // Debug the response structure
+    logger.info(`Retrieved ${data.data?.items?.length || 0} logs from database`);
+    
+    // Check if the response has the expected structure
+    if (!data.success || !data.data || !data.data.items) {
+      logger.error('Unexpected response structure from database service');
+      return res.status(500).json({
+        success: false,
+        error: 'Invalid response from database service'
+      });
+    }
+    
+    const logs = data.data.items
       .sort((a: any, b: any) => new Date(b.data.timestamp).getTime() - new Date(a.data.timestamp).getTime())
       .slice(offset, offset + limit);
     
@@ -338,7 +366,7 @@ router.get('/metrics', async (req: Request, res: Response) => {
 });
 
 // Mount router
-app.use(router);
+app.use('/', router);
 
 // Start server
 server.listen(port, async () => {

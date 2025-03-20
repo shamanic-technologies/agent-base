@@ -38,6 +38,7 @@ const requiredEnvVars = [
   'API_GATEWAY_SERVICE_URL',
   'KEYS_SERVICE_URL',
   'PAYMENT_SERVICE_URL',
+  'LOGGING_SERVICE_URL',
   'WEB_GATEWAY_API_KEY'
 ];
 
@@ -57,6 +58,7 @@ const MODEL_SERVICE_URL = process.env.MODEL_SERVICE_URL!;
 const API_GATEWAY_SERVICE_URL = process.env.API_GATEWAY_SERVICE_URL!;
 const KEYS_SERVICE_URL = process.env.KEYS_SERVICE_URL!;
 const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL!;
+const LOGGING_SERVICE_URL = process.env.LOGGING_SERVICE_URL!;
 
 // API key for gateway access
 const API_KEY = process.env.WEB_GATEWAY_API_KEY!;
@@ -234,6 +236,7 @@ const keysRouter = express.Router();
 const generateRouter = express.Router();
 const paymentRouter = express.Router();
 const oauthRouter = express.Router();
+const loggingRouter = express.Router();
 
 // Auth service route handler
 authRouter.all('*', (req, res) => {
@@ -271,6 +274,11 @@ paymentRouter.all('*', (req, res) => {
   return forwardRequest(PAYMENT_SERVICE_URL, req, res);
 });
 
+// Logging service route handler
+loggingRouter.all('*', (req, res) => {
+  return forwardRequest(LOGGING_SERVICE_URL, req, res);
+});
+
 // Mount the routers
 app.use('/auth', authRouter);
 app.use('/oauth', oauthRouter);
@@ -278,6 +286,7 @@ app.use('/database', databaseRouter);
 app.use('/keys', keysRouter);
 app.use('/generate', generateRouter);
 app.use('/payment', paymentRouter);
+app.use('/logging', loggingRouter);
 
 /**
  * 404 Handler for unknown routes

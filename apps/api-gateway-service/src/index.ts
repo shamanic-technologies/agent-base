@@ -11,6 +11,7 @@ import axios from 'axios';
 import path from 'path';
 import fs from 'fs';
 import fetch from 'node-fetch';
+import { apiLoggerMiddleware } from './middleware/logging.middleware';
 
 // Load environment variables based on NODE_ENV
 const NODE_ENV = process.env.NODE_ENV || 'development';
@@ -39,141 +40,33 @@ const LOGGING_SERVICE_URL = process.env.LOGGING_SERVICE_URL || 'http://localhost
 app.use(cors());
 app.use(express.json());
 
-/**
- * API Logger Middleware
- * Logs API requests with API keys to the logging service
- */
-const apiLoggerMiddleware = (req: express.Request, res: express.Response, next: express.NextFunction) => {
-  const startTime = Date.now();
-  const apiKey = req.headers['x-api-key'] as string;
-  const originalSend = res.send;
-  let responseBody: any = null;
-
-  // Only log requests with API keys
-  if (!apiKey) {
-    return next();
-  }
-
-  // Capture response body
-  res.send = function (body) {
-    responseBody = body;
-    return originalSend.call(this, body);
-  };
-
-  // Process request when it completes
-  res.on('finish', async () => {
-    try {
-      const duration = Date.now() - startTime;
-      
-      // Parse request and response bodies if they're JSON strings
-      let parsedRequestBody = req.body;
-      let parsedResponseBody = null;
-      
-      try {
-        if (responseBody && typeof responseBody === 'string') {
-          parsedResponseBody = JSON.parse(responseBody);
-        } else {
-          parsedResponseBody = responseBody;
-        }
-      } catch (e) {
-        // If parsing fails, use the raw body
-        parsedResponseBody = { raw: responseBody ? String(responseBody).substring(0, 500) : null };
-      }
-      
-      // Sanitize bodies to prevent sensitive data logging (password, tokens, etc.)
-      const sanitizedRequestBody = sanitizeBody(parsedRequestBody);
-      const sanitizedResponseBody = sanitizeBody(parsedResponseBody);
-      
-      // Log the API call
-      await fetch(`${LOGGING_SERVICE_URL}/log`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          apiKey,
-          endpoint: req.originalUrl,
-          method: req.method,
-          statusCode: res.statusCode,
-          ipAddress: req.ip,
-          userAgent: req.headers['user-agent'],
-          requestId: req.headers['x-request-id'] as string,
-          requestBody: sanitizedRequestBody,
-          responseBody: sanitizedResponseBody,
-          durationMs: duration
-        })
-      }).catch(error => {
-        console.error('Failed to log API call:', error);
-        // Don't block the response if logging fails
-      });
-    } catch (error) {
-      console.error('Failed to log API call:', error);
-      // Don't block the response if logging fails
-    }
-  });
-
-  next();
-};
+// Apply logging middleware to all routes that should be logged
+app.use(apiLoggerMiddleware);
 
 /**
- * Sanitize request/response bodies to prevent logging sensitive data
- */
-function sanitizeBody(body: any): any {
-  if (!body) return null;
-  
-  // If it's not an object, return as is
-  if (typeof body !== 'object') return body;
-  
-  // Clone the body to avoid modifying the original
-  const sanitized = Array.isArray(body) ? [...body] : { ...body };
-  
-  // List of sensitive fields to redact
-  const sensitiveFields = [
-    'password', 'token', 'secret', 'api_key', 'apiKey', 'authorization',
-    'credit_card', 'creditCard', 'ssn', 'social_security', 'socialSecurity'
-  ];
-  
-  // Function to recursively sanitize an object
-  const sanitizeObject = (obj: any) => {
-    if (!obj || typeof obj !== 'object') return;
-    
-    Object.keys(obj).forEach(key => {
-      const lowerKey = key.toLowerCase();
-      
-      // Check if this is a sensitive field
-      if (sensitiveFields.some(field => lowerKey.includes(field))) {
-        obj[key] = '[REDACTED]';
-      } 
-      // Recursively sanitize nested objects
-      else if (obj[key] && typeof obj[key] === 'object') {
-        sanitizeObject(obj[key]);
-      }
-    });
-  };
-  
-  sanitizeObject(sanitized);
-  return sanitized;
-}
-
-/**
- * Validates an API key against the Key Service
+ * Validates an API key with the key service
  * Returns the validation result and user ID if valid
+ * Throws an error if user ID is missing
  */
-const validateApiKey = async (apiKey: string): Promise<{valid: boolean, userId?: string}> => {
+const validateApiKey = async (apiKey: string): Promise<{valid: boolean, userId: string}> => {
   try {
     const response = await axios.post(`${KEY_SERVICE_URL}/keys/validate`, { apiKey });
     
-    if (response.data.success) {
+    if (response.data.success && response.data.data.userId) {
       return {
         valid: true,
         userId: response.data.data.userId
       };
     }
     
-    return { valid: false };
+    if (response.data.success && !response.data.data.userId) {
+      throw new Error('API Gateway Service: Missing userId in validation response');
+    }
+    
+    return { valid: false, userId: '' }; // Will never use the userId if not valid
   } catch (error) {
     console.error('API Gateway Service: Error validating API key:', error);
-    return { valid: false };
+    throw error; // Re-throw to be handled by caller
   }
 };
 
@@ -191,7 +84,7 @@ const forwardRequest = async (
     // Create an enriched request body with the user ID
     const enrichedRequestBody = {
       ...requestBody,
-      user_id: userId
+      user_id: userId  // Always include user_id in the forwarded request
     };
     
     console.log(`Forwarding request to ${serviceUrl}${endpoint} for user ID: ${userId}`);
@@ -200,7 +93,7 @@ const forwardRequest = async (
     const response = await axios.post(`${serviceUrl}${endpoint}`, enrichedRequestBody);
     
     // Add user ID tracking info (in case it's not already included in response)
-    if (response.data) {
+    if (response.data && typeof response.data === 'object') {
       response.data.user_id = userId;
     }
     
@@ -214,7 +107,8 @@ const forwardRequest = async (
         status: 502, 
         data: { 
           success: false,
-          error: `API Gateway Service: Could not connect to service at ${serviceUrl}`
+          error: `API Gateway Service: Could not connect to service at ${serviceUrl}`,
+          user_id: userId  // Include user_id even in error responses
         }
       };
     }
@@ -229,7 +123,8 @@ const forwardRequest = async (
         error: `API Gateway Service: Error communicating with service`,
         details: axios.isAxiosError(error) 
           ? error.response?.data || error.message 
-          : error instanceof Error ? error.message : 'Unknown error'
+          : error instanceof Error ? error.message : 'Unknown error',
+        user_id: userId  // Include user_id even in error responses
       }
     };
   }
@@ -263,25 +158,37 @@ const createRequestHandler = (
       });
     }
     
-    // Validate the API key
-    const validation = await validateApiKey(apiKey);
-    
-    if (!validation.valid) {
-      return res.status(401).json({
+    try {
+      // Validate the API key
+      const validation = await validateApiKey(apiKey);
+      
+      if (!validation.valid) {
+        return res.status(401).json({
+          success: false,
+          error: 'API Gateway Service: Invalid API key'
+        });
+      }
+
+      // Set userId in the request object for the logging middleware
+      (req as any).userId = validation.userId;
+
+      // Forward the request to the service
+      const result = await forwardRequest(
+        serviceUrl,
+        endpoint,
+        req.body,
+        validation.userId
+      );
+      
+      res.status(result.status).json(result.data);
+    } catch (error) {
+      console.error('Error in request handler:', error);
+      res.status(500).json({
         success: false,
-        error: 'API Gateway Service: Invalid API key'
+        error: 'API Gateway Service: Server error',
+        details: error instanceof Error ? error.message : 'Unknown error'
       });
     }
-
-    // Forward the request to the service
-    const result = await forwardRequest(
-      serviceUrl,
-      endpoint,
-      req.body,
-      validation.userId as string
-    );
-    
-    res.status(result.status).json(result.data);
   };
 };
 
@@ -323,33 +230,41 @@ app.post('/utility/*', async (req: express.Request, res: express.Response) => {
     });
   }
   
-  // Validate the API key
-  const validation = await validateApiKey(apiKey);
-  
-  if (!validation.valid) {
-    return res.status(401).json({
+  try {
+    // Validate the API key
+    const validation = await validateApiKey(apiKey);
+    
+    if (!validation.valid) {
+      return res.status(401).json({
+        success: false,
+        error: 'API Gateway Service: Invalid API key'
+      });
+    }
+    
+    // Set userId in the request object for the logging middleware
+    (req as any).userId = validation.userId;
+    
+    // Extract the path after /utility to forward to the utility service
+    const utilityPath = req.path.replace('/utility', '');
+    
+    // Forward the request to the utility service
+    const result = await forwardRequest(
+      UTILITY_SERVICE_URL,
+      utilityPath,
+      req.body,
+      validation.userId
+    );
+    
+    res.status(result.status).json(result.data);
+  } catch (error) {
+    console.error('Error in utility endpoint:', error);
+    res.status(500).json({
       success: false,
-      error: 'API Gateway Service: Invalid API key'
+      error: 'API Gateway Service: Server error',
+      details: error instanceof Error ? error.message : 'Unknown error'
     });
   }
-
-  // Extract the path after /utility/
-  const utilityPath = req.path.substring('/utility'.length);
-  
-  // Forward the request to the utility service
-  const result = await forwardRequest(
-    UTILITY_SERVICE_URL,
-    utilityPath,
-    req.body,
-    validation.userId as string
-  );
-  
-  res.status(result.status).json(result.data);
 });
-
-// Apply API logger middleware to all routes that use API keys
-app.use('/generate', apiLoggerMiddleware);
-app.use('/utility', apiLoggerMiddleware);
 
 // Start server
 app.listen(PORT, () => {

@@ -53,9 +53,15 @@ export const apiLoggerMiddleware = (req: Request, res: Response, next: NextFunct
       }
       
       // Sanitize bodies to prevent sensitive data logging
-      // You might want to add more sophisticated sanitization logic here
       const sanitizedRequestBody = sanitizeBody(parsedRequestBody);
       const sanitizedResponseBody = sanitizeBody(parsedResponseBody);
+      
+      // User ID must be in the request object, set by validateApiKey
+      const userId = (req as any).userId;
+      
+      if (!userId) {
+        throw new Error('[API GATEWAY] User ID not found for logging. Unable to log API call.');
+      }
       
       // Log the API call
       await fetch(`${LOGGING_SERVICE_URL}/log`, {
@@ -65,6 +71,7 @@ export const apiLoggerMiddleware = (req: Request, res: Response, next: NextFunct
         },
         body: JSON.stringify({
           apiKey,
+          userId,
           endpoint: req.originalUrl,
           method: req.method,
           statusCode: res.statusCode,
