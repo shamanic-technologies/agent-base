@@ -94,10 +94,7 @@ export const apiLoggerMiddleware = (req: Request, res: Response, next: NextFunct
           requestId: req.headers['x-request-id'] as string || (req as any).id,
           requestBody: sanitizedRequestBody,
           responseBody: sanitizedResponseBody,
-          durationMs: duration,
-          // Calculate price based on endpoint
-          price: req.originalUrl.startsWith('/utility') ? 0.01 : 
-                 req.originalUrl.startsWith('/generate') ? 0.20 : 0
+          durationMs: duration
         })
       });
     } catch (error) {
@@ -124,8 +121,10 @@ function sanitizeBody(body: any): any {
   const sanitized = Array.isArray(body) ? [...body] : { ...body };
   
   // List of sensitive fields to redact
+  // Note: 'token' is intentionally excluded to allow token usage counts to be logged
+  // for pricing calculation purposes. This enables accurate cost tracking for API calls.
   const sensitiveFields = [
-    'password', 'token', 'secret', 'api_key', 'apiKey', 'authorization',
+    'password', 'secret', 'api_key', 'apiKey', 'authorization',
     'credit_card', 'creditCard', 'ssn', 'social_security', 'socialSecurity'
   ];
   
