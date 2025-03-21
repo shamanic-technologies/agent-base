@@ -9,9 +9,9 @@ import Stripe from 'stripe';
  * Find a customer by user ID
  */
 export async function findCustomerByUserId(userId: string): Promise<Stripe.Customer | null> {
-  const customers = await stripe.customers.list({
-    limit: 1,
-    metadata: { userId }
+  const customers = await stripe.customers.search({
+    query: `metadata['userId']:'${userId}'`,
+    limit: 1
   });
   
   return customers.data.length > 0 ? customers.data[0] : null;
