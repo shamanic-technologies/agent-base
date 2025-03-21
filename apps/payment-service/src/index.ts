@@ -1,8 +1,8 @@
 /**
  * HelloWorld Payment Service
  * 
- * A simple service for handling payments and subscriptions.
- * Uses in-memory storage for demonstration purposes.
+ * A simple service for handling payments and credits based on Stripe.
+ * Manages customer credit balances via Stripe Customer Balance API.
  */
 import express from 'express';
 import cors from 'cors';
@@ -31,47 +31,13 @@ if (NODE_ENV === 'development') {
 // Initialize Stripe with API key
 const stripeApiKey = process.env.STRIPE_API_KEY || '';
 if (!stripeApiKey) {
-  console.warn('Warning: STRIPE_API_KEY not set. Stripe functionality will not work.');
+  throw new Error('STRIPE_API_KEY is required to run the payment service');
 }
 const stripe = new Stripe(stripeApiKey);
 
 // Initialize Express app
 const app = express();
 const PORT = process.env.PORT || 3007;
-
-// In-memory storage
-const plans = [
-  {
-    id: 'plan_basic',
-    name: 'Basic',
-    price: 9.99,
-    tokenLimit: 100000,
-    description: 'Basic plan with limited tokens',
-    active: true
-  },
-  {
-    id: 'plan_pro',
-    name: 'Professional',
-    price: 29.99,
-    tokenLimit: 500000,
-    description: 'Professional plan with more tokens',
-    active: true
-  },
-  {
-    id: 'plan_enterprise',
-    name: 'Enterprise',
-    price: 99.99,
-    tokenLimit: 2000000,
-    description: 'Enterprise plan with maximum tokens',
-    active: true
-  }
-];
-
-const subscriptions: any[] = [];
-const transactions: any[] = [];
-
-// In-memory storage for customers
-const customers: Record<string, any> = {};
 
 // Middleware
 app.use(cors());
@@ -85,13 +51,33 @@ app.get('/health', (req: express.Request, res: express.Response) => {
 /**
  * Get available plans
  */
-app.get('/payment/plans', (req: express.Request, res: express.Response) => {
+app.get('/payment/plans', async (req: express.Request, res: express.Response) => {
   try {
-    const activePlans = plans.filter(plan => plan.active);
+    // Fetch products from Stripe
+    const products = await stripe.products.list({ active: true, limit: 10 });
+    
+    // Get prices for each product
+    const pricePromises = products.data.map(product => 
+      stripe.prices.list({ product: product.id, active: true })
+    );
+    const priceResults = await Promise.all(pricePromises);
+    
+    // Combine products with their prices
+    const plans = products.data.map((product, idx) => {
+      const price = priceResults[idx].data[0]; // Get the first price for simplicity
+      return {
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        price: price ? price.unit_amount! / 100 : 0,
+        active: product.active,
+        metadata: product.metadata
+      };
+    });
     
     return res.status(200).json({
       success: true,
-      data: activePlans
+      data: plans
     });
   } catch (error) {
     console.error('Error retrieving plans:', error);
@@ -106,18 +92,31 @@ app.get('/payment/plans', (req: express.Request, res: express.Response) => {
 /**
  * Get a specific plan
  */
-app.get('/payment/plans/:id', (req: express.Request, res: express.Response) => {
+app.get('/payment/plans/:id', async (req: express.Request, res: express.Response) => {
   try {
     const { id } = req.params;
     
-    const plan = plans.find(p => p.id === id && p.active);
-    
-    if (!plan) {
+    // Get the product details from Stripe
+    const product = await stripe.products.retrieve(id);
+    if (!product.active) {
       return res.status(404).json({
         success: false,
-        error: 'Plan not found'
+        error: 'Plan not found or inactive'
       });
     }
+    
+    // Get prices for this product
+    const prices = await stripe.prices.list({ product: product.id, active: true });
+    const price = prices.data[0]; // Get the first price for simplicity
+    
+    const plan = {
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      price: price ? price.unit_amount! / 100 : 0,
+      active: product.active,
+      metadata: product.metadata
+    };
     
     return res.status(200).json({
       success: true,
@@ -129,297 +128,6 @@ app.get('/payment/plans/:id', (req: express.Request, res: express.Response) => {
     return res.status(500).json({
       success: false,
       error: 'Failed to retrieve plan'
-    });
-  }
-});
-
-/**
- * Create a subscription
- * 
- * Request body:
- * - userId: ID of the user
- * - planId: ID of the plan
- * - paymentMethod: Payment method details
- */
-app.post('/payment/subscriptions', (req: express.Request, res: express.Response) => {
-  try {
-    const { userId, planId, paymentMethod } = req.body;
-    
-    if (!userId || !planId || !paymentMethod) {
-      return res.status(400).json({
-        success: false,
-        error: 'User ID, plan ID, and payment method are required'
-      });
-    }
-    
-    // Check if plan exists
-    const plan = plans.find(p => p.id === planId && p.active);
-    
-    if (!plan) {
-      return res.status(404).json({
-        success: false,
-        error: 'Plan not found'
-      });
-    }
-    
-    // Check if user already has an active subscription
-    const existingSubscription = subscriptions.find(
-      sub => sub.userId === userId && sub.status === 'active'
-    );
-    
-    if (existingSubscription) {
-      return res.status(409).json({
-        success: false,
-        error: 'User already has an active subscription',
-        data: {
-          subscriptionId: existingSubscription.id
-        }
-      });
-    }
-    
-    // Create subscription
-    const subscriptionId = `sub_${uuidv4()}`;
-    const now = new Date();
-    const subscription = {
-      id: subscriptionId,
-      userId,
-      planId,
-      planName: plan.name,
-      status: 'active',
-      currentPeriodStart: now.toISOString(),
-      currentPeriodEnd: new Date(now.setMonth(now.getMonth() + 1)).toISOString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    
-    // Add to subscriptions
-    subscriptions.push(subscription);
-    
-    // Create transaction record
-    const transactionId = `txn_${uuidv4()}`;
-    const transaction = {
-      id: transactionId,
-      userId,
-      subscriptionId,
-      amount: plan.price,
-      currency: 'USD',
-      status: 'succeeded',
-      description: `Subscription to ${plan.name} plan`,
-      createdAt: new Date().toISOString()
-    };
-    
-    // Add to transactions
-    transactions.push(transaction);
-    
-    return res.status(201).json({
-      success: true,
-      data: {
-        subscription,
-        transaction
-      }
-    });
-  } catch (error) {
-    console.error('Error creating subscription:', error);
-    
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to create subscription'
-    });
-  }
-});
-
-/**
- * Get a user's subscriptions
- */
-app.get('/payment/subscriptions/user/:userId', (req: express.Request, res: express.Response) => {
-  try {
-    const { userId } = req.params;
-    
-    const userSubscriptions = subscriptions.filter(sub => sub.userId === userId);
-    
-    return res.status(200).json({
-      success: true,
-      data: userSubscriptions
-    });
-  } catch (error) {
-    console.error('Error retrieving subscriptions:', error);
-    
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to retrieve subscriptions'
-    });
-  }
-});
-
-/**
- * Cancel a subscription
- */
-app.post('/payment/subscriptions/:id/cancel', (req: express.Request, res: express.Response) => {
-  try {
-    const { id } = req.params;
-    
-    const subscriptionIndex = subscriptions.findIndex(sub => sub.id === id);
-    
-    if (subscriptionIndex === -1) {
-      return res.status(404).json({
-        success: false,
-        error: 'Subscription not found'
-      });
-    }
-    
-    // Update subscription status
-    subscriptions[subscriptionIndex] = {
-      ...subscriptions[subscriptionIndex],
-      status: 'cancelled',
-      updatedAt: new Date().toISOString(),
-      cancelledAt: new Date().toISOString()
-    };
-    
-    return res.status(200).json({
-      success: true,
-      data: subscriptions[subscriptionIndex]
-    });
-  } catch (error) {
-    console.error('Error cancelling subscription:', error);
-    
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to cancel subscription'
-    });
-  }
-});
-
-/**
- * Get a user's transactions
- */
-app.get('/payment/transactions/user/:userId', (req: express.Request, res: express.Response) => {
-  try {
-    const { userId } = req.params;
-    
-    const userTransactions = transactions.filter(txn => txn.userId === userId);
-    
-    return res.status(200).json({
-      success: true,
-      data: userTransactions
-    });
-  } catch (error) {
-    console.error('Error retrieving transactions:', error);
-    
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to retrieve transactions'
-    });
-  }
-});
-
-/**
- * Create a one-time payment
- * 
- * Request body:
- * - userId: ID of the user
- * - amount: Amount to charge
- * - description: Description of the payment
- * - paymentMethod: Payment method details
- */
-app.post('/payment/charge', (req: express.Request, res: express.Response) => {
-  try {
-    const { userId, amount, description, paymentMethod } = req.body;
-    
-    if (!userId || !amount || !description || !paymentMethod) {
-      return res.status(400).json({
-        success: false,
-        error: 'User ID, amount, description, and payment method are required'
-      });
-    }
-    
-    // Create transaction record
-    const transactionId = `txn_${uuidv4()}`;
-    const transaction = {
-      id: transactionId,
-      userId,
-      amount,
-      currency: 'USD',
-      status: 'succeeded',
-      description,
-      createdAt: new Date().toISOString()
-    };
-    
-    // Add to transactions
-    transactions.push(transaction);
-    
-    return res.status(201).json({
-      success: true,
-      data: transaction
-    });
-  } catch (error) {
-    console.error('Error creating charge:', error);
-    
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to create charge'
-    });
-  }
-});
-
-/**
- * Get token usage for a user
- * 
- * Query params:
- * - period: 'day', 'week', 'month' (default: 'month')
- */
-app.get('/payment/usage/:userId', (req: express.Request, res: express.Response) => {
-  try {
-    const { userId } = req.params;
-    const { period = 'month' } = req.query;
-    
-    // Find active subscription for the user
-    const subscription = subscriptions.find(
-      sub => sub.userId === userId && sub.status === 'active'
-    );
-    
-    if (!subscription) {
-      return res.status(404).json({
-        success: false,
-        error: 'No active subscription found'
-      });
-    }
-    
-    // Find the plan
-    const plan = plans.find(p => p.id === subscription.planId);
-    
-    if (!plan) {
-      return res.status(404).json({
-        success: false,
-        error: 'Plan not found'
-      });
-    }
-    
-    // Generate example usage data
-    const totalUsage = Math.floor(Math.random() * plan.tokenLimit * 0.8);
-    
-    // Create mock usage data
-    const usage = {
-      userId,
-      planId: plan.id,
-      planName: plan.name,
-      period: period as string,
-      tokenLimit: plan.tokenLimit,
-      tokenUsage: totalUsage,
-      remainingTokens: plan.tokenLimit - totalUsage,
-      usagePercentage: (totalUsage / plan.tokenLimit) * 100,
-      lastUpdated: new Date().toISOString()
-    };
-    
-    return res.status(200).json({
-      success: true,
-      data: usage
-    });
-  } catch (error) {
-    console.error('Error retrieving usage:', error);
-    
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to retrieve usage'
     });
   }
 });
@@ -441,58 +149,116 @@ app.post('/payment/customers', async (req: express.Request, res: express.Respons
       });
     }
 
-    // Check if we already have a customer record for this user
-    if (customers[userId]) {
-      return res.status(200).json({
-        success: true,
-        data: customers[userId],
-        message: 'Retrieved existing customer'
+    console.log(`Searching for customer with userId: ${userId}`);
+    
+    // Search for existing customers with this userId in metadata using proper query format
+    try {
+      const searchQuery = `metadata['userId']:'${userId}'`;
+      console.log(`Using search query: ${searchQuery}`);
+      
+      const existingCustomers = await stripe.customers.search({
+        query: searchQuery,
+        limit: 1
+      });
+
+      console.log(`Found ${existingCustomers.data.length} customers for userId: ${userId}`);
+
+      // If customer exists, return it
+      if (existingCustomers.data.length > 0) {
+        const customer = existingCustomers.data[0];
+        
+        // Retrieve customer cash balance 
+        const customerWithCashBalance = await stripe.customers.retrieve(
+          customer.id, 
+          { expand: ['cash_balance'] }
+        ) as Stripe.Customer & { cash_balance: Stripe.CashBalance };
+        
+        // Handle cash balance and calculate the remaining credit
+        const cashBalance = customerWithCashBalance.cash_balance;
+        const balanceAmount = 
+          Math.abs(cashBalance?.available?.find(b => b.currency === 'usd')?.amount || 0) / 100;
+        
+        const customerData = {
+          id: customer.id,
+          userId: customer.metadata.userId,
+          email: customer.email,
+          name: customer.name,
+          createdAt: new Date(customer.created * 1000),
+          credits: {
+            total: balanceAmount,
+            used: 0,
+            remaining: balanceAmount
+          }
+        };
+        
+        return res.status(200).json({
+          success: true,
+          data: customerData,
+          message: 'Retrieved existing customer'
+        });
+      }
+    } catch (error) {
+      console.error('Error retrieving customer:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to retrieve customer'
       });
     }
 
     // If no customer exists, create one in Stripe
-    try {
-      const customerParams: Stripe.CustomerCreateParams = {
-        metadata: {
-          userId: userId
-        }
-      };
+    const customerParams: Stripe.CustomerCreateParams = {
+      metadata: {
+        userId: userId
+      }
+    };
 
-      // Add email and name if available
-      if (email) customerParams.email = email;
-      if (name) customerParams.name = name;
+    // Add email and name if available
+    if (email) customerParams.email = email;
+    if (name) customerParams.name = name;
 
-      const customer = await stripe.customers.create(customerParams);
-
-      // Store the customer data in memory (in production, this would be stored in a database)
-      customers[userId] = {
-        id: customer.id,
-        userId: userId,
-        email: customer.email,
-        name: customer.name,
-        createdAt: new Date(),
-        // Add initial free credit for new customers
-        credits: {
-          total: 5.00, // $5 free credit
-          used: 0,
-          remaining: 5.00
-        }
-      };
-      
-      console.log(`Created new Stripe customer for userId: ${userId}`);
-      
-      return res.status(201).json({
-        success: true,
-        data: customers[userId],
-        message: 'Created new customer with $5 free credit'
-      });
-    } catch (stripeError) {
-      console.error('Error creating Stripe customer:', stripeError);
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to create Stripe customer'
-      });
-    }
+    console.log(`Creating new customer with params:`, customerParams);
+    const customer = await stripe.customers.create(customerParams);
+    
+    // Add initial $5 free credit as cash balance
+    const freeCredits = -500; // $5.00 in cents (negative for customer credit)
+    
+    await stripe.customers.createBalanceTransaction(customer.id, {
+      amount: freeCredits,
+      currency: 'usd',
+      description: 'Free Sign-up Credit'
+    });
+    
+    // Get the updated balance
+    const customerWithCashBalance = await stripe.customers.retrieve(
+      customer.id, 
+      { expand: ['cash_balance'] }
+    ) as Stripe.Customer & { cash_balance: Stripe.CashBalance };
+    
+    // Calculate remaining credit
+    const cashBalance = customerWithCashBalance.cash_balance;
+    const balanceAmount = 
+      Math.abs(cashBalance?.available?.find(b => b.currency === 'usd')?.amount || 0) / 100;
+    
+    const customerData = {
+      id: customer.id,
+      userId: userId,
+      email: customer.email,
+      name: customer.name,
+      createdAt: new Date(customer.created * 1000),
+      credits: {
+        total: balanceAmount,
+        used: 0,
+        remaining: balanceAmount
+      }
+    };
+    
+    console.log(`Created new Stripe customer for userId: ${userId} with $5 free credit`);
+    
+    return res.status(201).json({
+      success: true,
+      data: customerData,
+      message: 'Created new customer with $5 free credit'
+    });
   } catch (error) {
     console.error('Error in get/create customer endpoint:', error);
     return res.status(500).json({
@@ -505,34 +271,86 @@ app.post('/payment/customers', async (req: express.Request, res: express.Respons
 /**
  * Get a customer's credit balance
  */
-app.get('/payment/customers/:userId/credit', (req: express.Request, res: express.Response) => {
+app.get('/payment/customers/:userId/credit', async (req: express.Request, res: express.Response) => {
   try {
     const { userId } = req.params;
     
-    if (!customers[userId]) {
+    console.log(`Getting credit balance for userId: ${userId}`);
+    
+    // Find the customer in Stripe with proper query format
+    try {
+      const searchQuery = `metadata['userId']:'${userId}'`;
+      console.log(`Using search query: ${searchQuery}`);
+      
+      const customers = await stripe.customers.search({
+        query: searchQuery,
+        limit: 1
+      });
+      
+      if (customers.data.length === 0) {
+        console.error(`Customer not found with userId: ${userId}. This may be due to Stripe search indexing delay.`);
       return res.status(404).json({
         success: false,
-        error: 'Customer not found'
+          error: 'Customer not found. If the customer was just created, please wait a few minutes for Stripe to index the data.',
+          errorCode: 'STRIPE_SEARCH_INDEXING_DELAY'
+        });
+      }
+      
+      const customer = customers.data[0];
+      
+      // Get transaction history to calculate used credits and total credits
+      const balanceTransactions = await stripe.customers.listBalanceTransactions(
+        customer.id,
+        { limit: 100 }
+      );
+      
+      // Calculate total credits granted (all negative transactions)
+      const totalCredits = balanceTransactions.data
+        .filter(tx => tx.amount < 0)
+        .reduce((sum, tx) => sum + Math.abs(tx.amount), 0) / 100;
+      
+      // Calculate used credits (all positive transactions)
+      const usedCredits = balanceTransactions.data
+        .filter(tx => tx.amount > 0)
+        .reduce((sum, tx) => sum + tx.amount, 0) / 100;
+      
+      // Calculate remaining credits
+      const remainingCredits = totalCredits - usedCredits;
+      
+      console.log(`Credit calculation for ${userId}:`, {
+        totalCredits,
+        usedCredits,
+        remainingCredits
+      });
+      
+      return res.status(200).json({
+        success: true,
+        data: {
+          total: totalCredits,
+          used: usedCredits,
+          remaining: remainingCredits
+        }
+      });
+    } catch (error) {
+      console.error('Error retrieving credit balance:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to retrieve credit balance'
       });
     }
-    
-    return res.status(200).json({
-      success: true,
-      data: customers[userId].credits
-    });
   } catch (error) {
-    console.error('Error retrieving customer credit:', error);
+    console.error('Error retrieving credit balance:', error);
     return res.status(500).json({
       success: false,
-      error: 'Failed to retrieve customer credit'
+      error: 'Failed to retrieve credit balance'
     });
   }
 });
 
 /**
- * Validate if a customer has enough credit
+ * Validate if a customer has sufficient credit for a specific operation
  */
-app.post('/payment/validate-credit', (req: express.Request, res: express.Response) => {
+app.post('/payment/validate-credit', async (req: express.Request, res: express.Response) => {
   try {
     const { userId, amount } = req.body;
     
@@ -543,23 +361,56 @@ app.post('/payment/validate-credit', (req: express.Request, res: express.Respons
       });
     }
     
-    // Check if customer exists
-    if (!customers[userId]) {
-      return res.status(404).json({
-        success: false,
-        error: 'Customer not found'
+    console.log(`Validating credit for userId: ${userId}, amount: ${amount}`);
+    
+    // Find the customer in Stripe with proper query format
+    try {
+      const searchQuery = `metadata['userId']:'${userId}'`;
+      console.log(`Using search query: ${searchQuery}`);
+      
+      const customers = await stripe.customers.search({
+        query: searchQuery,
+        limit: 1
       });
-    }
-    
-    const hasEnoughCredit = customers[userId].credits.remaining >= amount;
-    
-    return res.status(200).json({
+      
+      if (customers.data.length === 0) {
+        console.error(`Customer not found with userId: ${userId}. This may be due to Stripe search indexing delay.`);
+        return res.status(404).json({
+          success: false,
+          error: 'Customer not found. If the customer was just created, please wait a few minutes for Stripe to index the data.',
+          errorCode: 'STRIPE_SEARCH_INDEXING_DELAY'
+        });
+      }
+      
+      const customer = customers.data[0];
+      
+      // Get customer cash balance
+      const customerWithCashBalance = await stripe.customers.retrieve(
+        customer.id, 
+        { expand: ['cash_balance'] }
+      ) as Stripe.Customer & { cash_balance: Stripe.CashBalance };
+        
+      // Calculate remaining credit
+      const cashBalance = customerWithCashBalance.cash_balance;
+      const remainingCredit = 
+        Math.abs(cashBalance?.available?.find(b => b.currency === 'usd')?.amount || 0) / 100;
+      
+      const hasEnoughCredit = remainingCredit >= amount;
+      
+      return res.status(200).json({
       success: true,
       data: {
-        hasEnoughCredit,
-        remainingCredit: customers[userId].credits.remaining
+          hasEnoughCredit,
+          remainingCredit
       }
     });
+  } catch (error) {
+      console.error('Error validating credit:', error);
+    return res.status(500).json({
+      success: false,
+        error: 'Failed to validate credit'
+      });
+    }
   } catch (error) {
     console.error('Error validating credit:', error);
     return res.status(500).json({
@@ -572,9 +423,9 @@ app.post('/payment/validate-credit', (req: express.Request, res: express.Respons
 /**
  * Deduct credit from a customer's balance
  */
-app.post('/payment/deduct-credit', (req: express.Request, res: express.Response) => {
+app.post('/payment/deduct-credit', async (req: express.Request, res: express.Response) => {
   try {
-    const { userId, amount } = req.body;
+    const { userId, amount, description = 'API usage' } = req.body;
     
     if (!userId || amount === undefined) {
       return res.status(400).json({
@@ -583,56 +434,95 @@ app.post('/payment/deduct-credit', (req: express.Request, res: express.Response)
       });
     }
     
-    // Check if customer exists
-    if (!customers[userId]) {
+    console.log(`Deducting ${amount} credit from user: ${userId}`);
+    
+    // Find the customer by userId
+    const customers = await stripe.customers.list({
+      limit: 1,
+      metadata: { userId }
+    });
+    
+    if (customers.data.length === 0) {
+      console.error(`No customer found for user ID: ${userId}`);
       return res.status(404).json({
         success: false,
         error: 'Customer not found'
       });
     }
     
+    const customer = customers.data[0];
+    console.log(`Found customer: ${customer.id} for user: ${userId}`);
+    
     // Check if customer has enough credit
-    if (customers[userId].credits.remaining < amount) {
+    const balanceTransactions = await stripe.customers.listBalanceTransactions(
+      customer.id,
+      { limit: 100 }
+    );
+    
+    // Calculate total credits granted (all negative transactions)
+    const totalCredits = balanceTransactions.data
+      .filter(tx => tx.amount < 0)
+      .reduce((sum, tx) => sum + Math.abs(tx.amount), 0) / 100;
+    
+    // Calculate used credits (all positive transactions)
+    const usedCredits = balanceTransactions.data
+      .filter(tx => tx.amount > 0)
+      .reduce((sum, tx) => sum + tx.amount, 0) / 100;
+    
+    // Calculate remaining credits
+    const remainingCredit = totalCredits - usedCredits;
+    
+    console.log(`Credit check for ${userId}:`, {
+      totalCredits,
+      usedCredits,
+      remainingCredit,
+      requestedAmount: amount
+    });
+    
+    if (remainingCredit < amount) {
       return res.status(400).json({
         success: false,
         error: 'Insufficient credit',
         data: {
-          remainingCredit: customers[userId].credits.remaining,
+          remainingCredit,
           requestedAmount: amount
         }
       });
     }
     
-    // Deduct credit
-    customers[userId].credits.used += amount;
-    customers[userId].credits.remaining -= amount;
+    // Create a positive balance transaction to deduct credit
+    const balanceTransaction = await stripe.customers.createBalanceTransaction(customer.id, {
+      amount: Math.round(amount * 100), // Convert to cents (positive for deduction)
+      currency: 'usd',
+      description: description
+    });
     
-    // Record transaction
-    const transaction = {
-      id: uuidv4(),
-      userId,
-      type: 'debit',
-      amount,
-      description: 'API usage',
-      timestamp: new Date()
-    };
+    // Calculate new balance after deduction
+    const newUsedCredits = usedCredits + amount;
+    const newBalance = totalCredits - newUsedCredits;
     
-    transactions.push(transaction);
-    
-    console.log(`Deducted ${amount} credit from user ${userId}. Remaining: ${customers[userId].credits.remaining}`);
+    console.log(`Deducted ${amount} credit from customer ${customer.id} (${userId}). Remaining: ${newBalance}`);
     
     return res.status(200).json({
       success: true,
       data: {
-        transaction,
-        newBalance: customers[userId].credits.remaining
+        transaction: {
+          id: balanceTransaction.id,
+          customerId: customer.id,
+          userId,
+          type: 'debit',
+          amount,
+          description,
+          timestamp: new Date(balanceTransaction.created * 1000)
+        },
+        newBalance
       }
     });
   } catch (error) {
-    console.error('Error deducting credit:', error);
+    console.error('Error in deduct credit endpoint:', error);
     return res.status(500).json({
       success: false,
-      error: 'Failed to deduct credit'
+      error: 'An unexpected error occurred'
     });
   }
 });
@@ -651,26 +541,35 @@ app.post('/payment/add-credit', async (req: express.Request, res: express.Respon
       });
     }
     
-    // Check if customer exists
-    if (!customers[userId]) {
+    console.log(`Adding ${amount} credit to user: ${userId}`);
+    
+    // Find the customer by userId
+    const customers = await stripe.customers.list({
+      limit: 1,
+      metadata: { userId }
+    });
+    
+    if (customers.data.length === 0) {
+      console.error(`No customer found for user ID: ${userId}`);
       return res.status(404).json({
         success: false,
         error: 'Customer not found'
       });
     }
     
+    const customer = customers.data[0];
+    console.log(`Found customer: ${customer.id} for user: ${userId}`);
+    
     let paymentSuccessful = false;
     
     // Process payment through Stripe if a payment method is provided
     if (stripePaymentMethodId && amount > 0) {
       try {
-        const stripeCustomerId = customers[userId].id;
-        
         // Create a payment intent
         const paymentIntent = await stripe.paymentIntents.create({
           amount: Math.round(amount * 100), // Convert to cents
           currency: 'usd',
-          customer: stripeCustomerId,
+          customer: customer.id,
           payment_method: stripePaymentMethodId,
           confirm: true,
           description: description || 'Add credit to account'
@@ -700,29 +599,55 @@ app.post('/payment/add-credit', async (req: express.Request, res: express.Respon
     }
     
     if (paymentSuccessful) {
-      // Add credit
-      customers[userId].credits.total += amount;
-      customers[userId].credits.remaining += amount;
+      // Get existing balance transactions to calculate current balance
+      const existingTransactions = await stripe.customers.listBalanceTransactions(
+        customer.id,
+        { limit: 100 }
+      );
       
-      // Record transaction
-      const transaction = {
-        id: uuidv4(),
-        userId,
-        type: 'credit',
-        amount,
-        description: description || 'Added credit',
-        timestamp: new Date()
-      };
+      // Calculate total credits granted (all negative transactions)
+      const existingTotalCredits = existingTransactions.data
+        .filter(tx => tx.amount < 0)
+        .reduce((sum, tx) => sum + Math.abs(tx.amount), 0) / 100;
       
-      transactions.push(transaction);
+      // Calculate used credits (all positive transactions)
+      const existingUsedCredits = existingTransactions.data
+        .filter(tx => tx.amount > 0)
+        .reduce((sum, tx) => sum + tx.amount, 0) / 100;
       
-      console.log(`Added ${amount} credit to user ${userId}. New balance: ${customers[userId].credits.remaining}`);
+      // Create a negative balance transaction to add credit
+      const balanceTransaction = await stripe.customers.createBalanceTransaction(customer.id, {
+        amount: Math.round(amount * -100), // Convert to cents (negative for credit)
+        currency: 'usd',
+        description: description || 'Added credit'
+      });
       
+      // Calculate new balance after adding credit
+      const newTotalCredits = existingTotalCredits + amount;
+      const newBalance = newTotalCredits - existingUsedCredits;
+      
+      console.log(`Credit calculation after adding ${amount}:`, {
+        previousTotalCredits: existingTotalCredits,
+        newTotalCredits,
+        usedCredits: existingUsedCredits,
+        newBalance
+      });
+      
+      console.log(`Added ${amount} credit to user ${userId}. New balance: ${newBalance}`);
+  
       return res.status(200).json({
         success: true,
         data: {
-          transaction,
-          newBalance: customers[userId].credits.remaining
+          transaction: {
+            id: balanceTransaction.id,
+            customerId: customer.id,
+            userId,
+            type: 'credit',
+            amount,
+            description: description || 'Added credit',
+            timestamp: new Date(balanceTransaction.created * 1000)
+          },
+          newBalance
         }
       });
     }
@@ -732,7 +657,7 @@ app.post('/payment/add-credit', async (req: express.Request, res: express.Respon
       error: 'Failed to process payment'
     });
   } catch (error) {
-    console.error('Error adding credit:', error);
+    console.error('Error in add credit endpoint:', error);
     return res.status(500).json({
       success: false,
       error: 'An unexpected error occurred'
@@ -743,127 +668,85 @@ app.post('/payment/add-credit', async (req: express.Request, res: express.Respon
 /**
  * Get a customer's transaction history
  */
-app.get('/payment/customers/:userId/transactions', (req: express.Request, res: express.Response) => {
+app.get('/payment/customers/:userId/transactions', async (req: express.Request, res: express.Response) => {
   try {
     const { userId } = req.params;
     const { limit = 20, offset = 0, type } = req.query;
     
-    // Check if customer exists
-    if (!customers[userId]) {
-      return res.status(404).json({
-        success: false,
-        error: 'Customer not found'
+    console.log(`Getting transaction history for userId: ${userId}`);
+    
+    // Find the customer in Stripe with proper query format
+    try {
+      const searchQuery = `metadata['userId']:'${userId}'`;
+      console.log(`Using search query: ${searchQuery}`);
+      
+      const customers = await stripe.customers.search({
+        query: searchQuery,
+        limit: 1
       });
-    }
-    
-    // Filter transactions by userId and optionally by type
-    let userTransactions = transactions.filter(t => t.userId === userId);
-    
-    if (type && (type === 'credit' || type === 'debit')) {
-      userTransactions = userTransactions.filter(t => t.type === type);
-    }
-    
-    // Sort by timestamp (newest first)
-    userTransactions.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-    
-    // Apply pagination
-    const paginatedTransactions = userTransactions.slice(
-      Number(offset), 
-      Number(offset) + Number(limit)
-    );
+      
+      if (customers.data.length === 0) {
+        console.error(`Customer not found with userId: ${userId}. This may be due to Stripe search indexing delay.`);
+        return res.status(404).json({
+          success: false,
+          error: 'Customer not found. If the customer was just created, please wait a few minutes for Stripe to index the data.',
+          errorCode: 'STRIPE_SEARCH_INDEXING_DELAY'
+        });
+      }
+      
+      const customer = customers.data[0];
+      
+      // Get transaction history from Stripe
+      const balanceTransactions = await stripe.customers.listBalanceTransactions(
+        customer.id,
+        { limit: 100 }
+      );
+      
+      // Format transactions
+      let userTransactions = balanceTransactions.data.map(tx => ({
+        id: tx.id,
+        userId,
+        type: tx.amount < 0 ? 'credit' : 'debit',
+        amount: Math.abs(tx.amount) / 100, // Convert to dollars and make positive
+        description: tx.description,
+        timestamp: new Date(tx.created * 1000)
+      }));
+      
+      // Filter by type if specified
+      if (type && (type === 'credit' || type === 'debit')) {
+        userTransactions = userTransactions.filter(t => t.type === type);
+      }
+      
+      // Sort by timestamp (newest first)
+      userTransactions.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+      
+      // Apply pagination
+      const paginatedTransactions = userTransactions.slice(
+        Number(offset), 
+        Number(offset) + Number(limit)
+      );
     
     return res.status(200).json({
       success: true,
-      data: {
-        transactions: paginatedTransactions,
-        total: userTransactions.length,
-        limit: Number(limit),
-        offset: Number(offset)
-      }
+        data: {
+          transactions: paginatedTransactions,
+          total: userTransactions.length,
+          limit: Number(limit),
+          offset: Number(offset)
+        }
     });
+  } catch (error) {
+      console.error('Error retrieving transaction history:', error);
+    return res.status(500).json({
+      success: false,
+        error: 'Failed to retrieve transaction history'
+      });
+    }
   } catch (error) {
     console.error('Error retrieving transaction history:', error);
     return res.status(500).json({
       success: false,
       error: 'Failed to retrieve transaction history'
-    });
-  }
-});
-
-/**
- * Set auto-reload threshold for a customer
- */
-app.post('/payment/customers/:userId/auto-reload', (req: express.Request, res: express.Response) => {
-  try {
-    const { userId } = req.params;
-    const { 
-      enabled, 
-      thresholdAmount, 
-      reloadAmount,
-      paymentMethodId 
-    } = req.body;
-    
-    // Check if customer exists
-    if (!customers[userId]) {
-      return res.status(404).json({
-        success: false,
-        error: 'Customer not found'
-      });
-    }
-    
-    // Validate required fields when enabling
-    if (enabled) {
-      if (!thresholdAmount || !reloadAmount || !paymentMethodId) {
-        return res.status(400).json({
-          success: false,
-          error: 'Threshold amount, reload amount, and payment method are required when enabling auto-reload'
-        });
-      }
-      
-      // Ensure threshold and reload amounts are reasonable
-      if (thresholdAmount <= 0 || reloadAmount <= 0) {
-        return res.status(400).json({
-          success: false,
-          error: 'Threshold and reload amounts must be greater than zero'
-        });
-      }
-      
-      // Ensure the reload amount is greater than threshold
-      if (reloadAmount <= thresholdAmount) {
-        return res.status(400).json({
-          success: false,
-          error: 'Reload amount must be greater than threshold amount'
-        });
-      }
-    }
-    
-    // Update customer's auto-reload settings
-    if (!customers[userId].autoReload) {
-      customers[userId].autoReload = {};
-    }
-    
-    customers[userId].autoReload = {
-      enabled: !!enabled,
-      thresholdAmount: thresholdAmount || 0,
-      reloadAmount: reloadAmount || 0,
-      paymentMethodId: paymentMethodId || null,
-      lastUpdated: new Date()
-    };
-    
-    return res.status(200).json({
-      success: true,
-      data: {
-        autoReload: customers[userId].autoReload
-      },
-      message: enabled 
-        ? `Auto-reload enabled with threshold $${thresholdAmount} and reload amount $${reloadAmount}` 
-        : 'Auto-reload disabled'
-    });
-  } catch (error) {
-    console.error('Error updating auto-reload settings:', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to update auto-reload settings'
     });
   }
 });
@@ -912,17 +795,14 @@ app.post('/payment/webhook', express.raw({type: 'application/json'}), async (req
         
         // Find the customer by Stripe customer ID
         const customerId = paymentIntent.customer as string;
-        const userId = Object.keys(customers).find(
-          uid => customers[uid].id === customerId
-        );
-        
-        if (userId) {
-          // Note: In a real app, this would trigger the actual credit addition
-          // Here we're just logging it as the actual credit would have been added
-          // when the add-credit endpoint was called
-          console.log(`Webhook: Confirming payment for user ${userId} - amount: ${paymentIntent.amount / 100}`);
-        } else {
-          console.warn(`Webhook: Customer not found for payment ${paymentIntent.id}`);
+        if (customerId) {
+          const customer = await stripe.customers.retrieve(customerId);
+          if (customer && !('deleted' in customer)) {
+            // Get the userId from metadata
+            const userId = customer.metadata.userId;
+            
+            console.log(`Webhook: Confirming payment for user ${userId} - amount: ${paymentIntent.amount / 100}`);
+          }
         }
         break;
       }
@@ -933,23 +813,15 @@ app.post('/payment/webhook', express.raw({type: 'application/json'}), async (req
         
         // Find the customer by Stripe customer ID
         const customerId = paymentIntent.customer as string;
-        const userId = Object.keys(customers).find(
-          uid => customers[uid].id === customerId
-        );
-        
-        if (userId) {
-          console.log(`Webhook: Payment failed for user ${userId} - amount: ${paymentIntent.amount / 100}`);
-          // In a real app, you would update the user's payment status or send a notification
+        if (customerId) {
+          const customer = await stripe.customers.retrieve(customerId);
+          if (customer && !('deleted' in customer)) {
+            // Get the userId from metadata
+            const userId = customer.metadata.userId;
+            
+            console.log(`Webhook: Payment failed for user ${userId} - amount: ${paymentIntent.amount / 100}`);
+          }
         }
-        break;
-      }
-      
-      case 'customer.subscription.created':
-      case 'customer.subscription.updated':
-      case 'customer.subscription.deleted': {
-        const subscription = event.data.object as Stripe.Subscription;
-        console.log(`Subscription ${event.type}: ${subscription.id}`);
-        // Handle subscription changes
         break;
       }
       
@@ -965,8 +837,498 @@ app.post('/payment/webhook', express.raw({type: 'application/json'}), async (req
   }
 });
 
+/**
+ * Get customer by direct ID (bypasses search)
+ */
+app.get('/payment/customers-direct/:customerId', async (req: express.Request, res: express.Response) => {
+  try {
+    const { customerId } = req.params;
+    
+    if (!customerId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Customer ID is required'
+      });
+    }
+    
+    console.log(`Getting customer by direct ID: ${customerId}`);
+    
+    // Get the customer directly from Stripe
+    try {
+      const customer = await stripe.customers.retrieve(customerId);
+      
+      if ('deleted' in customer) {
+        return res.status(404).json({
+          success: false,
+          error: 'Customer has been deleted'
+        });
+      }
+      
+      // Get transaction history to calculate credits
+      const balanceTransactions = await stripe.customers.listBalanceTransactions(
+        customer.id,
+        { limit: 100 }
+      );
+      
+      // Calculate total credits granted (all negative transactions)
+      const totalCredits = balanceTransactions.data
+        .filter(tx => tx.amount < 0)
+        .reduce((sum, tx) => sum + Math.abs(tx.amount), 0) / 100;
+      
+      // Calculate used credits (all positive transactions)
+      const usedCredits = balanceTransactions.data
+        .filter(tx => tx.amount > 0)
+        .reduce((sum, tx) => sum + tx.amount, 0) / 100;
+      
+      // Calculate remaining credits
+      const remainingCredits = totalCredits - usedCredits;
+      
+      const customerData = {
+        id: customer.id,
+        userId: customer.metadata.userId || 'unknown',
+        email: customer.email,
+        name: customer.name,
+        createdAt: new Date(customer.created * 1000),
+        credits: {
+          total: totalCredits,
+          used: usedCredits,
+          remaining: remainingCredits
+        }
+      };
+      
+      return res.status(200).json({
+        success: true,
+        data: customerData
+      });
+    } catch (error) {
+      console.error('Error retrieving customer by ID:', error);
+      return res.status(404).json({
+        success: false,
+        error: 'Customer not found'
+      });
+    }
+  } catch (error) {
+    console.error('Error in get customer by ID endpoint:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'An unexpected error occurred'
+    });
+  }
+});
+
+/**
+ * Get a customer's credit balance by direct ID
+ */
+app.get('/payment/customers-direct/:customerId/credit', async (req: express.Request, res: express.Response) => {
+  try {
+    const { customerId } = req.params;
+    
+    if (!customerId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Customer ID is required'
+      });
+    }
+    
+    console.log(`Getting credit balance for customer ID: ${customerId}`);
+    
+    try {
+      // Get customer directly
+      const customer = await stripe.customers.retrieve(customerId);
+      
+      if ('deleted' in customer) {
+        return res.status(404).json({
+          success: false,
+          error: 'Customer has been deleted'
+        });
+      }
+      
+      // Get transaction history to calculate used credits and total credits
+      const balanceTransactions = await stripe.customers.listBalanceTransactions(
+        customer.id,
+        { limit: 100 }
+      );
+      
+      // Calculate total credits granted (all negative transactions)
+      const totalCredits = balanceTransactions.data
+        .filter(tx => tx.amount < 0)
+        .reduce((sum, tx) => sum + Math.abs(tx.amount), 0) / 100;
+      
+      // Calculate used credits (all positive transactions)
+      const usedCredits = balanceTransactions.data
+        .filter(tx => tx.amount > 0)
+        .reduce((sum, tx) => sum + tx.amount, 0) / 100;
+      
+      // Calculate remaining credits
+      const remainingCredits = totalCredits - usedCredits;
+      
+      console.log(`Credit calculation for ${customerId}:`, {
+        totalCredits,
+        usedCredits,
+        remainingCredits
+      });
+      
+      return res.status(200).json({
+      success: true,
+        data: {
+          total: totalCredits,
+          used: usedCredits,
+          remaining: remainingCredits
+        }
+    });
+  } catch (error) {
+      console.error('Error retrieving credit balance by ID:', error);
+      return res.status(404).json({
+        success: false,
+        error: 'Customer not found'
+      });
+    }
+  } catch (error) {
+    console.error('Error in get credit balance by ID endpoint:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'An unexpected error occurred'
+    });
+  }
+});
+
+/**
+ * Add credit to a customer's balance by direct ID
+ */
+app.post('/payment/add-credit-direct', async (req: express.Request, res: express.Response) => {
+  try {
+    const { customerId, amount, stripePaymentMethodId, description } = req.body;
+    
+    if (!customerId || amount === undefined) {
+      return res.status(400).json({
+        success: false,
+        error: 'Customer ID and amount are required'
+      });
+    }
+    
+    console.log(`Adding ${amount} credit to customer ID: ${customerId}`);
+    
+    try {
+      // Get customer directly
+      const customer = await stripe.customers.retrieve(customerId);
+      
+      if ('deleted' in customer) {
+        return res.status(404).json({
+          success: false,
+          error: 'Customer has been deleted'
+        });
+      }
+      
+      let paymentSuccessful = false;
+      
+      // Process payment through Stripe if a payment method is provided
+      if (stripePaymentMethodId && amount > 0) {
+        try {
+          // Create a payment intent
+          const paymentIntent = await stripe.paymentIntents.create({
+            amount: Math.round(amount * 100), // Convert to cents
+            currency: 'usd',
+            customer: customer.id,
+            payment_method: stripePaymentMethodId,
+            confirm: true,
+            description: description || 'Add credit to account'
+          });
+          
+          if (paymentIntent.status === 'succeeded') {
+            paymentSuccessful = true;
+            console.log(`Payment successful for customer ${customerId}, amount: $${amount}`);
+          } else {
+            return res.status(400).json({
+              success: false,
+              error: `Payment failed with status: ${paymentIntent.status}`
+            });
+          }
+        } catch (stripeError) {
+          console.error('Stripe payment error:', stripeError);
+          return res.status(400).json({
+            success: false,
+            error: 'Payment processing failed',
+            details: stripeError
+          });
+        }
+      } else {
+        // If no payment method provided, we'll assume this is an internal adjustment
+        // (e.g., promotional credit) and not require a Stripe payment
+        paymentSuccessful = true;
+      }
+      
+      if (paymentSuccessful) {
+        // Get existing balance transactions to calculate current balance
+        const existingTransactions = await stripe.customers.listBalanceTransactions(
+          customer.id,
+          { limit: 100 }
+        );
+        
+        // Calculate total credits granted (all negative transactions)
+        const existingTotalCredits = existingTransactions.data
+          .filter(tx => tx.amount < 0)
+          .reduce((sum, tx) => sum + Math.abs(tx.amount), 0) / 100;
+        
+        // Calculate used credits (all positive transactions)
+        const existingUsedCredits = existingTransactions.data
+          .filter(tx => tx.amount > 0)
+          .reduce((sum, tx) => sum + tx.amount, 0) / 100;
+        
+        // Create a negative balance transaction to add credit
+        const balanceTransaction = await stripe.customers.createBalanceTransaction(customer.id, {
+          amount: Math.round(amount * -100), // Convert to cents (negative for credit)
+          currency: 'usd',
+          description: description || 'Added credit'
+        });
+        
+        // Calculate new balance after adding credit
+        const newTotalCredits = existingTotalCredits + amount;
+        const newBalance = newTotalCredits - existingUsedCredits;
+        
+        console.log(`Credit calculation after adding ${amount}:`, {
+          previousTotalCredits: existingTotalCredits,
+          newTotalCredits,
+          usedCredits: existingUsedCredits,
+          newBalance
+        });
+        
+        const userId = customer.metadata.userId || 'unknown';
+        console.log(`Added ${amount} credit to customer ${customerId} (${userId}). New balance: ${newBalance}`);
+        
+        return res.status(200).json({
+          success: true,
+          data: {
+            transaction: {
+              id: balanceTransaction.id,
+              customerId,
+              userId,
+              type: 'credit',
+              amount,
+              description: description || 'Added credit',
+              timestamp: new Date(balanceTransaction.created * 1000)
+            },
+            newBalance
+          }
+        });
+      }
+      
+      return res.status(400).json({
+        success: false,
+        error: 'Failed to process payment'
+      });
+    } catch (error) {
+      console.error('Error adding credit by ID:', error);
+      return res.status(404).json({
+        success: false,
+        error: 'Customer not found'
+      });
+    }
+  } catch (error) {
+    console.error('Error in add credit by ID endpoint:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'An unexpected error occurred'
+    });
+  }
+});
+
+/**
+ * Deduct credit from a customer's balance by direct ID
+ */
+app.post('/payment/deduct-credit-direct', async (req: express.Request, res: express.Response) => {
+  try {
+    const { customerId, amount, description = 'API usage' } = req.body;
+    
+    if (!customerId || amount === undefined) {
+      return res.status(400).json({
+        success: false,
+        error: 'Customer ID and amount are required'
+      });
+    }
+    
+    console.log(`Deducting ${amount} credit from customer ID: ${customerId}`);
+    
+    try {
+      // Get customer directly
+      const customer = await stripe.customers.retrieve(customerId);
+      
+      if ('deleted' in customer) {
+        return res.status(404).json({
+          success: false,
+          error: 'Customer has been deleted'
+        });
+      }
+      
+      // Check if customer has enough credit
+      const balanceTransactions = await stripe.customers.listBalanceTransactions(
+        customer.id,
+        { limit: 100 }
+      );
+      
+      // Calculate total credits granted (all negative transactions)
+      const totalCredits = balanceTransactions.data
+        .filter(tx => tx.amount < 0)
+        .reduce((sum, tx) => sum + Math.abs(tx.amount), 0) / 100;
+      
+      // Calculate used credits (all positive transactions)
+      const usedCredits = balanceTransactions.data
+        .filter(tx => tx.amount > 0)
+        .reduce((sum, tx) => sum + tx.amount, 0) / 100;
+      
+      // Calculate remaining credits
+      const remainingCredit = totalCredits - usedCredits;
+      
+      console.log(`Credit check for ${customerId}:`, {
+        totalCredits,
+        usedCredits,
+        remainingCredit,
+        requestedAmount: amount
+      });
+      
+      if (remainingCredit < amount) {
+        return res.status(400).json({
+          success: false,
+          error: 'Insufficient credit',
+          data: {
+            remainingCredit,
+            requestedAmount: amount
+          }
+        });
+      }
+      
+      // Create a positive balance transaction to deduct credit
+      const balanceTransaction = await stripe.customers.createBalanceTransaction(customer.id, {
+        amount: Math.round(amount * 100), // Convert to cents (positive for deduction)
+        currency: 'usd',
+        description: description
+      });
+      
+      // Calculate new balance after deduction
+      const newUsedCredits = usedCredits + amount;
+      const newBalance = totalCredits - newUsedCredits;
+      
+      const userId = customer.metadata.userId || 'unknown';
+      console.log(`Deducted ${amount} credit from customer ${customerId} (${userId}). Remaining: ${newBalance}`);
+      
+      return res.status(200).json({
+        success: true,
+        data: {
+          transaction: {
+            id: balanceTransaction.id,
+            customerId,
+            userId,
+            type: 'debit',
+            amount,
+            description,
+            timestamp: new Date(balanceTransaction.created * 1000)
+          },
+          newBalance
+        }
+      });
+    } catch (error) {
+      console.error('Error deducting credit by ID:', error);
+      return res.status(404).json({
+        success: false,
+        error: 'Customer not found'
+      });
+    }
+  } catch (error) {
+    console.error('Error in deduct credit by ID endpoint:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'An unexpected error occurred'
+    });
+  }
+});
+
+/**
+ * Get a customer's transaction history by direct ID
+ */
+app.get('/payment/customers-direct/:customerId/transactions', async (req: express.Request, res: express.Response) => {
+  try {
+    const { customerId } = req.params;
+    const { limit = 20, offset = 0, type } = req.query;
+    
+    if (!customerId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Customer ID is required'
+      });
+    }
+    
+    console.log(`Getting transaction history for customer ID: ${customerId}`);
+    
+    try {
+      // Get customer directly
+      const customer = await stripe.customers.retrieve(customerId);
+      
+      if ('deleted' in customer) {
+      return res.status(404).json({
+        success: false,
+          error: 'Customer has been deleted'
+        });
+      }
+      
+      const userId = customer.metadata.userId || 'unknown';
+      
+      // Get transaction history from Stripe
+      const balanceTransactions = await stripe.customers.listBalanceTransactions(
+        customer.id,
+        { limit: 100 }
+      );
+      
+      // Format transactions
+      let userTransactions = balanceTransactions.data.map(tx => ({
+        id: tx.id,
+        customerId,
+      userId,
+        type: tx.amount < 0 ? 'credit' : 'debit',
+        amount: Math.abs(tx.amount) / 100, // Convert to dollars and make positive
+        description: tx.description,
+        timestamp: new Date(tx.created * 1000)
+      }));
+      
+      // Filter by type if specified
+      if (type && (type === 'credit' || type === 'debit')) {
+        userTransactions = userTransactions.filter(t => t.type === type);
+      }
+      
+      // Sort by timestamp (newest first)
+      userTransactions.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+      
+      // Apply pagination
+      const paginatedTransactions = userTransactions.slice(
+        Number(offset), 
+        Number(offset) + Number(limit)
+      );
+    
+    return res.status(200).json({
+      success: true,
+        data: {
+          transactions: paginatedTransactions,
+          total: userTransactions.length,
+          limit: Number(limit),
+          offset: Number(offset)
+        }
+    });
+  } catch (error) {
+      console.error('Error retrieving transaction history by ID:', error);
+      return res.status(404).json({
+        success: false,
+        error: 'Customer not found'
+      });
+    }
+  } catch (error) {
+    console.error('Error in get transaction history by ID endpoint:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'An unexpected error occurred'
+    });
+  }
+});
+
 // Start the server
 app.listen(PORT, () => {
   console.log(`💰 Payment Service running on port ${PORT}`);
-  console.log(`Stripe integration ${stripeApiKey ? 'ENABLED' : 'DISABLED'}`);
+  console.log(`Stripe integration ENABLED using API key: ${stripeApiKey.substring(0, 7)}...`);
 }); 

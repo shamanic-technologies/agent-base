@@ -121,8 +121,6 @@ function sanitizeBody(body: any): any {
   const sanitized = Array.isArray(body) ? [...body] : { ...body };
   
   // List of sensitive fields to redact
-  // Note: 'token' is intentionally excluded to allow token usage counts to be logged
-  // for pricing calculation purposes. This enables accurate cost tracking for API calls.
   const sensitiveFields = [
     'password', 'secret', 'api_key', 'apiKey', 'authorization',
     'credit_card', 'creditCard', 'ssn', 'social_security', 'socialSecurity'
