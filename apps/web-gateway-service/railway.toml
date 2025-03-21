@@ -26,4 +26,6 @@ MODEL_SERVICE_URL = "http://model-service.railway.internal:8080"
 API_GATEWAY_SERVICE_URL = "http://api-gateway-service.railway.internal:8080"
 KEYS_SERVICE_URL = "http://key-service.railway.internal:8080"
 PAYMENT_SERVICE_URL = "http://payment-service.railway.internal:8080"
+LOGGING_SERVICE_URL="http://logging-service.railway.internal:8080"
+
 WEB_GATEWAY_API_KEY = "g4t3way-k3y-e5e821f89a2d4c3b" 

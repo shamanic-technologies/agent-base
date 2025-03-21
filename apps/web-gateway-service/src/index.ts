@@ -173,8 +173,8 @@ async function forwardRequest(targetUrl: string, req: express.Request, res: expr
       console.log(`[Web Gateway] Axios config headers:`, 
                   axiosConfig.headers ? Object.keys(axiosConfig.headers).map(key => 
                     `${key}: ${key.toLowerCase() === 'authorization' ? 
-                      (typeof axiosConfig.headers[key] === 'string' ? 
-                       axiosConfig.headers[key].substring(0, 10) + '...' : 'complex value') : 
+                      (typeof (axiosConfig.headers as Record<string, any>)[key] === 'string' ? 
+                       (axiosConfig.headers as Record<string, any>)[key].substring(0, 10) + '...' : 'complex value') : 
                       'masked'}`
                   ) : 'No headers');
       console.log(`[Web Gateway] Axios request body:`, axiosConfig.data ? 'present' : 'none');
