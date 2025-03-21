@@ -378,18 +378,18 @@ function createReactAgentWrapper(config: ReactAgentWrapperConfig): ReactAgentWra
 }
 
 /**
- * Process a text prompt with the ReAct agent
- * @param prompt The text prompt to process
+ * Process a text message with the ReAct agent
+ * @param message The text message to process
  * @param userId User ID for tracking and personalization
  * @param conversationId Conversation ID for stateful conversations
  * @param apiKey Optional API key for utilities
  * @returns The agent's response
  */
 export async function processWithReActAgent(
-  prompt: string, 
+  message: HumanMessage, 
   userId: string,
   conversationId: string,
-  apiKey?: string
+  apiKey: string
 ) {
   try {
     // Check if API key is available
@@ -439,17 +439,14 @@ export async function processWithReActAgent(
       parentNodeId: nodeId,
       parentNodeType: nodeType,
       modelName: ModelName.CLAUDE_3_7_SONNET_20250219,
-      overwrittingSystemPrompt: prompt,
+      overwrittingSystemPrompt: null,
       temperature: 0,
       conversationId: conversationId,
       userId: userId
     } as ReactAgentWrapperConfig);
-    
-    // Create a human message from the prompt
-    const message = new HumanMessage(prompt);
-    
+        
     // Get previous conversation history if available
-    console.log(`Processing prompt with thread ID: ${conversationId || 'new session'}`);
+    console.log(`Processing prompt with thread ID: ${conversationId}`);
     
     // Invoke the agent with the message and conversation ID
     const response = await invokeAgentFunction({
@@ -467,22 +464,21 @@ export async function processWithReActAgent(
 }
 
 /**
- * Stream a user prompt with the enhanced ReAct agent
- * Returns the raw stream chunks for client-side processing
+ * Stream a user message with the enhanced ReAct agent
  * 
- * @param prompt The user prompt to process
- * @param streamModes Optional array of stream modes
+ * @param message The user's message as a HumanMessage
+ * @param streamModes Array of stream modes for the streaming response
  * @param userId User ID for tracking and personalization
  * @param conversationId Conversation ID for stateful conversations
  * @param apiKey Optional API key for authenticated requests to external services
  * @returns AsyncGenerator that yields LangGraph event objects as JSON strings
  */
 export async function* streamWithReActAgent(
-  prompt: SystemMessage,
-  streamModes: any,
+  message: HumanMessage,
+  streamModes: StreamMode[],
   userId: string,
   conversationId: string,
-  apiKey?: string
+  apiKey: string
 ): AsyncGenerator<string, void, unknown> {
   try {
     // Check if API key is available
@@ -533,16 +529,13 @@ export async function* streamWithReActAgent(
       parentNodeType: nodeType,
       modelName: ModelName.CLAUDE_3_7_SONNET_20250219,
       temperature: 0,
-      overwrittingSystemPrompt: prompt
+      overwrittingSystemPrompt: null
     } as ReactAgentWrapperConfig);
-    
-    // Create a human message from the prompt
-    const message = new HumanMessage(prompt);
     
     // Stream the response with the message and conversation ID
     const stream = streamAgentFunction({
       messages: [message],
-      modes: streamModes || ['messages', 'events'],
+      modes: streamModes,
       userId: userId,
       conversationId: conversationId
     });

@@ -28,6 +28,7 @@ if (nodeEnv === 'development') {
 import express from 'express';
 import cors from 'cors';
 import { processWithReActAgent, streamWithReActAgent } from './lib/react-agent.js';
+import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 
 // Middleware setup
 const app = express();
@@ -48,12 +49,12 @@ app.get('/health', (req, res) => {
 
 // LLM generation endpoint using ReAct agent
 app.post('/generate', async (req, res) => {
-  const { prompt, user_id, conversation_id } = req.body;
+  const { prompt: message, user_id, conversation_id } = req.body;
   // Extract the API key from headers
   const authHeader = req.headers['authorization'] as string;
   
-  if (!prompt) {
-    return res.status(400).json({ error: '[Model Service] Prompt is required' });
+  if (!message) {
+    return res.status(400).json({ error: '[Model Service] Message is required' });
   }
   
   if (!user_id) {
@@ -68,13 +69,7 @@ app.post('/generate', async (req, res) => {
     // Check if we have an API key configured
     if (!process.env.ANTHROPIC_API_KEY) {
       // Fallback to simplified response if no API key
-      console.log(`[Model Service] No ANTHROPIC_API_KEY found, using fallback response for prompt: "${prompt}"`);
-      
-      // Return a simplified response as fallback
-      return res.status(200).json({
-        generated_text: `Hello! This is the HelloWorld model service (simplified mode).\n\nYou asked: "${prompt}"\n\nI'm running in fallback mode because the API key for Claude is not configured. Please set the ANTHROPIC_API_KEY environment variable to enable the full LangGraph ReAct agent.`,
-        conversation_id
-      });
+      throw new Error('Anthropic API key not found in environment variables');
     }
     
     // Extract API key from Authorization header if it exists
@@ -83,18 +78,21 @@ app.post('/generate', async (req, res) => {
       apiKey = authHeader.substring(7);
     }
     
+    // Create a HumanMessage for the message
+    const humanMessage = new HumanMessage(message);
+    
     // Process the prompt with our ReAct agent, passing along the API key
-    console.log(`Received prompt: "${prompt}" from user: ${user_id}, conversation: ${conversation_id}`);
-    const response = await processWithReActAgent(prompt, user_id, conversation_id, apiKey);
+    console.log(`Received prompt: "${message}" from user: ${user_id}, conversation: ${conversation_id}`);
+    const response = await processWithReActAgent(message, user_id, conversation_id, apiKey);
     
     // Return the raw agent response without additional formatting
     res.status(200).json(response);
   } catch (error) {
-    console.error('Error processing prompt with ReAct agent:', error);
+    console.error('Error processing message with ReAct agent:', error);
     
     // Provide a helpful error message
     res.status(500).json({ 
-      error: 'Failed to process prompt',
+      error: 'Failed to process message',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
   }
@@ -102,12 +100,12 @@ app.post('/generate', async (req, res) => {
 
 // Streaming LLM generation endpoint using ReAct agent
 app.post('/generate/stream', async (req, res) => {
-  const { prompt, user_id, stream_modes = ['messages', 'events'], conversation_id } = req.body;
+  const { prompt: message, user_id, stream_modes, conversation_id } = req.body;
   // Extract the API key from the Authorization header
   const authHeader = req.headers['authorization'] as string;
   
-  if (!prompt) {
-    return res.status(400).json({ error: 'Prompt is required' });
+  if (!message) {
+    return res.status(400).json({ error: 'Message is required' });
   }
   
   if (!user_id) {
@@ -127,17 +125,8 @@ app.post('/generate/stream', async (req, res) => {
     // Check if we have an API key configured
     if (!process.env.ANTHROPIC_API_KEY) {
       // Fallback to simplified response if no API key
-      console.log(`No ANTHROPIC_API_KEY found, using fallback response for prompt: "${prompt}"`);
-      
+      throw new Error('Anthropic API key not found in environment variables');
       // Return a simplified response as fallback in SSE format
-      res.write(`data: ${JSON.stringify({
-        type: 'simplified_fallback',
-        generated_text: `Hello! This is the HelloWorld model service (simplified mode).\n\nYou asked: "${prompt}"\n\nI'm running in fallback mode because the API key for Claude is not configured. Please set the ANTHROPIC_API_KEY environment variable to enable the full LangGraph ReAct agent.`,
-        conversation_id
-      })}\n\n`);
-      
-      res.write(`data: [DONE]\n\n`);
-      return res.end();
     }
     
     // Extract API key from Authorization header if it exists
@@ -146,11 +135,14 @@ app.post('/generate/stream', async (req, res) => {
       apiKey = authHeader.substring(7);
     }
     
+    // Create a HumanMessage for the message
+    const humanMessage = new HumanMessage(message);
+    
     // Process the prompt with our streaming ReAct agent
-    console.log(`Streaming prompt: "${prompt}" with modes: ${stream_modes.join(', ')}, conversation: ${conversation_id}`);
+    console.log(`Streaming message: "${message}" with modes: ${stream_modes.join(', ')}, conversation: ${conversation_id}`);
     
     // Get the streaming generator with API key
-    const stream = await streamWithReActAgent(prompt, stream_modes, user_id, conversation_id, apiKey);
+    const stream = await streamWithReActAgent(message, stream_modes, user_id, conversation_id, apiKey);
     
     // Stream each raw chunk directly to the client without any additional processing
     for await (const chunk of stream) {
@@ -162,12 +154,12 @@ app.post('/generate/stream', async (req, res) => {
     res.write(`data: [DONE]\n\n`);
     res.end();
   } catch (error) {
-    console.error('Error streaming prompt with ReAct agent:', error);
+    console.error('Error streaming message with ReAct agent:', error);
     
     // Provide a helpful error message in SSE format
     res.write(`data: ${JSON.stringify({
       type: 'error',
-      error: 'Failed to process prompt',
+      error: 'Failed to process message',
       details: error instanceof Error ? error.message : 'Unknown error'
     })}\n\n`);
     
