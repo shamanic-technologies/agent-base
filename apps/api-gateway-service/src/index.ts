@@ -11,7 +11,7 @@ import axios from 'axios';
 import path from 'path';
 import fs from 'fs';
 import fetch from 'node-fetch';
-import { apiLoggerMiddleware } from './middleware/logging.middleware';
+import { apiLoggerMiddleware } from './middleware/logging.middleware.js';
 
 // Load environment variables based on NODE_ENV
 const NODE_ENV = process.env.NODE_ENV || 'development';
