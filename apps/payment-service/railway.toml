@@ -11,9 +11,10 @@ restartPolicyMaxRetries = 5
 
 [service]
 name = "payment-service"
-internalPort = 3007
+internalPort = 8080
 healthcheckPath = "/health"
 
 [variables]
-PORT = "3007"
+PORT = "8080"
 NODE_ENV = "production" 
+STRIPE_API_KEY="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"
