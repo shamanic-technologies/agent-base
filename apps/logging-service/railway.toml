@@ -1,7 +1,7 @@
 # Railway configuration for the logging service
 [build]
 builder = "NIXPACKS"
-buildCommand = "pnpm install && pnpm run build"
+buildCommand = "npm install && npm run build"
 
 [deploy]
 startCommand = "node dist/index.js"
