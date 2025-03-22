@@ -12,6 +12,8 @@ import cookieParser from 'cookie-parser';
 import { rateLimit } from 'express-rate-limit';
 import path from 'path';
 import fs from 'fs';
+import { authMiddleware } from './middleware/auth-middleware';
+import { tokenCache } from './utils/token-cache';
 
 // Load environment variables based on NODE_ENV
 const NODE_ENV = process.env.NODE_ENV || 'development';
@@ -127,6 +129,12 @@ app.use((req, res, next) => {
   
   next();
 });
+
+// JWT Authentication middleware
+// Validates tokens and populates req.user for authenticated requests
+app.use(authMiddleware);
+
+console.log('[Web Gateway] Auth middleware applied');
 
 /**
  * Helper function to forward requests to microservices
@@ -301,9 +309,21 @@ const loggingRouter = express.Router();
 
 // Auth service route handler
 authRouter.all('*', (req, res) => {
+  // Clear token from cache on logout
+  if (req.url === '/logout' && req.headers.authorization) {
+    const token = req.headers.authorization.startsWith('Bearer ')
+      ? req.headers.authorization.substring(7)
+      : undefined;
+      
+    if (token) {
+      tokenCache.invalidate(token);
+      console.log('[Web Gateway] Invalidated token in cache for logout');
+    }
+  }
+
   // Log headers for debugging, especially for /auth/validate endpoint
   if (req.url === '/validate') {
-    console.log(`[Web Gateway] Forwarding to auth/validate with headers:`, 
+    console.log(`[Web Gateway] Forwarding to auth/validate with method ${req.method} and headers:`, 
       req.headers ? Object.keys(req.headers).map(key => `${key}: ${key.toLowerCase() === 'authorization' ? 'Bearer ***' : '***'}`) : 'No headers');
     
     if (req.headers && req.headers.authorization) {
@@ -311,6 +331,12 @@ authRouter.all('*', (req, res) => {
         req.headers.authorization.substring(0, 10) + '...');
     } else {
       console.log(`[Web Gateway] No Authorization header found in request to auth service`);
+    }
+    
+    // For /validate endpoint, ensure we're using POST regardless of incoming method
+    if (req.method !== 'POST') {
+      console.log(`[Web Gateway] Converting ${req.method} request to POST for auth/validate`);
+      req.method = 'POST';
     }
   }
   
@@ -321,7 +347,7 @@ authRouter.all('*', (req, res) => {
     // Ensure headers exists to prevent null reference errors
     headers: req.headers || {}
   });
-  
+
   return forwardRequest(AUTH_SERVICE_URL, modifiedReq, res);
 });
 
@@ -338,6 +364,14 @@ oauthRouter.all('*', (req, res) => {
 
 // Database service route handler
 databaseRouter.all('*', (req, res) => {
+  // Log headers for debugging when accessing /db/users/me
+  if (req.url.includes('/db/users/me')) {
+    console.log(`[Web Gateway] Database request to /db/users/me`);
+    console.log(`[Web Gateway] Request headers user info:`, 
+      req.user ? `User ID: ${req.user.id}` : 'No user object',
+      req.headers['x-user-id'] ? `x-user-id: ${req.headers['x-user-id']}` : 'No x-user-id header'
+    );
+  }
   return forwardRequest(DB_SERVICE_URL, req, res);
 });
 

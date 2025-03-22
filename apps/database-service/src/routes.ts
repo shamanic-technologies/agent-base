@@ -20,6 +20,57 @@ router.get('/health', (req: Request, res: Response): void => {
 });
 
 /**
+ * Get current user data from the users collection
+ * Uses x-user-id header provided by web-gateway-service
+ */
+router.get('/db/users/me', async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Get the user ID from the x-user-id header
+    const userId = req.headers['x-user-id'] as string;
+    
+    if (!userId) {
+      console.error('No x-user-id header found in request');
+      res.status(401).json({
+        success: false,
+        error: 'Authentication required'
+      });
+      return;
+    }
+    
+    console.log(`Fetching user data for user ID: ${userId}`);
+    
+    // Query the users table for the record with matching providerId
+    const query = `
+      SELECT * FROM "users" 
+      WHERE data->>'providerId' = $1 
+      LIMIT 1
+    `;
+    
+    const result = await pgPool.query(query, [userId]);
+    
+    if (result.rowCount === 0) {
+      console.log(`No user found with providerId: ${userId}`);
+      res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+      return;
+    }
+    
+    // Return the user data
+    const userData = result.rows[0];
+    
+    res.status(200).json({
+      success: true,
+      data: userData
+    });
+  } catch (error) {
+    console.error('Error fetching current user:', error);
+    handleDatabaseError(error, res, 'users');
+  }
+});
+
+/**
  * List all collections (tables)
  */
 router.get('/db', async (req: Request, res: Response): Promise<void> => {

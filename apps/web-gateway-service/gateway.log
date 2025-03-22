@@ -1,0 +1,1430 @@
+
+> @helloworld/web-gateway-service@1.0.0 dev
+> ts-node-dev --respawn --transpile-only src/index.ts
+
+[INFO] 14:53:09 ts-node-dev ver. 2.0.0 (using ts-node ver. 10.9.2, typescript ver. 5.8.2)
+[Auth Middleware] Environment variables:
+NODE_ENV: undefined
+AUTH_SERVICE_URL: undefined
+DB_SERVICE_URL: undefined
+[Auth Middleware] Attempting to load environment from /Users/kevinlourd/Business/agent-base-new/apps/web-gateway-service/.env.local
+[Auth Middleware] Loaded environment variables from /Users/kevinlourd/Business/agent-base-new/apps/web-gateway-service/.env.local
+AUTH_SERVICE_URL after loading: http://localhost:3005
+[Auth Middleware] Using AUTH_SERVICE_URL: http://localhost:3005
+[Auth Middleware] Using JWT_SECRET: (secret masked)
+Loading environment from /Users/kevinlourd/Business/agent-base-new/apps/web-gateway-service/.env.local
+[Web Gateway] Auth middleware applied
+🚪 Web Gateway Service running on port 3030
+Connected to services:
+🔐 Auth Service: http://localhost:3005
+💾 Database Service: http://localhost:3006
+🔑 Keys Service: http://localhost:3003
+🔄 Model Service (via API Gateway): http://localhost:3002
+💳 Payment Service: http://localhost:3007
+[Auth Middleware] Validating token with auth service at http://localhost:3005
+[Auth Middleware] Decoded token payload: {"sub":"test_user_id","email":"test@example.com","name":"Test User","provider":"test","iat":1742629994,"exp":1743234794}
+[Auth Middleware] Decoded from token - userId: test_user_id
+[Auth Middleware] Token validation response: {"success":true,"data":{"email":"test@example.com","name":"Test User"}}
+[Auth Middleware] Extracted user ID: test_user_id from token
+[Auth Middleware] Created user object with ID test_user_id
+[Auth Middleware] Authenticated user test_user_id for /auth/validate
+[Web Gateway] Forwarding to auth/validate with method GET and headers: [
+  'host: ***',
+  'user-agent: ***',
+  'accept: ***',
+  'content-type: ***',
+  'x-api-key: ***',
+  'authorization: Bearer ***',
+  'x-user-id: ***',
+  'x-user-email: ***'
+]
+[Web Gateway] Authorization header is present and starts with: Bearer eyJ...
+[Web Gateway] Converting GET request to POST for auth/validate
+[Web Gateway] Forward request to http://localhost:3005/auth/validate
+[Web Gateway] Request method: POST
+[Web Gateway] Request headers before axios: [
+  'host: masked',
+  'user-agent: masked',
+  'accept: masked',
+  'content-type: masked',
+  'x-api-key: masked',
+  'authorization: Bearer eyJ...',
+  'x-user-id: masked',
+  'x-user-email: masked'
+]
+[Web Gateway] Axios config headers: [
+  'host: masked',
+  'user-agent: masked',
+  'accept: masked',
+  'content-type: masked',
+  'x-api-key: masked',
+  'authorization: Bearer eyJ...',
+  'x-user-id: masked',
+  'x-user-email: masked'
+]
+[Web Gateway] Axios request body: present
+[Auth Middleware] Using cached token validation
+[Auth Middleware] Authenticated user test_user_id for /database/db/users/me
+[Web Gateway] Database request to /db/users/me
+[Web Gateway] Request headers user info: User ID: test_user_id x-user-id: test_user_id
+[Web Gateway] Error forwarding request to http://localhost:3006/db/users/me: AxiosError: Request failed with status code 404
+    at settle (/Users/kevinlourd/Business/agent-base-new/node_modules/.pnpm/axios@1.8.3/node_modules/axios/lib/core/settle.js:19:12)
+    at IncomingMessage.handleStreamEnd (/Users/kevinlourd/Business/agent-base-new/node_modules/.pnpm/axios@1.8.3/node_modules/axios/lib/adapters/http.js:599:11)
+    at IncomingMessage.emit (node:events:519:35)
+    at endReadableNT (node:internal/streams/readable:1696:12)
+    at processTicksAndRejections (node:internal/process/task_queues:90:21)
+    at Axios.request (/Users/kevinlourd/Business/agent-base-new/node_modules/.pnpm/axios@1.8.3/node_modules/axios/lib/core/Axios.js:45:41)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  code: 'ERR_BAD_REQUEST',
+  config: {
+    transitional: {
+      silentJSONParsing: true,
+      forcedJSONParsing: true,
+      clarifyTimeoutError: false
+    },
+    adapter: [ 'xhr', 'http', 'fetch' ],
+    transformRequest: [ [Function: transformRequest] ],
+    transformResponse: [ [Function: transformResponse] ],
+    timeout: 0,
+    xsrfCookieName: 'XSRF-TOKEN',
+    xsrfHeaderName: 'X-XSRF-TOKEN',
+    maxContentLength: -1,
+    maxBodyLength: -1,
+    env: { FormData: [Function [FormData]], Blob: [class Blob] },
+    validateStatus: [Function: validateStatus],
+    headers: Object [AxiosHeaders] {
+      Accept: '*/*',
+      'Content-Type': 'application/json',
+      host: 'localhost:3006',
+      'user-agent': 'curl/8.6.0',
+      'x-api-key': 'g4t3way-k3y-e5e821f89a2d4c3b',
+      authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0X3VzZXJfaWQiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJuYW1lIjoiVGVzdCBVc2VyIiwicHJvdmlkZXIiOiJ0ZXN0IiwiaWF0IjoxNzQyNjI5OTk0LCJleHAiOjE3NDMyMzQ3OTR9.qGE_TAGmN4NdR81_vAcHuQ0D7OV385qMJkOIPrqnCjY',
+      'x-user-id': 'test_user_id',
+      'x-user-email': 'test@example.com',
+      'Accept-Encoding': 'gzip, compress, deflate, br'
+    },
+    method: 'get',
+    url: 'http://localhost:3006/db/users/me',
+    withCredentials: true,
+    maxRedirects: 0,
+    allowAbsoluteUrls: true,
+    data: undefined
+  },
+  request: <ref *1> ClientRequest {
+    _events: [Object: null prototype] {
+      error: [Function: handleRequestError],
+      socket: [Function: handleRequestSocket],
+      finish: [Function: requestOnFinish]
+    },
+    _eventsCount: 3,
+    _maxListeners: undefined,
+    outputData: [],
+    outputSize: 0,
+    writable: true,
+    destroyed: true,
+    _last: true,
+    chunkedEncoding: false,
+    shouldKeepAlive: true,
+    maxRequestsOnConnectionReached: false,
+    _defaultKeepAlive: true,
+    useChunkedEncodingByDefault: false,
+    sendDate: false,
+    _removedConnection: false,
+    _removedContLen: false,
+    _removedTE: false,
+    strictContentLength: false,
+    _contentLength: 0,
+    _hasBody: true,
+    _trailer: '',
+    finished: true,
+    _headerSent: true,
+    _closed: true,
+    _header: 'GET /db/users/me HTTP/1.1\r\n' +
+      'Accept: */*\r\n' +
+      'Content-Type: application/json\r\n' +
+      'host: localhost:3006\r\n' +
+      'user-agent: curl/8.6.0\r\n' +
+      'x-api-key: g4t3way-k3y-e5e821f89a2d4c3b\r\n' +
+      'authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0X3VzZXJfaWQiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJuYW1lIjoiVGVzdCBVc2VyIiwicHJvdmlkZXIiOiJ0ZXN0IiwiaWF0IjoxNzQyNjI5OTk0LCJleHAiOjE3NDMyMzQ3OTR9.qGE_TAGmN4NdR81_vAcHuQ0D7OV385qMJkOIPrqnCjY\r\n' +
+      'x-user-id: test_user_id\r\n' +
+      'x-user-email: test@example.com\r\n' +
+      'Accept-Encoding: gzip, compress, deflate, br\r\n' +
+      'Connection: keep-alive\r\n' +
+      '\r\n',
+    _keepAliveTimeout: 0,
+    _onPendingData: [Function: nop],
+    agent: Agent {
+      _events: [Object: null prototype],
+      _eventsCount: 2,
+      _maxListeners: undefined,
+      defaultPort: 80,
+      protocol: 'http:',
+      options: [Object: null prototype],
+      requests: [Object: null prototype] {},
+      sockets: [Object: null prototype] {},
+      freeSockets: [Object: null prototype],
+      keepAliveMsecs: 1000,
+      keepAlive: true,
+      maxSockets: Infinity,
+      maxFreeSockets: 256,
+      scheduling: 'lifo',
+      maxTotalSockets: Infinity,
+      totalSocketCount: 2,
+      [Symbol(shapeMode)]: false,
+      [Symbol(kCapture)]: false
+    },
+    socketPath: undefined,
+    method: 'GET',
+    maxHeaderSize: undefined,
+    insecureHTTPParser: undefined,
+    joinDuplicateHeaders: undefined,
+    path: '/db/users/me',
+    _ended: true,
+    res: IncomingMessage {
+      _events: [Object],
+      _readableState: [ReadableState],
+      _maxListeners: undefined,
+      socket: null,
+      httpVersionMajor: 1,
+      httpVersionMinor: 1,
+      httpVersion: '1.1',
+      complete: true,
+      rawHeaders: [Array],
+      rawTrailers: [],
+      joinDuplicateHeaders: undefined,
+      aborted: false,
+      upgrade: false,
+      url: '',
+      method: null,
+      statusCode: 404,
+      statusMessage: 'Not Found',
+      client: [Socket],
+      _consuming: false,
+      _dumped: false,
+      req: [Circular *1],
+      _eventsCount: 4,
+      [Symbol(shapeMode)]: true,
+      [Symbol(kCapture)]: false,
+      [Symbol(kHeaders)]: [Object],
+      [Symbol(kHeadersCount)]: 16,
+      [Symbol(kTrailers)]: null,
+      [Symbol(kTrailersCount)]: 0
+    },
+    aborted: false,
+    timeoutCb: null,
+    upgradeOrConnect: false,
+    parser: null,
+    maxHeadersCount: null,
+    reusedSocket: false,
+    host: 'localhost',
+    protocol: 'http:',
+    [Symbol(shapeMode)]: false,
+    [Symbol(kCapture)]: false,
+    [Symbol(kBytesWritten)]: 0,
+    [Symbol(kNeedDrain)]: false,
+    [Symbol(corked)]: 0,
+    [Symbol(kChunkedBuffer)]: [],
+    [Symbol(kChunkedLength)]: 0,
+    [Symbol(kSocket)]: Socket {
+      connecting: false,
+      _hadError: false,
+      _parent: null,
+      _host: 'localhost',
+      _closeAfterHandlingError: false,
+      _events: [Object],
+      _readableState: [ReadableState],
+      _writableState: [WritableState],
+      allowHalfOpen: false,
+      _maxListeners: undefined,
+      _eventsCount: 6,
+      _sockname: null,
+      _pendingData: null,
+      _pendingEncoding: '',
+      server: null,
+      _server: null,
+      timeout: 4000,
+      parser: null,
+      _httpMessage: null,
+      autoSelectFamilyAttemptedAddresses: [Array],
+      [Symbol(async_id_symbol)]: -1,
+      [Symbol(kHandle)]: [TCP],
+      [Symbol(lastWriteQueueSize)]: 0,
+      [Symbol(timeout)]: Timeout {
+        _idleTimeout: 4000,
+        _idlePrev: [TimersList],
+        _idleNext: [Timeout],
+        _idleStart: 6089,
+        _onTimeout: [Function: bound ],
+        _timerArgs: undefined,
+        _repeat: null,
+        _destroyed: false,
+        [Symbol(refed)]: false,
+        [Symbol(kHasPrimitive)]: false,
+        [Symbol(asyncId)]: 92,
+        [Symbol(triggerId)]: 90,
+        [Symbol(kAsyncContextFrame)]: undefined
+      },
+      [Symbol(kBuffer)]: null,
+      [Symbol(kBufferCb)]: null,
+      [Symbol(kBufferGen)]: null,
+      [Symbol(shapeMode)]: true,
+      [Symbol(kCapture)]: false,
+      [Symbol(kSetNoDelay)]: true,
+      [Symbol(kSetKeepAlive)]: true,
+      [Symbol(kSetKeepAliveInitialDelay)]: 1,
+      [Symbol(kBytesRead)]: 0,
+      [Symbol(kBytesWritten)]: 0
+    },
+    [Symbol(kOutHeaders)]: [Object: null prototype] {
+      accept: [Array],
+      'content-type': [Array],
+      host: [Array],
+      'user-agent': [Array],
+      'x-api-key': [Array],
+      authorization: [Array],
+      'x-user-id': [Array],
+      'x-user-email': [Array],
+      'accept-encoding': [Array]
+    },
+    [Symbol(errored)]: null,
+    [Symbol(kHighWaterMark)]: 65536,
+    [Symbol(kRejectNonStandardBodyWrites)]: false,
+    [Symbol(kUniqueHeaders)]: null
+  },
+  response: {
+    status: 404,
+    statusText: 'Not Found',
+    headers: Object [AxiosHeaders] {
+      'x-powered-by': 'Express',
+      'access-control-allow-origin': '*',
+      'content-type': 'application/json; charset=utf-8',
+      'content-length': '42',
+      etag: 'W/"2a-FQG5794dbhTyRwgytQ7rokul7mM"',
+      date: 'Sat, 22 Mar 2025 07:53:15 GMT',
+      connection: 'keep-alive',
+      'keep-alive': 'timeout=5'
+    },
+    config: {
+      transitional: [Object],
+      adapter: [Array],
+      transformRequest: [Array],
+      transformResponse: [Array],
+      timeout: 0,
+      xsrfCookieName: 'XSRF-TOKEN',
+      xsrfHeaderName: 'X-XSRF-TOKEN',
+      maxContentLength: -1,
+      maxBodyLength: -1,
+      env: [Object],
+      validateStatus: [Function: validateStatus],
+      headers: [Object [AxiosHeaders]],
+      method: 'get',
+      url: 'http://localhost:3006/db/users/me',
+      withCredentials: true,
+      maxRedirects: 0,
+      allowAbsoluteUrls: true,
+      data: undefined
+    },
+    request: <ref *1> ClientRequest {
+      _events: [Object: null prototype],
+      _eventsCount: 3,
+      _maxListeners: undefined,
+      outputData: [],
+      outputSize: 0,
+      writable: true,
+      destroyed: true,
+      _last: true,
+      chunkedEncoding: false,
+      shouldKeepAlive: true,
+      maxRequestsOnConnectionReached: false,
+      _defaultKeepAlive: true,
+      useChunkedEncodingByDefault: false,
+      sendDate: false,
+      _removedConnection: false,
+      _removedContLen: false,
+      _removedTE: false,
+      strictContentLength: false,
+      _contentLength: 0,
+      _hasBody: true,
+      _trailer: '',
+      finished: true,
+      _headerSent: true,
+      _closed: true,
+      _header: 'GET /db/users/me HTTP/1.1\r\n' +
+        'Accept: */*\r\n' +
+        'Content-Type: application/json\r\n' +
+        'host: localhost:3006\r\n' +
+        'user-agent: curl/8.6.0\r\n' +
+        'x-api-key: g4t3way-k3y-e5e821f89a2d4c3b\r\n' +
+        'authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0X3VzZXJfaWQiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJuYW1lIjoiVGVzdCBVc2VyIiwicHJvdmlkZXIiOiJ0ZXN0IiwiaWF0IjoxNzQyNjI5OTk0LCJleHAiOjE3NDMyMzQ3OTR9.qGE_TAGmN4NdR81_vAcHuQ0D7OV385qMJkOIPrqnCjY\r\n' +
+        'x-user-id: test_user_id\r\n' +
+        'x-user-email: test@example.com\r\n' +
+        'Accept-Encoding: gzip, compress, deflate, br\r\n' +
+        'Connection: keep-alive\r\n' +
+        '\r\n',
+      _keepAliveTimeout: 0,
+      _onPendingData: [Function: nop],
+      agent: [Agent],
+      socketPath: undefined,
+      method: 'GET',
+      maxHeaderSize: undefined,
+      insecureHTTPParser: undefined,
+      joinDuplicateHeaders: undefined,
+      path: '/db/users/me',
+      _ended: true,
+      res: [IncomingMessage],
+      aborted: false,
+      timeoutCb: null,
+      upgradeOrConnect: false,
+      parser: null,
+      maxHeadersCount: null,
+      reusedSocket: false,
+      host: 'localhost',
+      protocol: 'http:',
+      [Symbol(shapeMode)]: false,
+      [Symbol(kCapture)]: false,
+      [Symbol(kBytesWritten)]: 0,
+      [Symbol(kNeedDrain)]: false,
+      [Symbol(corked)]: 0,
+      [Symbol(kChunkedBuffer)]: [],
+      [Symbol(kChunkedLength)]: 0,
+      [Symbol(kSocket)]: [Socket],
+      [Symbol(kOutHeaders)]: [Object: null prototype],
+      [Symbol(errored)]: null,
+      [Symbol(kHighWaterMark)]: 65536,
+      [Symbol(kRejectNonStandardBodyWrites)]: false,
+      [Symbol(kUniqueHeaders)]: null
+    },
+    data: { success: false, error: 'User not found' }
+  },
+  status: 404
+}
+[Auth Middleware] Validating token with auth service at http://localhost:3005
+[Auth Middleware] Decoded token payload: {"sub":"test_user_id","email":"test@example.com","name":"Test User","provider":"test","iat":1742630007,"exp":1743234807}
+[Auth Middleware] Decoded from token - userId: test_user_id
+[Auth Middleware] Token validation response: {"success":true,"data":{"email":"test@example.com","name":"Test User"}}
+[Auth Middleware] Extracted user ID: test_user_id from token
+[Auth Middleware] Created user object with ID test_user_id
+[Auth Middleware] Authenticated user test_user_id for /database/db/users/me
+[Web Gateway] Database request to /db/users/me
+[Web Gateway] Request headers user info: User ID: test_user_id x-user-id: test_user_id
+[Web Gateway] Error forwarding request to http://localhost:3006/db/users/me: AxiosError: Request failed with status code 404
+    at settle (/Users/kevinlourd/Business/agent-base-new/node_modules/.pnpm/axios@1.8.3/node_modules/axios/lib/core/settle.js:19:12)
+    at IncomingMessage.handleStreamEnd (/Users/kevinlourd/Business/agent-base-new/node_modules/.pnpm/axios@1.8.3/node_modules/axios/lib/adapters/http.js:599:11)
+    at IncomingMessage.emit (node:events:519:35)
+    at endReadableNT (node:internal/streams/readable:1696:12)
+    at processTicksAndRejections (node:internal/process/task_queues:90:21)
+    at Axios.request (/Users/kevinlourd/Business/agent-base-new/node_modules/.pnpm/axios@1.8.3/node_modules/axios/lib/core/Axios.js:45:41)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  code: 'ERR_BAD_REQUEST',
+  config: {
+    transitional: {
+      silentJSONParsing: true,
+      forcedJSONParsing: true,
+      clarifyTimeoutError: false
+    },
+    adapter: [ 'xhr', 'http', 'fetch' ],
+    transformRequest: [ [Function: transformRequest] ],
+    transformResponse: [ [Function: transformResponse] ],
+    timeout: 0,
+    xsrfCookieName: 'XSRF-TOKEN',
+    xsrfHeaderName: 'X-XSRF-TOKEN',
+    maxContentLength: -1,
+    maxBodyLength: -1,
+    env: { FormData: [Function [FormData]], Blob: [class Blob] },
+    validateStatus: [Function: validateStatus],
+    headers: Object [AxiosHeaders] {
+      Accept: '*/*',
+      'Content-Type': 'application/json',
+      host: 'localhost:3006',
+      'user-agent': 'curl/8.6.0',
+      'x-api-key': 'g4t3way-k3y-e5e821f89a2d4c3b',
+      authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0X3VzZXJfaWQiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJuYW1lIjoiVGVzdCBVc2VyIiwicHJvdmlkZXIiOiJ0ZXN0IiwiaWF0IjoxNzQyNjMwMDA3LCJleHAiOjE3NDMyMzQ4MDd9.5wo2Yr3pvQlKeMRTolp2Z8Nlom2LqtxI4_1UVaOTlr4',
+      'x-user-id': 'test_user_id',
+      'x-user-email': 'test@example.com',
+      'Accept-Encoding': 'gzip, compress, deflate, br'
+    },
+    method: 'get',
+    url: 'http://localhost:3006/db/users/me',
+    withCredentials: true,
+    maxRedirects: 0,
+    allowAbsoluteUrls: true,
+    data: undefined
+  },
+  request: <ref *1> ClientRequest {
+    _events: [Object: null prototype] {
+      error: [Function: handleRequestError],
+      socket: [Function: handleRequestSocket],
+      finish: [Function: requestOnFinish]
+    },
+    _eventsCount: 3,
+    _maxListeners: undefined,
+    outputData: [],
+    outputSize: 0,
+    writable: true,
+    destroyed: true,
+    _last: true,
+    chunkedEncoding: false,
+    shouldKeepAlive: true,
+    maxRequestsOnConnectionReached: false,
+    _defaultKeepAlive: true,
+    useChunkedEncodingByDefault: false,
+    sendDate: false,
+    _removedConnection: false,
+    _removedContLen: false,
+    _removedTE: false,
+    strictContentLength: false,
+    _contentLength: 0,
+    _hasBody: true,
+    _trailer: '',
+    finished: true,
+    _headerSent: true,
+    _closed: true,
+    _header: 'GET /db/users/me HTTP/1.1\r\n' +
+      'Accept: */*\r\n' +
+      'Content-Type: application/json\r\n' +
+      'host: localhost:3006\r\n' +
+      'user-agent: curl/8.6.0\r\n' +
+      'x-api-key: g4t3way-k3y-e5e821f89a2d4c3b\r\n' +
+      'authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0X3VzZXJfaWQiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJuYW1lIjoiVGVzdCBVc2VyIiwicHJvdmlkZXIiOiJ0ZXN0IiwiaWF0IjoxNzQyNjMwMDA3LCJleHAiOjE3NDMyMzQ4MDd9.5wo2Yr3pvQlKeMRTolp2Z8Nlom2LqtxI4_1UVaOTlr4\r\n' +
+      'x-user-id: test_user_id\r\n' +
+      'x-user-email: test@example.com\r\n' +
+      'Accept-Encoding: gzip, compress, deflate, br\r\n' +
+      'Connection: keep-alive\r\n' +
+      '\r\n',
+    _keepAliveTimeout: 0,
+    _onPendingData: [Function: nop],
+    agent: Agent {
+      _events: [Object: null prototype],
+      _eventsCount: 2,
+      _maxListeners: undefined,
+      defaultPort: 80,
+      protocol: 'http:',
+      options: [Object: null prototype],
+      requests: [Object: null prototype] {},
+      sockets: [Object: null prototype] {},
+      freeSockets: [Object: null prototype],
+      keepAliveMsecs: 1000,
+      keepAlive: true,
+      maxSockets: Infinity,
+      maxFreeSockets: 256,
+      scheduling: 'lifo',
+      maxTotalSockets: Infinity,
+      totalSocketCount: 2,
+      [Symbol(shapeMode)]: false,
+      [Symbol(kCapture)]: false
+    },
+    socketPath: undefined,
+    method: 'GET',
+    maxHeaderSize: undefined,
+    insecureHTTPParser: undefined,
+    joinDuplicateHeaders: undefined,
+    path: '/db/users/me',
+    _ended: true,
+    res: IncomingMessage {
+      _events: [Object],
+      _readableState: [ReadableState],
+      _maxListeners: undefined,
+      socket: null,
+      httpVersionMajor: 1,
+      httpVersionMinor: 1,
+      httpVersion: '1.1',
+      complete: true,
+      rawHeaders: [Array],
+      rawTrailers: [],
+      joinDuplicateHeaders: undefined,
+      aborted: false,
+      upgrade: false,
+      url: '',
+      method: null,
+      statusCode: 404,
+      statusMessage: 'Not Found',
+      client: [Socket],
+      _consuming: false,
+      _dumped: false,
+      req: [Circular *1],
+      _eventsCount: 4,
+      [Symbol(shapeMode)]: true,
+      [Symbol(kCapture)]: false,
+      [Symbol(kHeaders)]: [Object],
+      [Symbol(kHeadersCount)]: 16,
+      [Symbol(kTrailers)]: null,
+      [Symbol(kTrailersCount)]: 0
+    },
+    aborted: false,
+    timeoutCb: null,
+    upgradeOrConnect: false,
+    parser: null,
+    maxHeadersCount: null,
+    reusedSocket: false,
+    host: 'localhost',
+    protocol: 'http:',
+    [Symbol(shapeMode)]: false,
+    [Symbol(kCapture)]: false,
+    [Symbol(kBytesWritten)]: 0,
+    [Symbol(kNeedDrain)]: false,
+    [Symbol(corked)]: 0,
+    [Symbol(kChunkedBuffer)]: [],
+    [Symbol(kChunkedLength)]: 0,
+    [Symbol(kSocket)]: Socket {
+      connecting: false,
+      _hadError: false,
+      _parent: null,
+      _host: 'localhost',
+      _closeAfterHandlingError: false,
+      _events: [Object],
+      _readableState: [ReadableState],
+      _writableState: [WritableState],
+      allowHalfOpen: false,
+      _maxListeners: undefined,
+      _eventsCount: 6,
+      _sockname: null,
+      _pendingData: null,
+      _pendingEncoding: '',
+      server: null,
+      _server: null,
+      timeout: 4000,
+      parser: null,
+      _httpMessage: null,
+      autoSelectFamilyAttemptedAddresses: [Array],
+      [Symbol(async_id_symbol)]: -1,
+      [Symbol(kHandle)]: [TCP],
+      [Symbol(lastWriteQueueSize)]: 0,
+      [Symbol(timeout)]: Timeout {
+        _idleTimeout: 4000,
+        _idlePrev: [TimersList],
+        _idleNext: [Timeout],
+        _idleStart: 17754,
+        _onTimeout: [Function: bound ],
+        _timerArgs: undefined,
+        _repeat: null,
+        _destroyed: false,
+        [Symbol(refed)]: false,
+        [Symbol(kHasPrimitive)]: false,
+        [Symbol(asyncId)]: 155,
+        [Symbol(triggerId)]: 153,
+        [Symbol(kAsyncContextFrame)]: undefined
+      },
+      [Symbol(kBuffer)]: null,
+      [Symbol(kBufferCb)]: null,
+      [Symbol(kBufferGen)]: null,
+      [Symbol(shapeMode)]: true,
+      [Symbol(kCapture)]: false,
+      [Symbol(kSetNoDelay)]: true,
+      [Symbol(kSetKeepAlive)]: true,
+      [Symbol(kSetKeepAliveInitialDelay)]: 1,
+      [Symbol(kBytesRead)]: 0,
+      [Symbol(kBytesWritten)]: 0
+    },
+    [Symbol(kOutHeaders)]: [Object: null prototype] {
+      accept: [Array],
+      'content-type': [Array],
+      host: [Array],
+      'user-agent': [Array],
+      'x-api-key': [Array],
+      authorization: [Array],
+      'x-user-id': [Array],
+      'x-user-email': [Array],
+      'accept-encoding': [Array]
+    },
+    [Symbol(errored)]: null,
+    [Symbol(kHighWaterMark)]: 65536,
+    [Symbol(kRejectNonStandardBodyWrites)]: false,
+    [Symbol(kUniqueHeaders)]: null
+  },
+  response: {
+    status: 404,
+    statusText: 'Not Found',
+    headers: Object [AxiosHeaders] {
+      'x-powered-by': 'Express',
+      'access-control-allow-origin': '*',
+      'content-type': 'application/json; charset=utf-8',
+      'content-length': '42',
+      etag: 'W/"2a-FQG5794dbhTyRwgytQ7rokul7mM"',
+      date: 'Sat, 22 Mar 2025 07:53:27 GMT',
+      connection: 'keep-alive',
+      'keep-alive': 'timeout=5'
+    },
+    config: {
+      transitional: [Object],
+      adapter: [Array],
+      transformRequest: [Array],
+      transformResponse: [Array],
+      timeout: 0,
+      xsrfCookieName: 'XSRF-TOKEN',
+      xsrfHeaderName: 'X-XSRF-TOKEN',
+      maxContentLength: -1,
+      maxBodyLength: -1,
+      env: [Object],
+      validateStatus: [Function: validateStatus],
+      headers: [Object [AxiosHeaders]],
+      method: 'get',
+      url: 'http://localhost:3006/db/users/me',
+      withCredentials: true,
+      maxRedirects: 0,
+      allowAbsoluteUrls: true,
+      data: undefined
+    },
+    request: <ref *1> ClientRequest {
+      _events: [Object: null prototype],
+      _eventsCount: 3,
+      _maxListeners: undefined,
+      outputData: [],
+      outputSize: 0,
+      writable: true,
+      destroyed: true,
+      _last: true,
+      chunkedEncoding: false,
+      shouldKeepAlive: true,
+      maxRequestsOnConnectionReached: false,
+      _defaultKeepAlive: true,
+      useChunkedEncodingByDefault: false,
+      sendDate: false,
+      _removedConnection: false,
+      _removedContLen: false,
+      _removedTE: false,
+      strictContentLength: false,
+      _contentLength: 0,
+      _hasBody: true,
+      _trailer: '',
+      finished: true,
+      _headerSent: true,
+      _closed: true,
+      _header: 'GET /db/users/me HTTP/1.1\r\n' +
+        'Accept: */*\r\n' +
+        'Content-Type: application/json\r\n' +
+        'host: localhost:3006\r\n' +
+        'user-agent: curl/8.6.0\r\n' +
+        'x-api-key: g4t3way-k3y-e5e821f89a2d4c3b\r\n' +
+        'authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0X3VzZXJfaWQiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJuYW1lIjoiVGVzdCBVc2VyIiwicHJvdmlkZXIiOiJ0ZXN0IiwiaWF0IjoxNzQyNjMwMDA3LCJleHAiOjE3NDMyMzQ4MDd9.5wo2Yr3pvQlKeMRTolp2Z8Nlom2LqtxI4_1UVaOTlr4\r\n' +
+        'x-user-id: test_user_id\r\n' +
+        'x-user-email: test@example.com\r\n' +
+        'Accept-Encoding: gzip, compress, deflate, br\r\n' +
+        'Connection: keep-alive\r\n' +
+        '\r\n',
+      _keepAliveTimeout: 0,
+      _onPendingData: [Function: nop],
+      agent: [Agent],
+      socketPath: undefined,
+      method: 'GET',
+      maxHeaderSize: undefined,
+      insecureHTTPParser: undefined,
+      joinDuplicateHeaders: undefined,
+      path: '/db/users/me',
+      _ended: true,
+      res: [IncomingMessage],
+      aborted: false,
+      timeoutCb: null,
+      upgradeOrConnect: false,
+      parser: null,
+      maxHeadersCount: null,
+      reusedSocket: false,
+      host: 'localhost',
+      protocol: 'http:',
+      [Symbol(shapeMode)]: false,
+      [Symbol(kCapture)]: false,
+      [Symbol(kBytesWritten)]: 0,
+      [Symbol(kNeedDrain)]: false,
+      [Symbol(corked)]: 0,
+      [Symbol(kChunkedBuffer)]: [],
+      [Symbol(kChunkedLength)]: 0,
+      [Symbol(kSocket)]: [Socket],
+      [Symbol(kOutHeaders)]: [Object: null prototype],
+      [Symbol(errored)]: null,
+      [Symbol(kHighWaterMark)]: 65536,
+      [Symbol(kRejectNonStandardBodyWrites)]: false,
+      [Symbol(kUniqueHeaders)]: null
+    },
+    data: { success: false, error: 'User not found' }
+  },
+  status: 404
+}
+[Web Gateway] Error forwarding request to http://localhost:3005/oauth/google?origin=http%3A%2F%2Flocalhost%3A3020: AxiosError: Request failed with status code 302
+    at settle (/Users/kevinlourd/Business/agent-base-new/node_modules/.pnpm/axios@1.8.3/node_modules/axios/lib/core/settle.js:19:12)
+    at IncomingMessage.handleStreamEnd (/Users/kevinlourd/Business/agent-base-new/node_modules/.pnpm/axios@1.8.3/node_modules/axios/lib/adapters/http.js:599:11)
+    at IncomingMessage.emit (node:events:519:35)
+    at endReadableNT (node:internal/streams/readable:1696:12)
+    at processTicksAndRejections (node:internal/process/task_queues:90:21)
+    at Axios.request (/Users/kevinlourd/Business/agent-base-new/node_modules/.pnpm/axios@1.8.3/node_modules/axios/lib/core/Axios.js:45:41)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  config: {
+    transitional: {
+      silentJSONParsing: true,
+      forcedJSONParsing: true,
+      clarifyTimeoutError: false
+    },
+    adapter: [ 'xhr', 'http', 'fetch' ],
+    transformRequest: [ [Function: transformRequest] ],
+    transformResponse: [ [Function: transformResponse] ],
+    timeout: 0,
+    xsrfCookieName: 'XSRF-TOKEN',
+    xsrfHeaderName: 'X-XSRF-TOKEN',
+    maxContentLength: -1,
+    maxBodyLength: -1,
+    env: { FormData: [Function [FormData]], Blob: [class Blob] },
+    validateStatus: [Function: validateStatus],
+    headers: Object [AxiosHeaders] {
+      Accept: 'application/json, text/plain, */*',
+      'Content-Type': undefined,
+      host: 'localhost:3005',
+      'User-Agent': 'axios/1.8.3',
+      'Accept-Encoding': 'gzip, compress, deflate, br'
+    },
+    method: 'get',
+    url: 'http://localhost:3005/oauth/google?origin=http%3A%2F%2Flocalhost%3A3020',
+    withCredentials: true,
+    maxRedirects: 0,
+    allowAbsoluteUrls: true,
+    data: undefined
+  },
+  request: <ref *1> ClientRequest {
+    _events: [Object: null prototype] {
+      error: [Function: handleRequestError],
+      socket: [Function: handleRequestSocket],
+      finish: [Function: requestOnFinish]
+    },
+    _eventsCount: 3,
+    _maxListeners: undefined,
+    outputData: [],
+    outputSize: 0,
+    writable: true,
+    destroyed: true,
+    _last: true,
+    chunkedEncoding: false,
+    shouldKeepAlive: true,
+    maxRequestsOnConnectionReached: false,
+    _defaultKeepAlive: true,
+    useChunkedEncodingByDefault: false,
+    sendDate: false,
+    _removedConnection: false,
+    _removedContLen: false,
+    _removedTE: false,
+    strictContentLength: false,
+    _contentLength: 0,
+    _hasBody: true,
+    _trailer: '',
+    finished: true,
+    _headerSent: true,
+    _closed: true,
+    _header: 'GET /oauth/google?origin=http%3A%2F%2Flocalhost%3A3020 HTTP/1.1\r\n' +
+      'Accept: application/json, text/plain, */*\r\n' +
+      'host: localhost:3005\r\n' +
+      'User-Agent: axios/1.8.3\r\n' +
+      'Accept-Encoding: gzip, compress, deflate, br\r\n' +
+      'Connection: keep-alive\r\n' +
+      '\r\n',
+    _keepAliveTimeout: 0,
+    _onPendingData: [Function: nop],
+    agent: Agent {
+      _events: [Object: null prototype],
+      _eventsCount: 2,
+      _maxListeners: undefined,
+      defaultPort: 80,
+      protocol: 'http:',
+      options: [Object: null prototype],
+      requests: [Object: null prototype] {},
+      sockets: [Object: null prototype] {},
+      freeSockets: [Object: null prototype],
+      keepAliveMsecs: 1000,
+      keepAlive: true,
+      maxSockets: Infinity,
+      maxFreeSockets: 256,
+      scheduling: 'lifo',
+      maxTotalSockets: Infinity,
+      totalSocketCount: 1,
+      [Symbol(shapeMode)]: false,
+      [Symbol(kCapture)]: false
+    },
+    socketPath: undefined,
+    method: 'GET',
+    maxHeaderSize: undefined,
+    insecureHTTPParser: undefined,
+    joinDuplicateHeaders: undefined,
+    path: '/oauth/google?origin=http%3A%2F%2Flocalhost%3A3020',
+    _ended: true,
+    res: IncomingMessage {
+      _events: [Object],
+      _readableState: [ReadableState],
+      _maxListeners: undefined,
+      socket: null,
+      httpVersionMajor: 1,
+      httpVersionMinor: 1,
+      httpVersion: '1.1',
+      complete: true,
+      rawHeaders: [Array],
+      rawTrailers: [],
+      joinDuplicateHeaders: undefined,
+      aborted: false,
+      upgrade: false,
+      url: '',
+      method: null,
+      statusCode: 302,
+      statusMessage: 'Found',
+      client: [Socket],
+      _consuming: false,
+      _dumped: false,
+      req: [Circular *1],
+      _eventsCount: 4,
+      [Symbol(shapeMode)]: true,
+      [Symbol(kCapture)]: false,
+      [Symbol(kHeaders)]: [Object],
+      [Symbol(kHeadersCount)]: 18,
+      [Symbol(kTrailers)]: null,
+      [Symbol(kTrailersCount)]: 0
+    },
+    aborted: false,
+    timeoutCb: null,
+    upgradeOrConnect: false,
+    parser: null,
+    maxHeadersCount: null,
+    reusedSocket: false,
+    host: 'localhost',
+    protocol: 'http:',
+    [Symbol(shapeMode)]: false,
+    [Symbol(kCapture)]: false,
+    [Symbol(kBytesWritten)]: 0,
+    [Symbol(kNeedDrain)]: false,
+    [Symbol(corked)]: 0,
+    [Symbol(kChunkedBuffer)]: [],
+    [Symbol(kChunkedLength)]: 0,
+    [Symbol(kSocket)]: Socket {
+      connecting: false,
+      _hadError: false,
+      _parent: null,
+      _host: 'localhost',
+      _closeAfterHandlingError: false,
+      _events: [Object],
+      _readableState: [ReadableState],
+      _writableState: [WritableState],
+      allowHalfOpen: false,
+      _maxListeners: undefined,
+      _eventsCount: 6,
+      _sockname: null,
+      _pendingData: null,
+      _pendingEncoding: '',
+      server: null,
+      _server: null,
+      timeout: 4000,
+      parser: null,
+      _httpMessage: null,
+      autoSelectFamilyAttemptedAddresses: [Array],
+      [Symbol(async_id_symbol)]: -1,
+      [Symbol(kHandle)]: [TCP],
+      [Symbol(lastWriteQueueSize)]: 0,
+      [Symbol(timeout)]: Timeout {
+        _idleTimeout: 4000,
+        _idlePrev: [TimersList],
+        _idleNext: [TimersList],
+        _idleStart: 35438,
+        _onTimeout: [Function: bound ],
+        _timerArgs: undefined,
+        _repeat: null,
+        _destroyed: false,
+        [Symbol(refed)]: false,
+        [Symbol(kHasPrimitive)]: false,
+        [Symbol(asyncId)]: 196,
+        [Symbol(triggerId)]: 194,
+        [Symbol(kAsyncContextFrame)]: undefined
+      },
+      [Symbol(kBuffer)]: null,
+      [Symbol(kBufferCb)]: null,
+      [Symbol(kBufferGen)]: null,
+      [Symbol(shapeMode)]: true,
+      [Symbol(kCapture)]: false,
+      [Symbol(kSetNoDelay)]: true,
+      [Symbol(kSetKeepAlive)]: true,
+      [Symbol(kSetKeepAliveInitialDelay)]: 1,
+      [Symbol(kBytesRead)]: 0,
+      [Symbol(kBytesWritten)]: 0
+    },
+    [Symbol(kOutHeaders)]: [Object: null prototype] {
+      accept: [Array],
+      host: [Array],
+      'user-agent': [Array],
+      'accept-encoding': [Array]
+    },
+    [Symbol(errored)]: null,
+    [Symbol(kHighWaterMark)]: 65536,
+    [Symbol(kRejectNonStandardBodyWrites)]: false,
+    [Symbol(kUniqueHeaders)]: null
+  },
+  response: {
+    status: 302,
+    statusText: 'Found',
+    headers: Object [AxiosHeaders] {
+      'x-powered-by': 'Express',
+      'access-control-allow-origin': 'http://localhost:3020',
+      vary: 'Origin',
+      'access-control-allow-credentials': 'true',
+      location: 'https://accounts.google.com/o/oauth2/v2/auth?response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A3030%2Foauth%2Fgoogle%2Fcallback&scope=profile%20email&state=http%3A%2F%2Flocalhost%3A3020&client_id=436470577293-5akhvrp7rpuk55uko744tok9d7keg8nh.apps.googleusercontent.com',
+      'content-length': '0',
+      date: 'Sat, 22 Mar 2025 07:53:45 GMT',
+      connection: 'keep-alive',
+      'keep-alive': 'timeout=5'
+    },
+    config: {
+      transitional: [Object],
+      adapter: [Array],
+      transformRequest: [Array],
+      transformResponse: [Array],
+      timeout: 0,
+      xsrfCookieName: 'XSRF-TOKEN',
+      xsrfHeaderName: 'X-XSRF-TOKEN',
+      maxContentLength: -1,
+      maxBodyLength: -1,
+      env: [Object],
+      validateStatus: [Function: validateStatus],
+      headers: [Object [AxiosHeaders]],
+      method: 'get',
+      url: 'http://localhost:3005/oauth/google?origin=http%3A%2F%2Flocalhost%3A3020',
+      withCredentials: true,
+      maxRedirects: 0,
+      allowAbsoluteUrls: true,
+      data: undefined
+    },
+    request: <ref *1> ClientRequest {
+      _events: [Object: null prototype],
+      _eventsCount: 3,
+      _maxListeners: undefined,
+      outputData: [],
+      outputSize: 0,
+      writable: true,
+      destroyed: true,
+      _last: true,
+      chunkedEncoding: false,
+      shouldKeepAlive: true,
+      maxRequestsOnConnectionReached: false,
+      _defaultKeepAlive: true,
+      useChunkedEncodingByDefault: false,
+      sendDate: false,
+      _removedConnection: false,
+      _removedContLen: false,
+      _removedTE: false,
+      strictContentLength: false,
+      _contentLength: 0,
+      _hasBody: true,
+      _trailer: '',
+      finished: true,
+      _headerSent: true,
+      _closed: true,
+      _header: 'GET /oauth/google?origin=http%3A%2F%2Flocalhost%3A3020 HTTP/1.1\r\n' +
+        'Accept: application/json, text/plain, */*\r\n' +
+        'host: localhost:3005\r\n' +
+        'User-Agent: axios/1.8.3\r\n' +
+        'Accept-Encoding: gzip, compress, deflate, br\r\n' +
+        'Connection: keep-alive\r\n' +
+        '\r\n',
+      _keepAliveTimeout: 0,
+      _onPendingData: [Function: nop],
+      agent: [Agent],
+      socketPath: undefined,
+      method: 'GET',
+      maxHeaderSize: undefined,
+      insecureHTTPParser: undefined,
+      joinDuplicateHeaders: undefined,
+      path: '/oauth/google?origin=http%3A%2F%2Flocalhost%3A3020',
+      _ended: true,
+      res: [IncomingMessage],
+      aborted: false,
+      timeoutCb: null,
+      upgradeOrConnect: false,
+      parser: null,
+      maxHeadersCount: null,
+      reusedSocket: false,
+      host: 'localhost',
+      protocol: 'http:',
+      [Symbol(shapeMode)]: false,
+      [Symbol(kCapture)]: false,
+      [Symbol(kBytesWritten)]: 0,
+      [Symbol(kNeedDrain)]: false,
+      [Symbol(corked)]: 0,
+      [Symbol(kChunkedBuffer)]: [],
+      [Symbol(kChunkedLength)]: 0,
+      [Symbol(kSocket)]: [Socket],
+      [Symbol(kOutHeaders)]: [Object: null prototype],
+      [Symbol(errored)]: null,
+      [Symbol(kHighWaterMark)]: 65536,
+      [Symbol(kRejectNonStandardBodyWrites)]: false,
+      [Symbol(kUniqueHeaders)]: null
+    },
+    data: ''
+  },
+  status: 302
+}
+[Web Gateway] Handling error redirect (302) to: https://accounts.google.com/o/oauth2/v2/auth?response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A3030%2Foauth%2Fgoogle%2Fcallback&scope=profile%20email&state=http%3A%2F%2Flocalhost%3A3020&client_id=436470577293-5akhvrp7rpuk55uko744tok9d7keg8nh.apps.googleusercontent.com
+[Web Gateway] Response headers after processing: {
+  'x-powered-by': 'Express',
+  vary: 'Origin',
+  'access-control-allow-credentials': 'true',
+  'ratelimit-policy': '100;w=900',
+  'ratelimit-limit': '100',
+  'ratelimit-remaining': '96',
+  'ratelimit-reset': '870',
+  'access-control-allow-origin': 'http://localhost:3020',
+  location: 'https://accounts.google.com/o/oauth2/v2/auth?response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A3030%2Foauth%2Fgoogle%2Fcallback&scope=profile%20email&state=http%3A%2F%2Flocalhost%3A3020&client_id=436470577293-5akhvrp7rpuk55uko744tok9d7keg8nh.apps.googleusercontent.com',
+  'content-length': '0',
+  date: 'Sat, 22 Mar 2025 07:53:45 GMT',
+  connection: 'keep-alive',
+  'keep-alive': 'timeout=5'
+}
+[Web Gateway] Error forwarding request to http://localhost:3005/oauth/google/callback?state=http%3A%2F%2Flocalhost%3A3020&code=4%2F0AQSTgQG2Hin-W35s6rpWR103HgGD8cYD4y0P68JuHnw8jCnsm5vNZ4Eee1szy_8sLt4X_A&scope=email+profile+openid+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile&authuser=0&prompt=none: AxiosError: Request failed with status code 302
+    at settle (/Users/kevinlourd/Business/agent-base-new/node_modules/.pnpm/axios@1.8.3/node_modules/axios/lib/core/settle.js:19:12)
+    at IncomingMessage.handleStreamEnd (/Users/kevinlourd/Business/agent-base-new/node_modules/.pnpm/axios@1.8.3/node_modules/axios/lib/adapters/http.js:599:11)
+    at IncomingMessage.emit (node:events:519:35)
+    at endReadableNT (node:internal/streams/readable:1696:12)
+    at processTicksAndRejections (node:internal/process/task_queues:90:21)
+    at Axios.request (/Users/kevinlourd/Business/agent-base-new/node_modules/.pnpm/axios@1.8.3/node_modules/axios/lib/core/Axios.js:45:41)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  config: {
+    transitional: {
+      silentJSONParsing: true,
+      forcedJSONParsing: true,
+      clarifyTimeoutError: false
+    },
+    adapter: [ 'xhr', 'http', 'fetch' ],
+    transformRequest: [ [Function: transformRequest] ],
+    transformResponse: [ [Function: transformResponse] ],
+    timeout: 0,
+    xsrfCookieName: 'XSRF-TOKEN',
+    xsrfHeaderName: 'X-XSRF-TOKEN',
+    maxContentLength: -1,
+    maxBodyLength: -1,
+    env: { FormData: [Function [FormData]], Blob: [class Blob] },
+    validateStatus: [Function: validateStatus],
+    headers: Object [AxiosHeaders] {
+      Accept: 'application/json, text/plain, */*',
+      'Content-Type': undefined,
+      host: 'localhost:3005',
+      'User-Agent': 'axios/1.8.3',
+      'Accept-Encoding': 'gzip, compress, deflate, br'
+    },
+    method: 'get',
+    url: 'http://localhost:3005/oauth/google/callback?state=http%3A%2F%2Flocalhost%3A3020&code=4%2F0AQSTgQG2Hin-W35s6rpWR103HgGD8cYD4y0P68JuHnw8jCnsm5vNZ4Eee1szy_8sLt4X_A&scope=email+profile+openid+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile&authuser=0&prompt=none',
+    withCredentials: true,
+    maxRedirects: 0,
+    allowAbsoluteUrls: true,
+    data: undefined
+  },
+  request: <ref *1> ClientRequest {
+    _events: [Object: null prototype] {
+      error: [Function: handleRequestError],
+      socket: [Function: handleRequestSocket],
+      finish: [Function: requestOnFinish]
+    },
+    _eventsCount: 3,
+    _maxListeners: undefined,
+    outputData: [],
+    outputSize: 0,
+    writable: true,
+    destroyed: true,
+    _last: true,
+    chunkedEncoding: false,
+    shouldKeepAlive: true,
+    maxRequestsOnConnectionReached: false,
+    _defaultKeepAlive: true,
+    useChunkedEncodingByDefault: false,
+    sendDate: false,
+    _removedConnection: false,
+    _removedContLen: false,
+    _removedTE: false,
+    strictContentLength: false,
+    _contentLength: 0,
+    _hasBody: true,
+    _trailer: '',
+    finished: true,
+    _headerSent: true,
+    _closed: true,
+    _header: 'GET /oauth/google/callback?state=http%3A%2F%2Flocalhost%3A3020&code=4%2F0AQSTgQG2Hin-W35s6rpWR103HgGD8cYD4y0P68JuHnw8jCnsm5vNZ4Eee1szy_8sLt4X_A&scope=email+profile+openid+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile&authuser=0&prompt=none HTTP/1.1\r\n' +
+      'Accept: application/json, text/plain, */*\r\n' +
+      'host: localhost:3005\r\n' +
+      'User-Agent: axios/1.8.3\r\n' +
+      'Accept-Encoding: gzip, compress, deflate, br\r\n' +
+      'Connection: keep-alive\r\n' +
+      '\r\n',
+    _keepAliveTimeout: 0,
+    _onPendingData: [Function: nop],
+    agent: Agent {
+      _events: [Object: null prototype],
+      _eventsCount: 2,
+      _maxListeners: undefined,
+      defaultPort: 80,
+      protocol: 'http:',
+      options: [Object: null prototype],
+      requests: [Object: null prototype] {},
+      sockets: [Object: null prototype] {},
+      freeSockets: [Object: null prototype],
+      keepAliveMsecs: 1000,
+      keepAlive: true,
+      maxSockets: Infinity,
+      maxFreeSockets: 256,
+      scheduling: 'lifo',
+      maxTotalSockets: Infinity,
+      totalSocketCount: 1,
+      [Symbol(shapeMode)]: false,
+      [Symbol(kCapture)]: false
+    },
+    socketPath: undefined,
+    method: 'GET',
+    maxHeaderSize: undefined,
+    insecureHTTPParser: undefined,
+    joinDuplicateHeaders: undefined,
+    path: '/oauth/google/callback?state=http%3A%2F%2Flocalhost%3A3020&code=4%2F0AQSTgQG2Hin-W35s6rpWR103HgGD8cYD4y0P68JuHnw8jCnsm5vNZ4Eee1szy_8sLt4X_A&scope=email+profile+openid+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile&authuser=0&prompt=none',
+    _ended: true,
+    res: IncomingMessage {
+      _events: [Object],
+      _readableState: [ReadableState],
+      _maxListeners: undefined,
+      socket: null,
+      httpVersionMajor: 1,
+      httpVersionMinor: 1,
+      httpVersion: '1.1',
+      complete: true,
+      rawHeaders: [Array],
+      rawTrailers: [],
+      joinDuplicateHeaders: undefined,
+      aborted: false,
+      upgrade: false,
+      url: '',
+      method: null,
+      statusCode: 302,
+      statusMessage: 'Found',
+      client: [Socket],
+      _consuming: false,
+      _dumped: false,
+      req: [Circular *1],
+      _eventsCount: 4,
+      [Symbol(shapeMode)]: true,
+      [Symbol(kCapture)]: false,
+      [Symbol(kHeaders)]: [Object],
+      [Symbol(kHeadersCount)]: 22,
+      [Symbol(kTrailers)]: null,
+      [Symbol(kTrailersCount)]: 0
+    },
+    aborted: false,
+    timeoutCb: null,
+    upgradeOrConnect: false,
+    parser: null,
+    maxHeadersCount: null,
+    reusedSocket: true,
+    host: 'localhost',
+    protocol: 'http:',
+    [Symbol(shapeMode)]: false,
+    [Symbol(kCapture)]: false,
+    [Symbol(kBytesWritten)]: 0,
+    [Symbol(kNeedDrain)]: false,
+    [Symbol(corked)]: 0,
+    [Symbol(kChunkedBuffer)]: [],
+    [Symbol(kChunkedLength)]: 0,
+    [Symbol(kSocket)]: Socket {
+      connecting: false,
+      _hadError: false,
+      _parent: null,
+      _host: 'localhost',
+      _closeAfterHandlingError: false,
+      _events: [Object],
+      _readableState: [ReadableState],
+      _writableState: [WritableState],
+      allowHalfOpen: false,
+      _maxListeners: undefined,
+      _eventsCount: 6,
+      _sockname: null,
+      _pendingData: null,
+      _pendingEncoding: '',
+      server: null,
+      _server: null,
+      timeout: 4000,
+      parser: null,
+      _httpMessage: null,
+      autoSelectFamilyAttemptedAddresses: [Array],
+      [Symbol(async_id_symbol)]: -1,
+      [Symbol(kHandle)]: [TCP],
+      [Symbol(lastWriteQueueSize)]: 0,
+      [Symbol(timeout)]: Timeout {
+        _idleTimeout: 4000,
+        _idlePrev: [TimersList],
+        _idleNext: [TimersList],
+        _idleStart: 39163,
+        _onTimeout: [Function: bound ],
+        _timerArgs: undefined,
+        _repeat: null,
+        _destroyed: false,
+        [Symbol(refed)]: false,
+        [Symbol(kHasPrimitive)]: false,
+        [Symbol(asyncId)]: 231,
+        [Symbol(triggerId)]: 229,
+        [Symbol(kAsyncContextFrame)]: undefined
+      },
+      [Symbol(kBuffer)]: null,
+      [Symbol(kBufferCb)]: null,
+      [Symbol(kBufferGen)]: null,
+      [Symbol(shapeMode)]: true,
+      [Symbol(kCapture)]: false,
+      [Symbol(kSetNoDelay)]: true,
+      [Symbol(kSetKeepAlive)]: true,
+      [Symbol(kSetKeepAliveInitialDelay)]: 1,
+      [Symbol(kBytesRead)]: 0,
+      [Symbol(kBytesWritten)]: 0
+    },
+    [Symbol(kOutHeaders)]: [Object: null prototype] {
+      accept: [Array],
+      host: [Array],
+      'user-agent': [Array],
+      'accept-encoding': [Array]
+    },
+    [Symbol(errored)]: null,
+    [Symbol(kHighWaterMark)]: 65536,
+    [Symbol(kRejectNonStandardBodyWrites)]: false,
+    [Symbol(kUniqueHeaders)]: null
+  },
+  response: {
+    status: 302,
+    statusText: 'Found',
+    headers: Object [AxiosHeaders] {
+      'x-powered-by': 'Express',
+      'access-control-allow-origin': 'http://localhost:3020',
+      vary: 'Origin, Accept',
+      'access-control-allow-credentials': 'true',
+      'set-cookie': [Array],
+      location: 'http://localhost:3020/api/auth/callback?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEwNzI0NTc5Mjg4MTIwODQ2OTQxNiIsImVtYWlsIjoia2V2aW4ubG91cmRAZ21haWwuY29tIiwibmFtZSI6IktldmluIExvdXJkIiwicGljdHVyZSI6Imh0dHBzOi8vbGgzLmdvb2dsZXVzZXJjb250ZW50LmNvbS9hL0FDZzhvY0xUR1lwZHBOU0VraFpTMW14cEVvWnZtN3pHTUptQ2pWRzZwNnhlWmNEYXVmNzItbVFNZGc9czk2LWMiLCJwcm92aWRlciI6Imdvb2dsZSIsImlhdCI6MTc0MjYzMDAyOCwiZXhwIjoxNzQzMjM0ODI4fQ.DMu3Bdqt8JCTxj6axsSK72uoqsx0290sBL2Ef0Mvw4Q',
+      'content-type': 'text/plain; charset=utf-8',
+      'content-length': '483',
+      date: 'Sat, 22 Mar 2025 07:53:48 GMT',
+      connection: 'keep-alive',
+      'keep-alive': 'timeout=5'
+    },
+    config: {
+      transitional: [Object],
+      adapter: [Array],
+      transformRequest: [Array],
+      transformResponse: [Array],
+      timeout: 0,
+      xsrfCookieName: 'XSRF-TOKEN',
+      xsrfHeaderName: 'X-XSRF-TOKEN',
+      maxContentLength: -1,
+      maxBodyLength: -1,
+      env: [Object],
+      validateStatus: [Function: validateStatus],
+      headers: [Object [AxiosHeaders]],
+      method: 'get',
+      url: 'http://localhost:3005/oauth/google/callback?state=http%3A%2F%2Flocalhost%3A3020&code=4%2F0AQSTgQG2Hin-W35s6rpWR103HgGD8cYD4y0P68JuHnw8jCnsm5vNZ4Eee1szy_8sLt4X_A&scope=email+profile+openid+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile&authuser=0&prompt=none',
+      withCredentials: true,
+      maxRedirects: 0,
+      allowAbsoluteUrls: true,
+      data: undefined
+    },
+    request: <ref *1> ClientRequest {
+      _events: [Object: null prototype],
+      _eventsCount: 3,
+      _maxListeners: undefined,
+      outputData: [],
+      outputSize: 0,
+      writable: true,
+      destroyed: true,
+      _last: true,
+      chunkedEncoding: false,
+      shouldKeepAlive: true,
+      maxRequestsOnConnectionReached: false,
+      _defaultKeepAlive: true,
+      useChunkedEncodingByDefault: false,
+      sendDate: false,
+      _removedConnection: false,
+      _removedContLen: false,
+      _removedTE: false,
+      strictContentLength: false,
+      _contentLength: 0,
+      _hasBody: true,
+      _trailer: '',
+      finished: true,
+      _headerSent: true,
+      _closed: true,
+      _header: 'GET /oauth/google/callback?state=http%3A%2F%2Flocalhost%3A3020&code=4%2F0AQSTgQG2Hin-W35s6rpWR103HgGD8cYD4y0P68JuHnw8jCnsm5vNZ4Eee1szy_8sLt4X_A&scope=email+profile+openid+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile&authuser=0&prompt=none HTTP/1.1\r\n' +
+        'Accept: application/json, text/plain, */*\r\n' +
+        'host: localhost:3005\r\n' +
+        'User-Agent: axios/1.8.3\r\n' +
+        'Accept-Encoding: gzip, compress, deflate, br\r\n' +
+        'Connection: keep-alive\r\n' +
+        '\r\n',
+      _keepAliveTimeout: 0,
+      _onPendingData: [Function: nop],
+      agent: [Agent],
+      socketPath: undefined,
+      method: 'GET',
+      maxHeaderSize: undefined,
+      insecureHTTPParser: undefined,
+      joinDuplicateHeaders: undefined,
+      path: '/oauth/google/callback?state=http%3A%2F%2Flocalhost%3A3020&code=4%2F0AQSTgQG2Hin-W35s6rpWR103HgGD8cYD4y0P68JuHnw8jCnsm5vNZ4Eee1szy_8sLt4X_A&scope=email+profile+openid+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile&authuser=0&prompt=none',
+      _ended: true,
+      res: [IncomingMessage],
+      aborted: false,
+      timeoutCb: null,
+      upgradeOrConnect: false,
+      parser: null,
+      maxHeadersCount: null,
+      reusedSocket: true,
+      host: 'localhost',
+      protocol: 'http:',
+      [Symbol(shapeMode)]: false,
+      [Symbol(kCapture)]: false,
+      [Symbol(kBytesWritten)]: 0,
+      [Symbol(kNeedDrain)]: false,
+      [Symbol(corked)]: 0,
+      [Symbol(kChunkedBuffer)]: [],
+      [Symbol(kChunkedLength)]: 0,
+      [Symbol(kSocket)]: [Socket],
+      [Symbol(kOutHeaders)]: [Object: null prototype],
+      [Symbol(errored)]: null,
+      [Symbol(kHighWaterMark)]: 65536,
+      [Symbol(kRejectNonStandardBodyWrites)]: false,
+      [Symbol(kUniqueHeaders)]: null
+    },
+    data: 'Found. Redirecting to http://localhost:3020/api/auth/callback?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEwNzI0NTc5Mjg4MTIwODQ2OTQxNiIsImVtYWlsIjoia2V2aW4ubG91cmRAZ21haWwuY29tIiwibmFtZSI6IktldmluIExvdXJkIiwicGljdHVyZSI6Imh0dHBzOi8vbGgzLmdvb2dsZXVzZXJjb250ZW50LmNvbS9hL0FDZzhvY0xUR1lwZHBOU0VraFpTMW14cEVvWnZtN3pHTUptQ2pWRzZwNnhlWmNEYXVmNzItbVFNZGc9czk2LWMiLCJwcm92aWRlciI6Imdvb2dsZSIsImlhdCI6MTc0MjYzMDAyOCwiZXhwIjoxNzQzMjM0ODI4fQ.DMu3Bdqt8JCTxj6axsSK72uoqsx0290sBL2Ef0Mvw4Q'
+  },
+  status: 302
+}
+[Web Gateway] Handling error redirect (302) to: http://localhost:3020/api/auth/callback?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEwNzI0NTc5Mjg4MTIwODQ2OTQxNiIsImVtYWlsIjoia2V2aW4ubG91cmRAZ21haWwuY29tIiwibmFtZSI6IktldmluIExvdXJkIiwicGljdHVyZSI6Imh0dHBzOi8vbGgzLmdvb2dsZXVzZXJjb250ZW50LmNvbS9hL0FDZzhvY0xUR1lwZHBOU0VraFpTMW14cEVvWnZtN3pHTUptQ2pWRzZwNnhlWmNEYXVmNzItbVFNZGc9czk2LWMiLCJwcm92aWRlciI6Imdvb2dsZSIsImlhdCI6MTc0MjYzMDAyOCwiZXhwIjoxNzQzMjM0ODI4fQ.DMu3Bdqt8JCTxj6axsSK72uoqsx0290sBL2Ef0Mvw4Q
+[Web Gateway] Found Set-Cookie header: object Array with 1 items
+[Web Gateway] Setting cookie[0]: auth-token=eyJhbGciOiJIUzI1NiI...
+[Web Gateway] Response headers after processing: {
+  'x-powered-by': 'Express',
+  vary: 'Origin, Accept',
+  'access-control-allow-credentials': 'true',
+  'ratelimit-policy': '100;w=900',
+  'ratelimit-limit': '100',
+  'ratelimit-remaining': '95',
+  'ratelimit-reset': '867',
+  'access-control-allow-origin': 'http://localhost:3020',
+  'set-cookie': 'auth-token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEwNzI0NTc5Mjg4MTIwODQ2OTQxNiIsImVtYWlsIjoia2V2aW4ubG91cmRAZ21haWwuY29tIiwibmFtZSI6IktldmluIExvdXJkIiwicGljdHVyZSI6Imh0dHBzOi8vbGgzLmdvb2dsZXVzZXJjb250ZW50LmNvbS9hL0FDZzhvY0xUR1lwZHBOU0VraFpTMW14cEVvWnZtN3pHTUptQ2pWRzZwNnhlWmNEYXVmNzItbVFNZGc9czk2LWMiLCJwcm92aWRlciI6Imdvb2dsZSIsImlhdCI6MTc0MjYzMDAyOCwiZXhwIjoxNzQzMjM0ODI4fQ.DMu3Bdqt8JCTxj6axsSK72uoqsx0290sBL2Ef0Mvw4Q; Max-Age=604800; Path=/; Expires=Sat, 29 Mar 2025 07:53:48 GMT; HttpOnly; SameSite=Lax',
+  location: 'http://localhost:3020/api/auth/callback?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEwNzI0NTc5Mjg4MTIwODQ2OTQxNiIsImVtYWlsIjoia2V2aW4ubG91cmRAZ21haWwuY29tIiwibmFtZSI6IktldmluIExvdXJkIiwicGljdHVyZSI6Imh0dHBzOi8vbGgzLmdvb2dsZXVzZXJjb250ZW50LmNvbS9hL0FDZzhvY0xUR1lwZHBOU0VraFpTMW14cEVvWnZtN3pHTUptQ2pWRzZwNnhlWmNEYXVmNzItbVFNZGc9czk2LWMiLCJwcm92aWRlciI6Imdvb2dsZSIsImlhdCI6MTc0MjYzMDAyOCwiZXhwIjoxNzQzMjM0ODI4fQ.DMu3Bdqt8JCTxj6axsSK72uoqsx0290sBL2Ef0Mvw4Q',
+  'content-type': 'text/plain; charset=utf-8',
+  'content-length': '483',
+  date: 'Sat, 22 Mar 2025 07:53:48 GMT',
+  connection: 'keep-alive',
+  'keep-alive': 'timeout=5'
+}
+[Auth Middleware] Validating token with auth service at http://localhost:3005
+[Auth Middleware] Decoded token payload: {"id":"107245792881208469416","email":"kevin.lourd@gmail.com","name":"Kevin Lourd","picture":"https://lh3.googleusercontent.com/a/ACg8ocLTGYpdpNSEkhZS1mxpEoZvm7zGMJmCjVG6p6xeZcDauf72-mQMdg=s96-c","provider":"google","iat":1742630028,"exp":1743234828}
+[Auth Middleware] Decoded from token - userId: 107245792881208469416
+[Auth Middleware] Token validation response: {"success":true,"data":{"id":"107245792881208469416","email":"kevin.lourd@gmail.com","name":"Kevin Lourd","picture":"https://lh3.googleusercontent.com/a/ACg8ocLTGYpdpNSEkhZS1mxpEoZvm7zGMJmCjVG6p6xeZcDauf72-mQMdg=s96-c"}}
+[Auth Middleware] Extracted user ID: 107245792881208469416 from token
+[Auth Middleware] Created user object with ID 107245792881208469416
+[Auth Middleware] Authenticated user 107245792881208469416 for /database/db/users/me
+[Web Gateway] Database request to /db/users/me
+[Web Gateway] Request headers user info: User ID: 107245792881208469416 x-user-id: 107245792881208469416
+[INFO] 14:53:58 Restarting: /Users/kevinlourd/Business/agent-base-new/apps/web-gateway-service/src/middleware/auth-middleware.ts has been modified
+[Auth Middleware] Environment variables:
+NODE_ENV: undefined
+AUTH_SERVICE_URL: undefined
+DB_SERVICE_URL: undefined
+[Auth Middleware] Attempting to load environment from /Users/kevinlourd/Business/agent-base-new/apps/web-gateway-service/.env.local
+[Auth Middleware] Loaded environment variables from /Users/kevinlourd/Business/agent-base-new/apps/web-gateway-service/.env.local
+AUTH_SERVICE_URL after loading: http://localhost:3005
+[Auth Middleware] Using AUTH_SERVICE_URL: http://localhost:3005
+[Auth Middleware] Using JWT_SECRET: (secret masked)
+Loading environment from /Users/kevinlourd/Business/agent-base-new/apps/web-gateway-service/.env.local
+[Web Gateway] Auth middleware applied
+🚪 Web Gateway Service running on port 3030
+Connected to services:
+🔐 Auth Service: http://localhost:3005
+💾 Database Service: http://localhost:3006
+🔑 Keys Service: http://localhost:3003
+🔄 Model Service (via API Gateway): http://localhost:3002
+💳 Payment Service: http://localhost:3007
