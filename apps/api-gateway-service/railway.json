@@ -4,11 +4,7 @@
     "builder": "NIXPACKS",
     "watchPatterns": [
       "**"
-    ],
-    "nixpacks": {
-      "buildCmd": "npm install --no-package-lock && npm run build",
-      "installCmd": "npm install --no-package-lock"
-    }
+    ]
   },
   "deploy": {
     "numReplicas": 1,
