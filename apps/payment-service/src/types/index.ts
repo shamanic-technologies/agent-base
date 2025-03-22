@@ -4,6 +4,26 @@
 import { Request, Response } from 'express';
 import Stripe from 'stripe';
 
+// Define User interface for authentication
+interface UserProfile {
+  id: string;
+  email: string;
+  name: string;
+  picture?: string;
+  provider: string;
+}
+
+// Extend Express Request type to include Passport user
+declare global {
+  namespace Express {
+    interface User extends UserProfile {}
+    
+    interface Request {
+      user?: User;
+    }
+  }
+}
+
 // Express request/response types
 export type ExpressRequest = Request;
 export type ExpressResponse = Response;
