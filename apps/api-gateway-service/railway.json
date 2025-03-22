@@ -3,13 +3,11 @@
   "build": {
     "builder": "NIXPACKS",
     "watchPatterns": [
-      "**",
-      "packages/**",
-      "package.json",
-      "turbo.json"
+      "**"
     ],
     "nixpacks": {
-      "buildCmd": "npm install --no-package-lock && npm run build"
+      "buildCmd": "npm install --no-package-lock && npm run build",
+      "installCmd": "npm install --no-package-lock"
     }
   },
   "deploy": {
@@ -20,7 +18,11 @@
     "restartPolicyType": "ON_FAILURE"
   },
   "variables": {
-    "MODEL_SERVICE_URL": "${MODEL_SERVICE_URL}",
-    "KEY_SERVICE_URL": "${KEY_SERVICE_URL}"
+    "PORT": "8080",
+    "NODE_ENV": "production",
+    "MODEL_SERVICE_URL": "http://model-service.railway.internal:8080",
+    "UTILITY_SERVICE_URL": "http://utility-service.railway.internal:8080",
+    "KEY_SERVICE_URL": "http://key-service.railway.internal:8080",
+    "LOGGING_SERVICE_URL": "http://logging-service.railway.internal:8080"
   }
 } 
