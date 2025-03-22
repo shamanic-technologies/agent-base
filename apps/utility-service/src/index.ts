@@ -49,15 +49,30 @@ app.get('/health', (req: Request, res: Response) => {
 
 // Define a route handler function separate from the app.post call
 const utilityHandler = async (req: Request, res: Response): Promise<void> => {
-  const { operation, input, user_id, conversation_id } = req.body as UtilityRequest;
+  const { operation, input, conversation_id } = req.body as UtilityRequest;
   
-  if (!operation) {
-    res.status(400).json({ error: 'Operation is required' });
+  // Get user information from headers (passed by API Gateway)
+  const userId = req.headers['x-user-id'] as string;
+  const userEmail = req.headers['x-user-email'] as string;
+  const userName = req.headers['x-user-name'] as string;
+  const userProvider = req.headers['x-user-provider'] as string;
+  
+  // Log user context for tracing
+  console.log(`Processing request with user headers:`, {
+    userId,
+    userEmail: userEmail || '(not provided)',
+    userName: userName || '(not provided)',
+    userProvider: userProvider || '(not provided)'
+  });
+  
+  // Strictly require x-user-id header
+  if (!userId) {
+    res.status(400).json({ error: 'User identification is required via x-user-id header' });
     return;
   }
   
-  if (!user_id) {
-    res.status(400).json({ error: 'user_id is required' });
+  if (!operation) {
+    res.status(400).json({ error: 'Operation is required' });
     return;
   }
   
@@ -70,7 +85,7 @@ const utilityHandler = async (req: Request, res: Response): Promise<void> => {
     // Process the utility operation
     const result = await processUtilityOperation(
       operation as UtilityOperation, 
-      user_id,
+      userId,
       conversation_id,
       input
     );
@@ -94,13 +109,15 @@ app.post('/utility', utilityHandler);
 
 // Endpoint to list available utilities
 app.get('/utilities', (req: Request, res: Response) => {
-  // Extract user_id and conversation_id from query parameters
-  const user_id = req.query.user_id as string;
+  // Get user information from headers (passed by API Gateway)
+  const userId = req.headers['x-user-id'] as string;
+  
+  // Get conversation ID from query parameters
   const conversation_id = req.query.conversation_id as string;
   
-  // Ensure user_id and conversation_id are provided
-  if (!user_id) {
-    res.status(400).json({ error: 'user_id is required' });
+  // Strictly require x-user-id header
+  if (!userId) {
+    res.status(400).json({ error: 'User identification is required via x-user-id header' });
     return;
   }
   
@@ -110,7 +127,7 @@ app.get('/utilities', (req: Request, res: Response) => {
   }
   
   // Log user and conversation context
-  console.log(`Listing utilities for user: ${user_id}`);
+  console.log(`Listing utilities for user: ${userId}`);
   console.log(`Conversation context: ${conversation_id}`);
   
   const utilities = [
@@ -143,13 +160,15 @@ app.get('/utilities', (req: Request, res: Response) => {
 app.get('/utility/:id', (req: Request, res: Response) => {
   const { id } = req.params;
   
-  // Extract user_id and conversation_id from query parameters
-  const user_id = req.query.user_id as string;
+  // Get user information from headers (passed by API Gateway)
+  const userId = req.headers['x-user-id'] as string;
+
+  // Get conversation ID from query parameters
   const conversation_id = req.query.conversation_id as string;
   
-  // Ensure user_id and conversation_id are provided
-  if (!user_id) {
-    res.status(400).json({ error: 'user_id is required' });
+  // Strictly require x-user-id header
+  if (!userId) {
+    res.status(400).json({ error: 'User identification is required via x-user-id header' });
     return;
   }
   
@@ -159,7 +178,7 @@ app.get('/utility/:id', (req: Request, res: Response) => {
   }
   
   // Log user and conversation context
-  console.log(`Getting utility info for user: ${user_id}`);
+  console.log(`Getting utility info for user: ${userId}`);
   console.log(`Conversation context: ${conversation_id}`);
   
   // Define utility information

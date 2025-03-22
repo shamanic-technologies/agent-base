@@ -48,10 +48,10 @@ export async function debitUsage(userId: string, amount: number, description: st
       const response = await fetch(debitUrl, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'X-USER-ID': userId // Using standard header format instead of body parameter
         },
         body: JSON.stringify({
-          userId,
           amount,
           description
         })

@@ -56,6 +56,41 @@ const port = process.env.PORT;
 app.use(cors());
 app.use(bodyParser.json());
 
+/**
+ * Authentication middleware
+ * Enforces X-API-KEY header authentication for protected routes
+ * Skips authentication for /health and /log endpoints
+ */
+app.use((req, res, next) => {
+  // Skip authentication for health checks and the log endpoint
+  // /log is used by other services and has its own authentication logic
+  if (req.path === '/health' || req.path === '/log') {
+    return next();
+  }
+  
+  const apiKey = req.headers['x-api-key'] as string;
+  const userId = req.headers['x-user-id'] as string;
+  
+  if (!apiKey) {
+    logger.warn(`Auth Middleware: Missing X-API-KEY header for ${req.path}`);
+    return res.status(401).json({
+      success: false,
+      error: 'Authentication required - X-API-KEY header must be provided'
+    });
+  }
+  
+  if (!userId) {
+    logger.warn(`Auth Middleware: Missing X-USER-ID header for ${req.path}`);
+    return res.status(401).json({
+      success: false,
+      error: 'Authentication required - X-USER-ID header must be provided'
+    });
+  }
+  
+  logger.info(`Auth Middleware: User ${userId} authenticated via X-API-KEY for ${req.path}`);
+  next();
+});
+
 // Mount routes
 app.use('/', routes);
 

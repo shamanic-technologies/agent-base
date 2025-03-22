@@ -324,8 +324,16 @@ function createReactAgentWrapper(config: ReactAgentWrapperConfig): ReactAgentWra
     const processedMessages = preprocessMessagesForClaude(messages);
     
     try {
-      // Execute the agent with optimized config for Claude
-      const result = await graph.invoke(
+      // Set up a timeout for the agent invocation (90 seconds)
+      const timeout = 90000; // 90 seconds
+      
+      // Create a promise that will reject after the timeout
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Agent execution timed out after 90 seconds')), timeout);
+      });
+      
+      // Execute the agent with optimized config for Claude, with timeout
+      const agentPromise = graph.invoke(
         { messages: processedMessages },
         {
           streamMode: 'values',
@@ -345,29 +353,41 @@ function createReactAgentWrapper(config: ReactAgentWrapperConfig): ReactAgentWra
         }
       );
       
+      // Race the agent execution against the timeout
+      const result = await Promise.race([agentPromise, timeoutPromise]) as any;
+      
       // Return the raw result directly without wrapper
       return result;
     } catch (error) {
       // Detailed error handling for invocation
-      console.error("Agent execution error:", error);
+      console.error("[ReAct Agent] Execution error:", error);
       
       // Create a fallback response with error details
       const errorMessage = error instanceof Error ? error.message : String(error);
       let fallbackContent = "I encountered an issue while processing your request.";
+      let errorType = "unknown_error";
       
       // Provide more context for common Claude errors
       if (errorMessage.includes("valid dictionary")) {
         fallbackContent = "I encountered an issue with the tool input format. This is a technical problem that our team is working to resolve.";
+        errorType = "tool_format_error";
+      } else if (errorMessage.includes("timed out")) {
+        fallbackContent = "Your request took too long to process. This might be due to the complexity of the task or temporary system limitations.";
+        errorType = "timeout_error";
+      } else if (errorMessage.includes("rate limit") || errorMessage.includes("quota")) {
+        fallbackContent = "I've hit a rate limit. Please try again in a few moments.";
+        errorType = "rate_limit_error";
+      } else if (errorMessage.includes("Context window exceeded")) {
+        fallbackContent = "The conversation is too long for me to process. Please start a new conversation.";
+        errorType = "context_window_error";
       }
       
       const fallbackResponse = new AIMessage({
         content: fallbackContent
       });
       
-      // Return raw result for error case as well
-      return {
-        messages: [fallbackResponse]
-      };
+      // Throw error with detailed information for upstream handling
+      throw new Error(`Agent execution failed: ${errorType}: ${errorMessage}`);
     }
   }
 
@@ -398,6 +418,7 @@ export async function processWithReActAgent(
       throw new Error("Anthropic API key not found in environment variables");
     }
 
+    console.time(`react_agent_execution_${conversationId}`);
     const nodeId = 'agent_react' as NodeId;
     const nodeType = NodeType.AGENT;
     
@@ -455,10 +476,17 @@ export async function processWithReActAgent(
       userId: userId
     });
     
+    console.timeEnd(`react_agent_execution_${conversationId}`);
+    
     // Return the raw response directly without wrapper
     return response;
   } catch (error) {
-    console.error("Error in ReAct agent:", error);
+    console.error(`[ReAct Agent] Error processing message for conversation ${conversationId}:`, error);
+    
+    // Rethrow with clear error information
+    if (error instanceof Error) {
+      throw new Error(`ReAct agent execution failed: ${error.message}`);
+    }
     throw error;
   }
 }

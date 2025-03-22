@@ -62,8 +62,10 @@ app.get('/health', (req: express.Request, res: express.Response) => {
  * Create a new API key
  * 
  * Request body:
- * - userId: ID of the user
  * - name: Name for the API key
+ * 
+ * Headers:
+ * - x-user-id: ID of the authenticated user (set by web-gateway auth middleware)
  * 
  * Response:
  * - success: boolean
@@ -72,12 +74,21 @@ app.get('/health', (req: express.Request, res: express.Response) => {
  */
 app.post('/keys', async (req: express.Request, res: express.Response) => {
   try {
-    const { userId, name } = req.body;
+    const { name } = req.body;
+    const userId = req.headers['x-user-id'] as string;
 
-    if (!userId || !name) {
+    if (!userId) {
+      console.log('Missing x-user-id header in request to /keys');
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required'
+      });
+    }
+
+    if (!name) {
       return res.status(400).json({
         success: false,
-        error: 'User ID and name are required'
+        error: 'Key name is required'
       });
     }
 
@@ -137,18 +148,30 @@ app.post('/keys', async (req: express.Request, res: express.Response) => {
 app.get('/keys/:id', async (req: express.Request, res: express.Response) => {
   try {
     const { id } = req.params;
+    const userId = req.headers['x-user-id'] as string;
+
+    if (!userId) {
+      console.log('Missing x-user-id header in request to /keys/:id');
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required'
+      });
+    }
     
-    console.log(`Fetching API key with ID: ${id}`);
+    console.log(`Fetching API key with ID: ${id} for user: ${userId}`);
     
-    // Query database for key by ID - use the proper endpoint
+    // Query database for key by ID and make sure it belongs to the authenticated user
     const response = await axios.get(`${DB_SERVICE_URL}/db/api_keys`, {
       params: {
-        query: JSON.stringify({ 'data.id': id })
+        query: JSON.stringify({ 
+          'data.id': id,
+          'data.userId': userId 
+        })
       }
     });
     
     if (!response.data.success || !response.data.data || response.data.data.items.length === 0) {
-      console.log('API key not found in database');
+      console.log('API key not found in database or does not belong to user');
       return res.status(404).json({
         success: false,
         error: 'API key not found'
@@ -181,15 +204,19 @@ app.get('/keys/:id', async (req: express.Request, res: express.Response) => {
 
 /**
  * List all API keys for a user
+ * 
+ * Headers:
+ * - x-user-id: ID of the authenticated user (set by web-gateway auth middleware)
  */
 app.get('/keys', async (req: express.Request, res: express.Response) => {
   try {
-    const { userId } = req.query;
+    const userId = req.headers['x-user-id'] as string;
     
     if (!userId) {
-      return res.status(400).json({
+      console.log('Missing x-user-id header in request to /keys');
+      return res.status(401).json({
         success: false,
-        error: 'User ID is required'
+        error: 'Authentication required'
       });
     }
     
@@ -236,22 +263,37 @@ app.get('/keys', async (req: express.Request, res: express.Response) => {
 
 /**
  * Revoke (deactivate) an API key
+ * 
+ * Headers:
+ * - x-user-id: ID of the authenticated user (set by web-gateway auth middleware)
  */
 app.delete('/keys/:id', async (req: express.Request, res: express.Response) => {
   try {
     const { id } = req.params;
+    const userId = req.headers['x-user-id'] as string;
+
+    if (!userId) {
+      console.log('Missing x-user-id header in request to /keys/:id DELETE');
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required'
+      });
+    }
     
-    console.log(`Revoking API key with ID: ${id}`);
+    console.log(`Revoking API key with ID: ${id} for user: ${userId}`);
     
-    // Find the key
+    // Find the key and ensure it belongs to the authenticated user
     const response = await axios.get(`${DB_SERVICE_URL}/db/api_keys`, {
       params: {
-        query: JSON.stringify({ 'data.id': id })
+        query: JSON.stringify({ 
+          'data.id': id,
+          'data.userId': userId
+        })
       }
     });
     
     if (!response.data.success || !response.data.data.items.length) {
-      console.log('API key not found for revocation');
+      console.log('API key not found for revocation or does not belong to user');
       return res.status(404).json({
         success: false,
         error: 'API key not found'

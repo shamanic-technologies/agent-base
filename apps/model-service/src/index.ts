@@ -29,6 +29,7 @@ import express from 'express';
 import cors from 'cors';
 import { processWithReActAgent, streamWithReActAgent } from './lib/react-agent.js';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
+import { User } from './types/index.js';
 
 // Middleware setup
 const app = express();
@@ -37,6 +38,33 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+/**
+ * Authentication middleware - extracts user from x-user-* headers
+ * These headers are set by the API Gateway from the validated API key
+ */
+app.use((req, res, next) => {
+  try {
+    // Get user ID from header set by API gateway middleware
+    const userId = req.headers['x-user-id'] as string;
+    
+    if (userId) {
+      // Set user object on request for route handlers
+      req.user = {
+        id: userId,
+        email: req.headers['x-user-email'] as string,
+        name: req.headers['x-user-name'] as string,
+        provider: req.headers['x-user-provider'] as string
+      };
+      console.log(`[Auth Middleware] User ID set from header: ${userId}`);
+    }
+    
+    next();
+  } catch (error) {
+    console.error('[Auth Middleware] Error processing request:', error);
+    next();
+  }
+});
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -49,16 +77,20 @@ app.get('/health', (req, res) => {
 
 // LLM generation endpoint using ReAct agent
 app.post('/generate', async (req, res) => {
-  const { prompt: message, user_id, conversation_id } = req.body;
-  // Extract the API key from headers
-  const authHeader = req.headers['authorization'] as string;
+  const { prompt: message, conversation_id } = req.body;
+  
+  // Extract user ID from req.user (set by auth middleware)
+  const userId = req.user?.id;
+  
+  // Get API key from x-api-key header (if present)
+  const apiKey = req.headers['x-api-key'] as string;
   
   if (!message) {
     return res.status(400).json({ error: '[Model Service] Message is required' });
   }
   
-  if (!user_id) {
-    return res.status(400).json({ error: '[Model Service] user_id is required' });
+  if (!userId) {
+    return res.status(400).json({ error: '[Model Service] User authentication required' });
   }
 
   if (!conversation_id) {
@@ -68,52 +100,67 @@ app.post('/generate', async (req, res) => {
   try {
     // Check if we have an API key configured
     if (!process.env.ANTHROPIC_API_KEY) {
-      // Fallback to simplified response if no API key
+      console.error('[Model Service] Missing ANTHROPIC_API_KEY environment variable');
       throw new Error('Anthropic API key not found in environment variables');
-    }
-    
-    // Extract API key from Authorization header if it exists
-    let apiKey = null;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      apiKey = authHeader.substring(7);
     }
     
     // Create a HumanMessage for the message
     const humanMessage = new HumanMessage(message);
     
-    // Process the prompt with our ReAct agent, passing along the API key
-    console.log(`Received prompt: "${message}" from user: ${user_id}, conversation: ${conversation_id}`);
-    const response = await processWithReActAgent(message, user_id, conversation_id, apiKey);
+    // Process the prompt with our ReAct agent, passing along the API key for utilities
+    console.log(`[Model Service] Received prompt: "${message.substring(0, 100)}..." from user: ${userId}, conversation: ${conversation_id}`);
+    const response = await processWithReActAgent(humanMessage, userId, conversation_id, apiKey);
     
     // Return the raw agent response without additional formatting
     res.status(200).json(response);
   } catch (error) {
-    console.error('Error processing message with ReAct agent:', error);
+    console.error('[Model Service] Error processing message with ReAct agent:', error);
+    
+    let statusCode = 500;
+    let errorMessage = 'Failed to process message';
+    let errorDetails = error instanceof Error ? error.message : 'Unknown error';
+    
+    // Check for specific error types to provide better error messages
+    if (errorDetails.includes('rate limit') || errorDetails.includes('quota')) {
+      statusCode = 429;
+      errorMessage = 'Rate limit exceeded';
+    } else if (errorDetails.includes('authenticate') || errorDetails.includes('unauthorized') || errorDetails.includes('forbidden')) {
+      statusCode = 403;
+      errorMessage = 'API authentication error';
+    } else if (errorDetails.includes('timeout') || errorDetails.includes('timed out')) {
+      statusCode = 504;
+      errorMessage = 'Request timed out';
+    }
     
     // Provide a helpful error message
-    res.status(500).json({ 
-      error: 'Failed to process message',
-      details: error instanceof Error ? error.message : 'Unknown error'
+    res.status(statusCode).json({ 
+      error: `[Model Service] ${errorMessage}`,
+      details: errorDetails,
+      conversation_id
     });
   }
 });
 
 // Streaming LLM generation endpoint using ReAct agent
 app.post('/generate/stream', async (req, res) => {
-  const { prompt: message, user_id, stream_modes, conversation_id } = req.body;
-  // Extract the API key from the Authorization header
-  const authHeader = req.headers['authorization'] as string;
+  const { prompt: message, stream_modes, conversation_id } = req.body;
+  
+  // Extract user ID from req.user (set by auth middleware)
+  const userId = req.user?.id;
+  
+  // Get API key from x-api-key header (if present)
+  const apiKey = req.headers['x-api-key'] as string;
   
   if (!message) {
-    return res.status(400).json({ error: 'Message is required' });
+    return res.status(400).json({ error: '[Model Service] Message is required' });
   }
   
-  if (!user_id) {
-    return res.status(400).json({ error: 'user_id is required' });
+  if (!userId) {
+    return res.status(400).json({ error: '[Model Service] User authentication required' });
   }
 
   if (!conversation_id) {
-    return res.status(400).json({ error: 'conversation_id is required' });
+    return res.status(400).json({ error: '[Model Service] conversation_id is required' });
   }
   
   // Set headers for SSE
@@ -126,23 +173,16 @@ app.post('/generate/stream', async (req, res) => {
     if (!process.env.ANTHROPIC_API_KEY) {
       // Fallback to simplified response if no API key
       throw new Error('Anthropic API key not found in environment variables');
-      // Return a simplified response as fallback in SSE format
-    }
-    
-    // Extract API key from Authorization header if it exists
-    let apiKey = null;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      apiKey = authHeader.substring(7);
     }
     
     // Create a HumanMessage for the message
     const humanMessage = new HumanMessage(message);
     
     // Process the prompt with our streaming ReAct agent
-    console.log(`Streaming message: "${message}" with modes: ${stream_modes.join(', ')}, conversation: ${conversation_id}`);
+    console.log(`[Model Service] Streaming message: "${message}" with modes: ${stream_modes.join(', ')}, conversation: ${conversation_id}`);
     
     // Get the streaming generator with API key
-    const stream = await streamWithReActAgent(message, stream_modes, user_id, conversation_id, apiKey);
+    const stream = await streamWithReActAgent(humanMessage, stream_modes, userId, conversation_id, apiKey);
     
     // Stream each raw chunk directly to the client without any additional processing
     for await (const chunk of stream) {
@@ -154,7 +194,7 @@ app.post('/generate/stream', async (req, res) => {
     res.write(`data: [DONE]\n\n`);
     res.end();
   } catch (error) {
-    console.error('Error streaming message with ReAct agent:', error);
+    console.error('[Model Service] Error streaming message with ReAct agent:', error);
     
     // Provide a helpful error message in SSE format
     res.write(`data: ${JSON.stringify({

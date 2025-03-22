@@ -43,186 +43,230 @@ app.use(express.json());
 // Apply logging middleware to all routes that should be logged
 app.use(apiLoggerMiddleware);
 
+// Define interface for user information
+interface User {
+  id: string; // User ID is required
+  email?: string;
+  name?: string;
+  provider?: string;
+}
+
+// Extend Express Request type to include user
+declare global {
+  namespace Express {
+    interface Request {
+      user?: User;
+      apiKey?: string; // Added to store the extracted API key
+    }
+  }
+}
+
 /**
  * Validates an API key with the key service
- * Returns the validation result and user ID if valid
- * Throws an error if user ID is missing
+ * Returns the validation result and user information if valid
  */
-const validateApiKey = async (apiKey: string): Promise<{valid: boolean, userId: string}> => {
+const validateApiKey = async (apiKey: string): Promise<{valid: boolean, user?: User}> => {
   try {
+    console.log(`[Auth Middleware] Validating API key with Key Service`);
     const response = await axios.post(`${KEY_SERVICE_URL}/keys/validate`, { apiKey });
     
-    if (response.data.success && response.data.data.userId) {
+    if (response.data.success && response.data.data?.userId) {
+      console.log(`[Auth Middleware] API key valid for user ${response.data.data.userId}`);
+      
+      // Create user object from validation response
+      const user: User = {
+        id: response.data.data.userId,
+        email: response.data.data.email || 'unknown@example.com',
+        name: response.data.data.name || 'API User',
+        provider: 'api-key'
+      };
+      
       return {
         valid: true,
-        userId: response.data.data.userId
+        user
       };
     }
     
-    if (response.data.success && !response.data.data.userId) {
-      throw new Error('API Gateway Service: Missing userId in validation response');
-    }
-    
-    return { valid: false, userId: '' }; // Will never use the userId if not valid
+    console.log(`[Auth Middleware] API key validation failed or missing userId`);
+    return { valid: false };
   } catch (error) {
-    console.error('API Gateway Service: Error validating API key:', error);
+    console.error('[Auth Middleware] Error validating API key:', error);
     throw error; // Re-throw to be handled by caller
   }
 };
 
 /**
- * Forwards a request to a service
- * Enriches the request body with user_id and passes API key via headers
- * Handles error responses and formatting
+ * Authentication middleware that validates API keys and populates req.user
+ * Also adds user headers for downstream services
  */
-const forwardRequest = async (
-  serviceUrl: string, 
-  endpoint: string, 
-  requestData: any, 
-  userId: string,
-  authHeader: string
-): Promise<{status: number, data: any}> => {
+const authMiddleware = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
   try {
-    // Determine if we're dealing with query params or body data
-    const isQueryParams = typeof requestData === 'object' && 'user_id' in requestData;
+    // Extract API key from X-API-KEY header only
+    const apiKey = req.headers['x-api-key'] as string;
     
-    // Create headers with Bearer token
-    const headers = {
-      'Content-Type': 'application/json',
-      'Authorization': authHeader
-    };
-    
-    // Handle different HTTP methods appropriately
-    let response;
-    
-    if (endpoint.startsWith('/utilities') && isQueryParams) {
-      // For GET requests to /utilities endpoint
-      response = await axios.get(`${serviceUrl}${endpoint}`, {
-        params: {
-          ...requestData,
-          user_id: userId // Always include user_id in the params
-        },
-        headers
-      });
-    } else {
-      // For POST and other requests
-      // Create an enriched request body with the user ID
-      const enrichedRequestData = {
-        ...requestData,
-        user_id: userId  // Always include user_id in the forwarded request
-      };
-      
-      console.log(`Forwarding request to ${serviceUrl}${endpoint} for user ID: ${userId}`);
-      
-      // Forward the enriched request to the service
-      response = await axios.post(`${serviceUrl}${endpoint}`, enrichedRequestData, { headers });
-    }
-    
-    // Add user ID tracking info (in case it's not already included in response)
-    if (response.data && typeof response.data === 'object') {
-      response.data.user_id = userId;
-    }
-    
-    return { status: 200, data: response.data };
-  } catch (error) {
-    console.error(`Error forwarding request to ${serviceUrl}${endpoint}:`, error);
-    
-    // Check if it's a connection error
-    if (axios.isAxiosError(error) && !error.response) {
-      return { 
-        status: 502, 
-        data: { 
-          success: false,
-          error: `API Gateway Service: Could not connect to service at ${serviceUrl}`,
-          user_id: userId  // Include user_id even in error responses
-        }
-      };
-    }
-    
-    // Forward the status code from the service
-    const status = axios.isAxiosError(error) ? error.response?.status || 500 : 500;
-    
-    return { 
-      status, 
-      data: { 
+    // Check for deprecated Authorization header usage
+    if (req.headers['authorization']) {
+      console.error(`[Auth Middleware] Client using deprecated Authorization header for ${req.path}`);
+      return res.status(401).json({
         success: false,
-        error: `API Gateway Service: Error communicating with service`,
-        details: axios.isAxiosError(error) 
-          ? error.response?.data || error.message 
-          : error instanceof Error ? error.message : 'Unknown error',
-        user_id: userId  // Include user_id even in error responses
-      }
-    };
+        error: 'API Gateway Service: Authorization header is not supported. Please use the X-API-KEY header instead.'
+      });
+    }
+    
+    if (!apiKey) {
+      console.log(`[Auth Middleware] No API key provided for ${req.path}`);
+      return res.status(401).json({
+        success: false,
+        error: 'API Gateway Service: API key is required. Please use the X-API-KEY header.'
+      });
+    }
+    
+    // Store the API key in the request for downstream handlers
+    req.apiKey = apiKey;
+    
+    // Validate the API key and get user information
+    const validation = await validateApiKey(apiKey);
+    
+    if (!validation.valid || !validation.user) {
+      console.log(`[Auth Middleware] Invalid API key for ${req.path}`);
+      return res.status(401).json({
+        success: false,
+        error: 'API Gateway Service: Invalid API key'
+      });
+    }
+    
+    // Set user object on request
+    req.user = validation.user;
+    
+    // Add user headers for downstream services
+    req.headers['x-user-id'] = validation.user.id;
+    if (validation.user.email) req.headers['x-user-email'] = validation.user.email;
+    if (validation.user.name) req.headers['x-user-name'] = validation.user.name;
+    if (validation.user.provider) req.headers['x-user-provider'] = validation.user.provider;
+    
+    console.log(`[Auth Middleware] Authenticated user ${validation.user.id} for ${req.path}`);
+    next();
+  } catch (error) {
+    console.error(`[Auth Middleware] Error processing API key:`, error);
+    return res.status(500).json({
+      success: false,
+      error: 'API Gateway Service: Authentication error',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 };
 
 /**
- * Creates a request handler with common validations and forwarding logic
+ * Forwards a request to a service
+ * Passes user information via headers instead of in the request body
  */
-const createRequestHandler = (
-  serviceUrl: string,
-  endpoint: string,
-  requireConversationId: boolean = true
-) => {
-  return async (req: express.Request, res: express.Response) => {
-    // Extract API key from Authorization header
-    const authHeader = req.headers['authorization'] as string;
-    const { conversation_id } = req.body;
-    
-    // Check if Authorization header is provided
-    if (!authHeader) {
-      return res.status(401).json({
-        success: false,
-        error: 'API Gateway Service: Authorization header is required'
-      });
-    }
-    
-    // Extract token from Bearer format
-    const apiKey = authHeader.startsWith('Bearer ') 
-      ? authHeader.substring(7) 
-      : authHeader;
-    
-    // Check if conversation_id is provided if required
-    if (requireConversationId && !conversation_id) {
-      return res.status(400).json({
-        success: false,
-        error: 'API Gateway Service: conversation_id is required'
-      });
-    }
-    
-    try {
-      // Validate the API key
-      const validation = await validateApiKey(apiKey);
-      
-      if (!validation.valid) {
-        return res.status(401).json({
-          success: false,
-          error: 'API Gateway Service: Invalid API key'
-        });
-      }
-
-      // Set userId in the request object for the logging middleware
-      (req as any).userId = validation.userId;
-
-      // Forward the request to the service
-      const result = await forwardRequest(
-        serviceUrl,
-        endpoint,
-        req.body,
-        validation.userId,
-        authHeader // Pass the full Authorization header to downstream services
-      );
-      
-      res.status(result.status).json(result.data);
-    } catch (error) {
-      console.error('Error in request handler:', error);
-      res.status(500).json({
-        success: false,
-        error: 'API Gateway Service: Server error',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      });
-    }
+const forwardRequest = async (req: express.Request, res: express.Response, serviceUrl: string) => {
+  // Build target URL by joining service URL with the request path
+  const targetUrl = `${serviceUrl}${req.path}`;
+  
+  // Create the request configuration
+  const headers = {
+    'Content-Type': 'application/json',
+    // Propagate user ID to downstream services if available
+    ...(req.user && { 'x-user-id': req.user.id }),
+    // Include the original API key if available (for chained service calls)
+    ...(req.headers['x-api-key'] && { 'x-api-key': req.headers['x-api-key'] as string })
   };
+  
+  try {
+    console.log(`Forwarding ${req.method} request to: ${targetUrl}`);
+    
+    let response;
+    
+    // Use explicit method calls based on the request method
+    switch (req.method) {
+      case 'POST':
+        console.log(`Making POST request to ${targetUrl} with body:`, JSON.stringify(req.body).substring(0, 200));
+        response = await axios.post(targetUrl, req.body, { 
+          headers,
+          timeout: 120000 // 2 minutes
+        });
+        break;
+        
+      case 'GET':
+        console.log(`Making GET request to ${targetUrl}`);
+        response = await axios.get(targetUrl, { 
+          headers,
+          params: req.query,
+          timeout: 120000 // 2 minutes
+        });
+        break;
+        
+      case 'PUT':
+        response = await axios.put(targetUrl, req.body, { 
+          headers,
+          timeout: 120000 // 2 minutes
+        });
+        break;
+        
+      case 'DELETE':
+        response = await axios.delete(targetUrl, { 
+          headers,
+          timeout: 120000 // 2 minutes
+        });
+        break;
+        
+      default:
+        // Fallback to the generic method for other HTTP methods
+        response = await axios({
+          method: req.method,
+          url: targetUrl,
+          headers,
+          data: req.body,
+          timeout: 120000 // 2 minutes
+        });
+    }
+    
+    // Return the service response
+    return res.status(response.status).json(response.data);
+  } catch (error) {
+    console.error(`Error forwarding request to ${targetUrl}:`, error);
+    
+    let statusCode = 500;
+    let errorMessage = 'API Gateway Service: Error communicating with service';
+    let errorDetails = 'Unknown error';
+    
+    // Handle Axios errors with specialized error handling
+    if (axios.isAxiosError(error)) {
+      if (!error.response) {
+        // Connection error (no response received)
+        console.error(`API Gateway connection error to ${serviceUrl}: ${error.message}`);
+        statusCode = 502; // Bad Gateway
+        errorMessage = `API Gateway Service: Could not connect to ${serviceUrl.split('/').slice(-1)[0] || 'service'}`;
+        errorDetails = error.message;
+      } else {
+        // Service returned an error response
+        console.error(`Service error response from ${serviceUrl}: ${error.response.status} ${JSON.stringify(error.response.data)}`);
+        statusCode = error.response.status;
+        errorMessage = error.response.data?.error || errorMessage;
+        errorDetails = error.response.data?.details || error.message;
+      }
+    } else if (error instanceof Error) {
+      // General JavaScript errors
+      errorDetails = error.message;
+      
+      // Handle timeout errors specifically
+      if (error.message.includes('timeout')) {
+        statusCode = 504; // Gateway Timeout
+        errorMessage = 'API Gateway Service: Request timed out';
+        errorDetails = `Request to ${serviceUrl.split('/').slice(-1)[0] || 'service'} timed out after 120 seconds`;
+      }
+    }
+    
+    // Return structured error response
+    return res.status(statusCode).json({
+      status: statusCode,
+      success: false,
+      error: errorMessage,
+      details: errorDetails,
+      userId: req.user?.id || null
+    });
+  }
 };
 
 /**
@@ -243,59 +287,166 @@ app.get('/health', (req: express.Request, res: express.Response) => {
 /**
  * Generate endpoint
  * Validates API key and forwards request to model service
- * Requires both API key and conversation_id
+ * Requires API key and conversation_id
  */
-app.post('/generate', createRequestHandler(MODEL_SERVICE_URL, '/generate'));
+app.post('/generate', authMiddleware, async (req: express.Request, res: express.Response) => {
+  const { conversation_id } = req.body;
+  
+  // Check if conversation_id is provided
+  if (!conversation_id) {
+    return res.status(400).json({
+      success: false,
+      error: 'API Gateway Service: conversation_id is required'
+    });
+  }
+  
+  try {
+    // The /generate endpoint needs special handling - forward directly to MODEL_SERVICE_URL/generate
+    // This ensures we're explicitly doing a POST to /generate on the Model Service
+    const targetUrl = `${MODEL_SERVICE_URL}/generate`;
+    
+    console.log(`Making POST request to model service: ${targetUrl} with body:`, 
+      JSON.stringify(req.body).substring(0, 200));
+    
+    const headers = {
+      'Content-Type': 'application/json',
+      // Propagate user ID to downstream services if available
+      ...(req.user && { 'x-user-id': req.user.id }),
+      // Include the original API key if available (for chained service calls)
+      ...(req.headers['x-api-key'] && { 'x-api-key': req.headers['x-api-key'] as string })
+    };
+    
+    const response = await axios.post(targetUrl, req.body, { 
+      headers,
+      timeout: 120000 // 2 minutes
+    });
+    
+    // Return the service response
+    return res.status(response.status).json(response.data);
+  } catch (error) {
+    console.error('Error in generate endpoint:', error);
+    
+    let statusCode = 500;
+    let errorMessage = 'API Gateway Service: Error communicating with model service';
+    let errorDetails = 'Unknown error';
+    
+    // Handle Axios errors with specialized error handling
+    if (axios.isAxiosError(error)) {
+      if (!error.response) {
+        // Connection error (no response received)
+        console.error(`API Gateway connection error to ${MODEL_SERVICE_URL}: ${error.message}`);
+        statusCode = 502; // Bad Gateway
+        errorMessage = `API Gateway Service: Could not connect to model service`;
+        errorDetails = error.message;
+      } else {
+        // Service returned an error response
+        console.error(`Model service error response: ${error.response.status} ${JSON.stringify(error.response.data)}`);
+        statusCode = error.response.status;
+        errorMessage = error.response.data?.error || errorMessage;
+        errorDetails = error.response.data?.details || error.message;
+      }
+    } else if (error instanceof Error) {
+      // General JavaScript errors
+      errorDetails = error.message;
+    }
+    
+    res.status(statusCode).json({
+      success: false,
+      error: errorMessage,
+      details: errorDetails,
+      userId: req.user?.id || null
+    });
+  }
+});
 
 /**
  * Utility service endpoints
  * All endpoints require API key validation
  */
-// Forward all utility endpoints with the common pattern /utility/* to the utility service
-app.post('/utility/*', async (req: express.Request, res: express.Response) => {
-  // Extract API key from Authorization header
-  const authHeader = req.headers['authorization'] as string;
-  
-  // Check if Authorization header is provided
-  if (!authHeader) {
-    return res.status(401).json({
-      success: false,
-      error: 'API Gateway Service: Authorization header is required'
-    });
-  }
-  
-  // Extract token from Bearer format
-  const apiKey = authHeader.startsWith('Bearer ') 
-    ? authHeader.substring(7) 
-    : authHeader;
-  
+app.use('/utility', authMiddleware);
+
+/**
+ * Forward POST request to utility service
+ * Specific route for executing utilities must come before catch-all route
+ */
+app.post('/utility/utility', async (req: express.Request, res: express.Response) => {
   try {
-    // Validate the API key
-    const validation = await validateApiKey(apiKey);
+    // Special case for executing utilities
+    const targetUrl = `${UTILITY_SERVICE_URL}/utility`;
     
-    if (!validation.valid) {
-      return res.status(401).json({
-        success: false,
-        error: 'API Gateway Service: Invalid API key'
-      });
+    console.log(`Making POST request to utility service: ${targetUrl}`);
+    console.log(`Request body: ${JSON.stringify(req.body).substring(0, 200)}`);
+    console.log(`Request headers: x-user-id: ${req.user?.id || 'not set'}`);
+    
+    const headers = {
+      'Content-Type': 'application/json',
+      // Propagate user ID to downstream services if available
+      ...(req.user && { 'x-user-id': req.user.id })
+    };
+    
+    console.log(`Headers being sent: ${JSON.stringify(headers)}`);
+    
+    const response = await axios.post(targetUrl, req.body, { 
+      headers,
+      timeout: 120000 // 2 minutes
+    });
+    
+    // Return the service response
+    return res.status(response.status).json(response.data);
+  } catch (error) {
+    console.error('Error executing utility:', error);
+    
+    if (axios.isAxiosError(error)) {
+      console.error(`Response status: ${error.response?.status || 'No response'}`);
+      console.error(`Response data: ${JSON.stringify(error.response?.data || 'No data')}`);
+      console.error(`Request URL: ${error.config?.url || 'No URL'}`);
+      console.error(`Request method: ${error.config?.method || 'No method'}`);
+      console.error(`Request headers: ${JSON.stringify(error.config?.headers || 'No headers')}`);
+      console.error(`Request data: ${JSON.stringify(error.config?.data || 'No data')}`);
     }
     
-    // Set userId in the request object for the logging middleware
-    (req as any).userId = validation.userId;
+    let statusCode = 500;
+    let errorMessage = 'API Gateway Service: Error communicating with utility service';
+    let errorDetails = 'Unknown error';
     
+    // Handle Axios errors with specialized error handling
+    if (axios.isAxiosError(error)) {
+      if (!error.response) {
+        // Connection error (no response received)
+        console.error(`API Gateway connection error to ${UTILITY_SERVICE_URL}: ${error.message}`);
+        statusCode = 502; // Bad Gateway
+        errorMessage = `API Gateway Service: Could not connect to utility service`;
+        errorDetails = error.message;
+      } else {
+        // Service returned an error response
+        console.error(`Utility service error response: ${error.response.status} ${JSON.stringify(error.response.data)}`);
+        statusCode = error.response.status;
+        errorMessage = error.response.data?.error || errorMessage;
+        errorDetails = error.response.data?.details || error.message;
+      }
+    } else if (error instanceof Error) {
+      // General JavaScript errors
+      errorDetails = error.message;
+    }
+    
+    return res.status(statusCode).json({
+      status: statusCode,
+      success: false,
+      error: errorMessage,
+      details: errorDetails,
+      userId: req.user?.id || null
+    });
+  }
+});
+
+// Forward POST requests to utility service for other paths
+app.post('/utility/*', async (req: express.Request, res: express.Response) => {
+  try {
     // Extract the path after /utility to forward to the utility service
     const utilityPath = req.path.replace('/utility', '');
     
     // Forward the request to the utility service
-    const result = await forwardRequest(
-      UTILITY_SERVICE_URL,
-      utilityPath,
-      req.body,
-      validation.userId,
-      authHeader // Pass the full Authorization header
-    );
-    
-    res.status(result.status).json(result.data);
+    await forwardRequest(req, res, UTILITY_SERVICE_URL);
   } catch (error) {
     console.error('Error in utility endpoint:', error);
     res.status(500).json({
@@ -306,51 +457,137 @@ app.post('/utility/*', async (req: express.Request, res: express.Response) => {
   }
 });
 
-// Add a GET handler for utility endpoints
-app.get('/utility/*', async (req: express.Request, res: express.Response) => {
-  // Extract API key from Authorization header
-  const authHeader = req.headers['authorization'] as string;
-  
-  // Check if Authorization header is provided
-  if (!authHeader) {
-    return res.status(401).json({
-      success: false,
-      error: 'API Gateway Service: Authorization header is required'
-    });
-  }
-  
-  // Extract token from Bearer format
-  const apiKey = authHeader.startsWith('Bearer ') 
-    ? authHeader.substring(7) 
-    : authHeader;
-  
+// Forward GET requests to utility service
+app.get('/utility/utilities', async (req: express.Request, res: express.Response) => {
   try {
-    // Validate the API key
-    const validation = await validateApiKey(apiKey);
+    // Special case for /utilities endpoint, we need to forward to /utilities on the Utility Service
+    const targetUrl = `${UTILITY_SERVICE_URL}/utilities`;
     
-    if (!validation.valid) {
-      return res.status(401).json({
-        success: false,
-        error: 'API Gateway Service: Invalid API key'
-      });
+    console.log(`Making GET request to utility service: ${targetUrl}`);
+    
+    const headers = {
+      'Content-Type': 'application/json',
+      // Propagate user ID to downstream services if available
+      ...(req.user && { 'x-user-id': req.user.id }),
+      // Include the original API key if available (for chained service calls)
+      ...(req.headers['x-api-key'] && { 'x-api-key': req.headers['x-api-key'] as string })
+    };
+    
+    const response = await axios.get(targetUrl, { 
+      headers,
+      params: req.query,
+      timeout: 120000 // 2 minutes
+    });
+    
+    // Return the service response
+    return res.status(response.status).json(response.data);
+  } catch (error) {
+    console.error('Error processing utility request:', error);
+    
+    let statusCode = 500;
+    let errorMessage = 'API Gateway Service: Error communicating with utility service';
+    let errorDetails = 'Unknown error';
+    
+    // Handle Axios errors with specialized error handling
+    if (axios.isAxiosError(error)) {
+      if (!error.response) {
+        // Connection error (no response received)
+        console.error(`API Gateway connection error to ${UTILITY_SERVICE_URL}: ${error.message}`);
+        statusCode = 502; // Bad Gateway
+        errorMessage = `API Gateway Service: Could not connect to utility service`;
+        errorDetails = error.message;
+      } else {
+        // Service returned an error response
+        console.error(`Utility service error response: ${error.response.status} ${JSON.stringify(error.response.data)}`);
+        statusCode = error.response.status;
+        errorMessage = error.response.data?.error || errorMessage;
+        errorDetails = error.response.data?.details || error.message;
+      }
+    } else if (error instanceof Error) {
+      // General JavaScript errors
+      errorDetails = error.message;
     }
     
-    // Set userId in the request object for the logging middleware
-    (req as any).userId = validation.userId;
+    return res.status(statusCode).json({
+      status: statusCode,
+      success: false,
+      error: errorMessage,
+      details: errorDetails,
+      userId: req.user?.id || null
+    });
+  }
+});
+
+// Forward GET requests for specific utility info
+app.get('/utility/utility/:id', async (req: express.Request, res: express.Response) => {
+  try {
+    // Special case for getting utility info
+    const utilityId = req.params.id;
+    const targetUrl = `${UTILITY_SERVICE_URL}/utility/${utilityId}`;
     
+    console.log(`Making GET request to utility service: ${targetUrl}`);
+    
+    const headers = {
+      'Content-Type': 'application/json',
+      // Propagate user ID to downstream services if available
+      ...(req.user && { 'x-user-id': req.user.id }),
+      // Include the original API key if available (for chained service calls)
+      ...(req.headers['x-api-key'] && { 'x-api-key': req.headers['x-api-key'] as string })
+    };
+    
+    const response = await axios.get(targetUrl, { 
+      headers,
+      params: req.query,
+      timeout: 120000 // 2 minutes
+    });
+    
+    // Return the service response
+    return res.status(response.status).json(response.data);
+  } catch (error) {
+    console.error('Error processing utility info request:', error);
+    
+    let statusCode = 500;
+    let errorMessage = 'API Gateway Service: Error communicating with utility service';
+    let errorDetails = 'Unknown error';
+    
+    // Handle Axios errors with specialized error handling
+    if (axios.isAxiosError(error)) {
+      if (!error.response) {
+        // Connection error (no response received)
+        console.error(`API Gateway connection error to ${UTILITY_SERVICE_URL}: ${error.message}`);
+        statusCode = 502; // Bad Gateway
+        errorMessage = `API Gateway Service: Could not connect to utility service`;
+        errorDetails = error.message;
+      } else {
+        // Service returned an error response
+        console.error(`Utility service error response: ${error.response.status} ${JSON.stringify(error.response.data)}`);
+        statusCode = error.response.status;
+        errorMessage = error.response.data?.error || errorMessage;
+        errorDetails = error.response.data?.details || error.message;
+      }
+    } else if (error instanceof Error) {
+      // General JavaScript errors
+      errorDetails = error.message;
+    }
+    
+    return res.status(statusCode).json({
+      status: statusCode,
+      success: false,
+      error: errorMessage,
+      details: errorDetails,
+      userId: req.user?.id || null
+    });
+  }
+});
+
+// Forward GET requests for other utility paths
+app.get('/utility/*', async (req: express.Request, res: express.Response) => {
+  try {
     // Extract the path after /utility to forward to the utility service
     const utilityPath = req.path.replace('/utility', '');
     
     // Forward the request to the utility service
-    const result = await forwardRequest(
-      UTILITY_SERVICE_URL,
-      utilityPath,
-      req.query, // For GET requests, forward query parameters
-      validation.userId,
-      authHeader // Pass the full Authorization header
-    );
-    
-    return res.status(result.status).json(result.data);
+    await forwardRequest(req, res, UTILITY_SERVICE_URL);
   } catch (error) {
     console.error('Error processing utility request:', error);
     return res.status(500).json({
@@ -366,4 +603,4 @@ app.listen(PORT, () => {
   console.log(`🔄 Forwarding model requests to ${MODEL_SERVICE_URL}`);
   console.log(`🔄 Forwarding utility requests to ${UTILITY_SERVICE_URL}`);
   console.log(`🔑 Using Key Service at ${KEY_SERVICE_URL}`);
-}); 
+});

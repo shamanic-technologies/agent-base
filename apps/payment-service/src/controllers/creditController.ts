@@ -8,15 +8,26 @@ import { stripe } from '../config';
 
 /**
  * Validate if a customer has sufficient credit for a specific operation
+ * 
+ * Gets the user ID from x-user-id header (set by web-gateway auth middleware)
  */
 export async function validateCredit(req: ExpressRequest, res: ExpressResponse) {
   try {
-    const { userId, amount } = req.body;
+    const userId = req.headers['x-user-id'] as string;
+    const { amount } = req.body;
     
-    if (!userId || amount === undefined) {
+    if (!userId) {
+      console.log('Missing x-user-id header in request to /payment/validate-credit');
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required'
+      });
+    }
+    
+    if (amount === undefined) {
       return res.status(400).json({
         success: false,
-        error: 'User ID and amount are required'
+        error: 'Amount is required'
       });
     }
     
@@ -55,15 +66,26 @@ export async function validateCredit(req: ExpressRequest, res: ExpressResponse) 
 
 /**
  * Add credit to a customer's balance by user ID
+ * 
+ * Gets the user ID from x-user-id header (set by web-gateway auth middleware)
  */
 export async function addCreditByUserId(req: ExpressRequest, res: ExpressResponse) {
   try {
-    const { userId, amount, stripePaymentMethodId, description } = req.body;
+    const userId = req.headers['x-user-id'] as string;
+    const { amount, stripePaymentMethodId, description } = req.body;
     
-    if (!userId || amount === undefined) {
+    if (!userId) {
+      console.log('Missing x-user-id header in request to /payment/add-credit');
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required'
+      });
+    }
+    
+    if (amount === undefined) {
       return res.status(400).json({
         success: false,
-        error: 'User ID and amount are required'
+        error: 'Amount is required'
       });
     }
     
@@ -270,15 +292,26 @@ export async function addCreditById(req: ExpressRequest, res: ExpressResponse) {
 
 /**
  * Deduct credit from a customer's balance by user ID
+ * 
+ * Gets the user ID from x-user-id header (set by web-gateway auth middleware)
  */
 export async function deductCreditByUserId(req: ExpressRequest, res: ExpressResponse) {
   try {
-    const { userId, amount, description = 'API usage' } = req.body;
+    const userId = req.headers['x-user-id'] as string;
+    const { amount, description = 'API usage' } = req.body;
     
-    if (!userId || amount === undefined) {
+    if (!userId) {
+      console.log('Missing x-user-id header in request to /payment/deduct-credit');
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required'
+      });
+    }
+    
+    if (amount === undefined) {
       return res.status(400).json({
         success: false,
-        error: 'User ID and amount are required'
+        error: 'Amount is required'
       });
     }
     

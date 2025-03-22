@@ -113,16 +113,18 @@ export class UtilityGetUtilityInfo extends Tool {
         return 'Error: utility_id is required';
       }
       
-      // Set up headers with Bearer token authentication
+      // Set up headers with X-API-KEY authentication
       const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`
+        'Content-Type': 'application/json'
       };
       
       if (!this.apiKey) {
         console.error('No API key provided when calling utility_get_utility_info');
         throw new Error('Authentication required: API key is missing');
       }
+      
+      // Use X-API-KEY header instead of Authorization
+      headers['x-api-key'] = this.apiKey;
       
       // Call the API Gateway endpoint for getting utility information
       const response = await axios.get(`${this.apiGatewayUrl}/utility/utility/${utilityId}`, {

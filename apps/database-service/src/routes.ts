@@ -21,7 +21,7 @@ router.get('/health', (req: Request, res: Response): void => {
 
 /**
  * Get current user data from the users collection
- * Uses x-user-id header provided by web-gateway-service
+ * Uses x-user-id header provided by API Gateway Service
  */
 router.get('/db/users/me', async (req: Request, res: Response): Promise<void> => {
   try {
@@ -29,10 +29,10 @@ router.get('/db/users/me', async (req: Request, res: Response): Promise<void> =>
     const userId = req.headers['x-user-id'] as string;
     
     if (!userId) {
-      console.error('No x-user-id header found in request');
-      res.status(401).json({
+      console.error('No x-user-id header found in request to /db/users/me');
+      res.status(400).json({
         success: false,
-        error: 'Authentication required'
+        error: 'Missing required header: x-user-id'
       });
       return;
     }
@@ -107,6 +107,8 @@ router.get('/api-keys', async (req: Request, res: Response): Promise<void> => {
       return;
     }
     
+    console.log(`Fetching API keys for user ID: ${userId}`);
+    
     // Ensure api_keys collection exists
     await createCollection('api_keys');
     
@@ -148,6 +150,8 @@ router.post('/api-keys', async (req: Request, res: Response): Promise<void> => {
       });
       return;
     }
+    
+    console.log(`Creating new API key for user ID: ${userId}`);
     
     // Ensure api_keys collection exists
     await createCollection('api_keys');

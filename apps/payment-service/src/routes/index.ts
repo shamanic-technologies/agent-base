@@ -22,7 +22,7 @@ router.get('/payment/plans/:id', planController.getPlanById);
 
 // Customer endpoints
 router.post('/payment/customers', customerController.getOrCreateCustomer);
-router.get('/payment/customers/:userId/credit', customerController.getCustomerCreditByUserId);
+router.get('/payment/customer/credit', customerController.getCustomerCreditByUserId);
 router.get('/payment/customers-direct/:customerId', customerController.getCustomerById);
 router.get('/payment/customers-direct/:customerId/credit', customerController.getCustomerCreditById);
 router.get('/payment/customers-direct/:customerId/transactions', customerController.getCustomerTransactions);

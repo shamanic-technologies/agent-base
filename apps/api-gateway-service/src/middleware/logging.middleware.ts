@@ -23,17 +23,14 @@ export const apiLoggerMiddleware = (req: Request, res: Response, next: NextFunct
   
   const startTime = Date.now();
   
-  // Extract API key from Authorization header (Bearer token)
-  const authHeader = req.headers['authorization'] as string;
-  let apiKey = null;
+  // Extract API key from X-API-KEY header
+  const apiKey = req.headers['x-api-key'] as string;
   
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    apiKey = authHeader.substring(7);
-  } else {
-    console.error('[API Gateway] Authentication error: Missing or invalid Authorization header');
+  if (!apiKey) {
+    console.error('[API Gateway] Authentication error: Missing X-API-KEY header');
     return res.status(401).json({
       success: false,
-      error: '[API Gateway] Bearer token is required'
+      error: '[API Gateway] X-API-KEY header is required'
     });
   }
   
@@ -75,22 +72,31 @@ export const apiLoggerMiddleware = (req: Request, res: Response, next: NextFunct
       const sanitizedRequestBody = sanitizeBody(parsedRequestBody);
       const sanitizedResponseBody = sanitizeBody(parsedResponseBody);
       
-      // User ID must be in the request object, set by validateApiKey
-      const userId = (req as any).userId;
+      // Get user ID - first check if req.user is set (by authMiddleware)
+      // or fall back to checking for a userId property directly on req
+      const userId = (req as any).user?.id || (req as any).userId;
       
       if (!userId) {
-        throw new Error('[API GATEWAY] User ID not found for logging. Unable to log API call.');
+        console.error('[API GATEWAY] User ID not found for logging. Proceeding without user context.');
+        // Don't throw an error, but still log without user ID
+      }
+      
+      // Prepare request headers with standardized format
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      
+      // Add X-USER-ID header if available
+      if (userId) {
+        headers['X-USER-ID'] = userId;
       }
       
       // Log the API call
       await fetch(`${LOGGING_SERVICE_URL}/log`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           apiKey,
-          userId,
           endpoint: req.originalUrl,
           method: req.method,
           statusCode: res.statusCode,

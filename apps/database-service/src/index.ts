@@ -31,7 +31,7 @@ if (NODE_ENV === 'development') {
 
 // Initialize Express app
 const app = express();
-const PORT = process.env.PORT || 3006;
+const PORT = process.env.PORT;
 
 // Middleware
 app.use(cors());

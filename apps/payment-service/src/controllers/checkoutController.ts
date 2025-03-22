@@ -7,16 +7,28 @@ import { stripe } from '../config';
 
 /**
  * Create a Stripe Checkout session for adding credit to a user's account
+ * 
+ * Gets the user ID from x-user-id header (set by web-gateway auth middleware)
  */
 export async function createCheckoutSession(req: ExpressRequest, res: ExpressResponse) {
   try {
-    const { userId, amount, successUrl, cancelUrl } = req.body;
+    const userId = req.headers['x-user-id'] as string;
+    const { amount, successUrl, cancelUrl } = req.body;
+    
+    // Check for authentication
+    if (!userId) {
+      console.log('Missing x-user-id header in request to /payment/create-checkout-session');
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required'
+      });
+    }
     
     // Validate required parameters
-    if (!userId || amount === undefined || !successUrl || !cancelUrl) {
+    if (amount === undefined || !successUrl || !cancelUrl) {
       return res.status(400).json({
         success: false,
-        error: 'Missing required parameters: userId, amount, successUrl, and cancelUrl are required'
+        error: 'Missing required parameters: amount, successUrl, and cancelUrl are required'
       });
     }
     

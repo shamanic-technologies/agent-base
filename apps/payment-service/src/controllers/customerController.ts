@@ -8,15 +8,19 @@ import { stripe } from '../config';
 
 /**
  * Get or create a Stripe customer
+ * 
+ * Gets the user ID from x-user-id header (set by web-gateway auth middleware)
  */
 export async function getOrCreateCustomer(req: ExpressRequest, res: ExpressResponse) {
   try {
-    const { userId, email, name } = req.body;
+    const userId = req.headers['x-user-id'] as string;
+    const { email, name } = req.body;
     
     if (!userId) {
-      return res.status(400).json({
+      console.log('Missing x-user-id header in request to /payment/customers');
+      return res.status(401).json({
         success: false,
-        error: 'User ID is required'
+        error: 'Authentication required'
       });
     }
 
@@ -65,10 +69,20 @@ export async function getOrCreateCustomer(req: ExpressRequest, res: ExpressRespo
 
 /**
  * Get a customer's credit balance by user ID
+ * 
+ * Gets the user ID from x-user-id header (set by web-gateway auth middleware)
  */
 export async function getCustomerCreditByUserId(req: ExpressRequest, res: ExpressResponse) {
   try {
-    const { userId } = req.params;
+    const userId = req.headers['x-user-id'] as string;
+    
+    if (!userId) {
+      console.log('Missing x-user-id header in request to /payment/customers/:userId/credit');
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required'
+      });
+    }
     
     console.log(`Getting credit balance for userId: ${userId}`);
     
@@ -247,22 +261,28 @@ export async function getCustomerTransactions(req: ExpressRequest, res: ExpressR
 
 /**
  * Get auto-recharge settings for a customer
+ * 
+ * Gets the user ID from x-user-id header (set by web-gateway auth middleware)
  */
 export async function getAutoRechargeSettings(req: ExpressRequest, res: ExpressResponse) {
   try {
-    const userId = req.user?.id;
+    const userId = req.headers['x-user-id'] as string;
     
     if (!userId) {
+      console.log('Missing x-user-id header in request to /payment/auto-recharge');
       return res.status(401).json({
         success: false,
         error: 'Authentication required'
       });
     }
     
+    console.log(`Getting auto-recharge settings for userId: ${userId}`);
+    
     // Find customer associated with this user
     const customer = await customerService.findCustomerByUserId(userId);
     
     if (!customer) {
+      console.error(`Customer not found with userId: ${userId}`);
       return res.status(404).json({
         success: false,
         error: 'Customer not found'
@@ -301,18 +321,23 @@ export async function getAutoRechargeSettings(req: ExpressRequest, res: ExpressR
 
 /**
  * Update auto-recharge settings for a customer
+ * 
+ * Gets the user ID from x-user-id header (set by web-gateway auth middleware)
  */
 export async function updateAutoRechargeSettings(req: ExpressRequest, res: ExpressResponse) {
   try {
-    const userId = req.user?.id;
+    const userId = req.headers['x-user-id'] as string;
     const { enabled, thresholdAmount, rechargeAmount } = req.body;
     
     if (!userId) {
+      console.log('Missing x-user-id header in request to /payment/auto-recharge');
       return res.status(401).json({
         success: false,
         error: 'Authentication required'
       });
     }
+    
+    console.log(`Updating auto-recharge settings for userId: ${userId}`);
     
     // Validate inputs
     if (enabled === undefined) {

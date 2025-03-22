@@ -108,16 +108,18 @@ export class UtilityListUtilities extends Tool {
     console.log(`Calling API Gateway to list available utilities`);
     
     try {
-      // Set up headers with Bearer token authentication
+      // Set up headers with X-API-KEY authentication instead of Bearer token
       const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`
+        'Content-Type': 'application/json'
       };
       
       if (!this.apiKey) {
         console.error('No API key provided when calling utility_list_utilities');
         throw new Error('Authentication required: API key is missing');
       }
+      
+      // Use X-API-KEY header instead of Authorization
+      headers['x-api-key'] = this.apiKey;
       
       // Call the API Gateway endpoint for listing utilities using GET
       // The utility service has a GET /utilities endpoint, not POST

@@ -31,16 +31,52 @@ router.get('/health', (req: Request, res: Response) => {
 
 /**
  * Log API call
+ * This endpoint can be called directly from the API Gateway service
+ * or forwarded by other services using the X-API-KEY header
  */
 router.post('/log', async (req: Request, res: Response) => {
   try {
     const logEntry = req.body as ApiLogEntry;
+    const serviceApiKey = req.headers['x-api-key'] as string;
+    const userId = req.headers['x-user-id'] as string;
+    
+    // If X-API-KEY header is provided, use it for logging (preferred approach)
+    if (serviceApiKey) {
+      logEntry.apiKey = serviceApiKey;
+      logger.info('Using X-API-KEY header for API call logging');
+    }
+    
+    // If X-USER-ID header is provided, use it (preferred approach)
+    if (userId) {
+      logEntry.userId = userId;
+      logger.info('Using X-USER-ID header for user identification');
+    }
     
     // Validate required fields
-    if (!logEntry.apiKey || !logEntry.userId || !logEntry.endpoint || !logEntry.method) {
+    if (!logEntry.apiKey) {
+      logger.error('Missing apiKey in log entry and no X-API-KEY header provided');
       return res.status(400).json({
         success: false,
-        error: 'Missing required fields: apiKey, userId, endpoint, method'
+        error: 'Missing required field: apiKey. Please provide X-API-KEY header.'
+      });
+    }
+    
+    if (!logEntry.userId && !userId) {
+      logger.error('Missing userId in log entry and no X-USER-ID header provided');
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required field: userId. Please provide X-USER-ID header.'
+      });
+    }
+    
+    if (!logEntry.endpoint || !logEntry.method) {
+      const missingFields = [];
+      if (!logEntry.endpoint) missingFields.push('endpoint');
+      if (!logEntry.method) missingFields.push('method');
+      
+      return res.status(400).json({
+        success: false,
+        error: `Missing required fields: ${missingFields.join(', ')}`
       });
     }
     
@@ -97,11 +133,31 @@ router.post('/log', async (req: Request, res: Response) => {
 });
 
 /**
- * Get logs for a user
+ * Get logs for a user (authenticated via headers)
+ * Uses the user ID from x-user-id header that is set by the API Gateway auth middleware
  */
-router.get('/logs/user/:userId', async (req: Request, res: Response) => {
+router.get('/logs/user', async (req: Request, res: Response) => {
   try {
-    const { userId } = req.params;
+    const userId = req.headers['x-user-id'] as string;
+    const apiKey = req.headers['x-api-key'] as string;
+    
+    if (!userId) {
+      logger.warn('Missing x-user-id header in request to /logs/user');
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required - missing x-user-id header'
+      });
+    }
+    
+    if (!apiKey) {
+      logger.warn('Missing x-api-key header in request to /logs/user');
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required - missing x-api-key header'
+      });
+    }
+    
+    logger.info(`Getting logs for user ${userId} authenticated via X-API-KEY`);
     const limit = parseInt(req.query.limit as string) || 100;
     const offset = parseInt(req.query.offset as string) || 0;
     
@@ -129,9 +185,25 @@ router.get('/logs/user/:userId', async (req: Request, res: Response) => {
 
 /**
  * Get all logs with pagination
+ * Requires admin privileges via X-API-KEY
  */
 router.get('/logs/all', async (req: Request, res: Response) => {
   try {
+    const userId = req.headers['x-user-id'] as string;
+    const apiKey = req.headers['x-api-key'] as string;
+    
+    if (!userId || !apiKey) {
+      logger.warn('Missing authentication headers in request to /logs/all');
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required - X-API-KEY and X-USER-ID headers must be provided'
+      });
+    }
+    
+    // This endpoint should only be accessible to admin users
+    // In a production scenario, you would check user roles here
+    logger.info(`Admin user ${userId} accessing all logs`);
+    
     const limit = parseInt(req.query.limit as string || '100');
     const offset = parseInt(req.query.offset as string || '0');
     
@@ -159,14 +231,30 @@ router.get('/logs/all', async (req: Request, res: Response) => {
 
 /**
  * Metrics endpoint (for monitoring)
+ * Requires authentication via X-API-KEY
  */
 router.get('/metrics', async (req: Request, res: Response) => {
-  // Simple metrics for now, could be expanded with Prometheus or similar
-  res.status(200).json({
-    uptime: process.uptime(),
-    memory: process.memoryUsage(),
-    date: new Date().toISOString()
-  });
+  try {
+    const userId = req.headers['x-user-id'] as string;
+    
+    // Log the user accessing metrics
+    if (userId) {
+      logger.info(`User ${userId} accessing metrics endpoint`);
+    }
+    
+    // Return metrics data
+    res.status(200).json({
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      date: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Error in /metrics endpoint', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
 });
 
 export default router; 
