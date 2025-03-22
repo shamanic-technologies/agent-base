@@ -14,6 +14,7 @@ import path from 'path';
 import fs from 'fs';
 import { authMiddleware } from './middleware/auth-middleware';
 import { tokenCache } from './utils/token-cache';
+import { User } from './types';
 
 // Load environment variables based on NODE_ENV
 const NODE_ENV = process.env.NODE_ENV || 'development';
@@ -368,7 +369,7 @@ databaseRouter.all('*', (req, res) => {
   if (req.url.includes('/db/users/me')) {
     console.log(`[Web Gateway] Database request to /db/users/me`);
     console.log(`[Web Gateway] Request headers user info:`, 
-      req.user ? `User ID: ${req.user.id}` : 'No user object',
+      req.user ? `User ID: ${(req.user as User).id}` : 'No user object',
       req.headers['x-user-id'] ? `x-user-id: ${req.headers['x-user-id']}` : 'No x-user-id header'
     );
   }
