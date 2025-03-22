@@ -16,6 +16,11 @@ const LOGGING_SERVICE_URL = process.env.LOGGING_SERVICE_URL || 'http://localhost
  * @param next Express next function
  */
 export const apiLoggerMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  // Skip authentication for health check endpoint
+  if (req.path === '/health') {
+    return next();
+  }
+  
   const startTime = Date.now();
   
   // Extract API key from Authorization header (Bearer token)
