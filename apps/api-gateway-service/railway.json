@@ -9,7 +9,7 @@
       "turbo.json"
     ],
     "nixpacks": {
-      "buildCmd": "cd ../../ && npm install && npm run build"
+      "buildCmd": "npm install && npm run build"
     }
   },
   "deploy": {
