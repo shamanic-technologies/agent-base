@@ -117,4 +117,52 @@ app.use('/api/v1', apiLoggerMiddleware);
 ```bash
 # Run tests
 pnpm test
-``` 
+```
+
+## Payment Service Integration
+
+The logging service now integrates with the payment service to automatically debit usage costs from user accounts. Here's how it works:
+
+1. When an API call is logged, the service calculates the cost based on the endpoint and token usage:
+   - `/utility` endpoints: $0.01 fixed price
+   - `/generate` endpoints: token-based pricing ($0.000006 per input token, $0.00003 per output token)
+
+2. After successfully logging the API call, the service makes an asynchronous call to the payment service's `/payment/deduct-credit` endpoint with:
+   - `userId`: The ID of the user making the request
+   - `amount`: The calculated price
+   - `description`: A description of the API usage
+
+3. The payment service then debits this amount from the user's Stripe account balance.
+
+### Configuration
+
+To enable this integration, set the environment variable:
+
+```
+# Direct payment service connection
+PAYMENT_SERVICE_URL=http://localhost:3007
+```
+
+### Testing
+
+You can test the integration using the `test-integration.js` script:
+
+```bash
+node test-integration.js <userId>
+```
+
+This will:
+1. Create a mock API call log
+2. Send it to the logging service
+3. Wait for the payment service to be called
+4. Show the results of the process
+
+### Error Handling
+
+The logging service implements several safeguards:
+
+- Small amounts (<$0.001) are not debited to avoid unnecessary transactions
+- Payment service calls are asynchronous, so logging operations are not blocked if the payment service is down
+- Detailed logging of all payment operations for debugging
+
+If a payment fails, it is logged but does not affect the logging operation. This ensures API calls are always logged, even if payment processing fails. 

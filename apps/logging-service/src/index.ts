@@ -15,20 +15,7 @@ import { setTimeout } from 'node:timers/promises';
 import pino from 'pino';
 
 // Load environment variables
-config();
-
-// Initialize Express app
-const app = express();
-const server = createServer(app);
-const port = process.env.PORT || 3900;
-const router = Router();
-
-// Database service URL from environment variable
-const DB_SERVICE_URL = process.env.DATABASE_SERVICE_URL || 'http://localhost:3006';
-
-// Middleware
-app.use(cors());
-app.use(bodyParser.json());
+config({ path: '.env.local' });
 
 // Set up logging with pino
 const logger = pino({
@@ -37,6 +24,44 @@ const logger = pino({
     target: 'pino-pretty',
   },
 });
+
+// Validate required environment variables
+function validateEnv() {
+  const requiredVars = ['PORT', 'DATABASE_SERVICE_URL', 'PAYMENT_SERVICE_URL'];
+  const missing = requiredVars.filter(varName => !process.env[varName]);
+  
+  if (missing.length > 0) {
+    const errorMsg = `Missing required environment variables: ${missing.join(', ')}`;
+    logger.error(errorMsg);
+    throw new Error(errorMsg);
+  }
+  
+  logger.info('All required environment variables are set');
+  logger.info(`Environment configuration:
+  PORT: ${process.env.PORT}
+  DATABASE_SERVICE_URL: ${process.env.DATABASE_SERVICE_URL}
+  PAYMENT_SERVICE_URL: ${process.env.PAYMENT_SERVICE_URL}
+  LOG_LEVEL: ${process.env.LOG_LEVEL || 'info (default)'}
+`);
+}
+
+// Validate environment before proceeding
+validateEnv();
+
+// Initialize Express app
+const app = express();
+const server = createServer(app);
+const port = process.env.PORT;
+const router = Router();
+
+// Service URLs from environment variables
+const DB_SERVICE_URL = process.env.DATABASE_SERVICE_URL;
+const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL;
+
+
+// Middleware
+app.use(cors());
+app.use(bodyParser.json());
 
 /**
  * Interface for API call log entry
@@ -148,9 +173,13 @@ function parseTokenUsage(responseBody: any): { inputTokens: number, outputTokens
 
 /**
  * Initialize database tables for logging
+ * @throws Error if database connection or initialization fails
  */
-async function initDatabase(): Promise<boolean> {
+async function initDatabase(): Promise<void> {
   try {
+    // Check connection to database service
+    logger.info(`Checking database service at ${DB_SERVICE_URL}`);
+    
     // Check if api_logs collection exists
     const response = await fetch(`${DB_SERVICE_URL}/db`, {
       method: 'GET',
@@ -160,12 +189,23 @@ async function initDatabase(): Promise<boolean> {
     });
 
     if (!response.ok) {
-      logger.error(`Failed to get collections: ${response.status}`);
-      return false;
+      const errorText = `Failed to connect to database service: ${response.status} ${response.statusText}`;
+      logger.error(errorText);
+      throw new Error(errorText);
     }
 
     const data = await response.json() as any;
+    
+    if (!data.success) {
+      throw new Error(`Database service returned error: ${data.error || 'Unknown error'}`);
+    }
+    
+    if (!data.data || !Array.isArray(data.data)) {
+      throw new Error('Invalid response format from database service');
+    }
+    
     const collections = data.data.map((c: any) => c.name);
+    logger.info(`Found collections in database: ${collections.join(', ') || 'none'}`);
     
     // If api_logs collection doesn't exist, create it
     if (!collections.includes('api_logs')) {
@@ -183,14 +223,24 @@ async function initDatabase(): Promise<boolean> {
         timestamp: new Date().toISOString()
       };
       
-      await logApiCall(dummyLog);
-      logger.info('api_logs collection created');
+      const createResult = await logApiCall(dummyLog);
+      if (!createResult) {
+        throw new Error('Failed to create api_logs collection');
+      }
+      
+      logger.info('api_logs collection created successfully');
+    } else {
+      logger.info('api_logs collection already exists');
     }
     
-    return true;
+    logger.info('Database initialization complete');
   } catch (error) {
-    logger.error('Failed to initialize database', error);
-    return false;
+    const errorMessage = error instanceof Error 
+      ? `Database initialization failed: ${error.message}` 
+      : 'Database initialization failed with unknown error';
+    
+    logger.error(errorMessage);
+    throw error; // Re-throw the error to stop the server
   }
 }
 
@@ -330,6 +380,83 @@ async function getUserLogs(userId: string, limit = 100, offset = 0): Promise<any
   }
 }
 
+/**
+ * Debit usage cost from user's account via payment service
+ * @param userId The user ID to debit
+ * @param amount The amount to debit (in USD)
+ * @param description Description of the usage
+ * @returns Success status and any error message
+ */
+async function debitUsage(userId: string, amount: number, description: string): Promise<{ success: boolean, error?: string }> {
+  try {
+    // Skip debiting if amount is too small
+    if (amount < 0.001) {
+      logger.info(`Skipping payment debit for user ${userId} - amount ${amount} is too small (less than $0.001)`);
+      return { success: true };
+    }
+
+    logger.info(`Debiting ${amount.toFixed(6)} USD from user ${userId} for ${description}`);
+    
+    // Direct connection to payment service
+    const debitUrl = `${PAYMENT_SERVICE_URL}/payment/deduct-credit`;
+    
+    try {
+      const response = await fetch(debitUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          userId,
+          amount,
+          description
+        })
+      });
+      
+      // Check for network or connection errors
+      if (!response) {
+        throw new Error('No response received from payment service');
+      }
+      
+      const data = await response.json() as {
+        success: boolean;
+        error?: string;
+        data?: {
+          transaction?: { id: string };
+          newBalance?: number;
+        }
+      };
+      
+      if (!response.ok || !data.success) {
+        const errorMessage = data.error || `Failed to debit usage: ${response.status}`;
+        logger.error(`Payment service error: ${errorMessage}`, data);
+        return { success: false, error: errorMessage };
+      }
+      
+      logger.info(`Successfully debited ${amount.toFixed(6)} USD from user ${userId}`, {
+        transaction: data.data?.transaction?.id,
+        newBalance: data.data?.newBalance
+      });
+      
+      return { success: true };
+    } catch (fetchError) {
+      // Specific handling for network/connection errors
+      const errorMessage = fetchError instanceof Error 
+        ? `Network error connecting to payment service: ${fetchError.message}`
+        : 'Unknown network error connecting to payment service';
+      
+      logger.error(errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  } catch (error) {
+    logger.error(`Failed to debit usage for user ${userId}:`, error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error debiting usage'
+    };
+  }
+}
+
 // API Routes
 
 /**
@@ -366,6 +493,7 @@ router.post('/log', async (req: Request, res: Response) => {
       logEntry.userAgent = req.headers['user-agent'];
     }
     
+    // Log the API call first
     const logId = await logApiCall(logEntry);
     
     if (!logId) {
@@ -373,6 +501,26 @@ router.post('/log', async (req: Request, res: Response) => {
         success: false,
         error: 'Failed to log API call'
       });
+    }
+    
+    // Debit the usage cost from the user's account if price is set
+    const price = logEntry.price || calculatePrice(logEntry);
+    
+    if (price > 0) {
+      // Generate a useful description
+      const description = `API usage: ${logEntry.method} ${logEntry.endpoint}`;
+      
+      // Attempt to debit usage asynchronously - don't wait for result
+      // This prevents payment service issues from blocking the logging API
+      debitUsage(logEntry.userId, price, description)
+        .then(result => {
+          if (!result.success) {
+            logger.warn(`Failed to debit usage for log ${logId}: ${result.error}`);
+          }
+        })
+        .catch(error => {
+          logger.error(`Exception in debit usage for log ${logId}:`, error);
+        });
     }
     
     res.status(201).json({
@@ -496,17 +644,57 @@ server.listen(port, async () => {
   logger.info(`Logging service listening on port ${port}`);
   
   // Initialize database
-  const initialized = await initDatabase();
-  
-  if (!initialized) {
+  try {
+    await initDatabase();
+    logger.info('Service is fully initialized and ready to accept requests');
+  } catch (error) {
+    logger.error('Service started with database initialization failure');
     logger.warn('Failed to initialize database, will retry periodically');
     
     // Retry initialization periodically
     setInterval(async () => {
-      const retry = await initDatabase();
-      if (retry) {
+      try {
+        await initDatabase();
         logger.info('Successfully initialized database on retry');
+      } catch (retryError) {
+        logger.error('Failed to initialize database on retry');
       }
     }, 60000); // Retry every minute
   }
-}); 
+});
+
+// Helper function to calculate price if not explicitly provided
+function calculatePrice(logEntry: ApiLogEntry): number {
+  let price = 0;
+  let inputTokens = 0;
+  let outputTokens = 0;
+
+  // Calculate price based on endpoint
+  if (logEntry.endpoint.startsWith('/utility')) {
+    // Fixed price for utility calls
+    price = 0.01;
+  } else if (logEntry.endpoint.startsWith('/generate')) {
+    // Token-based pricing for generate calls
+    if (logEntry.responseBody) {
+      // Parse token usage from the response body
+      const tokenUsage = parseTokenUsage(logEntry.responseBody);
+      inputTokens = tokenUsage.inputTokens;
+      outputTokens = tokenUsage.outputTokens;
+      
+      // Calculate price based on token counts
+      // Input tokens: $0.000006 per token
+      // Output tokens: $0.00003 per token
+      const inputPrice = inputTokens * 0.000006;
+      const outputPrice = outputTokens * 0.00003;
+      price = inputPrice + outputPrice;
+      
+      logger.info(`Calculated token-based price for ${logEntry.endpoint}: $${price.toFixed(6)} (${inputTokens} input tokens, ${outputTokens} output tokens)`);
+    } else {
+      // Fallback to fixed price if response body parsing fails
+      price = 0.20;
+      logger.warn(`Using fallback fixed price for ${logEntry.endpoint}: $${price.toFixed(2)} (no token data available)`);
+    }
+  }
+  
+  return price;
+} 
