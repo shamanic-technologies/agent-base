@@ -3,13 +3,13 @@
   "build": {
     "builder": "NIXPACKS",
     "watchPatterns": [
-      "apps/api-gateway-service/**",
+      "**",
       "packages/**",
       "package.json",
       "turbo.json"
     ],
     "nixpacks": {
-      "buildCmd": "npm install && npm run build"
+      "buildCmd": "npm install --no-package-lock && npm run build"
     }
   },
   "deploy": {
