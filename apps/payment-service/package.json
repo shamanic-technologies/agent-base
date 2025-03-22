@@ -3,13 +3,15 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "concurrently \"stripe listen --forward-to http://localhost:3007/payment/webhook\" \"tsx watch src/index.ts\"",
+    "dev:service": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc --noEmit",
     "test": "node test-payment-service.js",
-    "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
+    "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist",
+    "trigger:checkout-completed": "stripe trigger checkout.session.completed --add \"checkout_session:mode=payment\" --add \"checkout_session:payment_status=paid\" --add \"checkout_session:customer=cus_PicLiMDp41NrPe\" --add \"checkout_session:metadata.purpose=add_credit\" --add \"checkout_session:metadata.userId=user_2YFJmK4vKsUNxRwqNWb9eAvQDcF\" --add \"checkout_session:metadata.creditAmount=10\""
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -22,6 +24,7 @@
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/node": "^20.14.7",
+    "concurrently": "^8.2.2",
     "eslint": "^8.57.0",
     "tsx": "^4.7.1",
     "typescript": "^5.4.5"

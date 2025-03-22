@@ -1,7 +1,7 @@
 /**
  * Controller for customer-related endpoints
  */
-import { ExpressRequest, ExpressResponse } from '../types';
+import { ExpressRequest, ExpressResponse, AutoRechargeSettings } from '../types';
 import * as customerService from '../services/customerService';
 import * as creditService from '../services/creditService';
 import { stripe } from '../config';
@@ -238,6 +238,124 @@ export async function getCustomerTransactions(req: ExpressRequest, res: ExpressR
     }
   } catch (error) {
     console.error('Error in transactions endpoint:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'An unexpected error occurred'
+    });
+  }
+}
+
+/**
+ * Get auto-recharge settings for a customer
+ */
+export async function getAutoRechargeSettings(req: ExpressRequest, res: ExpressResponse) {
+  try {
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required'
+      });
+    }
+    
+    // Find customer associated with this user
+    const customer = await customerService.findCustomerByUserId(userId);
+    
+    if (!customer) {
+      return res.status(404).json({
+        success: false,
+        error: 'Customer not found'
+      });
+    }
+    
+    // Get auto-recharge settings
+    const settings = await customerService.getAutoRechargeSettings(customer.id);
+    
+    // Return default settings if none exist
+    if (!settings) {
+      const defaultSettings: AutoRechargeSettings = {
+        enabled: false,
+        thresholdAmount: 5,
+        rechargeAmount: 10
+      };
+      
+      return res.status(200).json({
+        success: true,
+        data: defaultSettings
+      });
+    }
+    
+    return res.status(200).json({
+      success: true,
+      data: settings
+    });
+  } catch (error) {
+    console.error('Error getting auto-recharge settings:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'An unexpected error occurred'
+    });
+  }
+}
+
+/**
+ * Update auto-recharge settings for a customer
+ */
+export async function updateAutoRechargeSettings(req: ExpressRequest, res: ExpressResponse) {
+  try {
+    const userId = req.user?.id;
+    const { enabled, thresholdAmount, rechargeAmount } = req.body;
+    
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required'
+      });
+    }
+    
+    // Validate inputs
+    if (enabled === undefined) {
+      return res.status(400).json({
+        success: false,
+        error: 'Enabled flag is required'
+      });
+    }
+    
+    if (enabled && (thresholdAmount === undefined || rechargeAmount === undefined)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Threshold amount and recharge amount are required'
+      });
+    }
+    
+    // Find customer associated with this user
+    const customer = await customerService.findCustomerByUserId(userId);
+    
+    if (!customer) {
+      return res.status(404).json({
+        success: false,
+        error: 'Customer not found'
+      });
+    }
+    
+    // Prepare settings object
+    const settings: AutoRechargeSettings = {
+      enabled: Boolean(enabled),
+      thresholdAmount: parseFloat(thresholdAmount) || 5,
+      rechargeAmount: parseFloat(rechargeAmount) || 10
+    };
+    
+    // Update settings in Stripe
+    await customerService.updateAutoRechargeSettings(customer.id, settings);
+    
+    return res.status(200).json({
+      success: true,
+      data: settings,
+      message: 'Auto-recharge settings updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating auto-recharge settings:', error);
     return res.status(500).json({
       success: false,
       error: 'An unexpected error occurred'

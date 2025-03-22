@@ -14,7 +14,17 @@ const app = express();
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+
+// Special handling for webhook path which requires raw body
+app.use((req, res, next) => {
+  if (req.originalUrl === '/payment/webhook') {
+    // Skip JSON parsing for webhook endpoint - will be handled by express.raw middleware
+    next();
+  } else {
+    // Use standard JSON body parsing for all other routes
+    express.json()(req, res, next);
+  }
+});
 
 // Register routes
 app.use(routes);

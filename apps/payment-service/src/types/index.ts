@@ -22,6 +22,7 @@ export interface CustomerData {
   name: string | null;
   createdAt: Date;
   credits: CustomerCredits;
+  autoRecharge?: AutoRechargeSettings; // Optional auto-recharge settings
 }
 
 // Plan types
@@ -57,4 +58,11 @@ export interface ErrorResponse {
   error: string;
   errorCode?: string;
   data?: any;
+}
+
+// Auto-recharge types
+export interface AutoRechargeSettings {
+  enabled: boolean;
+  thresholdAmount: number; // Amount at which to trigger recharge
+  rechargeAmount: number;  // Amount to add when recharging
 } 

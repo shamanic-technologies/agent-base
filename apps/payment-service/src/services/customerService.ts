@@ -2,7 +2,7 @@
  * Customer service for managing Stripe customers
  */
 import { stripe } from '../config';
-import { CustomerData, CustomerCredits } from '../types';
+import { AutoRechargeSettings, CustomerData, CustomerCredits } from '../types';
 import Stripe from 'stripe';
 
 /**
@@ -84,15 +84,74 @@ export async function calculateCustomerCredits(customerId: string): Promise<Cust
 }
 
 /**
+ * Get customer's auto-recharge settings from metadata
+ */
+export async function getAutoRechargeSettings(customerId: string): Promise<AutoRechargeSettings | null> {
+  const customer = await stripe.customers.retrieve(customerId);
+  
+  if ('deleted' in customer) {
+    return null;
+  }
+  
+  const { metadata } = customer;
+  
+  if (
+    !metadata?.auto_recharge_enabled || 
+    !metadata?.auto_recharge_threshold || 
+    !metadata?.auto_recharge_amount
+  ) {
+    return null;
+  }
+  
+  return {
+    enabled: metadata.auto_recharge_enabled === 'true',
+    thresholdAmount: parseFloat(metadata.auto_recharge_threshold),
+    rechargeAmount: parseFloat(metadata.auto_recharge_amount)
+  };
+}
+
+/**
+ * Update customer's auto-recharge settings
+ */
+export async function updateAutoRechargeSettings(
+  customerId: string, 
+  settings: AutoRechargeSettings
+): Promise<Stripe.Customer> {
+  return await stripe.customers.update(customerId, {
+    metadata: {
+      auto_recharge_enabled: settings.enabled.toString(),
+      auto_recharge_threshold: settings.thresholdAmount.toString(),
+      auto_recharge_amount: settings.rechargeAmount.toString()
+    }
+  });
+}
+
+/**
  * Format customer data for API response
  */
 export function formatCustomerData(customer: Stripe.Customer, credits: CustomerCredits): CustomerData {
+  // Extract auto-recharge settings from metadata if they exist
+  let autoRecharge: AutoRechargeSettings | undefined;
+  
+  if (
+    customer.metadata?.auto_recharge_enabled && 
+    customer.metadata?.auto_recharge_threshold && 
+    customer.metadata?.auto_recharge_amount
+  ) {
+    autoRecharge = {
+      enabled: customer.metadata.auto_recharge_enabled === 'true',
+      thresholdAmount: parseFloat(customer.metadata.auto_recharge_threshold),
+      rechargeAmount: parseFloat(customer.metadata.auto_recharge_amount)
+    };
+  }
+  
   return {
     id: customer.id,
     userId: customer.metadata.userId || 'unknown',
     email: customer.email,
     name: customer.name,
     createdAt: new Date(customer.created * 1000),
-    credits
+    credits,
+    autoRecharge
   };
 } 

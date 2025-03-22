@@ -3,7 +3,7 @@
  */
 import { stripe } from '../config';
 import { TransactionData } from '../types';
-import { calculateCustomerCredits } from './customerService';
+import { calculateCustomerCredits, getAutoRechargeSettings } from './customerService';
 import Stripe from 'stripe';
 
 /**
@@ -76,10 +76,89 @@ export async function deductCredit(
   const newUsedCredits = existingCredits.used + amount;
   const newBalance = existingCredits.total - newUsedCredits;
   
+  // Check if auto-recharge should be triggered
+  await checkAndTriggerAutoRecharge(customerId, newBalance);
+  
   return { 
     transaction: balanceTransaction,
     newBalance
   };
+}
+
+/**
+ * Check if auto-recharge should be triggered and process it if needed
+ */
+export async function checkAndTriggerAutoRecharge(
+  customerId: string, 
+  currentBalance: number
+): Promise<boolean> {
+  try {
+    // Get auto-recharge settings
+    const settings = await getAutoRechargeSettings(customerId);
+    
+    // If not enabled or settings not found, do nothing
+    if (!settings || !settings.enabled) {
+      return false;
+    }
+    
+    // Check if balance is below threshold
+    if (currentBalance <= settings.thresholdAmount) {
+      console.log(`Auto-recharge triggered for customer ${customerId}. Balance: $${currentBalance.toFixed(2)}, Threshold: $${settings.thresholdAmount.toFixed(2)}`);
+      
+      // Get customer to find payment methods
+      const customer = await stripe.customers.retrieve(customerId, {
+        expand: ['default_source']
+      });
+      
+      if ('deleted' in customer) {
+        console.error(`Cannot process auto-recharge: Customer ${customerId} has been deleted`);
+        return false;
+      }
+      
+      // Check if customer has a default payment method
+      if (!customer.default_source && !customer.invoice_settings?.default_payment_method) {
+        console.error(`Cannot process auto-recharge: No default payment method for customer ${customerId}`);
+        return false;
+      }
+      
+      // Create payment intent for recharge amount
+      const paymentMethodId = 
+        typeof customer.invoice_settings?.default_payment_method === 'string' 
+          ? customer.invoice_settings.default_payment_method
+          : customer.default_source as string;
+      
+      // Create payment intent & confirm immediately (off-session)
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(settings.rechargeAmount * 100), // Convert to cents
+        currency: 'usd',
+        customer: customerId,
+        payment_method: paymentMethodId,
+        off_session: true,
+        confirm: true,
+        description: 'Automatic recharge'
+      });
+      
+      if (paymentIntent.status === 'succeeded') {
+        // Add credits to customer balance
+        await addCredit(
+          customerId, 
+          settings.rechargeAmount, 
+          'Automatic recharge'
+        );
+        
+        console.log(`Auto-recharge successful for customer ${customerId}. Added $${settings.rechargeAmount.toFixed(2)}`);
+        return true;
+      } else {
+        console.error(`Auto-recharge payment failed: ${paymentIntent.status}`);
+        return false;
+      }
+    }
+    
+    return false;
+  } catch (error) {
+    console.error('Error during auto-recharge process:', error);
+    return false;
+  }
 }
 
 /**
