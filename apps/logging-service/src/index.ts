@@ -10,8 +10,8 @@ import bodyParser from 'body-parser';
 import { config } from 'dotenv';
 import { createServer } from 'node:http';
 import pino from 'pino';
-import { initDatabase } from './services/database';
-import routes from './routes';
+import { initDatabase } from './services/database.js';
+import routes from './routes/index.js';
 
 // Load environment variables
 config({ path: '.env.local' });

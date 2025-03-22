@@ -6,8 +6,8 @@
 import fetch from 'node-fetch';
 import { v4 as uuidv4 } from 'uuid';
 import pino from 'pino';
-import { ApiLogEntry } from '../types';
-import { parseTokenUsage, calculatePrice } from '../utils';
+import { ApiLogEntry } from '../types/index.js';
+import { parseTokenUsage, calculatePrice } from '../utils/index.js';
 
 // Set up logging with pino
 const logger = pino({

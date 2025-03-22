@@ -3,10 +3,10 @@
  */
 import { Router, Request, Response } from 'express';
 import pino from 'pino';
-import { ApiLogEntry } from '../types';
-import { logApiCall, getUserLogs, getAllLogs } from '../services/database';
-import { debitUsage } from '../services/payment';
-import { calculatePrice } from '../utils';
+import { ApiLogEntry } from '../types/index.js';
+import { logApiCall, getUserLogs, getAllLogs } from '../services/database.js';
+import { debitUsage } from '../services/payment.js';
+import { calculatePrice } from '../utils/index.js';
 
 // Get the logger instance
 const logger = pino({

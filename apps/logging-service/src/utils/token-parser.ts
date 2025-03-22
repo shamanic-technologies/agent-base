@@ -2,7 +2,7 @@
  * Token parsing utilities
  */
 import pino from 'pino';
-import { ApiLogEntry } from '../types';
+import { ApiLogEntry } from '../types/index.js';
 
 // Get the logger instance
 const logger = pino({
