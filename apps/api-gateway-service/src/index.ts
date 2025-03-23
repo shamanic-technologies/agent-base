@@ -61,8 +61,8 @@ configureRoutes(
 );
 
 // Start server
-const server = app.listen(Number(PORT), '0.0.0.0', () => {
-  console.log(`🚪 API Gateway Service running at http://0.0.0.0:${PORT}`);
+const server = app.listen(PORT, () => {
+  console.log(`🚪 API Gateway Service running at http://localhost:${PORT}`);
   
   // Log server address information for debugging
   const addressInfo = server.address();
