@@ -40,11 +40,41 @@ app.use(express.json());
 
 // Health check endpoint
 app.get('/health', (req: Request, res: Response) => {
-  res.status(200).json({ 
+  console.log(`📡 [UTILITY SERVICE] Health check request received from ${req.ip}`);
+  console.log(`📋 [UTILITY SERVICE] Request headers:`, JSON.stringify(req.headers, null, 2));
+  
+  // Log server address information - safely accessing server info
+  let addressInfo = null;
+  try {
+    // Access server info safely (different ways depending on Express version)
+    const server = (req.socket as any).server || req.connection?.server || res.connection?.server;
+    if (server && typeof server.address === 'function') {
+      addressInfo = server.address();
+    }
+  } catch (serverError) {
+    console.error(`⚠️ [UTILITY SERVICE] Error getting server info:`, serverError);
+  }
+  console.log(`🔌 [UTILITY SERVICE] Server listening on:`, addressInfo);
+
+  // Log environment information
+  console.log(`🌐 [UTILITY SERVICE] Environment: ${nodeEnv}`);
+  
+  const healthResponse = { 
     status: 'healthy',
     environment: nodeEnv,
-    version: process.env.npm_package_version
-  });
+    version: process.env.npm_package_version,
+    serverInfo: {
+      address: typeof addressInfo === 'string' ? addressInfo : {
+        address: addressInfo?.address,
+        port: addressInfo?.port,
+        family: addressInfo?.family
+      }
+    }
+  };
+  
+  console.log(`✅ [UTILITY SERVICE] Responding with:`, JSON.stringify(healthResponse, null, 2));
+  
+  res.status(200).json(healthResponse);
 });
 
 // Define a route handler function separate from the app.post call
@@ -372,8 +402,35 @@ app.get('/utility/:id', (req: Request, res: Response) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`🔧 Utility Service running at http://localhost:${PORT}`);
-  console.log(`🌐 Environment: ${nodeEnv}`);
-  console.log(`🧩 GitHub Codespaces API enabled`);
+const server = app.listen(PORT, () => {
+  console.log(`🛠️ [UTILITY SERVICE] Utility Service running on port ${PORT}`);
+  console.log(`🌐 [UTILITY SERVICE] Environment: ${nodeEnv}`);
+  
+  // Log server address information for debugging
+  const addressInfo = server.address();
+  console.log(`📡 [UTILITY SERVICE] Server address info:`, JSON.stringify(addressInfo, null, 2));
+  
+  if (addressInfo && typeof addressInfo !== 'string') {
+    console.log(`📡 [UTILITY SERVICE] Server listening on ${addressInfo.address}:${addressInfo.port} (${addressInfo.family})`);
+    
+    // Log network interfaces for debugging
+    try {
+      const os = require('os');
+      const networkInterfaces = os.networkInterfaces();
+      console.log(`🖧 [UTILITY SERVICE] Available network interfaces:`);
+      
+      for (const [name, interfaces] of Object.entries(networkInterfaces)) {
+        if (interfaces) {
+          interfaces.forEach(iface => {
+            console.log(`   ${name}: ${iface.address} (${iface.family}) ${iface.internal ? 'internal' : 'external'}`);
+          });
+        }
+      }
+    } catch (error) {
+      console.error(`❌ [UTILITY SERVICE] Error getting network interfaces:`, error);
+    }
+  }
+  
+  // Log configuration URLs
+  console.log(`🔗 [UTILITY SERVICE] API_GATEWAY_URL: ${process.env.API_GATEWAY_URL || 'not set'}`);
 }); 

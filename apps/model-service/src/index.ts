@@ -67,11 +67,42 @@ app.use((req, res, next) => {
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.status(200).json({ 
+  console.log(`📡 [MODEL SERVICE] Health check request received from ${req.ip}`);
+  console.log(`📋 [MODEL SERVICE] Request headers:`, JSON.stringify(req.headers, null, 2));
+  
+  // Log server address information - safely accessing server info
+  let addressInfo = null;
+  try {
+    // Access server info safely (different ways depending on Express version)
+    const server = (req.socket as any).server || req.connection?.server || res.connection?.server;
+    if (server && typeof server.address === 'function') {
+      addressInfo = server.address();
+    }
+  } catch (serverError) {
+    console.error(`⚠️ [MODEL SERVICE] Error getting server info:`, serverError);
+  }
+  console.log(`🔌 [MODEL SERVICE] Server listening on:`, addressInfo);
+
+  // Log environment information
+  console.log(`🌐 [MODEL SERVICE] Environment: ${nodeEnv}`);
+  console.log(`🔑 [MODEL SERVICE] API Key ${process.env.ANTHROPIC_API_KEY ? 'is' : 'is NOT'} configured`);
+  
+  const healthResponse = { 
     status: 'healthy',
     environment: nodeEnv,
-    version: process.env.npm_package_version || '1.0.0'
-  });
+    version: process.env.npm_package_version || '1.0.0',
+    serverInfo: {
+      address: typeof addressInfo === 'string' ? addressInfo : {
+        address: addressInfo?.address,
+        port: addressInfo?.port,
+        family: addressInfo?.family
+      }
+    }
+  };
+  
+  console.log(`✅ [MODEL SERVICE] Responding with:`, JSON.stringify(healthResponse, null, 2));
+  
+  res.status(200).json(healthResponse);
 });
 
 // LLM generation endpoint using ReAct agent
@@ -209,17 +240,36 @@ app.post('/generate/stream', async (req, res) => {
 
 // Start server
 const server = app.listen(PORT, () => {
-  console.log(`🤖 LangGraph ReAct Agent Service running on port ${PORT}`);
-  console.log(`🌐 Environment: ${nodeEnv}`);
-  console.log(`🔑 API Key ${process.env.ANTHROPIC_API_KEY ? 'is' : 'is NOT'} configured`);
+  console.log(`🤖 [MODEL SERVICE] LangGraph ReAct Agent Service running on port ${PORT}`);
+  console.log(`🌐 [MODEL SERVICE] Environment: ${nodeEnv}`);
+  console.log(`🔑 [MODEL SERVICE] API Key ${process.env.ANTHROPIC_API_KEY ? 'is' : 'is NOT'} configured`);
   
   // Log server address information for debugging
   const addressInfo = server.address();
+  console.log(`📡 [MODEL SERVICE] Server address info:`, JSON.stringify(addressInfo, null, 2));
+  
   if (addressInfo && typeof addressInfo !== 'string') {
-    console.log(`📡 Server listening on ${addressInfo.address}:${addressInfo.port} (${addressInfo.family})`);
+    console.log(`📡 [MODEL SERVICE] Server listening on ${addressInfo.address}:${addressInfo.port} (${addressInfo.family})`);
+    
+    // Log network interfaces for debugging
+    try {
+      const os = require('os');
+      const networkInterfaces = os.networkInterfaces();
+      console.log(`🖧 [MODEL SERVICE] Available network interfaces:`);
+      
+      for (const [name, interfaces] of Object.entries(networkInterfaces)) {
+        if (interfaces) {
+          interfaces.forEach(iface => {
+            console.log(`   ${name}: ${iface.address} (${iface.family}) ${iface.internal ? 'internal' : 'external'}`);
+          });
+        }
+      }
+    } catch (error) {
+      console.error(`❌ [MODEL SERVICE] Error getting network interfaces:`, error);
+    }
   }
   
   // Log configuration URLs
-  console.log(`🔗 UTILITY_SERVICE_URL: ${process.env.UTILITY_SERVICE_URL || 'not set'}`);
-  console.log(`🔗 API_GATEWAY_URL: ${process.env.API_GATEWAY_URL || 'not set'}`);
+  console.log(`🔗 [MODEL SERVICE] UTILITY_SERVICE_URL: ${process.env.UTILITY_SERVICE_URL || 'not set'}`);
+  console.log(`🔗 [MODEL SERVICE] API_GATEWAY_URL: ${process.env.API_GATEWAY_URL || 'not set'}`);
 });
