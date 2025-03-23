@@ -143,24 +143,8 @@ console.log('[Web Gateway] Auth middleware applied');
 async function forwardRequest(targetUrl: string, req: express.Request, res: express.Response) {
   const requestUrl = `${targetUrl}${req.url}`;
   
-  // Debug log for auth validation endpoint
-  if (req.url.includes('/auth/validate')) {
-    console.log(`[Web Gateway] Forward request to ${requestUrl}`);
-    console.log(`[Web Gateway] Request method: ${req.method}`);
-    
-    // Fix: Add null check for req.headers
-    if (req.headers) {
-      console.log(`[Web Gateway] Request headers before axios:`, 
-                  Object.keys(req.headers).map(key => 
-                    `${key}: ${key.toLowerCase() === 'authorization' ? 
-                      (typeof req.headers[key] === 'string' ? 
-                       req.headers[key].substring(0, 10) + '...' : 'complex value') : 
-                      'masked'}`
-                  ));
-    } else {
-      console.log(`[Web Gateway] Request headers are undefined or null`);
-    }
-  }
+  // Log basic request information
+  console.log(`[Web Gateway] Forwarding request to ${new URL(targetUrl).hostname} - ${req.method} ${req.url}`);
   
   try {
     const axiosConfig = {
@@ -177,16 +161,12 @@ async function forwardRequest(targetUrl: string, req: express.Request, res: expr
       maxRedirects: 0,
     };
     
-    // Debug log axios config for auth validation endpoint
-    if (req.url.includes('/auth/validate')) {
-      console.log(`[Web Gateway] Axios config headers:`, 
-                  axiosConfig.headers ? Object.keys(axiosConfig.headers).map(key => 
-                    `${key}: ${key.toLowerCase() === 'authorization' ? 
-                      (typeof (axiosConfig.headers as Record<string, any>)[key] === 'string' ? 
-                       (axiosConfig.headers as Record<string, any>)[key].substring(0, 10) + '...' : 'complex value') : 
-                      'masked'}`
-                  ) : 'No headers');
-      console.log(`[Web Gateway] Axios request body:`, axiosConfig.data ? 'present' : 'none');
+    // Log for debugging issues with headers
+    if (process.env.DEBUG_HEADERS === 'true') {
+      console.log(`[Web Gateway] Request headers:`, 
+                  Object.keys(axiosConfig.headers).map(key => 
+                    `${key}: ${key === 'authorization' ? 'Bearer ***' : 
+                    (key === 'x-user-id' ? (axiosConfig.headers as Record<string, any>)[key] : '***')}`));
     }
     
     const response = await axios(axiosConfig);
@@ -378,6 +358,23 @@ databaseRouter.all('*', (req, res) => {
 
 // Keys service route handler
 keysRouter.all('*', (req, res) => {
+  // Add monitoring for debugging API key issues
+  if (req.method === 'POST') {
+    console.log(`[Web Gateway] Processing ${req.method} request to keys service: ${req.url}`);
+    
+    // Log auth and user information for debugging
+    const hasAuth = !!req.headers.authorization;
+    const hasUserObject = !!req.user;
+    const hasUserIdHeader = !!req.headers['x-user-id'];
+    
+    console.log(`[Web Gateway] Keys request auth status: Auth=${hasAuth}, User Object=${hasUserObject}, x-user-id=${hasUserIdHeader}`);
+  
+    // Only log in detail if there's an issue
+    if (!hasUserIdHeader) {
+      console.log(`[Web Gateway] WARNING: Keys service request is missing x-user-id header`);
+    }
+  }
+  
   return forwardRequest(KEYS_SERVICE_URL, req, res);
 });
 

@@ -13,6 +13,12 @@ import axios from 'axios';
 import path from 'path';
 import fs from 'fs';
 
+// Add startup debug logging
+console.log('====== KEY SERVICE STARTUP ======');
+console.log('Current file:', __filename);
+console.log('Implementation: PRODUCTION (not mock)');
+console.log('==================================')
+
 // Load environment variables based on NODE_ENV
 const NODE_ENV = process.env.NODE_ENV || 'development';
 

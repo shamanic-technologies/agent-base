@@ -15,8 +15,24 @@ const dotenv_1 = __importDefault(require("dotenv"));
 const crypto_1 = require("crypto");
 const uuid_1 = require("uuid");
 const axios_1 = __importDefault(require("axios"));
-// Load environment variables
-dotenv_1.default.config();
+const path_1 = __importDefault(require("path"));
+const fs_1 = __importDefault(require("fs"));
+// Load environment variables based on NODE_ENV
+const NODE_ENV = process.env.NODE_ENV || 'development';
+// Only load from .env file in development
+if (NODE_ENV === 'development') {
+    const envFile = path_1.default.resolve(process.cwd(), '.env.local');
+    if (fs_1.default.existsSync(envFile)) {
+        console.log(`Loading environment from ${envFile}`);
+        dotenv_1.default.config({ path: envFile });
+    }
+    else {
+        console.log(`Environment file ${envFile} not found, using default environment variables.`);
+    }
+}
+else {
+    console.log('Production environment detected, using Railway configuration.');
+}
 // Initialize Express app
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3003;
@@ -29,7 +45,8 @@ app.use(express_1.default.json());
 // Helper function to generate API key
 function generateApiKey() {
     const keyBuffer = (0, crypto_1.randomBytes)(32);
-    return `helloworld_${keyBuffer.toString('hex')}`;
+    const timestamp = Date.now().toString(36); // Convert timestamp to base36 for compactness
+    return `agbase_${timestamp}_${keyBuffer.toString('hex')}`;
 }
 // Helper function to hash API key
 function hashApiKey(apiKey) {
@@ -43,8 +60,10 @@ app.get('/health', (req, res) => {
  * Create a new API key
  *
  * Request body:
- * - userId: ID of the user
  * - name: Name for the API key
+ *
+ * Headers:
+ * - x-user-id: ID of the authenticated user (set by web-gateway auth middleware)
  *
  * Response:
  * - success: boolean
@@ -53,11 +72,26 @@ app.get('/health', (req, res) => {
  */
 app.post('/keys', async (req, res) => {
     try {
-        const { userId, name } = req.body;
-        if (!userId || !name) {
+        // Full request debug logging
+        console.log('===== DEBUG KEY SERVICE - POST /keys =====');
+        console.log('HEADERS:', JSON.stringify(req.headers, null, 2));
+        console.log('BODY:', JSON.stringify(req.body, null, 2));
+        console.log('x-user-id header present:', !!req.headers['x-user-id']);
+        console.log('name in body present:', !!req.body?.name);
+        console.log('=======================================');
+        const { name } = req.body;
+        const userId = req.headers['x-user-id'];
+        if (!userId) {
+            console.log('Missing x-user-id header in request to /keys');
+            return res.status(401).json({
+                success: false,
+                error: 'Authentication required'
+            });
+        }
+        if (!name) {
             return res.status(400).json({
                 success: false,
-                error: 'User ID and name are required'
+                error: 'Key name is required'
             });
         }
         // Generate API key
@@ -77,8 +111,12 @@ app.post('/keys', async (req, res) => {
             active: true
         };
         console.log(`Creating API key for user ${userId} with name: ${name}`);
-        // Save to database service
-        const response = await axios_1.default.post(`${DB_SERVICE_URL}/api-keys`, keyData);
+        // Save to database service with x-user-id header
+        const response = await axios_1.default.post(`${DB_SERVICE_URL}/api-keys`, keyData, {
+            headers: {
+                'x-user-id': userId
+            }
+        });
         if (!response.data.success) {
             console.error('Failed to store API key in database:', response.data);
             throw new Error('Failed to store API key in database');
@@ -111,15 +149,26 @@ app.post('/keys', async (req, res) => {
 app.get('/keys/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        console.log(`Fetching API key with ID: ${id}`);
-        // Query database for key by ID - use the proper endpoint
+        const userId = req.headers['x-user-id'];
+        if (!userId) {
+            console.log('Missing x-user-id header in request to /keys/:id');
+            return res.status(401).json({
+                success: false,
+                error: 'Authentication required'
+            });
+        }
+        console.log(`Fetching API key with ID: ${id} for user: ${userId}`);
+        // Query database for key by ID - let database filter by x-user-id header
         const response = await axios_1.default.get(`${DB_SERVICE_URL}/db/api_keys`, {
+            headers: {
+                'x-user-id': userId
+            },
             params: {
                 query: JSON.stringify({ 'data.id': id })
             }
         });
         if (!response.data.success || !response.data.data || response.data.data.items.length === 0) {
-            console.log('API key not found in database');
+            console.log('API key not found in database or does not belong to user');
             return res.status(404).json({
                 success: false,
                 error: 'API key not found'
@@ -149,20 +198,26 @@ app.get('/keys/:id', async (req, res) => {
 });
 /**
  * List all API keys for a user
+ *
+ * Headers:
+ * - x-user-id: ID of the authenticated user (set by web-gateway auth middleware)
  */
 app.get('/keys', async (req, res) => {
     try {
-        const { userId } = req.query;
+        const userId = req.headers['x-user-id'];
         if (!userId) {
-            return res.status(400).json({
+            console.log('Missing x-user-id header in request to /keys');
+            return res.status(401).json({
                 success: false,
-                error: 'User ID is required'
+                error: 'Authentication required'
             });
         }
         console.log(`Fetching API keys for user: ${userId}`);
-        // Fetch keys from database service
+        // Fetch keys from database service - pass userId in x-user-id header
         const response = await axios_1.default.get(`${DB_SERVICE_URL}/api-keys`, {
-            params: { userId }
+            headers: {
+                'x-user-id': userId
+            }
         });
         if (!response.data.success) {
             console.error('Failed to fetch API keys from database:', response.data);
@@ -196,19 +251,33 @@ app.get('/keys', async (req, res) => {
 });
 /**
  * Revoke (deactivate) an API key
+ *
+ * Headers:
+ * - x-user-id: ID of the authenticated user (set by web-gateway auth middleware)
  */
 app.delete('/keys/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        console.log(`Revoking API key with ID: ${id}`);
-        // Find the key
+        const userId = req.headers['x-user-id'];
+        if (!userId) {
+            console.log('Missing x-user-id header in request to /keys/:id DELETE');
+            return res.status(401).json({
+                success: false,
+                error: 'Authentication required'
+            });
+        }
+        console.log(`Revoking API key with ID: ${id} for user: ${userId}`);
+        // Find the key - database service will filter by x-user-id header
         const response = await axios_1.default.get(`${DB_SERVICE_URL}/db/api_keys`, {
+            headers: {
+                'x-user-id': userId
+            },
             params: {
                 query: JSON.stringify({ 'data.id': id })
             }
         });
         if (!response.data.success || !response.data.data.items.length) {
-            console.log('API key not found for revocation');
+            console.log('API key not found for revocation or does not belong to user');
             return res.status(404).json({
                 success: false,
                 error: 'API key not found'
