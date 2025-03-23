@@ -24,7 +24,7 @@ SESSION_SECRET = "helloworld_session_secret_key"
 
 # Client App
 CLIENT_APP_URL = "https://agent-base.ai"
-ALLOWED_REDIRECT_DOMAINS=agent-base.ai,www.agent-base.ai
+ALLOWED_REDIRECT_DOMAINS="agent-base.ai,www.agent-base.ai"
 
 
 # Service URLs
