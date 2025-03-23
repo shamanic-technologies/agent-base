@@ -13,7 +13,6 @@ import cors from 'cors';
 import { processWithReActAgent, streamWithReActAgent } from './lib/react-agent.js';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import { User } from './types/index.js';
-import { setupServerDebugger } from './utils/network.js';
 
 // Load environment variables based on NODE_ENV
 const nodeEnv = process.env.NODE_ENV || 'development';
@@ -208,9 +207,6 @@ app.post('/generate/stream', async (req, res) => {
   }
 });
 
-// Apply network debugging
-// setupNetworkDebugger(); // Removed potentially problematic network debugger
-
 // Start server
 const server = app.listen(PORT, () => {
   console.log(`🤖 LangGraph ReAct Agent Service running on port ${PORT}`);
@@ -227,6 +223,3 @@ const server = app.listen(PORT, () => {
   console.log(`🔗 UTILITY_SERVICE_URL: ${process.env.UTILITY_SERVICE_URL || 'not set'}`);
   console.log(`🔗 API_GATEWAY_URL: ${process.env.API_GATEWAY_URL || 'not set'}`);
 });
-
-// Setup enhanced server debugging 
-setupServerDebugger(server); 
