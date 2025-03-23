@@ -1,6 +1,6 @@
 /**
- * User interface for authentication
- * Represents a user that has been authenticated through the API Gateway
+ * User Interface
+ * Represents a user in the model service.
  */
 export interface User {
   id: string;

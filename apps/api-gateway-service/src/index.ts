@@ -12,6 +12,7 @@ import path from 'path';
 import fs from 'fs';
 import fetch from 'node-fetch';
 import { apiLoggerMiddleware } from './middleware/logging.middleware.js';
+import { setupNetworkDebugger, setupServerDebugger } from './utils/network.js';
 
 // Load environment variables based on NODE_ENV
 const NODE_ENV = process.env.NODE_ENV || 'development';
@@ -139,12 +140,12 @@ const authMiddleware = async (req: express.Request, res: express.Response, next:
     req.user = validation.user;
     
     // Add user headers for downstream services
-    req.headers['x-user-id'] = validation.user.id;
+    req.headers['x-user-id'] = (validation.user.id as string) || '';
     if (validation.user.email) req.headers['x-user-email'] = validation.user.email;
     if (validation.user.name) req.headers['x-user-name'] = validation.user.name;
     if (validation.user.provider) req.headers['x-user-provider'] = validation.user.provider;
     
-    console.log(`[Auth Middleware] Authenticated user ${validation.user.id} for ${req.path}`);
+    console.log(`[Auth Middleware] Authenticated user ${(validation.user.id as string) || ''} for ${req.path}`);
     next();
   } catch (error) {
     console.error(`[Auth Middleware] Error processing API key:`, error);
@@ -168,7 +169,7 @@ const forwardRequest = async (req: express.Request, res: express.Response, servi
   const headers = {
     'Content-Type': 'application/json',
     // Propagate user ID to downstream services if available
-    ...(req.user && { 'x-user-id': req.user.id }),
+    ...(req.user && { 'x-user-id': (req.user?.id as string) || '' }),
     // Include the original API key if available (for chained service calls)
     ...(req.headers['x-api-key'] && { 'x-api-key': req.headers['x-api-key'] as string })
   };
@@ -264,7 +265,7 @@ const forwardRequest = async (req: express.Request, res: express.Response, servi
       success: false,
       error: errorMessage,
       details: errorDetails,
-      userId: req.user?.id || null
+      userId: (req.user?.id as string) || null
     });
   }
 };
@@ -311,7 +312,7 @@ app.post('/generate', authMiddleware, async (req: express.Request, res: express.
     const headers = {
       'Content-Type': 'application/json',
       // Propagate user ID to downstream services if available
-      ...(req.user && { 'x-user-id': req.user.id }),
+      ...(req.user && { 'x-user-id': (req.user?.id as string) || '' }),
       // Include the original API key if available (for chained service calls)
       ...(req.headers['x-api-key'] && { 'x-api-key': req.headers['x-api-key'] as string })
     };
@@ -354,7 +355,7 @@ app.post('/generate', authMiddleware, async (req: express.Request, res: express.
       success: false,
       error: errorMessage,
       details: errorDetails,
-      userId: req.user?.id || null
+      userId: (req.user?.id as string) || null
     });
   }
 });
@@ -375,16 +376,18 @@ app.post('/utility/utility', async (req: express.Request, res: express.Response)
     const targetUrl = `${UTILITY_SERVICE_URL}/utility`;
     
     console.log(`Making POST request to utility service: ${targetUrl}`);
-    console.log(`Request body: ${JSON.stringify(req.body).substring(0, 200)}`);
-    console.log(`Request headers: x-user-id: ${req.user?.id || 'not set'}`);
+    console.log(`Request body: ${(req.body as string).substring(0, 200)}`);
+    console.log(`Request headers: x-user-id: ${(req.user?.id as string) || 'not set'}`);
     
     const headers = {
       'Content-Type': 'application/json',
       // Propagate user ID to downstream services if available
-      ...(req.user && { 'x-user-id': req.user.id })
+      ...(req.user && { 'x-user-id': (req.user?.id as string) || '' }),
+      // Include the original API key if available (for chained service calls)
+      ...(req.headers['x-api-key'] && { 'x-api-key': req.headers['x-api-key'] as string })
     };
     
-    console.log(`Headers being sent: ${JSON.stringify(headers)}`);
+    console.log(`Headers being sent: ${(headers as string).substring(0, 200)}`);
     
     const response = await axios.post(targetUrl, req.body, { 
       headers,
@@ -397,12 +400,12 @@ app.post('/utility/utility', async (req: express.Request, res: express.Response)
     console.error('Error executing utility:', error);
     
     if (axios.isAxiosError(error)) {
-      console.error(`Response status: ${error.response?.status || 'No response'}`);
-      console.error(`Response data: ${JSON.stringify(error.response?.data || 'No data')}`);
-      console.error(`Request URL: ${error.config?.url || 'No URL'}`);
-      console.error(`Request method: ${error.config?.method || 'No method'}`);
-      console.error(`Request headers: ${JSON.stringify(error.config?.headers || 'No headers')}`);
-      console.error(`Request data: ${JSON.stringify(error.config?.data || 'No data')}`);
+      console.error(`Response status: ${(error.response?.status as string) || 'No response'}`);
+      console.error(`Response data: ${(error.response?.data as string) || 'No data'}`);
+      console.error(`Request URL: ${(error.config?.url as string) || 'No URL'}`);
+      console.error(`Request method: ${(error.config?.method as string) || 'No method'}`);
+      console.error(`Request headers: ${(JSON.stringify(error.config?.headers) as string) || 'No headers'}`);
+      console.error(`Request data: ${(JSON.stringify(error.config?.data) as string) || 'No data'}`);
     }
     
     let statusCode = 500;
@@ -413,20 +416,20 @@ app.post('/utility/utility', async (req: express.Request, res: express.Response)
     if (axios.isAxiosError(error)) {
       if (!error.response) {
         // Connection error (no response received)
-        console.error(`API Gateway connection error to ${UTILITY_SERVICE_URL}: ${error.message}`);
+        console.error(`API Gateway connection error to ${UTILITY_SERVICE_URL}: ${(error.message as string) || 'No error message'}`);
         statusCode = 502; // Bad Gateway
         errorMessage = `API Gateway Service: Could not connect to utility service`;
-        errorDetails = error.message;
+        errorDetails = error.message || 'No error message';
       } else {
         // Service returned an error response
-        console.error(`Utility service error response: ${error.response.status} ${JSON.stringify(error.response.data)}`);
-        statusCode = error.response.status;
+        console.error(`Utility service error response: ${(error.response.status as string) || 'No status'} ${(JSON.stringify(error.response.data) as string) || 'No data'}`);
+        statusCode = error.response.status || 500;
         errorMessage = error.response.data?.error || errorMessage;
-        errorDetails = error.response.data?.details || error.message;
+        errorDetails = error.response.data?.details || error.message || 'No details';
       }
     } else if (error instanceof Error) {
       // General JavaScript errors
-      errorDetails = error.message;
+      errorDetails = error.message || 'No error message';
     }
     
     return res.status(statusCode).json({
@@ -434,7 +437,7 @@ app.post('/utility/utility', async (req: express.Request, res: express.Response)
       success: false,
       error: errorMessage,
       details: errorDetails,
-      userId: req.user?.id || null
+      userId: (req.user?.id as string) || null
     });
   }
 });
@@ -468,7 +471,7 @@ app.get('/utility/utilities', async (req: express.Request, res: express.Response
     const headers = {
       'Content-Type': 'application/json',
       // Propagate user ID to downstream services if available
-      ...(req.user && { 'x-user-id': req.user.id }),
+      ...(req.user && { 'x-user-id': (req.user?.id as string) || '' }),
       // Include the original API key if available (for chained service calls)
       ...(req.headers['x-api-key'] && { 'x-api-key': req.headers['x-api-key'] as string })
     };
@@ -492,20 +495,20 @@ app.get('/utility/utilities', async (req: express.Request, res: express.Response
     if (axios.isAxiosError(error)) {
       if (!error.response) {
         // Connection error (no response received)
-        console.error(`API Gateway connection error to ${UTILITY_SERVICE_URL}: ${error.message}`);
+        console.error(`API Gateway connection error to ${UTILITY_SERVICE_URL}: ${(error.message as string) || 'No error message'}`);
         statusCode = 502; // Bad Gateway
         errorMessage = `API Gateway Service: Could not connect to utility service`;
-        errorDetails = error.message;
+        errorDetails = error.message || 'No error message';
       } else {
         // Service returned an error response
-        console.error(`Utility service error response: ${error.response.status} ${JSON.stringify(error.response.data)}`);
-        statusCode = error.response.status;
+        console.error(`Utility service error response: ${(error.response.status as string) || 'No status'} ${(JSON.stringify(error.response.data) as string) || 'No data'}`);
+        statusCode = error.response.status || 500;
         errorMessage = error.response.data?.error || errorMessage;
-        errorDetails = error.response.data?.details || error.message;
+        errorDetails = error.response.data?.details || error.message || 'No details';
       }
     } else if (error instanceof Error) {
       // General JavaScript errors
-      errorDetails = error.message;
+      errorDetails = error.message || 'No error message';
     }
     
     return res.status(statusCode).json({
@@ -513,7 +516,7 @@ app.get('/utility/utilities', async (req: express.Request, res: express.Response
       success: false,
       error: errorMessage,
       details: errorDetails,
-      userId: req.user?.id || null
+      userId: (req.user?.id as string) || null
     });
   }
 });
@@ -530,7 +533,7 @@ app.get('/utility/utility/:id', async (req: express.Request, res: express.Respon
     const headers = {
       'Content-Type': 'application/json',
       // Propagate user ID to downstream services if available
-      ...(req.user && { 'x-user-id': req.user.id }),
+      ...(req.user && { 'x-user-id': (req.user?.id as string) || '' }),
       // Include the original API key if available (for chained service calls)
       ...(req.headers['x-api-key'] && { 'x-api-key': req.headers['x-api-key'] as string })
     };
@@ -554,20 +557,20 @@ app.get('/utility/utility/:id', async (req: express.Request, res: express.Respon
     if (axios.isAxiosError(error)) {
       if (!error.response) {
         // Connection error (no response received)
-        console.error(`API Gateway connection error to ${UTILITY_SERVICE_URL}: ${error.message}`);
+        console.error(`API Gateway connection error to ${UTILITY_SERVICE_URL}: ${(error.message as string) || 'No error message'}`);
         statusCode = 502; // Bad Gateway
         errorMessage = `API Gateway Service: Could not connect to utility service`;
-        errorDetails = error.message;
+        errorDetails = error.message || 'No error message';
       } else {
         // Service returned an error response
-        console.error(`Utility service error response: ${error.response.status} ${JSON.stringify(error.response.data)}`);
-        statusCode = error.response.status;
+        console.error(`Utility service error response: ${(error.response.status as string) || 'No status'} ${(JSON.stringify(error.response.data) as string) || 'No data'}`);
+        statusCode = error.response.status || 500;
         errorMessage = error.response.data?.error || errorMessage;
-        errorDetails = error.response.data?.details || error.message;
+        errorDetails = error.response.data?.details || error.message || 'No details';
       }
     } else if (error instanceof Error) {
       // General JavaScript errors
-      errorDetails = error.message;
+      errorDetails = error.message || 'No error message';
     }
     
     return res.status(statusCode).json({
@@ -575,7 +578,7 @@ app.get('/utility/utility/:id', async (req: express.Request, res: express.Respon
       success: false,
       error: errorMessage,
       details: errorDetails,
-      userId: req.user?.id || null
+      userId: (req.user?.id as string) || null
     });
   }
 });
@@ -597,10 +600,33 @@ app.get('/utility/*', async (req: express.Request, res: express.Response) => {
   }
 });
 
+// Apply network and server debugging
+setupNetworkDebugger();
+
 // Start server
-app.listen(PORT, () => {
-  console.log(`🔐 API Gateway Service running on port ${PORT}`);
-  console.log(`🔄 Forwarding model requests to ${MODEL_SERVICE_URL}`);
-  console.log(`🔄 Forwarding utility requests to ${UTILITY_SERVICE_URL}`);
-  console.log(`🔑 Using Key Service at ${KEY_SERVICE_URL}`);
+const server = app.listen(Number(PORT), '0.0.0.0', () => {
+  console.log(`🚪 API Gateway Service running at http://0.0.0.0:${PORT}`);
+  
+  // Log server address information for debugging
+  const addressInfo = server.address();
+  if (addressInfo && typeof addressInfo !== 'string') {
+    console.log(`📡 Server listening on ${addressInfo.address}:${addressInfo.port} (${addressInfo.family})`);
+  }
+  
+  // Log service URLs for debugging
+  console.log(`�� MODEL_SERVICE_URL: ${(MODEL_SERVICE_URL as string) || 'not set'}`);
+  console.log(`🔗 UTILITY_SERVICE_URL: ${(UTILITY_SERVICE_URL as string) || 'not set'}`);
+  console.log(`🔗 KEY_SERVICE_URL: ${(KEY_SERVICE_URL as string) || 'not set'}`);
+  console.log(`🔗 LOGGING_SERVICE_URL: ${(LOGGING_SERVICE_URL as string) || 'not set'}`);
+});
+
+// Setup enhanced server debugging
+setupServerDebugger(server);
+
+// Add error listener
+server.on('error', (error) => {
+  console.error('💥 Server error:', error);
+  if ('code' in error) {
+    console.error(`Error code: ${(error.code as string) || 'No error code'}`);
+  }
 });

@@ -8,6 +8,12 @@
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
+import express from 'express';
+import cors from 'cors';
+import { processWithReActAgent, streamWithReActAgent } from './lib/react-agent.js';
+import { HumanMessage, SystemMessage } from '@langchain/core/messages';
+import { User } from './types/index.js';
+import { setupNetworkDebugger, setupServerDebugger } from './utils/network.js';
 
 // Load environment variables based on NODE_ENV
 const nodeEnv = process.env.NODE_ENV || 'development';
@@ -24,12 +30,6 @@ if (nodeEnv === 'development') {
 } else {
   console.log('🚀 Production environment detected, using Railway configuration.');
 }
-
-import express from 'express';
-import cors from 'cors';
-import { processWithReActAgent, streamWithReActAgent } from './lib/react-agent.js';
-import { HumanMessage, SystemMessage } from '@langchain/core/messages';
-import { User } from './types/index.js';
 
 // Middleware setup
 const app = express();
@@ -80,7 +80,7 @@ app.post('/generate', async (req, res) => {
   const { prompt: message, conversation_id } = req.body;
   
   // Extract user ID from req.user (set by auth middleware)
-  const userId = req.user?.id;
+  const userId = req.user?.id as string;
   
   // Get API key from x-api-key header (if present)
   const apiKey = req.headers['x-api-key'] as string;
@@ -146,7 +146,7 @@ app.post('/generate/stream', async (req, res) => {
   const { prompt: message, stream_modes, conversation_id } = req.body;
   
   // Extract user ID from req.user (set by auth middleware)
-  const userId = req.user?.id;
+  const userId = req.user?.id as string;
   
   // Get API key from x-api-key header (if present)
   const apiKey = req.headers['x-api-key'] as string;
@@ -208,9 +208,25 @@ app.post('/generate/stream', async (req, res) => {
   }
 });
 
+// Apply network debugging
+setupNetworkDebugger();
+
 // Start server
-app.listen(Number(PORT), '0.0.0.0', () => {
+const server = app.listen(Number(PORT), '0.0.0.0', () => {
   console.log(`🤖 LangGraph ReAct Agent Service running at http://0.0.0.0:${PORT}`);
   console.log(`🌐 Environment: ${nodeEnv}`);
   console.log(`🔑 API Key ${process.env.ANTHROPIC_API_KEY ? 'is' : 'is NOT'} configured`);
-}); 
+  
+  // Log server address information for debugging
+  const addressInfo = server.address();
+  if (addressInfo && typeof addressInfo !== 'string') {
+    console.log(`📡 Server listening on ${addressInfo.address}:${addressInfo.port} (${addressInfo.family})`);
+  }
+  
+  // Log configuration URLs
+  console.log(`🔗 UTILITY_SERVICE_URL: ${process.env.UTILITY_SERVICE_URL || 'not set'}`);
+  console.log(`🔗 API_GATEWAY_URL: ${process.env.API_GATEWAY_URL || 'not set'}`);
+});
+
+// Setup enhanced server debugging 
+setupServerDebugger(server); 
