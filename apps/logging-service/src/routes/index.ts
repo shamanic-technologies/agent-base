@@ -81,8 +81,6 @@ router.post('/log', async (req: Request, res: Response) => {
       logEntry.userId = userId;
     }
     
-
-    
     // Calculate price if not provided (for /generate and /utility endpoints)
     if (!logEntry.price && (logEntry.endpoint.startsWith('/generate') || logEntry.endpoint.startsWith('/utility'))) {
       try {
@@ -98,8 +96,15 @@ router.post('/log', async (req: Request, res: Response) => {
       }
     }
     
-    // Sanitize response body after price calculation
+    // Sanitize request body if present
+    if (logEntry.requestBody) {
+      logger.debug('Sanitizing request body');
+      logEntry.requestBody = sanitizeLogData(logEntry.requestBody);
+    }
+    
+    // Sanitize response body if present
     if (logEntry.responseBody) {
+      logger.debug('Sanitizing response body');
       logEntry.responseBody = sanitizeLogData(logEntry.responseBody);
     }
     

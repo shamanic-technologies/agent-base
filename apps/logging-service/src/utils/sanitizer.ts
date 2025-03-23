@@ -28,26 +28,46 @@ export function sanitizeLogData(data: any): any {
   // Clone the data to avoid modifying the original
   const sanitized = Array.isArray(data) ? [...data] : { ...data };
   
-  // List of sensitive fields to redact, excluding token fields
+  // List of sensitive fields to redact (keep this minimal but comprehensive)
   const sensitiveFields = [
-    'password', 'secret', 'api_key', 'apiKey', 
-    'credit_card', 'creditCard', 'ssn', 'social_security', 'socialSecurity'
+    'password', 'passwd', 'secret', 'api_key', 'apiKey', 'key',
+    'credit_card', 'creditCard', 'card', 'cvv', 'cvc', 'expiry',
+    'ssn', 'social_security', 'socialSecurity',
+    'auth', 'token', 'jwt', 'bearer',
+    'private', 'access_token', 'accessToken', 'refresh_token',
+    'email', 'phone', 'address'
   ];
   
-  // Function to recursively sanitize an object
-  const sanitizeObject = (obj: any) => {
-    if (!obj || typeof obj !== 'object') return;
+  // Exceptions - fields that match sensitive patterns but should NOT be redacted
+  const exceptions = [
+    'input_tokens', 'output_tokens', 'total_tokens',
+    'token_usage', 'usage_tokens'
+  ];
+  
+  // Function to recursively sanitize an object with depth limit for efficiency
+  const sanitizeObject = (obj: any, depth = 0) => {
+    // Limit recursion depth for efficiency - most sensitive data isn't nested deeply
+    if (!obj || typeof obj !== 'object' || depth > 5) return;
     
     Object.keys(obj).forEach(key => {
       const lowerKey = key.toLowerCase();
       
-      // Check if this is a sensitive field (but keep token fields visible)
-      if (sensitiveFields.some(field => lowerKey.includes(field))) {
-        obj[key] = '[REDACTED]';
+      // First check exceptions - fields we want to preserve
+      const isException = exceptions.some(field => lowerKey.includes(field));
+      
+      // Then check for sensitive fields
+      if (!isException && sensitiveFields.some(field => lowerKey.includes(field))) {
+        // Preserve token counts which are needed for pricing
+        if ((lowerKey.includes('token') && typeof obj[key] === 'number') || 
+            lowerKey === 'price') {
+          // Keep these fields as-is for pricing calculations
+        } else {
+          obj[key] = '[REDACTED]';
+        }
       } 
       // Recursively sanitize nested objects
       else if (obj[key] && typeof obj[key] === 'object') {
-        sanitizeObject(obj[key]);
+        sanitizeObject(obj[key], depth + 1);
       }
     });
   };
