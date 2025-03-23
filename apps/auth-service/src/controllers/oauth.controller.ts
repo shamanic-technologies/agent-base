@@ -56,34 +56,41 @@ export const authSuccessHandler: AsyncRequestHandler = async (req, res) => {
     // Log all response headers for debugging
     console.log('[Auth Service] Auth Success Handler - Response headers set:', res.getHeaders());
     
-    // Determine the redirect URL based on the state parameter
-    let redirectUrl = `${config.clientAppUrl}/api/auth/callback`;
-    
     // Get the origin from the state parameter
     const state = req.query.state as string;
-    if (state) {
-      try {
-        // Extract domain and port from the state (origin URL)
-        const originUrl = new URL(state);
-        // Check if the origin is from a trusted domain (localhost with any port)
-        if (originUrl.hostname === 'localhost') {
-          // Redirect to the callback page and include the token as a query parameter
-          redirectUrl = `${originUrl.origin}/api/auth/callback?token=${encodeURIComponent(token)}`;
-          console.log('[Auth Service] Auth Success Handler - Using origin from state for redirect:', redirectUrl);
-        }
-      } catch (error) {
-        console.error('[Auth Service] Invalid state parameter, using default redirect URL:', error);
-      }
-    } else {
-      // If no state parameter, use default client app URL with callback route
-      redirectUrl = `${config.clientAppUrl}/api/auth/callback?token=${encodeURIComponent(token)}`;
+    if (!state) {
+      console.error('[Auth Service] Missing state parameter in OAuth callback');
+      return res.redirect(`${config.clientAppUrl}?error=missing_state`);
     }
     
-    // Additional debug log before redirect
-    console.log('[Auth Service] Auth Success Handler - Final redirect URL:', redirectUrl);
+    try {
+      // Extract domain and port from the state (origin URL)
+      const originUrl = new URL(state);
+      
+      // Get allowed domains from config
+      const allowedDomains = config.allowedRedirectDomains;
+      
+      // Validate the hostname is in our whitelist
+      if (!allowedDomains.includes(originUrl.hostname) && 
+          !allowedDomains.some(domain => originUrl.hostname.endsWith(`.${domain}`))) {
+        console.error(`[Auth Service] Unauthorized redirect domain: ${originUrl.hostname}`);
+        return res.redirect(`${config.clientAppUrl}?error=unauthorized_redirect`);
+      }
+      
+      // Always append the /auth/callback path to the origin
+      const redirectUrl = `${originUrl.origin}/auth/callback?token=${encodeURIComponent(token)}`;
+      console.log('[Auth Service] Auth Success Handler - Using origin from state for redirect:', redirectUrl);
+      
+      // Additional debug log before redirect
+      console.log('[Auth Service] Auth Success Handler - Final redirect URL:', redirectUrl);
+      
+      // Redirect to client app
+      return res.redirect(redirectUrl);
+    } catch (error) {
+      console.error('[Auth Service] Invalid state parameter:', error);
+      return res.redirect(`${config.clientAppUrl}?error=invalid_state`);
+    }
     
-    // Redirect to client app
-    return res.redirect(redirectUrl);
   } catch (error: any) {
     console.error('[Auth Service] Auth success handler error:', error);
     return res.redirect(`${config.clientAppUrl}?error=auth_failed`);
