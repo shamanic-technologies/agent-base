@@ -372,7 +372,7 @@ app.get('/utility/:id', (req: Request, res: Response) => {
 });
 
 // Start server
-app.listen(Number(PORT), '::', () => {
+app.listen(PORT, () => {
   console.log(`🔧 Utility Service running at http://localhost:${PORT}`);
   console.log(`🌐 Environment: ${nodeEnv}`);
   console.log(`🧩 GitHub Codespaces API enabled`);
