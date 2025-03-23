@@ -6,6 +6,7 @@
  */
 import express from 'express';
 import fetch from 'node-fetch';
+import axios from 'axios';
 
 const LOGGING_SERVICE_URL = process.env.LOGGING_SERVICE_URL;
 
@@ -67,6 +68,53 @@ export const apiLoggerMiddleware = (req: express.Request, res: express.Response,
       } catch (e) {
         console.error(`[${reqId}] Error response (not JSON):`, body);
       }
+    }
+    
+    // Send the log to the Logging Service
+    if (LOGGING_SERVICE_URL) {
+      try {
+        const userId = req.user?.id || req.headers['x-user-id'] as string || 'anonymous';
+        const logEntry = {
+          userId,
+          endpoint: req.path,
+          method: req.method,
+          statusCode: res.statusCode,
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent'],
+          requestId: reqId,
+          durationMs: responseTime,
+          // Add sanitized versions of request/response bodies
+          requestBody: sanitizeBody(req.body),
+          responseBody: res.statusCode < 400 ? null : sanitizeBody(typeof body === 'string' ? JSON.parse(body) : body),
+        };
+        
+        // Log that we're about to send to the logging service
+        console.log(`[${reqId}] Sending log to ${LOGGING_SERVICE_URL}/log for user ${userId}`);
+        
+        // Use axios instead of fetch for better error handling and compatibility
+        axios.post(`${LOGGING_SERVICE_URL}/log`, logEntry, {
+          headers: {
+            'Content-Type': 'application/json',
+            // Pass the user ID in the header for authentication
+            'x-user-id': userId,
+            // Add host header for proper internal routing
+            'host': new URL(LOGGING_SERVICE_URL).host
+          }
+        }).then(() => {
+          console.log(`[${reqId}] Successfully sent log to logging service`);
+        }).catch(error => {
+          console.error(`[${reqId}] Failed to send log to logging service: ${error.message}`);
+          if (error.response) {
+            console.error(`Response status: ${error.response.status}, data:`, error.response.data);
+          } else if (error.request) {
+            console.error(`No response received from logging service`);
+          }
+        });
+      } catch (error) {
+        console.error(`[${reqId}] Error preparing or sending log to logging service:`, error);
+      }
+    } else {
+      console.warn(`[${reqId}] LOGGING_SERVICE_URL not set, skipping remote logging`);
     }
     
     // Call the original send function
