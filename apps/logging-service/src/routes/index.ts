@@ -6,7 +6,7 @@ import pino from 'pino';
 import { ApiLogEntry } from '../types/index.js';
 import { logApiCall, getUserLogs } from '../services/database.js';
 import { debitUsage } from '../services/payment.js';
-import { calculatePrice } from '../utils/index.js';
+import { calculatePrice, sanitizeLogData } from '../utils/index.js';
 
 // Get the logger instance
 const logger = pino({
@@ -45,20 +45,22 @@ router.post('/log', async (req: Request, res: Response) => {
       logger.info('Using X-USER-ID header for user identification');
     }
     
-    // Validate required fields
-    if (!logEntry.userId && !userId) {
-      logger.error('Missing userId in log entry and no X-USER-ID header provided');
-      return res.status(400).json({
-        success: false,
-        error: 'Missing required field: userId. Please provide X-USER-ID header.'
-      });
+    // Complete validation of all required fields
+    const missingFields: string[] = [];
+    
+    // Always required fields
+    if (!logEntry.userId && !userId) missingFields.push('userId (X-USER-ID header)');
+    if (!logEntry.endpoint) missingFields.push('endpoint');
+    if (!logEntry.method) missingFields.push('method');
+    
+    // Required fields for pricing on both /generate and /utility endpoints
+    if (logEntry.endpoint?.startsWith('/generate') || logEntry.endpoint?.startsWith('/utility')) {
+      if (!logEntry.responseBody) missingFields.push('responseBody');
     }
     
-    if (!logEntry.endpoint || !logEntry.method) {
-      const missingFields = [];
-      if (!logEntry.endpoint) missingFields.push('endpoint');
-      if (!logEntry.method) missingFields.push('method');
-      
+    // Return early if any required fields are missing
+    if (missingFields.length > 0) {
+      logger.error(`Missing required fields: ${missingFields.join(', ')}`);
       return res.status(400).json({
         success: false,
         error: `Missing required fields: ${missingFields.join(', ')}`
@@ -74,40 +76,75 @@ router.post('/log', async (req: Request, res: Response) => {
       logEntry.userAgent = req.headers['user-agent'];
     }
     
-    // Log the API call first
-    const logId = await logApiCall(logEntry);
+    // Make sure userId is always set from the header if available
+    if (userId) {
+      logEntry.userId = userId;
+    }
     
-    if (!logId) {
+
+    
+    // Calculate price if not provided (for /generate and /utility endpoints)
+    if (!logEntry.price && (logEntry.endpoint.startsWith('/generate') || logEntry.endpoint.startsWith('/utility'))) {
+      try {
+        // Calculate price before sanitizing response body
+        logEntry.price = calculatePrice(logEntry);
+      } catch (error) {
+        // If price calculation fails, return error instead of using fallback
+        logger.error(`Price calculation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        return res.status(400).json({
+          success: false,
+          error: `Failed to calculate price: ${error instanceof Error ? error.message : 'Unknown error'}`
+        });
+      }
+    }
+    
+    // Sanitize response body after price calculation
+    if (logEntry.responseBody) {
+      logEntry.responseBody = sanitizeLogData(logEntry.responseBody);
+    }
+    
+    // Log the API call first
+    try {
+      const logId = await logApiCall(logEntry);
+      
+      if (!logId) {
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to log API call'
+        });
+      }
+      
+      // Use the already calculated price
+      const price = logEntry.price || 0;
+      
+      if (price > 0) {
+        // Generate a useful description
+        const description = `API usage: ${logEntry.method} ${logEntry.endpoint}`;
+        
+        // Attempt to debit usage asynchronously - don't wait for result
+        // This prevents payment service issues from blocking the logging API
+        debitUsage(logEntry.userId, price, description)
+          .then(result => {
+            if (!result.success) {
+              logger.warn(`Failed to debit usage for log ${logId}: ${result.error}`);
+            }
+          })
+          .catch(error => {
+            logger.error(`Exception in debit usage for log ${logId}:`, error);
+          });
+      }
+      
+      res.status(201).json({
+        success: true,
+        data: { id: logId }
+      });
+    } catch (logError) {
+      logger.error(`Failed to log API call: ${logError instanceof Error ? logError.message : 'Unknown error'}`);
       return res.status(500).json({
         success: false,
-        error: 'Failed to log API call'
+        error: `Failed to log API call: ${logError instanceof Error ? logError.message : 'Unknown error'}`
       });
     }
-    
-    // Debit the usage cost from the user's account if price is set
-    const price = logEntry.price || calculatePrice(logEntry);
-    
-    if (price > 0) {
-      // Generate a useful description
-      const description = `API usage: ${logEntry.method} ${logEntry.endpoint}`;
-      
-      // Attempt to debit usage asynchronously - don't wait for result
-      // This prevents payment service issues from blocking the logging API
-      debitUsage(logEntry.userId, price, description)
-        .then(result => {
-          if (!result.success) {
-            logger.warn(`Failed to debit usage for log ${logId}: ${result.error}`);
-          }
-        })
-        .catch(error => {
-          logger.error(`Exception in debit usage for log ${logId}:`, error);
-        });
-    }
-    
-    res.status(201).json({
-      success: true,
-      data: { id: logId }
-    });
   } catch (error) {
     logger.error('Error in /log endpoint', error);
     res.status(500).json({

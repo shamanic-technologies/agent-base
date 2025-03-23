@@ -7,8 +7,7 @@
 import express from 'express';
 import fetch from 'node-fetch';
 import axios from 'axios';
-
-const LOGGING_SERVICE_URL = process.env.LOGGING_SERVICE_URL;
+import { User } from '../types/index.js';
 
 /**
  * API Logger Middleware
@@ -70,10 +69,20 @@ export const apiLoggerMiddleware = (req: express.Request, res: express.Response,
       }
     }
     
+    // Get the LOGGING_SERVICE_URL at runtime from environment variables
+    const LOGGING_SERVICE_URL = process.env.LOGGING_SERVICE_URL;
+    
     // Send the log to the Logging Service
     if (LOGGING_SERVICE_URL) {
       try {
-        const userId = req.user?.id || req.headers['x-user-id'] as string || 'anonymous';
+        // Safely extract user ID from request
+        let userId = 'anonymous';
+        if (req.user) {
+          userId = (req.user as User).id;
+        } else if (req.headers['x-user-id']) {
+          userId = req.headers['x-user-id'] as string;
+        }
+        
         const logEntry = {
           userId,
           endpoint: req.path,
@@ -83,9 +92,12 @@ export const apiLoggerMiddleware = (req: express.Request, res: express.Response,
           userAgent: req.headers['user-agent'],
           requestId: reqId,
           durationMs: responseTime,
-          // Add sanitized versions of request/response bodies
-          requestBody: sanitizeBody(req.body),
-          responseBody: res.statusCode < 400 ? null : sanitizeBody(typeof body === 'string' ? JSON.parse(body) : body),
+          // Pass raw request/response bodies - sanitization is now handled by logging-service
+          requestBody: req.body,
+          // Always include response body for /generate and /utility endpoints for proper pricing
+          responseBody: (req.path.startsWith('/generate') || req.path.startsWith('/utility')) 
+            ? (typeof body === 'string' ? JSON.parse(body) : body)
+            : (res.statusCode < 400 ? null : (typeof body === 'string' ? JSON.parse(body) : body)),
         };
         
         // Log that we're about to send to the logging service
@@ -123,47 +135,5 @@ export const apiLoggerMiddleware = (req: express.Request, res: express.Response,
   
   next();
 };
-
-/**
- * Sanitize request/response bodies to prevent logging sensitive data
- * @param body The body to sanitize
- * @returns Sanitized body
- */
-function sanitizeBody(body: any): any {
-  if (!body) return null;
-  
-  // If it's not an object, return as is
-  if (typeof body !== 'object') return body;
-  
-  // Clone the body to avoid modifying the original
-  const sanitized = Array.isArray(body) ? [...body] : { ...body };
-  
-  // List of sensitive fields to redact
-  const sensitiveFields = [
-    'password', 'secret', 'api_key', 'apiKey', 'authorization',
-    'credit_card', 'creditCard', 'ssn', 'social_security', 'socialSecurity'
-  ];
-  
-  // Function to recursively sanitize an object
-  const sanitizeObject = (obj: any) => {
-    if (!obj || typeof obj !== 'object') return;
-    
-    Object.keys(obj).forEach(key => {
-      const lowerKey = key.toLowerCase();
-      
-      // Check if this is a sensitive field
-      if (sensitiveFields.some(field => lowerKey.includes(field))) {
-        obj[key] = '[REDACTED]';
-      } 
-      // Recursively sanitize nested objects
-      else if (obj[key] && typeof obj[key] === 'object') {
-        sanitizeObject(obj[key]);
-      }
-    });
-  };
-  
-  sanitizeObject(sanitized);
-  return sanitized;
-}
 
 export default apiLoggerMiddleware; 

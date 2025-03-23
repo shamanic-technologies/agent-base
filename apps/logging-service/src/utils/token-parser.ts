@@ -101,6 +101,7 @@ export function parseTokenUsage(responseBody: any): { inputTokens: number, outpu
  * Calculate price based on API log entry
  * @param logEntry The API log entry to calculate price for
  * @returns The calculated price in USD
+ * @throws Error if token usage cannot be determined for generate endpoints
  */
 export function calculatePrice(logEntry: ApiLogEntry): number {
   let price = 0;
@@ -128,9 +129,8 @@ export function calculatePrice(logEntry: ApiLogEntry): number {
       
       logger.info(`Calculated token-based price for ${logEntry.endpoint}: $${price.toFixed(6)} (${inputTokens} input tokens, ${outputTokens} output tokens)`);
     } else {
-      // Fallback to fixed price if response body parsing fails
-      price = 0.20;
-      logger.warn(`Using fallback fixed price for ${logEntry.endpoint}: $${price.toFixed(2)} (no token data available)`);
+      // Throw an error instead of using a fallback price
+      throw new Error(`Cannot calculate price for ${logEntry.endpoint}: No response body available for token counting`);
     }
   }
   

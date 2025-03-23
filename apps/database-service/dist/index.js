@@ -14,13 +14,28 @@ const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const path_1 = __importDefault(require("path"));
+const fs_1 = __importDefault(require("fs"));
 const routes_1 = __importDefault(require("./routes"));
 const db_1 = require("./db");
-// Load environment variables
-dotenv_1.default.config({ path: path_1.default.resolve(process.cwd(), '.env.local') });
+// Load environment variables based on NODE_ENV
+const NODE_ENV = process.env.NODE_ENV || 'development';
+// Only load from .env file in development
+if (NODE_ENV === 'development') {
+    const envFile = path_1.default.resolve(process.cwd(), '.env.local');
+    if (fs_1.default.existsSync(envFile)) {
+        console.log(`Loading environment from ${envFile}`);
+        dotenv_1.default.config({ path: envFile });
+    }
+    else {
+        console.log(`Environment file ${envFile} not found, using default environment variables.`);
+    }
+}
+else {
+    console.log('Production environment detected, using Railway configuration.');
+}
 // Initialize Express app
 const app = (0, express_1.default)();
-const PORT = process.env.PORT || 3006;
+const PORT = process.env.PORT;
 // Middleware
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());

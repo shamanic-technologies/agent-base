@@ -102,6 +102,7 @@ export async function initDatabase(): Promise<void> {
  * Log an API call to the database
  * @param logEntry The API call log entry
  * @returns The created log entry ID
+ * @throws Error if token usage cannot be determined for generate endpoints
  */
 export async function logApiCall(logEntry: ApiLogEntry): Promise<string | null> {
   try {
@@ -119,48 +120,40 @@ export async function logApiCall(logEntry: ApiLogEntry): Promise<string | null> 
       throw new Error('[LOGGING SERVICE] userId is required for logging API calls');
     }
 
-    // Initialize pricing variables
+    // Calculate price using the imported calculatePrice function
     let price = 0;
     let inputTokens = 0;
     let outputTokens = 0;
-
-    // Calculate price based on endpoint
-    if (logEntry.endpoint.startsWith('/utility')) {
-      // Fixed price for utility calls
-      price = 0.01;
-    } else if (logEntry.endpoint.startsWith('/generate')) {
-      // Token-based pricing for generate calls
+    
+    // For generate endpoints, calculate price based on tokens
+    if (logEntry.endpoint.startsWith('/generate')) {
+      // Use the calculatePrice function from utils
+      price = calculatePrice(logEntry);
+      
+      // Extract token information if available for storage
       if (logEntry.responseBody) {
-        // Parse token usage from the response body
         const tokenUsage = parseTokenUsage(logEntry.responseBody);
         inputTokens = tokenUsage.inputTokens;
         outputTokens = tokenUsage.outputTokens;
-        
-        // Calculate price based on token counts
-        // Input tokens: $0.000006 per token
-        // Output tokens: $0.00003 per token
-        const inputPrice = inputTokens * 0.000006;
-        const outputPrice = outputTokens * 0.00003;
-        price = inputPrice + outputPrice;
-        
-        logger.info(`Calculated token-based price for ${logEntry.endpoint}: $${price.toFixed(6)} (${inputTokens} input tokens, ${outputTokens} output tokens)`);
-      } else {
-        // Fallback to fixed price if response body parsing fails
-        price = 0.20;
-        logger.warn(`Using fallback fixed price for ${logEntry.endpoint}: $${price.toFixed(2)} (no token data available)`);
       }
+    } else if (logEntry.endpoint.startsWith('/utility')) {
+      // Fixed price for utility calls
+      price = 0.01;
     }
 
+    // Send userId in both the X-USER-ID header for authentication
+    // and include it in the request body data
     const response = await fetch(`${DB_SERVICE_URL}/db/api_logs`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'X-USER-ID': logEntry.userId // Using standard header format for authentication
       },
       body: JSON.stringify({
         id,
         data: {
           api_key: logEntry.apiKey,
-          user_id: logEntry.userId,
+          user_id: logEntry.userId, // Include user_id in the data object as well
           endpoint: logEntry.endpoint,
           method: logEntry.method,
           status_code: logEntry.statusCode,
@@ -217,6 +210,7 @@ export async function getUserLogs(userId: string, limit = 100, offset = 0): Prom
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'X-USER-ID': userId
       }
     });
     

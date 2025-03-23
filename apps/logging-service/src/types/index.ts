@@ -6,11 +6,13 @@
 
 /**
  * Interface for API call log entry
+ * Note: userId is required but should be provided via X-USER-ID header
+ * rather than in the request body for proper authentication
  */
 export interface ApiLogEntry {
   id?: string;
   apiKey?: string;
-  userId: string;  // Required user_id field
+  userId: string;  // Required user_id field, passed via X-USER-ID header
   endpoint: string;
   method: string;
   statusCode?: number;

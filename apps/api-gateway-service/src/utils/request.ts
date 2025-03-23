@@ -46,7 +46,11 @@ export const forwardRequest = async (
     // Handle different HTTP methods
     switch (req.method) {
       case 'GET':
-        response = await axios.get(targetUrl, { headers });
+        // Forward the original query parameters
+        response = await axios.get(targetUrl, { 
+          headers,
+          params: req.query // Forward query parameters from original request
+        });
         break;
       case 'POST':
         response = await axios.post(targetUrl, req.body, { headers });
