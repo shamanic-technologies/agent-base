@@ -74,6 +74,7 @@ function decodeToken(token: string): { userId?: string, email?: string, name?: s
     
     // Extract userId from common JWT fields (sub or id)
     const userId = decoded.sub || decoded.id;
+    console.log(`[Auth Middleware] Extracted userId from token: ${userId || 'NONE'}`);
     
     return {
       userId,
@@ -104,9 +105,10 @@ async function validateToken(token: string): Promise<User | undefined> {
     
     // Decode the token locally to extract basic information
     const { userId: decodedUserId, email: decodedEmail, name: decodedName } = decodeToken(token);
-    console.log(`[Auth Middleware] Decoded from token - userId: ${decodedUserId || 'NONE'}`);
+    console.log(`[Auth Middleware] Decoded from token - userId: ${decodedUserId || 'NONE'}, email: ${decodedEmail || 'NONE'}`);
     
     // Call auth service for validation
+    console.log(`[Auth Middleware] Sending token to auth service for validation`);
     const response = await axios({
       method: 'POST',
       url: `${AUTH_SERVICE_URL}/auth/validate`,
@@ -126,7 +128,8 @@ async function validateToken(token: string): Promise<User | undefined> {
       // If both are missing, fallback to the decoded token value
       const userId = response.data.data.sub || response.data.data.id || decodedUserId;
       
-      console.log(`[Auth Middleware] Extracted user ID: ${userId || 'NONE'} from token`);
+      console.log(`[Auth Middleware] Extracted user ID from response: ${userId || 'NONE'}`);
+      console.log(`[Auth Middleware] Full response data:`, JSON.stringify(response.data.data));
       
       if (!userId) {
         console.error('[Auth Middleware] Token validation succeeded but no user ID found in response or token');

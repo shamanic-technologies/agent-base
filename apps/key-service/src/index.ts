@@ -74,6 +74,14 @@ app.get('/health', (req: express.Request, res: express.Response) => {
  */
 app.post('/keys', async (req: express.Request, res: express.Response) => {
   try {
+    // Full request debug logging
+    console.log('===== DEBUG KEY SERVICE - POST /keys =====');
+    console.log('HEADERS:', JSON.stringify(req.headers, null, 2));
+    console.log('BODY:', JSON.stringify(req.body, null, 2));
+    console.log('x-user-id header present:', !!req.headers['x-user-id']);
+    console.log('name in body present:', !!req.body?.name);
+    console.log('=======================================');
+    
     const { name } = req.body;
     const userId = req.headers['x-user-id'] as string;
 
