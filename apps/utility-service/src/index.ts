@@ -46,10 +46,10 @@ app.get('/health', (req: Request, res: Response) => {
   // Log server address information - safely accessing server info
   let addressInfo = null;
   try {
-    // Access server info safely (different ways depending on Express version)
-    const server = (req.socket as any).server || req.connection?.server || res.connection?.server;
-    if (server && typeof server.address === 'function') {
-      addressInfo = server.address();
+    // Use any for server access to avoid TypeScript errors
+    const serverObj = (req as any).socket?.server || (req as any).connection?.server || (res as any).connection?.server;
+    if (serverObj && typeof serverObj.address === 'function') {
+      addressInfo = serverObj.address();
     }
   } catch (serverError) {
     console.error(`⚠️ [UTILITY SERVICE] Error getting server info:`, serverError);
@@ -421,7 +421,7 @@ const server = app.listen(PORT, () => {
       
       for (const [name, interfaces] of Object.entries(networkInterfaces)) {
         if (interfaces) {
-          interfaces.forEach(iface => {
+          (interfaces as any[]).forEach(iface => {
             console.log(`   ${name}: ${iface.address} (${iface.family}) ${iface.internal ? 'internal' : 'external'}`);
           });
         }

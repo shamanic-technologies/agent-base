@@ -49,10 +49,10 @@ export const configureHealthRoutes = (
       // Get server information for debugging - safely accessing server info
       let serverInfo = null;
       try {
-        // Access server info safely (different ways depending on Express version)
-        const server = (req.socket as any).server || req.connection?.server || res.connection?.server;
-        if (server && typeof server.address === 'function') {
-          serverInfo = server.address();
+        // Use any for server access to avoid TypeScript errors
+        const serverObj = (req as any).socket?.server || (req as any).connection?.server || (res as any).connection?.server;
+        if (serverObj && typeof serverObj.address === 'function') {
+          serverInfo = serverObj.address();
         }
       } catch (serverError) {
         console.error(`⚠️ [API GATEWAY] Error getting server info:`, serverError);
@@ -145,9 +145,9 @@ export const configureHealthRoutes = (
         errorDetails,
         gatewayServer: (() => {
           try {
-            // Access server info safely (different ways depending on Express version)
-            const server = (req.socket as any).server || req.connection?.server || res.connection?.server;
-            return server && typeof server.address === 'function' ? server.address() : null;
+            // Use any for server access to avoid TypeScript errors
+            const serverObj = (req as any).socket?.server || (req as any).connection?.server || (res as any).connection?.server;
+            return serverObj && typeof serverObj.address === 'function' ? serverObj.address() : null;
           } catch (e) {
             return null;
           }

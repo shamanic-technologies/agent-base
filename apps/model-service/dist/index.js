@@ -8,6 +8,10 @@
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
+import express from 'express';
+import cors from 'cors';
+import { processWithReActAgent, streamWithReActAgent } from './lib/react-agent.js';
+import { HumanMessage } from '@langchain/core/messages';
 // Load environment variables based on NODE_ENV
 const nodeEnv = process.env.NODE_ENV || 'development';
 // Only load from .env file in development
@@ -24,34 +28,84 @@ if (nodeEnv === 'development') {
 else {
     console.log('🚀 Production environment detected, using Railway configuration.');
 }
-import express from 'express';
-import cors from 'cors';
-import { processWithReActAgent, streamWithReActAgent } from './lib/react-agent.js';
-import { HumanMessage } from '@langchain/core/messages';
 // Middleware setup
 const app = express();
 const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(cors());
 app.use(express.json());
+/**
+ * Authentication middleware - extracts user from x-user-* headers
+ * These headers are set by the API Gateway from the validated API key
+ */
+app.use((req, res, next) => {
+    try {
+        // Get user ID from header set by API gateway middleware
+        const userId = req.headers['x-user-id'];
+        if (userId) {
+            // Set user object on request for route handlers
+            req.user = {
+                id: userId,
+                email: req.headers['x-user-email'],
+                name: req.headers['x-user-name'],
+                provider: req.headers['x-user-provider']
+            };
+            console.log(`[Auth Middleware] User ID set from header: ${userId}`);
+        }
+        next();
+    }
+    catch (error) {
+        console.error('[Auth Middleware] Error processing request:', error);
+        next();
+    }
+});
 // Health check endpoint
 app.get('/health', (req, res) => {
-    res.status(200).json({
+    console.log(`📡 [MODEL SERVICE] Health check request received from ${req.ip}`);
+    console.log(`📋 [MODEL SERVICE] Request headers:`, JSON.stringify(req.headers, null, 2));
+    // Log server address information - safely accessing server info
+    let addressInfo = null;
+    try {
+        // Use any for server access to avoid TypeScript errors
+        const serverObj = req.socket?.server || req.connection?.server || res.connection?.server;
+        if (serverObj && typeof serverObj.address === 'function') {
+            addressInfo = serverObj.address();
+        }
+    }
+    catch (serverError) {
+        console.error(`⚠️ [MODEL SERVICE] Error getting server info:`, serverError);
+    }
+    console.log(`🔌 [MODEL SERVICE] Server listening on:`, addressInfo);
+    // Log environment information
+    console.log(`🌐 [MODEL SERVICE] Environment: ${nodeEnv}`);
+    console.log(`🔑 [MODEL SERVICE] API Key ${process.env.ANTHROPIC_API_KEY ? 'is' : 'is NOT'} configured`);
+    const healthResponse = {
         status: 'healthy',
         environment: nodeEnv,
-        version: process.env.npm_package_version || '1.0.0'
-    });
+        version: process.env.npm_package_version || '1.0.0',
+        serverInfo: {
+            address: typeof addressInfo === 'string' ? addressInfo : {
+                address: addressInfo?.address,
+                port: addressInfo?.port,
+                family: addressInfo?.family
+            }
+        }
+    };
+    console.log(`✅ [MODEL SERVICE] Responding with:`, JSON.stringify(healthResponse, null, 2));
+    res.status(200).json(healthResponse);
 });
 // LLM generation endpoint using ReAct agent
 app.post('/generate', async (req, res) => {
-    const { prompt: message, user_id, conversation_id } = req.body;
-    // Extract the API key from headers
-    const authHeader = req.headers['authorization'];
+    const { prompt: message, conversation_id } = req.body;
+    // Extract user ID from req.user (set by auth middleware)
+    const userId = req.user?.id;
+    // Get API key from x-api-key header (if present)
+    const apiKey = req.headers['x-api-key'];
     if (!message) {
         return res.status(400).json({ error: '[Model Service] Message is required' });
     }
-    if (!user_id) {
-        return res.status(400).json({ error: '[Model Service] user_id is required' });
+    if (!userId) {
+        return res.status(400).json({ error: '[Model Service] User authentication required' });
     }
     if (!conversation_id) {
         return res.status(400).json({ error: '[Model Service] conversation_id is required' });
@@ -59,44 +113,58 @@ app.post('/generate', async (req, res) => {
     try {
         // Check if we have an API key configured
         if (!process.env.ANTHROPIC_API_KEY) {
-            // Fallback to simplified response if no API key
+            console.error('[Model Service] Missing ANTHROPIC_API_KEY environment variable');
             throw new Error('Anthropic API key not found in environment variables');
-        }
-        // Extract API key from Authorization header if it exists
-        let apiKey = null;
-        if (authHeader && authHeader.startsWith('Bearer ')) {
-            apiKey = authHeader.substring(7);
         }
         // Create a HumanMessage for the message
         const humanMessage = new HumanMessage(message);
-        // Process the prompt with our ReAct agent, passing along the API key
-        console.log(`Received prompt: "${message}" from user: ${user_id}, conversation: ${conversation_id}`);
-        const response = await processWithReActAgent(message, user_id, conversation_id, apiKey);
+        // Process the prompt with our ReAct agent, passing along the API key for utilities
+        console.log(`[Model Service] Received prompt: "${message.substring(0, 100)}..." from user: ${userId}, conversation: ${conversation_id}`);
+        const response = await processWithReActAgent(humanMessage, userId, conversation_id, apiKey);
         // Return the raw agent response without additional formatting
         res.status(200).json(response);
     }
     catch (error) {
-        console.error('Error processing message with ReAct agent:', error);
+        console.error('[Model Service] Error processing message with ReAct agent:', error);
+        let statusCode = 500;
+        let errorMessage = 'Failed to process message';
+        let errorDetails = error instanceof Error ? error.message : 'Unknown error';
+        // Check for specific error types to provide better error messages
+        if (errorDetails.includes('rate limit') || errorDetails.includes('quota')) {
+            statusCode = 429;
+            errorMessage = 'Rate limit exceeded';
+        }
+        else if (errorDetails.includes('authenticate') || errorDetails.includes('unauthorized') || errorDetails.includes('forbidden')) {
+            statusCode = 403;
+            errorMessage = 'API authentication error';
+        }
+        else if (errorDetails.includes('timeout') || errorDetails.includes('timed out')) {
+            statusCode = 504;
+            errorMessage = 'Request timed out';
+        }
         // Provide a helpful error message
-        res.status(500).json({
-            error: 'Failed to process message',
-            details: error instanceof Error ? error.message : 'Unknown error'
+        res.status(statusCode).json({
+            error: `[Model Service] ${errorMessage}`,
+            details: errorDetails,
+            conversation_id
         });
     }
 });
 // Streaming LLM generation endpoint using ReAct agent
 app.post('/generate/stream', async (req, res) => {
-    const { prompt: message, user_id, stream_modes, conversation_id } = req.body;
-    // Extract the API key from the Authorization header
-    const authHeader = req.headers['authorization'];
+    const { prompt: message, stream_modes, conversation_id } = req.body;
+    // Extract user ID from req.user (set by auth middleware)
+    const userId = req.user?.id;
+    // Get API key from x-api-key header (if present)
+    const apiKey = req.headers['x-api-key'];
     if (!message) {
-        return res.status(400).json({ error: 'Message is required' });
+        return res.status(400).json({ error: '[Model Service] Message is required' });
     }
-    if (!user_id) {
-        return res.status(400).json({ error: 'user_id is required' });
+    if (!userId) {
+        return res.status(400).json({ error: '[Model Service] User authentication required' });
     }
     if (!conversation_id) {
-        return res.status(400).json({ error: 'conversation_id is required' });
+        return res.status(400).json({ error: '[Model Service] conversation_id is required' });
     }
     // Set headers for SSE
     res.setHeader('Content-Type', 'text/event-stream');
@@ -107,19 +175,13 @@ app.post('/generate/stream', async (req, res) => {
         if (!process.env.ANTHROPIC_API_KEY) {
             // Fallback to simplified response if no API key
             throw new Error('Anthropic API key not found in environment variables');
-            // Return a simplified response as fallback in SSE format
-        }
-        // Extract API key from Authorization header if it exists
-        let apiKey = null;
-        if (authHeader && authHeader.startsWith('Bearer ')) {
-            apiKey = authHeader.substring(7);
         }
         // Create a HumanMessage for the message
         const humanMessage = new HumanMessage(message);
         // Process the prompt with our streaming ReAct agent
-        console.log(`Streaming message: "${message}" with modes: ${stream_modes.join(', ')}, conversation: ${conversation_id}`);
+        console.log(`[Model Service] Streaming message: "${message}" with modes: ${stream_modes.join(', ')}, conversation: ${conversation_id}`);
         // Get the streaming generator with API key
-        const stream = await streamWithReActAgent(message, stream_modes, user_id, conversation_id, apiKey);
+        const stream = await streamWithReActAgent(humanMessage, stream_modes, userId, conversation_id, apiKey);
         // Stream each raw chunk directly to the client without any additional processing
         for await (const chunk of stream) {
             // Write chunk in SSE format
@@ -130,7 +192,7 @@ app.post('/generate/stream', async (req, res) => {
         res.end();
     }
     catch (error) {
-        console.error('Error streaming message with ReAct agent:', error);
+        console.error('[Model Service] Error streaming message with ReAct agent:', error);
         // Provide a helpful error message in SSE format
         res.write(`data: ${JSON.stringify({
             type: 'error',
@@ -142,8 +204,33 @@ app.post('/generate/stream', async (req, res) => {
     }
 });
 // Start server
-app.listen(Number(PORT), '0.0.0.0', () => {
-    console.log(`🤖 LangGraph ReAct Agent Service running at http://0.0.0.0:${PORT}`);
-    console.log(`🌐 Environment: ${nodeEnv}`);
-    console.log(`🔑 API Key ${process.env.ANTHROPIC_API_KEY ? 'is' : 'is NOT'} configured`);
+const server = app.listen(PORT, () => {
+    console.log(`🤖 [MODEL SERVICE] LangGraph ReAct Agent Service running on port ${PORT}`);
+    console.log(`🌐 [MODEL SERVICE] Environment: ${nodeEnv}`);
+    console.log(`🔑 [MODEL SERVICE] API Key ${process.env.ANTHROPIC_API_KEY ? 'is' : 'is NOT'} configured`);
+    // Log server address information for debugging
+    const addressInfo = server.address();
+    console.log(`📡 [MODEL SERVICE] Server address info:`, JSON.stringify(addressInfo, null, 2));
+    if (addressInfo && typeof addressInfo !== 'string') {
+        console.log(`📡 [MODEL SERVICE] Server listening on ${addressInfo.address}:${addressInfo.port} (${addressInfo.family})`);
+        // Log network interfaces for debugging
+        try {
+            const os = require('os');
+            const networkInterfaces = os.networkInterfaces();
+            console.log(`🖧 [MODEL SERVICE] Available network interfaces:`);
+            for (const [name, interfaces] of Object.entries(networkInterfaces)) {
+                if (interfaces) {
+                    interfaces.forEach(iface => {
+                        console.log(`   ${name}: ${iface.address} (${iface.family}) ${iface.internal ? 'internal' : 'external'}`);
+                    });
+                }
+            }
+        }
+        catch (error) {
+            console.error(`❌ [MODEL SERVICE] Error getting network interfaces:`, error);
+        }
+    }
+    // Log configuration URLs
+    console.log(`🔗 [MODEL SERVICE] UTILITY_SERVICE_URL: ${process.env.UTILITY_SERVICE_URL || 'not set'}`);
+    console.log(`🔗 [MODEL SERVICE] API_GATEWAY_URL: ${process.env.API_GATEWAY_URL || 'not set'}`);
 });

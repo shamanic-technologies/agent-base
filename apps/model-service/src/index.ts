@@ -73,10 +73,10 @@ app.get('/health', (req, res) => {
   // Log server address information - safely accessing server info
   let addressInfo = null;
   try {
-    // Access server info safely (different ways depending on Express version)
-    const server = (req.socket as any).server || req.connection?.server || res.connection?.server;
-    if (server && typeof server.address === 'function') {
-      addressInfo = server.address();
+    // Use any for server access to avoid TypeScript errors
+    const serverObj = (req as any).socket?.server || (req as any).connection?.server || (res as any).connection?.server;
+    if (serverObj && typeof serverObj.address === 'function') {
+      addressInfo = serverObj.address();
     }
   } catch (serverError) {
     console.error(`⚠️ [MODEL SERVICE] Error getting server info:`, serverError);
@@ -110,7 +110,7 @@ app.post('/generate', async (req, res) => {
   const { prompt: message, conversation_id } = req.body;
   
   // Extract user ID from req.user (set by auth middleware)
-  const userId = req.user?.id as string;
+  const userId = (req as any).user?.id as string;
   
   // Get API key from x-api-key header (if present)
   const apiKey = req.headers['x-api-key'] as string;
@@ -176,7 +176,7 @@ app.post('/generate/stream', async (req, res) => {
   const { prompt: message, stream_modes, conversation_id } = req.body;
   
   // Extract user ID from req.user (set by auth middleware)
-  const userId = req.user?.id as string;
+  const userId = (req as any).user?.id as string;
   
   // Get API key from x-api-key header (if present)
   const apiKey = req.headers['x-api-key'] as string;
@@ -259,7 +259,7 @@ const server = app.listen(PORT, () => {
       
       for (const [name, interfaces] of Object.entries(networkInterfaces)) {
         if (interfaces) {
-          interfaces.forEach(iface => {
+          (interfaces as any[]).forEach(iface => {
             console.log(`   ${name}: ${iface.address} (${iface.family}) ${iface.internal ? 'internal' : 'external'}`);
           });
         }
