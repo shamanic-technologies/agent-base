@@ -26,9 +26,10 @@ app.use((0, cors_1.default)({
     origin: env_1.config.clientAppUrl,
     credentials: true, // Allow cookies to be sent with requests
 }));
+// Explicitly cast middleware to avoid TypeScript errors
 app.use((0, cookie_parser_1.default)());
 app.use(express_1.default.json());
-// Session configuration
+// Session configuration - explicitly cast to RequestHandler
 app.use((0, express_session_1.default)({
     secret: env_1.config.session.secret,
     resave: false,
@@ -39,7 +40,7 @@ app.use((0, express_session_1.default)({
         maxAge: env_1.config.session.maxAge
     }
 }));
-// Initialize Passport
+// Initialize Passport - explicitly cast to RequestHandler
 app.use(passport_1.default.initialize());
 app.use(passport_1.default.session());
 // Register all routes

@@ -24,10 +24,12 @@ app.use(cors({
   origin: config.clientAppUrl,
   credentials: true, // Allow cookies to be sent with requests
 }));
-app.use(cookieParser());
-app.use(express.json());
 
-// Session configuration
+// Explicitly cast middleware to avoid TypeScript errors
+app.use(cookieParser() as express.RequestHandler);
+app.use(express.json() as express.RequestHandler);
+
+// Session configuration - explicitly cast to RequestHandler
 app.use(
   session({
     secret: config.session.secret,
@@ -38,12 +40,12 @@ app.use(
       httpOnly: true,
       maxAge: config.session.maxAge
     }
-  })
+  }) as express.RequestHandler
 );
 
-// Initialize Passport
-app.use(passport.initialize());
-app.use(passport.session());
+// Initialize Passport - explicitly cast to RequestHandler
+app.use(passport.initialize() as express.RequestHandler);
+app.use(passport.session() as express.RequestHandler);
 
 // Register all routes
 app.use('/', routes);

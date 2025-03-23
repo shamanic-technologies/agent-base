@@ -20,7 +20,8 @@ export interface UserProfile {
 
 // Setup JWT strategy for protected routes
 passport.use(
-  new JwtStrategy(
+  // Use a stronger type assertion through unknown first
+  (new JwtStrategy(
     {
       // Only use Bearer token authentication
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -30,12 +31,13 @@ passport.use(
       // If the token is valid, the user will be available in req.user
       return done(null, jwtPayload);
     }
-  )
+  ) as unknown) as passport.Strategy
 );
 
 // Setup Google OAuth strategy
 passport.use(
-  new GoogleStrategy(
+  // Use a stronger type assertion through unknown first
+  (new GoogleStrategy(
     {
       clientID: config.google.clientId,
       clientSecret: config.google.clientSecret,
@@ -54,7 +56,7 @@ passport.use(
       
       return done(null, user);
     }
-  )
+  ) as unknown) as passport.Strategy
 );
 
 // Serialize user to session (store minimal info)

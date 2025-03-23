@@ -17,7 +17,40 @@ const routes_1 = __importDefault(require("./routes"));
 const app = (0, express_1.default)();
 // Middleware
 app.use((0, cors_1.default)());
-app.use(express_1.default.json());
+// Authentication middleware - extracts user from x-user-id header
+app.use((req, res, next) => {
+    try {
+        // Get user ID from header set by web-gateway auth middleware
+        const userId = req.headers['x-user-id'];
+        if (userId) {
+            // Set user object on request for route handlers
+            // Ensure all required User fields are included to satisfy the type
+            req.user = {
+                id: userId,
+                email: req.headers['x-user-email'] || 'unknown@example.com',
+                name: req.headers['x-user-name'] || 'Unknown User',
+                provider: req.headers['x-user-provider'] || 'unknown'
+            };
+            console.log(`[Auth Middleware] User ID set from header: ${userId}`);
+        }
+        next();
+    }
+    catch (error) {
+        console.error('[Auth Middleware] Error processing request:', error);
+        next();
+    }
+});
+// Special handling for webhook path which requires raw body
+app.use((req, res, next) => {
+    if (req.originalUrl === '/payment/webhook') {
+        // Skip JSON parsing for webhook endpoint - will be handled by express.raw middleware
+        next();
+    }
+    else {
+        // Use standard JSON body parsing for all other routes
+        express_1.default.json()(req, res, next);
+    }
+});
 // Register routes
 app.use(routes_1.default);
 // Start the server
