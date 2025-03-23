@@ -2,11 +2,9 @@
  * Request Utilities
  * 
  * Utilities for forwarding requests to backend services.
- * Configured to handle IPv6 connections required by Railway's private network.
  */
 import express from 'express';
 import axios from 'axios';
-import http from 'http';
 import { User } from '../types/index.js';
 
 /**
@@ -35,14 +33,10 @@ export const forwardRequest = async (
   const headers = {
     'Content-Type': 'application/json',
     ...(userId && { 'x-user-id': userId }),
-    ...(apiKey && { 'x-api-key': apiKey })
+    ...(apiKey && { 'x-api-key': apiKey }),
+    // Add host header for proper internal routing
+    'host': new URL(serviceUrl).host
   };
-
-  // Create an HTTP agent configured for IPv6
-  const httpAgent = new http.Agent({
-    family: 6, // Force IPv6
-    keepAlive: true
-  });
 
   try {
     console.log(`Forwarding ${req.method} request to: ${targetUrl}`);
@@ -52,28 +46,16 @@ export const forwardRequest = async (
     // Handle different HTTP methods
     switch (req.method) {
       case 'GET':
-        response = await axios.get(targetUrl, { 
-          headers,
-          httpAgent
-        });
+        response = await axios.get(targetUrl, { headers });
         break;
       case 'POST':
-        response = await axios.post(targetUrl, req.body, { 
-          headers,
-          httpAgent
-        });
+        response = await axios.post(targetUrl, req.body, { headers });
         break;
       case 'PUT':
-        response = await axios.put(targetUrl, req.body, { 
-          headers,
-          httpAgent
-        });
+        response = await axios.put(targetUrl, req.body, { headers });
         break;
       case 'DELETE':
-        response = await axios.delete(targetUrl, { 
-          headers,
-          httpAgent
-        });
+        response = await axios.delete(targetUrl, { headers });
         break;
       default:
         // For unsupported methods, return 405 Method Not Allowed
@@ -101,11 +83,6 @@ export const forwardRequest = async (
         errorDetails = error.message;
         
         console.error(`Connection error to ${targetUrl}: ${error.message}`);
-        
-        // Log IPv6-specific details if available
-        if (error.cause) {
-          console.error('Error cause:', error.cause);
-        }
       } else {
         // Service returned an error response
         statusCode = error.response.status;

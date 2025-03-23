@@ -212,8 +212,8 @@ app.post('/generate/stream', async (req, res) => {
 setupNetworkDebugger();
 
 // Start server
-const server = app.listen(Number(PORT), '::', () => {
-  console.log(`🤖 LangGraph ReAct Agent Service running at http://[::]:${PORT}`);
+const server = app.listen(Number(PORT), () => {
+  console.log(`🤖 LangGraph ReAct Agent Service running on port ${PORT}`);
   console.log(`🌐 Environment: ${nodeEnv}`);
   console.log(`🔑 API Key ${process.env.ANTHROPIC_API_KEY ? 'is' : 'is NOT'} configured`);
   
