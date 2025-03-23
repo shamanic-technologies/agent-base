@@ -57,19 +57,28 @@ export const configureHealthRoutes = (
       // DNS lookup check
       console.log(`🔍 Attempting to connect to model service...`);
       
+      // Manually construct the URL if it uses the internal naming convention
+      const requestUrl = modelServiceUrl.includes('.railway.internal') 
+        ? modelServiceUrl.replace('.railway.internal', '')
+        : modelServiceUrl;
+      
+      console.log(`🔗 Using request URL: ${requestUrl}/health`);
+      
       // Test connection with timeout and detailed error tracking
-      const result = await axios.get(`${modelServiceUrl}/health`, {
+      const result = await axios.get(`${requestUrl}/health`, {
         timeout: 5000,
         headers: {
           'Connection-Test': 'true'
-        }
+        },
+        // Force IPv4
+        family: 4
       });
       
       console.log(`✅ Successfully connected to model service. Status: ${result.status}`);
       
       res.json({
         success: true, 
-        modelServiceUrl,
+        modelServiceUrl: requestUrl,
         status: result.status,
         response: result.data,
         timestamp: new Date().toISOString()
@@ -124,19 +133,28 @@ export const configureHealthRoutes = (
       // DNS lookup check
       console.log(`🔍 Attempting to connect to utility service...`);
       
+      // Manually construct the URL if it uses the internal naming convention
+      const requestUrl = utilityServiceUrl.includes('.railway.internal') 
+        ? utilityServiceUrl.replace('.railway.internal', '')
+        : utilityServiceUrl;
+      
+      console.log(`🔗 Using request URL: ${requestUrl}/health`);
+      
       // Test connection with timeout and detailed error tracking
-      const result = await axios.get(`${utilityServiceUrl}/health`, {
+      const result = await axios.get(`${requestUrl}/health`, {
         timeout: 5000,
         headers: {
           'Connection-Test': 'true'
-        }
+        },
+        // Force IPv4
+        family: 4
       });
       
       console.log(`✅ Successfully connected to utility service. Status: ${result.status}`);
       
       res.json({
         success: true, 
-        utilityServiceUrl,
+        utilityServiceUrl: requestUrl,
         status: result.status,
         response: result.data,
         timestamp: new Date().toISOString()

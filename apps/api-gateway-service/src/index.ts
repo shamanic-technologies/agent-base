@@ -10,7 +10,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
 import { apiLoggerMiddleware } from './middlewares/logging.middleware.js';
-import { setupNetworkDebugger, setupServerDebugger } from './utils/network.js';
+import { setupServerDebugger } from './utils/network.js';
 import { authMiddleware } from './middlewares/auth.middleware.js';
 import { configureRoutes } from './routes/index.js';
 
@@ -45,8 +45,8 @@ app.use(express.json());
 // Apply logging middleware to all routes that should be logged
 app.use(apiLoggerMiddleware);
 
-// Apply network debugging
-setupNetworkDebugger();
+// Apply network debugging - removing potentially problematic network debugger
+// setupNetworkDebugger();
 
 // Configure routes
 configureRoutes(

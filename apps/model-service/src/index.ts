@@ -13,7 +13,7 @@ import cors from 'cors';
 import { processWithReActAgent, streamWithReActAgent } from './lib/react-agent.js';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import { User } from './types/index.js';
-import { setupNetworkDebugger, setupServerDebugger } from './utils/network.js';
+import { setupServerDebugger } from './utils/network.js';
 
 // Load environment variables based on NODE_ENV
 const nodeEnv = process.env.NODE_ENV || 'development';
@@ -209,7 +209,7 @@ app.post('/generate/stream', async (req, res) => {
 });
 
 // Apply network debugging
-setupNetworkDebugger();
+// setupNetworkDebugger(); // Removed potentially problematic network debugger
 
 // Start server
 const server = app.listen(Number(PORT), '::', () => {
