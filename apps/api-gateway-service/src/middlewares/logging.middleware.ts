@@ -23,33 +23,19 @@ export const apiLoggerMiddleware = (req: express.Request, res: express.Response,
   const startTime = Date.now();
   const reqId = Math.random().toString(36).substring(2, 10);
   
-  // Log request details
+  // Log request details - raw, no sanitization
   console.log(`[${reqId}] 📥 ${req.method} ${req.path} - Client: ${req.ip}`);
   
   if (Object.keys(req.query).length > 0) {
     console.log(`[${reqId}] Query params:`, req.query);
   }
   
-  // Create a copy of the headers without sensitive data
-  const safeHeaders = { ...req.headers };
-  delete safeHeaders.authorization;
-  delete safeHeaders['x-api-key'];
+  // Log raw headers - no sanitization
+  console.log(`[${reqId}] Headers:`, req.headers);
   
-  console.log(`[${reqId}] Headers:`, safeHeaders);
-  
-  // Log masked body content for non-GET requests (limit size to avoid huge logs)
+  // Log raw body content for non-GET requests
   if (req.method !== 'GET' && req.body) {
-    const maskedBody = { ...req.body };
-    
-    // Mask any sensitive fields
-    if (maskedBody.apiKey) maskedBody.apiKey = '[REDACTED]';
-    if (maskedBody.password) maskedBody.password = '[REDACTED]';
-    if (maskedBody.token) maskedBody.token = '[REDACTED]';
-    
-    console.log(`[${reqId}] Body:`, JSON.stringify(maskedBody).substring(0, 500));
-    if (JSON.stringify(maskedBody).length > 500) {
-      console.log(`[${reqId}] Body truncated...`);
-    }
+    console.log(`[${reqId}] Body:`, req.body);
   }
   
   // Intercept the response to log its status
@@ -75,29 +61,25 @@ export const apiLoggerMiddleware = (req: express.Request, res: express.Response,
     // Send the log to the Logging Service
     if (LOGGING_SERVICE_URL) {
       try {
-        // Safely extract user ID from request
-        let userId = 'anonymous';
-        if (req.user) {
-          userId = (req.user as User).id;
-        } else if (req.headers['x-user-id']) {
-          userId = req.headers['x-user-id'] as string;
+        // Get user ID from header - no fallbacks
+        const userId = req.headers['x-user-id'] as string;
+        if (!userId) {
+          throw new Error('x-user-id header is required for logging');
         }
         
         const logEntry = {
           userId,
-          endpoint: req.path,
+          endpoint: req.originalUrl,
           method: req.method,
           statusCode: res.statusCode,
           ipAddress: req.ip,
           userAgent: req.headers['user-agent'],
           requestId: reqId,
           durationMs: responseTime,
-          // Pass raw request/response bodies - sanitization is now handled by logging-service
+          // Pass raw request/response bodies without any sanitization
           requestBody: req.body,
-          // Always include response body for /generate and /utility endpoints for proper pricing
-          responseBody: (req.path.startsWith('/generate') || req.path.startsWith('/utility')) 
-            ? (typeof body === 'string' ? JSON.parse(body) : body)
-            : (res.statusCode < 400 ? null : (typeof body === 'string' ? JSON.parse(body) : body)),
+          // Pass all response bodies - let logging-service handle sanitization
+          responseBody: typeof body === 'string' ? JSON.parse(body) : body
         };
         
         // Log that we're about to send to the logging service
