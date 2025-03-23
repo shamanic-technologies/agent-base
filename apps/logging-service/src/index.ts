@@ -58,7 +58,7 @@ app.use(bodyParser.json());
 
 /**
  * Authentication middleware
- * Enforces X-API-KEY header authentication for protected routes
+ * Enforces X-USER-ID header authentication for protected routes
  * Skips authentication for /health and /log endpoints
  */
 app.use((req, res, next) => {
@@ -68,16 +68,7 @@ app.use((req, res, next) => {
     return next();
   }
   
-  const apiKey = req.headers['x-api-key'] as string;
   const userId = req.headers['x-user-id'] as string;
-  
-  if (!apiKey) {
-    logger.warn(`Auth Middleware: Missing X-API-KEY header for ${req.path}`);
-    return res.status(401).json({
-      success: false,
-      error: 'Authentication required - X-API-KEY header must be provided'
-    });
-  }
   
   if (!userId) {
     logger.warn(`Auth Middleware: Missing X-USER-ID header for ${req.path}`);
@@ -87,7 +78,7 @@ app.use((req, res, next) => {
     });
   }
   
-  logger.info(`Auth Middleware: User ${userId} authenticated via X-API-KEY for ${req.path}`);
+  logger.info(`Auth Middleware: User ${userId} authenticated for ${req.path}`);
   next();
 });
 

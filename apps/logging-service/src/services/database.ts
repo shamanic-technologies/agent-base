@@ -70,7 +70,6 @@ export async function initDatabase(): Promise<void> {
       // so we'll create it by inserting a dummy record
       const dummyLog: ApiLogEntry = {
         id: uuidv4(),
-        apiKey: 'setup',
         userId: 'setup',
         endpoint: '/setup',
         method: 'GET',
@@ -247,53 +246,3 @@ export async function getUserLogs(userId: string, limit = 100, offset = 0): Prom
   }
 }
 
-/**
- * Get all logs with pagination
- * @param limit Maximum number of logs to return
- * @param offset Pagination offset
- * @returns All logs with pagination
- */
-export async function getAllLogs(limit = 100, offset = 0): Promise<any[] | null> {
-  try {
-    // Get database service URL from environment
-    const DB_SERVICE_URL = process.env.DATABASE_SERVICE_URL;
-    if (!DB_SERVICE_URL) {
-      throw new Error('DATABASE_SERVICE_URL environment variable is not defined');
-    }
-    
-    logger.info(`Getting all logs with limit: ${limit}, offset: ${offset}`);
-    
-    // Get all logs from the database service
-    const response = await fetch(`${DB_SERVICE_URL}/db/api_logs`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      }
-    });
-    
-    if (!response.ok) {
-      logger.error(`Failed to get API logs: ${response.status}`);
-      return null;
-    }
-    
-    const data = await response.json() as any;
-    
-    // Debug the response structure
-    logger.info(`Retrieved ${data.data?.items?.length || 0} logs from database`);
-    
-    // Check if the response has the expected structure
-    if (!data.success || !data.data || !data.data.items) {
-      logger.error('Unexpected response structure from database service');
-      return null;
-    }
-    
-    const logs = data.data.items
-      .sort((a: any, b: any) => new Date(b.data.timestamp).getTime() - new Date(a.data.timestamp).getTime())
-      .slice(offset, offset + limit);
-    
-    return logs;
-  } catch (error) {
-    logger.error('Error getting all logs', error);
-    return null;
-  }
-} 

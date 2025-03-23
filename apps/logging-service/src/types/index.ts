@@ -9,7 +9,7 @@
  */
 export interface ApiLogEntry {
   id?: string;
-  apiKey: string;
+  apiKey?: string;
   userId: string;  // Required user_id field
   endpoint: string;
   method: string;
