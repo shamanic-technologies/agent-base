@@ -3,7 +3,7 @@
  * 
  * Contains all Express route handlers for the database service
  */
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { pgPool, listTables, cleanupTables } from './db';
 
@@ -94,15 +94,17 @@ router.get('/db', async (req: Request, res: Response): Promise<void> => {
 /**
  * Get API keys for a specific user
  * Specialized endpoint for API keys with user filtering
+ * Gets user ID from x-user-id header
  */
 router.get('/api-keys', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { userId } = req.query;
+    // Get userId from x-user-id header only - no fallbacks
+    const userId = req.headers['x-user-id'] as string;
     
     if (!userId) {
       res.status(400).json({
         success: false,
-        error: 'userId query parameter is required'
+        error: 'User ID is required'
       });
       return;
     }
@@ -112,7 +114,7 @@ router.get('/api-keys', async (req: Request, res: Response): Promise<void> => {
     // Ensure api_keys collection exists
     await createCollection('api_keys');
     
-    // Query keys by userId
+    // Query keys by userId from header, not from query params
     const query = `
       SELECT * FROM "api_keys"
       WHERE data->>'userId' = $1
@@ -138,15 +140,32 @@ router.get('/api-keys', async (req: Request, res: Response): Promise<void> => {
 /**
  * Create a new API key
  * Specialized endpoint for storing API keys
+ * Gets user ID from x-user-id header
  */
 router.post('/api-keys', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { userId, name, keyPrefix, keyHash, id, createdAt, active } = req.body;
+    const { name, keyPrefix, keyHash, id, createdAt, active } = req.body;
     
-    if (!userId || !name || !keyPrefix || !keyHash) {
+    // Get userId from x-user-id header only - no fallbacks
+    const userId = req.headers['x-user-id'] as string;
+    
+    if (!userId) {
       res.status(400).json({
         success: false,
-        error: 'userId, name, keyPrefix, and keyHash are required'
+        error: 'User ID is required'
+      });
+      return;
+    }
+    
+    if (!name || !keyPrefix || !keyHash) {
+      const missing = [];
+      if (!name) missing.push('name');
+      if (!keyPrefix) missing.push('keyPrefix');
+      if (!keyHash) missing.push('keyHash');
+      
+      res.status(400).json({
+        success: false,
+        error: `Required fields missing: ${missing.join(', ')}`
       });
       return;
     }
@@ -253,22 +272,29 @@ router.post('/db/:collection', async (req: Request, res: Response): Promise<void
 });
 
 /**
- * Get items from a collection
+ * Get documents from a collection
+ * Applies filtering, pagination, and sorting options
  */
 router.get('/db/:collection', async (req: Request, res: Response): Promise<void> => {
   try {
     const { collection } = req.params;
-    const { query, limit, offset } = req.query;
+    const { query, limit, offset, sort } = req.query;
     
-    if (!collection) {
-      res.status(404).json({
-        success: false,
-        error: 'Collection not found'
-      });
-      return;
+    // Check if collection exists by attempting to query it
+    try {
+      await pgPool.query(`SELECT 1 FROM "${collection}" LIMIT 1`);
+    } catch (err: any) {
+      if (err.code === '42P01') { // Table doesn't exist
+        res.status(404).json({
+          success: false,
+          error: `Collection '${collection}' not found`
+        });
+        return;
+      }
+      throw err; // Re-throw other errors
     }
     
-    // Start building the query
+    // Build query
     let sqlQuery = `SELECT * FROM "${collection}"`;
     const queryParams: any[] = [];
     

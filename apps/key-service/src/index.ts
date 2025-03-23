@@ -112,8 +112,12 @@ app.post('/keys', async (req: express.Request, res: express.Response) => {
     
     console.log(`Creating API key for user ${userId} with name: ${name}`);
     
-    // Save to database service
-    const response = await axios.post(`${DB_SERVICE_URL}/api-keys`, keyData);
+    // Save to database service with x-user-id header
+    const response = await axios.post(`${DB_SERVICE_URL}/api-keys`, keyData, {
+      headers: {
+        'x-user-id': userId
+      }
+    });
     
     if (!response.data.success) {
       console.error('Failed to store API key in database:', response.data);
@@ -160,13 +164,13 @@ app.get('/keys/:id', async (req: express.Request, res: express.Response) => {
     
     console.log(`Fetching API key with ID: ${id} for user: ${userId}`);
     
-    // Query database for key by ID and make sure it belongs to the authenticated user
+    // Query database for key by ID - let database filter by x-user-id header
     const response = await axios.get(`${DB_SERVICE_URL}/db/api_keys`, {
+      headers: {
+        'x-user-id': userId
+      },
       params: {
-        query: JSON.stringify({ 
-          'data.id': id,
-          'data.userId': userId 
-        })
+        query: JSON.stringify({ 'data.id': id })
       }
     });
     
@@ -222,9 +226,11 @@ app.get('/keys', async (req: express.Request, res: express.Response) => {
     
     console.log(`Fetching API keys for user: ${userId}`);
     
-    // Fetch keys from database service
+    // Fetch keys from database service - pass userId in x-user-id header
     const response = await axios.get(`${DB_SERVICE_URL}/api-keys`, {
-      params: { userId }
+      headers: {
+        'x-user-id': userId
+      }
     });
     
     if (!response.data.success) {
@@ -282,13 +288,13 @@ app.delete('/keys/:id', async (req: express.Request, res: express.Response) => {
     
     console.log(`Revoking API key with ID: ${id} for user: ${userId}`);
     
-    // Find the key and ensure it belongs to the authenticated user
+    // Find the key - database service will filter by x-user-id header
     const response = await axios.get(`${DB_SERVICE_URL}/db/api_keys`, {
+      headers: {
+        'x-user-id': userId
+      },
       params: {
-        query: JSON.stringify({ 
-          'data.id': id,
-          'data.userId': userId
-        })
+        query: JSON.stringify({ 'data.id': id })
       }
     });
     
