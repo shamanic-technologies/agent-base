@@ -2,120 +2,126 @@
  * Request Utilities
  * 
  * Utilities for forwarding requests to backend services.
+ * Configured to handle IPv6 connections required by Railway's private network.
  */
 import express from 'express';
 import axios from 'axios';
+import http from 'http';
 import { User } from '../types/index.js';
 
 /**
- * Forwards a request to a service
- * Passes user information via headers instead of in the request body
+ * Forward a request to a backend service
+ * Handles different HTTP methods and passes user information via headers
+ * 
+ * @param req Express request
+ * @param res Express response
+ * @param serviceUrl URL of the target service
+ * @param path Path to forward to
  */
-export const forwardRequest = async (req: express.Request, res: express.Response, serviceUrl: string) => {
-  // Build target URL by joining service URL with the request path
-  const targetUrl = `${serviceUrl}${req.path}`;
+export const forwardRequest = async (
+  req: express.Request,
+  res: express.Response, 
+  serviceUrl: string,
+  path: string
+) => {
+  // Build target URL
+  const targetUrl = `${serviceUrl}${path}`;
   
-  // Create the request configuration
+  // Get user info from middleware
+  const userId = req.user ? (req.user as User).id : undefined;
+  const apiKey = req.headers['x-api-key'] as string | undefined;
+  
+  // Set up headers to include user ID and API key if available
   const headers = {
     'Content-Type': 'application/json',
-    // Propagate user ID to downstream services if available
-    ...(req.user && { 'x-user-id': (req.user as User).id }),
-    // Include the original API key if available (for chained service calls)
-    ...(req.headers['x-api-key'] && { 'x-api-key': req.headers['x-api-key'] as string })
+    ...(userId && { 'x-user-id': userId }),
+    ...(apiKey && { 'x-api-key': apiKey })
   };
-  
+
+  // Create an HTTP agent configured for IPv6
+  const httpAgent = new http.Agent({
+    family: 6, // Force IPv6
+    keepAlive: true
+  });
+
   try {
     console.log(`Forwarding ${req.method} request to: ${targetUrl}`);
     
     let response;
     
-    // Use explicit method calls based on the request method
+    // Handle different HTTP methods
     switch (req.method) {
-      case 'POST':
-        console.log(`Making POST request to ${targetUrl} with body:`, JSON.stringify(req.body).substring(0, 200));
-        response = await axios.post(targetUrl, req.body, { 
-          headers,
-          timeout: 120000 // 2 minutes
-        });
-        break;
-        
       case 'GET':
-        console.log(`Making GET request to ${targetUrl}`);
         response = await axios.get(targetUrl, { 
           headers,
-          params: req.query,
-          timeout: 120000 // 2 minutes
+          httpAgent
         });
         break;
-        
+      case 'POST':
+        response = await axios.post(targetUrl, req.body, { 
+          headers,
+          httpAgent
+        });
+        break;
       case 'PUT':
         response = await axios.put(targetUrl, req.body, { 
           headers,
-          timeout: 120000 // 2 minutes
+          httpAgent
         });
         break;
-        
       case 'DELETE':
         response = await axios.delete(targetUrl, { 
           headers,
-          timeout: 120000 // 2 minutes
+          httpAgent
         });
         break;
-        
       default:
-        // Fallback to the generic method for other HTTP methods
-        response = await axios({
-          method: req.method,
-          url: targetUrl,
-          headers,
-          data: req.body,
-          timeout: 120000 // 2 minutes
+        // For unsupported methods, return 405 Method Not Allowed
+        return res.status(405).json({
+          success: false,
+          error: 'API Gateway Service: Method not allowed'
         });
     }
     
-    // Return the service response
+    // Return the response from the target service
     return res.status(response.status).json(response.data);
   } catch (error) {
     console.error(`Error forwarding request to ${targetUrl}:`, error);
     
     let statusCode = 500;
-    let errorMessage = 'API Gateway Service: Error communicating with service';
+    let errorMessage = 'API Gateway Service: Error forwarding request';
     let errorDetails = 'Unknown error';
     
-    // Handle Axios errors with specialized error handling
+    // Handle various error types
     if (axios.isAxiosError(error)) {
       if (!error.response) {
-        // Connection error (no response received)
-        console.error(`API Gateway connection error to ${serviceUrl}: ${error.message}`);
+        // Connection error - cannot connect to service
         statusCode = 502; // Bad Gateway
-        errorMessage = `API Gateway Service: Could not connect to ${serviceUrl.split('/').slice(-1)[0] || 'service'}`;
+        errorMessage = `API Gateway Service: Could not connect to service`;
         errorDetails = error.message;
+        
+        console.error(`Connection error to ${targetUrl}: ${error.message}`);
+        
+        // Log IPv6-specific details if available
+        if (error.cause) {
+          console.error('Error cause:', error.cause);
+        }
       } else {
         // Service returned an error response
-        console.error(`Service error response from ${serviceUrl}: ${error.response.status}`, error.response.data ? JSON.stringify(error.response.data) : 'No data');
         statusCode = error.response.status;
         errorMessage = error.response.data?.error || errorMessage;
         errorDetails = error.response.data?.details || error.message;
       }
     } else if (error instanceof Error) {
-      // General JavaScript errors
       errorDetails = error.message;
-      
-      // Handle timeout errors specifically
-      if (error.message.includes('timeout')) {
-        statusCode = 504; // Gateway Timeout
-        errorMessage = 'API Gateway Service: Request timed out';
-        errorDetails = `Request to ${serviceUrl.split('/').slice(-1)[0] || 'service'} timed out after 120 seconds`;
-      }
     }
     
     // Return structured error response
     return res.status(statusCode).json({
-      status: statusCode,
       success: false,
       error: errorMessage,
       details: errorDetails,
-      userId: req.user ? (req.user as User).id : null
+      userId: userId
     });
   }
 }; 

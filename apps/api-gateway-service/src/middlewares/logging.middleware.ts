@@ -7,7 +7,7 @@
 import express from 'express';
 import fetch from 'node-fetch';
 
-const LOGGING_SERVICE_URL = process.env.LOGGING_SERVICE_URL || 'http://localhost:3900';
+const LOGGING_SERVICE_URL = process.env.LOGGING_SERVICE_URL;
 
 /**
  * API Logger Middleware
