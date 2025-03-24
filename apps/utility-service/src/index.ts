@@ -79,7 +79,7 @@ app.get('/health', (req: Request, res: Response) => {
 
 // Define a route handler function separate from the app.post call
 const utilityHandler = async (req: Request, res: Response): Promise<void> => {
-  const { operation, input, conversation_id } = req.body as UtilityRequest;
+  const { operation, input, conversation_id, redirect_url } = req.body as UtilityRequest;
   
   // Get user information from headers (passed by API Gateway)
   const userId = req.headers['x-user-id'] as string;
@@ -117,7 +117,8 @@ const utilityHandler = async (req: Request, res: Response): Promise<void> => {
       operation as UtilityOperation, 
       userId,
       conversation_id,
-      input
+      input,
+      redirect_url
     );
     
     // Return the result
