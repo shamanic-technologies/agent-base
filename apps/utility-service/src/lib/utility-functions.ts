@@ -10,6 +10,8 @@ import {
   DeleteTableRequest,
   FireCrawlExtractContentRequest, 
   GetTableRequest,
+  GoogleFlightsRequest,
+  GoogleMapsRequest,
   GoogleSearchRequest, 
   QueryTableRequest,
   UtilityOperation, 
@@ -29,6 +31,8 @@ import { UtilityGitHubCreateCodespace } from './utilities/utility_github_create_
 import { UtilityGitHubDestroyCodespace } from './utilities/utility_github_destroy_codespace.js';
 import { UtilityFireCrawlExtractContent } from './utilities/utility_firecrawl_extract_content.js';
 import { UtilityGoogleSearch } from './utilities/utility_google_search.js';
+import { UtilityGoogleMaps } from './utilities/utility_google_maps.js';
+import { UtilityGoogleFlights } from './utilities/utility_google_flights.js';
 import { UtilityGetDatabase } from './utilities/utility_get_database.js';
 import { UtilityCreateTable } from './utilities/utility_create_table.js';
 import { UtilityAlterTable } from './utilities/utility_alter_table.js';
@@ -494,6 +498,40 @@ export async function performGoogleSearch(
 }
 
 /**
+ * Perform a Google Maps search for places
+ * @param data Request with search query and options
+ * @returns Promise with the places results
+ */
+export async function performGoogleMapsSearch(
+  userId: string,
+  conversationId: string,
+  data: GoogleMapsRequest
+): Promise<UtilityResponse> {
+  try {
+    // Create a utility instance with placeholder values
+    const googleMapsUtility = new UtilityGoogleMaps({
+      conversationId: conversationId,
+      parentNodeId: null,
+      parentNodeType: null,
+      userId: userId
+    });
+    
+    // Call the utility function with the provided search query
+    const result = await googleMapsUtility._call(data);
+    
+    return {
+      data: result
+    };
+  } catch (error) {
+    console.error("Google Maps search error:", error);
+    return {
+      error: "Failed to perform Google Maps search",
+      details: error instanceof Error ? error.message : String(error)
+    };
+  }
+}
+
+/**
  * Get database information including tables and schemas
  * @returns Promise with the database information response
  */
@@ -696,6 +734,40 @@ export async function queryTable(
 }
 
 /**
+ * Perform a Google Flights search for flight options
+ * @param data Request with origin, destination, dates and options
+ * @returns Promise with the flight results
+ */
+export async function performGoogleFlightsSearch(
+  userId: string,
+  conversationId: string,
+  data: GoogleFlightsRequest
+): Promise<UtilityResponse> {
+  try {
+    // Create a utility instance with placeholder values
+    const googleFlightsUtility = new UtilityGoogleFlights({
+      conversationId: conversationId,
+      parentNodeId: null,
+      parentNodeType: null,
+      userId: userId
+    });
+    
+    // Call the utility function with the provided search parameters
+    const result = await googleFlightsUtility._call(data);
+    
+    return {
+      data: result
+    };
+  } catch (error) {
+    console.error("Google Flights search error:", error);
+    return {
+      error: "Failed to perform Google Flights search",
+      details: error instanceof Error ? error.message : String(error)
+    };
+  }
+}
+
+/**
  * Process a utility operation based on the provided operation name and data
  * 
  * @param operation The utility operation to process
@@ -759,6 +831,10 @@ export async function processUtilityOperation(
         return await extractFireCrawlContent(userId, conversationId, data);
       case 'utility_google_search':
         return await performGoogleSearch(userId, conversationId, data);
+      case 'utility_google_maps':
+        return await performGoogleMapsSearch(userId, conversationId, data);
+      case 'utility_google_flights':
+        return await performGoogleFlightsSearch(userId, conversationId, data);
         
       // Database Operations
       case 'utility_get_database':

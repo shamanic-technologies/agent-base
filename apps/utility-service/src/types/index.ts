@@ -34,6 +34,8 @@ export type UtilityOperation =
   | 'utility_github_list_codespaces'
   | 'utility_firecrawl_extract_content'
   | 'utility_google_search'
+  | 'utility_google_maps'
+  | 'utility_google_flights'
   | 'utility_get_database'
   | 'utility_create_table'
   | 'utility_alter_table'
@@ -68,6 +70,25 @@ export interface FireCrawlExtractContentRequest {
 export interface GoogleSearchRequest {
   query: string;
   limit?: number;
+}
+
+// Google Maps utility types
+export interface GoogleMapsRequest {
+  query: string;
+  location?: string;
+  limit?: number;
+}
+
+// Google Flights utility types
+export interface GoogleFlightsRequest {
+  origin: string;
+  destination: string;
+  departure_date?: string;
+  return_date?: string;
+  adults?: number;
+  children?: number;
+  infants?: number;
+  cabin_class?: string;
 }
 
 // GitHub utility types

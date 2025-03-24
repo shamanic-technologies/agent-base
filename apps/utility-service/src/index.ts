@@ -175,6 +175,8 @@ app.get('/utilities', (req: Request, res: Response) => {
     'utility_github_deploy_code',
     'utility_firecrawl_extract_content',
     'utility_google_search',
+    'utility_google_maps',
+    'utility_google_flights',
     'utility_get_database',
     'utility_create_table',
     'utility_alter_table',
@@ -286,6 +288,75 @@ app.get('/utility/:id', (req: Request, res: Response) => {
           }
         },
         required: ['query']
+      }
+    },
+    utility_google_maps: {
+      name: 'utility_google_maps',
+      description: 'Search for locations, businesses, and places using Google Maps',
+      schema: {
+        type: 'object',
+        properties: {
+          query: {
+            type: 'string',
+            description: 'The search query for places/locations'
+          },
+          location: {
+            type: 'string',
+            description: 'Optional specific location to search in (e.g., "New York, NY")'
+          },
+          limit: {
+            type: 'number',
+            description: 'Maximum number of results to return (default: 5, max: 10)',
+            default: 5
+          }
+        },
+        required: ['query']
+      }
+    },
+    utility_google_flights: {
+      name: 'utility_google_flights',
+      description: 'Search for flight options between destinations',
+      schema: {
+        type: 'object',
+        properties: {
+          origin: {
+            type: 'string',
+            description: 'Origin airport code or city (e.g., "NYC", "New York", "JFK")'
+          },
+          destination: {
+            type: 'string',
+            description: 'Destination airport code or city (e.g., "LAX", "London", "Tokyo")'
+          },
+          departure_date: {
+            type: 'string',
+            description: 'Departure date in YYYY-MM-DD format'
+          },
+          return_date: {
+            type: 'string',
+            description: 'Return date in YYYY-MM-DD format for round trips (optional)'
+          },
+          adults: {
+            type: 'number',
+            description: 'Number of adult passengers',
+            default: 1
+          },
+          children: {
+            type: 'number',
+            description: 'Number of child passengers',
+            default: 0
+          },
+          infants: {
+            type: 'number',
+            description: 'Number of infant passengers',
+            default: 0
+          },
+          cabin_class: {
+            type: 'string',
+            description: 'Cabin class preference (economy, premium_economy, business, first)',
+            default: 'economy'
+          }
+        },
+        required: ['origin', 'destination']
       }
     },
     utility_get_database: {
