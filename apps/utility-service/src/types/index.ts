@@ -8,6 +8,7 @@ export interface UtilityRequest {
   input?: any;
   user_id: string;
   conversation_id: string;
+  redirect_url?: string; // Optional redirect URL for OAuth flows
 }
 
 export interface UtilityResponse {
@@ -34,6 +35,7 @@ export type UtilityOperation =
   | 'utility_github_list_codespaces'
   | 'utility_firecrawl_extract_content'
   | 'utility_google_search'
+  | 'utility_google_oauth'
   | 'utility_get_database'
   | 'utility_create_table'
   | 'utility_alter_table'
@@ -191,4 +193,20 @@ export interface UtilityToolParams {
   parentNodeId: ParentNodeId;
   parentNodeType: ParentNodeType;
   userId: string;
+}
+
+// Google OAuth utility types
+export interface GoogleOAuthRequest {
+  redirect_url: string;     // Required frontend URL to redirect back to after auth
+}
+
+export interface GoogleOAuthResponse {
+  button_data: {
+    type: 'oauth_button';
+    provider: 'google';
+    text: string;
+    icon: string;
+    url: string;
+    scopes: string[];
+  };
 } 

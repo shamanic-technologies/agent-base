@@ -79,7 +79,7 @@ app.get('/health', (req: Request, res: Response) => {
 
 // Define a route handler function separate from the app.post call
 const utilityHandler = async (req: Request, res: Response): Promise<void> => {
-  const { operation, input, conversation_id } = req.body as UtilityRequest;
+  const { operation, input, conversation_id, redirect_url } = req.body as UtilityRequest;
   
   // Get user information from headers (passed by API Gateway)
   const userId = req.headers['x-user-id'] as string;
@@ -117,7 +117,8 @@ const utilityHandler = async (req: Request, res: Response): Promise<void> => {
       operation as UtilityOperation, 
       userId,
       conversation_id,
-      input
+      input,
+      redirect_url
     );
     
     // Return the result
@@ -175,6 +176,7 @@ app.get('/utilities', (req: Request, res: Response) => {
     'utility_github_deploy_code',
     'utility_firecrawl_extract_content',
     'utility_google_search',
+    'utility_google_oauth',
     'utility_get_database',
     'utility_create_table',
     'utility_alter_table',
@@ -286,6 +288,21 @@ app.get('/utility/:id', (req: Request, res: Response) => {
           }
         },
         required: ['query']
+      }
+    },
+    utility_google_oauth: {
+      name: 'utility_google_oauth',
+      description: 'Generate a Google OAuth flow that creates a "Continue with Google" button in the UI',
+      schema: {
+        type: 'object',
+        properties: {
+          conversation_id: {
+            type: 'string',
+            description: 'The conversation ID for tracking the OAuth request context'
+          }
+        },
+        required: ['conversation_id'],
+        note: 'This will render a "Continue with Google" button in the UI that redirects users to Google authentication'
       }
     },
     utility_get_database: {
