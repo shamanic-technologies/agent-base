@@ -10,12 +10,8 @@ import {
   DeleteTableRequest,
   FireCrawlExtractContentRequest, 
   GetTableRequest,
-<<<<<<< HEAD
   GoogleFlightsRequest,
   GoogleMapsRequest,
-=======
-  GoogleOAuthRequest,
->>>>>>> 7d25343f8e5fcd0057019733fbf5c30c514407a8
   GoogleSearchRequest, 
   QueryTableRequest,
   UtilityOperation, 
@@ -35,12 +31,8 @@ import { UtilityGitHubCreateCodespace } from './utilities/utility_github_create_
 import { UtilityGitHubDestroyCodespace } from './utilities/utility_github_destroy_codespace.js';
 import { UtilityFireCrawlExtractContent } from './utilities/utility_firecrawl_extract_content.js';
 import { UtilityGoogleSearch } from './utilities/utility_google_search.js';
-<<<<<<< HEAD
 import { UtilityGoogleMaps } from './utilities/utility_google_maps.js';
 import { UtilityGoogleFlights } from './utilities/utility_google_flights.js';
-=======
-import { UtilityGoogleOAuth } from './utilities/utility_google_oauth.js';
->>>>>>> 7d25343f8e5fcd0057019733fbf5c30c514407a8
 import { UtilityGetDatabase } from './utilities/utility_get_database.js';
 import { UtilityCreateTable } from './utilities/utility_create_table.js';
 import { UtilityAlterTable } from './utilities/utility_alter_table.js';
@@ -742,7 +734,6 @@ export async function queryTable(
 }
 
 /**
-<<<<<<< HEAD
  * Perform a Google Flights search for flight options
  * @param data Request with origin, destination, dates and options
  * @returns Promise with the flight results
@@ -755,42 +746,12 @@ export async function performGoogleFlightsSearch(
   try {
     // Create a utility instance with placeholder values
     const googleFlightsUtility = new UtilityGoogleFlights({
-=======
- * Generate Google OAuth button data for the frontend
- * @param userId User ID for tracking
- * @param conversationId Conversation ID for context
- * @param redirectUrl Frontend URL to redirect back to after authentication
- * @returns Promise with OAuth button data
- */
-export async function getGoogleOAuth(
-  userId: string,
-  conversationId: string,
-  redirectUrl: string
-): Promise<UtilityResponse> {
-  try {
-    // Check if redirect_url is provided
-    if (!redirectUrl) {
-      return {
-        error: "Missing required parameter: redirect_url",
-        details: "You must provide a redirect_url where the user will be sent after authentication"
-      };
-    }
-    
-    // Ensure conversation_id is included in the data
-    const inputData: GoogleOAuthRequest = {
-      redirect_url: redirectUrl
-    };
-    
-    // Create a utility instance
-    const googleOAuthUtility = new UtilityGoogleOAuth({
->>>>>>> 7d25343f8e5fcd0057019733fbf5c30c514407a8
       conversationId: conversationId,
       parentNodeId: null,
       parentNodeType: null,
       userId: userId
     });
     
-<<<<<<< HEAD
     // Call the utility function with the provided search parameters
     const result = await googleFlightsUtility._call(data);
     
@@ -801,36 +762,17 @@ export async function getGoogleOAuth(
     console.error("Google Flights search error:", error);
     return {
       error: "Failed to perform Google Flights search",
-=======
-    // Call the utility function with the provided data
-    const result = await googleOAuthUtility._call(inputData);
-    
-    return {
-      data: JSON.parse(result)
-    };
-  } catch (error) {
-    console.error("Google OAuth utility error:", error);
-    return {
-      error: "Failed to generate Google OAuth",
->>>>>>> 7d25343f8e5fcd0057019733fbf5c30c514407a8
       details: error instanceof Error ? error.message : String(error)
     };
   }
 }
 
+
 /**
-<<<<<<< HEAD
- * Process a utility operation based on the provided operation name and data
- * 
- * @param operation The utility operation to process
- * @param userId Required user ID for tracking and personalization
- * @param conversationId Required conversation ID for context
-=======
  * Process utility operations based on the operation type
  * @param operation The utility operation to perform
  * @param userId User ID for tracking and access control
  * @param conversationId Conversation ID for context
->>>>>>> 7d25343f8e5fcd0057019733fbf5c30c514407a8
  * @param data Optional data for the operation
  * @param redirectUrl Optional redirect URL for OAuth flows
  * @returns Promise with the operation result
@@ -849,67 +791,6 @@ export async function processUtilityOperation(
     case 'utility_get_current_datetime':
       return await getCurrentDateTime(userId, conversationId, data);
       
-<<<<<<< HEAD
-      // GitHub Operations
-      case 'utility_github_read_file':
-        return await readGitHubFile(userId, conversationId, data);
-      case 'utility_github_update_file':
-        return await updateGitHubFile(userId, conversationId, data);
-      case 'utility_github_list_directory':
-        return await listGitHubDirectory(userId, conversationId, data);
-      case 'utility_github_lint_code':
-        return await lintGitHubCode(userId, conversationId, data);
-      case 'utility_github_create_file':
-        return await createGitHubFile(userId, conversationId, data);
-      case 'utility_github_get_code':
-        return await getGitHubCode(userId, conversationId, data);
-      case 'utility_github_deploy_code':
-        return await deployGitHubCode(userId, conversationId, data);
-      case 'utility_github_run_code':
-        return await runGitHubCode(userId, conversationId, data);
-      case 'utility_github_create_codespace':
-        return await createGitHubCodespace(userId, conversationId);
-      case 'utility_github_destroy_codespace':
-        return await destroyGitHubCodespace(userId, conversationId, data);
-      case 'utility_github_list_codespaces':
-        return await listGitHubCodespaces(userId, conversationId);
-        
-      // Content and Search Operations
-      case 'utility_firecrawl_extract_content':
-        return await extractFireCrawlContent(userId, conversationId, data);
-      case 'utility_google_search':
-        return await performGoogleSearch(userId, conversationId, data);
-      case 'utility_google_maps':
-        return await performGoogleMapsSearch(userId, conversationId, data);
-      case 'utility_google_flights':
-        return await performGoogleFlightsSearch(userId, conversationId, data);
-        
-      // Database Operations
-      case 'utility_get_database':
-        return await getDatabase(userId, conversationId);
-      case 'utility_create_table':
-        return await createTable(userId, conversationId, data);
-      case 'utility_alter_table':
-        return await alterTable(userId, conversationId, data);
-      case 'utility_delete_table':
-        return await deleteTable(userId, conversationId, data);
-      case 'utility_get_table':
-        return await getTable(userId, conversationId, data);
-      case 'utility_query_table':
-        return await queryTable(userId, conversationId, data);
-        
-      default:
-        return {
-          error: `Unknown utility operation: ${operation}`
-        };
-    }
-  } catch (error) {
-    console.error(`Error processing utility operation ${operation}:`, error);
-    return {
-      error: `Failed to process utility operation: ${operation}`,
-      details: error instanceof Error ? error.message : String(error)
-    };
-=======
     case 'utility_github_create_codespace':
       return await createGitHubCodespace(userId, conversationId);
       
@@ -967,13 +848,9 @@ export async function processUtilityOperation(
     case 'utility_query_table':
       return await queryTable(userId, conversationId, data);
       
-    case 'utility_google_oauth':
-      return await getGoogleOAuth(userId, conversationId, redirectUrl);
-      
     default:
       return {
         error: `Unsupported utility operation: ${operation}`
       };
->>>>>>> 7d25343f8e5fcd0057019733fbf5c30c514407a8
   }
 }

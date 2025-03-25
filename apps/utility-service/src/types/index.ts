@@ -35,12 +35,9 @@ export type UtilityOperation =
   | 'utility_github_list_codespaces'
   | 'utility_firecrawl_extract_content'
   | 'utility_google_search'
-<<<<<<< HEAD
   | 'utility_google_maps'
   | 'utility_google_flights'
-=======
   | 'utility_google_oauth'
->>>>>>> 7d25343f8e5fcd0057019733fbf5c30c514407a8
   | 'utility_get_database'
   | 'utility_create_table'
   | 'utility_alter_table'

@@ -225,7 +225,7 @@ function createReactAgentWrapper(config: ReactAgentWrapperConfig): ReactAgentWra
     try {
       const { 
         messages,
-        modes = 'messages',
+        modes = 'values',
         messageHistory = [],
         userId,
         conversationId

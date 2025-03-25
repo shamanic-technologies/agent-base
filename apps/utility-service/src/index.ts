@@ -8,6 +8,11 @@
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
+import express, { Request, Response } from 'express';
+import cors from 'cors';
+import os from 'os'; // Add ESM import for os module
+import { processUtilityOperation } from './lib/utility-functions.js';
+import { UtilityOperation, UtilityRequest, UtilityResponse } from './types/index.js';
 
 // Load environment variables based on NODE_ENV
 const nodeEnv = process.env.NODE_ENV || 'development';
@@ -24,11 +29,6 @@ if (nodeEnv === 'development') {
 } else {
   console.log('🚀 Production environment detected, using Railway configuration.');
 }
-
-import express, { Request, Response } from 'express';
-import cors from 'cors';
-import { processUtilityOperation } from './lib/utility-functions.js';
-import { UtilityOperation, UtilityRequest, UtilityResponse } from './types/index.js';
 
 // Middleware setup
 const app = express();
@@ -487,7 +487,6 @@ const server = app.listen(PORT, () => {
     
     // Log network interfaces for debugging
     try {
-      const os = require('os');
       const networkInterfaces = os.networkInterfaces();
       console.log(`🖧 [UTILITY SERVICE] Available network interfaces:`);
       
