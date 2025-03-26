@@ -33,7 +33,7 @@ export const configureRoutes = (
   // Agent service routes
   const agentRouter = express.Router();
   configureAgentRoutes(agentRouter, serviceUrls.agent, authMiddleware);
-  app.use('/', agentRouter);
+  app.use('/agent', agentRouter);
   
   // Debug route to confirm API Gateway is working
   app.get('/debug', (req, res) => {

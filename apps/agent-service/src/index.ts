@@ -1,9 +1,9 @@
 /**
  * Claude 3.7 Sonnet Agent Service with Vercel AI SDK
  * 
- * A pure streaming-only Express server implementing Claude 3.7 Sonnet with Vercel AI SDK.
- * This service is 100% focused on streaming responses without any blocking calls.
- * Leverages Claude 3.7 Sonnet's extended thinking capabilities for real-time reasoning.
+ * A production-ready Express server implementing Claude 3.7 Sonnet with Vercel AI SDK.
+ * This service is optimized for streaming responses with high-quality AI text generation.
+ * Features enhanced reasoning capabilities through Claude 3.7 Sonnet's thinking process.
  */
 // Import and configure dotenv first
 import dotenv from 'dotenv';
@@ -35,7 +35,11 @@ const app = express();
 const PORT = process.env.PORT;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  // Allow credentials and set exposed headers for streaming
+  credentials: true,
+  exposedHeaders: ['Content-Type', 'Cache-Control', 'Connection']
+}));
 app.use(express.json());
 
 /**
@@ -55,7 +59,7 @@ app.use((req, res, next) => {
         name: req.headers['x-user-name'] as string,
         provider: req.headers['x-user-provider'] as string
       };
-      console.log(`[Auth Middleware] User ID set from header: ${userId}`);
+      console.log(`[Auth Middleware] User authenticated: ${userId}`);
     }
     
     next();
@@ -65,28 +69,25 @@ app.use((req, res, next) => {
   }
 });
 
-// Health check endpoint
+/**
+ * Health check endpoint
+ * Returns status information about the service
+ */
 app.get('/health', (req, res) => {
   console.log(`📡 [AGENT SERVICE] Health check request received from ${req.ip}`);
-  console.log(`📋 [AGENT SERVICE] Request headers:`, JSON.stringify(req.headers, null, 2));
   
-  // Log server address information - safely accessing server info
+  // Get server address info safely
   let addressInfo = null;
   try {
-    // Use any for server access to avoid TypeScript errors
-    const serverObj = (req as any).socket?.server || (req as any).connection?.server || (res as any).connection?.server;
+    const serverObj = (req as any).socket?.server || (req as any).connection?.server;
     if (serverObj && typeof serverObj.address === 'function') {
       addressInfo = serverObj.address();
     }
   } catch (serverError) {
     console.error(`⚠️ [AGENT SERVICE] Error getting server info:`, serverError);
   }
-  console.log(`🔌 [AGENT SERVICE] Server listening on:`, addressInfo);
-
-  // Log environment information
-  console.log(`🌐 [AGENT SERVICE] Environment: ${nodeEnv}`);
-  console.log(`🔑 [AGENT SERVICE] API Key ${process.env.ANTHROPIC_API_KEY ? 'is' : 'is NOT'} configured`);
   
+  // Prepare health response
   const healthResponse = { 
     status: 'healthy',
     environment: nodeEnv,
@@ -101,85 +102,97 @@ app.get('/health', (req, res) => {
     implementation: 'Vercel AI SDK with Claude 3.7 Sonnet Streaming'
   };
   
-  console.log(`✅ [AGENT SERVICE] Responding with:`, JSON.stringify(healthResponse, null, 2));
-  
   res.status(200).json(healthResponse);
 });
 
 /**
- * Streaming endpoint
- * Handles streaming responses from the agent
+ * Streaming endpoint - /stream
+ * 
+ * Handles AI text generation with streaming responses
+ * Follows Server-Sent Events (SSE) protocol compatible with Vercel AI SDK
  */
 app.post('/stream', async (req, res) => {
   const { prompt: message, conversation_id } = req.body;
   
   // Extract user ID from req.user (set by auth middleware)
   const userId = (req as any).user?.id as string;
-  
-  // Get API key from x-api-key header (if present)
   const apiKey = req.headers['x-api-key'] as string;
   
+  // Validate required parameters
   if (!message) {
-    return res.status(400).json({ error: '[Agent Service] Message is required' });
+    return res.status(400).json({ 
+      error: '[Agent Service] Message is required',
+      details: 'Please provide a prompt in the request body'
+    });
   }
   
   if (!userId) {
-    return res.status(400).json({ error: '[Agent Service] User authentication required' });
+    return res.status(401).json({ 
+      error: '[Agent Service] User authentication required',
+      details: 'User ID not found in request. Authentication headers may be missing'
+    });
   }
 
   if (!conversation_id) {
-    return res.status(400).json({ error: '[Agent Service] conversation_id is required' });
+    return res.status(400).json({ 
+      error: '[Agent Service] conversation_id is required',
+      details: 'Please provide a conversation_id in the request body'
+    });
   }
   
-  // Set headers for SSE
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-  
   try {
-    // Check if we have an API key configured
+    // Verify API key configuration
     if (!process.env.ANTHROPIC_API_KEY) {
-      // Fallback to simplified response if no API key
       throw new Error('Anthropic API key not found in environment variables');
     }
     
-    // Process the prompt with our streaming agent
-    console.log(`[Agent Service] Streaming message: "${message.substring(0, 100)}..." from user: ${userId}, conversation: ${conversation_id}`);
+    // Process the request with our streaming agent
+    console.log(`[Agent Service] Processing request for user:${userId}, conversation:${conversation_id}`);
     
-    // Get the streaming generator with API key
-    const stream = streamWithAgent(message, userId, conversation_id, apiKey);
+    // Get the streaming result from the agent
+    const result = streamWithAgent(message, userId, conversation_id, apiKey);
     
-    // Stream each raw chunk directly to the client without any additional processing
-    for await (const chunk of stream) {
-      // Write chunk in SSE format
-      res.write(`data: ${chunk}\n\n`);
+    // Convert to a proper data stream response with reasoning
+    const response = result.toDataStreamResponse({
+      sendReasoning: true
+    });
+    
+    // Set response headers for streaming
+    response.headers.forEach((value, key) => {
+      res.setHeader(key, value);
+    });
+    
+    // Stream the body to the client
+    if (response.body) {
+      const reader = response.body.getReader();
+      
+      // Read and forward chunks
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        res.write(value);
+      }
+      
+      res.end();
+    } else {
+      throw new Error('No response body from streamWithAgent');
     }
-    
-    // Signal the end of the stream
-    res.write(`data: [DONE]\n\n`);
-    res.end();
   } catch (error) {
     console.error('[Agent Service] Error streaming message with agent:', error);
     
-    // Provide a helpful error message in SSE format
-    res.write(`data: ${JSON.stringify({
-      type: 'error',
+    // Structured error response
+    res.status(500).json({ 
       error: 'Failed to process message',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    })}\n\n`);
-    
-    res.write(`data: [DONE]\n\n`);
-    res.end();
+      details: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    });
   }
 });
 
 // Start server
 const server = app.listen(PORT, () => {
-  console.log(`🤖 [AGENT SERVICE] Claude 3.7 Sonnet Agent Service with Vercel AI SDK running on port ${PORT}`);
+  console.log(`🤖 [AGENT SERVICE] Claude 3.7 Sonnet Agent Service running on port ${PORT}`);
   console.log(`🌐 [AGENT SERVICE] Environment: ${nodeEnv}`);
-  console.log(`🔑 [AGENT SERVICE] API Key ${process.env.ANTHROPIC_API_KEY ? 'is' : 'is NOT'} configured`);
-  
-  // Log server address information for debugging
-  const addressInfo = server.address();
-  console.log(`📡 [AGENT SERVICE] Server address info:`, JSON.stringify(addressInfo, null, 2));
+  console.log(`🔑 [AGENT SERVICE] API Key ${process.env.ANTHROPIC_API_KEY ? 'is configured' : 'is MISSING'}`);
+  console.log(`🔗 [AGENT SERVICE] API Gateway URL: ${process.env.API_GATEWAY_URL || 'not set'}`);
 });
