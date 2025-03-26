@@ -111,7 +111,7 @@ function createTools(config: {
  * @param apiKey - API key for tool usage
  * @returns AsyncGenerator yielding JSON-serialized chunks
  */
-export async function* streamWithReActAgent(
+export async function* streamWithAgent(
   message: string,
   userId: string,
   conversationId: string,
@@ -200,7 +200,7 @@ export async function* streamWithReActAgent(
     });
     
   } catch (error) {
-    console.error('[Agent Service] Error in streamWithReActAgent:', error);
+    console.error('[Agent Service] Error in streamWithAgent:', error);
     yield JSON.stringify({ 
       type: 'error', 
       error: error instanceof Error ? error.message : 'Unknown error' 

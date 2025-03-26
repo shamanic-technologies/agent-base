@@ -11,7 +11,7 @@ import fs from 'fs';
 import path from 'path';
 import express from 'express';
 import cors from 'cors';
-import { streamWithReActAgent } from './lib/react-agent.js';
+import { streamWithAgent } from './lib/agent.js';
 import { User } from './types/index.js';
 
 // Load environment variables based on NODE_ENV
@@ -106,8 +106,11 @@ app.get('/health', (req, res) => {
   res.status(200).json(healthResponse);
 });
 
-// Streaming agent generation endpoint
-app.post('/generate', async (req, res) => {
+/**
+ * Streaming endpoint
+ * Handles streaming responses from the agent
+ */
+app.post('/stream', async (req, res) => {
   const { prompt: message, conversation_id } = req.body;
   
   // Extract user ID from req.user (set by auth middleware)
@@ -144,7 +147,7 @@ app.post('/generate', async (req, res) => {
     console.log(`[Agent Service] Streaming message: "${message.substring(0, 100)}..." from user: ${userId}, conversation: ${conversation_id}`);
     
     // Get the streaming generator with API key
-    const stream = streamWithReActAgent(message, userId, conversation_id, apiKey);
+    const stream = streamWithAgent(message, userId, conversation_id, apiKey);
     
     // Stream each raw chunk directly to the client without any additional processing
     for await (const chunk of stream) {

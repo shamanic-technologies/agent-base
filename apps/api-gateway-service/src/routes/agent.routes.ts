@@ -21,11 +21,12 @@ export const configureAgentRoutes = (
   authMiddleware: express.RequestHandler
 ) => {
   /**
-   * Generate endpoint
-   * Validates API key and forwards request to agent service
+   * Stream endpoint
+   * Validates API key and forwards request to agent service stream endpoint
    * Requires API key and conversation_id
+   * Uses Server-Sent Events (SSE) for streaming responses
    */
-  router.post('/generate', authMiddleware, async (req: express.Request, res: express.Response) => {
+  router.post('/stream', authMiddleware, async (req: express.Request, res: express.Response) => {
     const { conversation_id } = req.body;
     
     // Check if conversation_id is provided
@@ -36,8 +37,8 @@ export const configureAgentRoutes = (
       });
     }
     
-    // Forward the request to the agent service
-    return forwardRequest(req, res, agentServiceUrl, '/generate');
+    // Forward the request to the agent service stream endpoint
+    return forwardRequest(req, res, agentServiceUrl, '/stream');
   });
 
   return router;
