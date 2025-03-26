@@ -1,0 +1,39 @@
+{
+  "name": "@agent-base/langgraph-agent-service",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "packageManager": "pnpm@10.6.3",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "tsc --noEmit",
+    "test": "node ./tests/run-all.js",
+    "test:integration": "tsx tests/index.ts",
+    "test:simple": "node tests/integration/model-service.test.js",
+    "test:react": "node tests/functional/react-agent.test.js",
+    "test:stream": "node tests/functional/stream.test.js",
+    "test:stream:modes": "tsx tests/functional/stream-modes.test.ts",
+    "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist",
+    "railway:build": "curl -fsSL https://get.pnpm.io/install.sh | sh - && pnpm install --no-frozen-lockfile && pnpm build"
+  },
+  "dependencies": {
+    "@langchain/anthropic": "^0.3.15",
+    "@langchain/core": "^0.3.42",
+    "@langchain/langgraph": "^0.2.55",
+    "axios": "^1.6.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.14.7",
+    "eslint": "^8.57.0",
+    "tsx": "^4.7.1",
+    "typescript": "^5.4.5"
+  }
+}

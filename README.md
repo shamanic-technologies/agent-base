@@ -65,7 +65,8 @@ npm test --filter="@helloworld/auth-service"
 | **auth-service** | User authentication and authorization | 3005 |
 | **database-service** | Data persistence layer | 3006 |
 | **key-service** | API key management and validation | 3003 |
-| **model-service** | AI model inference service | 3001 |
+| **langgraph-agent-service** | AI model inference service with LangGraph | 3001 |
+| **agent-service** | AI model inference service wit Vercel AI SDK | 3040 |
 | **payment-service** | Subscription and payment processing | 3007 |
 | **api-gateway-service** | API gateway that routes requests to appropriate services | 3002 |
 | **web-gateway-service** | Web gateway that routes requests to appropriate services | 3030 |

@@ -1,5 +1,5 @@
 {
-  "name": "@helloworld/model-service",
+  "name": "@agent-base/agent-service",
   "version": "1.0.0",
   "type": "module",
   "private": true,
@@ -20,13 +20,16 @@
     "railway:build": "curl -fsSL https://get.pnpm.io/install.sh | sh - && pnpm install --no-frozen-lockfile && pnpm build"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^1.2.1",
+    "ai": "^4.2.5",
     "@langchain/anthropic": "^0.3.15",
     "@langchain/core": "^0.3.42",
     "@langchain/langgraph": "^0.2.55",
     "axios": "^1.6.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
