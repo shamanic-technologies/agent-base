@@ -16,7 +16,7 @@ import { v4 as uuidv4 } from 'uuid';
 export function getXataClient() {
   // Create a client for the default database
   return new BaseClient({
-    databaseURL: process.env.XATA_DATABASE_URL || 'https://helloworld-database-url.us-east-1.xata.sh/db/helloworld',
+    databaseURL: process.env.XATA_DATABASE_URL,
     apiKey: process.env.XATA_API_KEY,
     branch: process.env.XATA_BRANCH || 'main'
   });
@@ -29,7 +29,7 @@ export function getXataClient() {
  */
 export function getXataClientForDatabase(databaseId: string) {
   // Get the database URL from environment or default
-  const databaseUrl = process.env.XATA_DATABASE_URL || 'https://helloworld-database-url.us-east-1.xata.sh/db/helloworld';
+  const databaseUrl = process.env.XATA_DATABASE_URL;
   
   // Modify the URL to point to the specific database
   const userDatabaseUrl = databaseUrl.replace(/\/db\/[^/]+$/, `/db/${databaseId}`);
@@ -38,7 +38,7 @@ export function getXataClientForDatabase(databaseId: string) {
   return new BaseClient({
     databaseURL: userDatabaseUrl,
     apiKey: process.env.XATA_API_KEY,
-    branch: process.env.XATA_BRANCH || 'main'
+    branch: process.env.XATA_BRANCH
   });
 }
 
@@ -248,8 +248,8 @@ export async function addXataTableColumn(
 
 /**
  * Get information about a Xata database including tables and schemas
- * @param databaseId The ID of the database
- * @returns Database information including tables and schemas
+ * @param databaseId The ID of the database to get information for
+ * @returns Information about the database
  */
 export async function getXataDatabaseInfo(databaseId: string): Promise<Record<string, any>> {
   try {
@@ -270,28 +270,25 @@ export async function getXataDatabaseInfo(databaseId: string): Promise<Record<st
       {
         id: "table_002",
         name: "products",
-        description: "Product catalog",
+        description: "Product catalog information",
         schema: {
           id: "string",
           name: "string",
-          price: "number",
+          price: "float",
           category: "string",
-          in_stock: "boolean"
+          created_at: "datetime"
         }
       }
     ];
     
     return {
-      database_id: databaseId,
-      database_name: databaseId,
-      tables: tablesInfo
+      id: databaseId,
+      name: databaseId,
+      tables: tablesInfo,
+      created_at: new Date().toISOString()
     };
   } catch (error) {
-    console.error("Error getting Xata database info:", error);
-    return {
-      database_id: databaseId,
-      error: "Failed to retrieve database information",
-      error_details: error instanceof Error ? error.message : String(error)
-    };
+    console.error("Error getting database info:", error);
+    throw error;
   }
 } 
