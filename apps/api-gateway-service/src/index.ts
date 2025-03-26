@@ -1,7 +1,7 @@
 /**
  * HelloWorld API Gateway Service
  * 
- * A service that validates API keys and forwards requests to the Model Service and Utility Service.
+ * A service that validates API keys and forwards requests to the Agent Service and Utility Tool Service.
  * This acts as a security layer between clients and the actual services.
  */
 import express from 'express';
@@ -32,8 +32,8 @@ if (NODE_ENV === 'development') {
 // Initialize the express app
 const app = express();
 const PORT = process.env.PORT;
-const MODEL_SERVICE_URL = process.env.MODEL_SERVICE_URL;
-const UTILITY_SERVICE_URL = process.env.UTILITY_SERVICE_URL;
+const AGENT_SERVICE_URL = process.env.AGENT_SERVICE_URL;
+const UTILITY_TOOL_SERVICE_URL = process.env.UTILITY_TOOL_SERVICE_URL;
 const KEY_SERVICE_URL = process.env.KEY_SERVICE_URL;
 const LOGGING_SERVICE_URL = process.env.LOGGING_SERVICE_URL;
 
@@ -48,8 +48,8 @@ app.use(apiLoggerMiddleware);
 configureRoutes(
   app, 
   {
-      model: MODEL_SERVICE_URL,
-      utility: UTILITY_SERVICE_URL,
+      agent: AGENT_SERVICE_URL,
+      utility: UTILITY_TOOL_SERVICE_URL,
     key: KEY_SERVICE_URL,
     logging: LOGGING_SERVICE_URL
   },
@@ -67,8 +67,8 @@ const server = app.listen(PORT, () => {
   }
   
   // Log service URLs for debugging
-  console.log(`🔗 MODEL_SERVICE_URL: ${MODEL_SERVICE_URL || 'not set'}`);
-  console.log(`🔗 UTILITY_SERVICE_URL: ${UTILITY_SERVICE_URL || 'not set'}`);
+  console.log(`🔗 AGENT_SERVICE_URL: ${AGENT_SERVICE_URL || 'not set'}`);
+  console.log(`🔗 UTILITY_TOOL_SERVICE_URL: ${UTILITY_TOOL_SERVICE_URL || 'not set'}`);
   console.log(`🔗 KEY_SERVICE_URL: ${KEY_SERVICE_URL || 'not set'}`);
   console.log(`🔗 LOGGING_SERVICE_URL: ${LOGGING_SERVICE_URL || 'not set'}`);
 });

@@ -15,7 +15,7 @@ import axios from 'axios';
 export const configureHealthRoutes = (
   router: express.Router,
   serviceUrls: {
-    model: string;
+    agent: string;
     utility: string;
     key: string;
     logging?: string;
@@ -29,7 +29,7 @@ export const configureHealthRoutes = (
     res.status(200).json({
       status: 'healthy',
       services: {
-        model: serviceUrls.model,
+        agent: serviceUrls.agent,
         utility: serviceUrls.utility,
         key: serviceUrls.key,
         ...(serviceUrls.logging && { logging: serviceUrls.logging })
@@ -38,13 +38,13 @@ export const configureHealthRoutes = (
   });
 
   /**
-   * Test model service connection endpoint
-   * Directly tests connectivity to the model service and returns detailed results
+   * Test agent service connection endpoint
+   * Directly tests connectivity to the agent service and returns detailed results
    */
-  router.get('/test-model-connection', async (req: express.Request, res: express.Response) => {
+  router.get('/test-agent-connection', async (req: express.Request, res: express.Response) => {
     try {
-      const modelServiceUrl = serviceUrls.model;
-      console.log(`📡 [API GATEWAY] Testing connection to model service at: ${modelServiceUrl}`);
+      const agentServiceUrl = serviceUrls.agent;
+      console.log(`📡 [API GATEWAY] Testing connection to agent service at: ${agentServiceUrl}`);
       
       // Get server information for debugging - safely accessing server info
       let serverInfo = null;
@@ -71,7 +71,7 @@ export const configureHealthRoutes = (
       
       // Try to parse URL components to verify format
       try {
-        const url = new URL(modelServiceUrl);
+        const url = new URL(agentServiceUrl);
         console.log(`🔍 [API GATEWAY] URL components:`, JSON.stringify({
           protocol: url.protocol,
           hostname: url.hostname,
@@ -89,17 +89,17 @@ export const configureHealthRoutes = (
           console.error(`❌ [API GATEWAY] DNS lookup failed:`, dnsError);
         }
       } catch (parseError) {
-        console.error(`⚠️ [API GATEWAY] Invalid URL format: ${modelServiceUrl}`, parseError);
+        console.error(`⚠️ [API GATEWAY] Invalid URL format: ${agentServiceUrl}`, parseError);
       }
       
       // DNS lookup check
-      console.log(`🔍 [API GATEWAY] Attempting to connect to model service...`);
+      console.log(`🔍 [API GATEWAY] Attempting to connect to agent service...`);
       
       // Use the full URL as provided in the configuration
-      console.log(`🔗 [API GATEWAY] Using request URL: ${modelServiceUrl}/health`);
+      console.log(`🔗 [API GATEWAY] Using request URL: ${agentServiceUrl}/health`);
       
       // Test connection with timeout and detailed error tracking
-      const result = await axios.get(`${modelServiceUrl}/health`, {
+      const result = await axios.get(`${agentServiceUrl}/health`, {
         timeout: 5000,
         headers: {
           'Connection-Test': 'true',
@@ -108,18 +108,18 @@ export const configureHealthRoutes = (
         }
       });
       
-      console.log(`✅ [API GATEWAY] Successfully connected to model service. Status: ${result.status}`);
+      console.log(`✅ [API GATEWAY] Successfully connected to agent service. Status: ${result.status}`);
       console.log(`📊 [API GATEWAY] Response data:`, JSON.stringify(result.data, null, 2));
       
       res.json({
         success: true, 
-        modelServiceUrl,
+        agentServiceUrl,
         status: result.status,
         response: result.data,
         timestamp: new Date().toISOString()
       });
     } catch (error) {
-      console.error(`❌ [API GATEWAY] Connection to model service failed:`, error);
+      console.error(`❌ [API GATEWAY] Connection to agent service failed:`, error);
       
       // Extract detailed error information
       const errorDetails = {
@@ -140,7 +140,7 @@ export const configureHealthRoutes = (
       
       res.status(500).json({
         success: false,
-        modelServiceUrl: serviceUrls.model,
+        agentServiceUrl: serviceUrls.agent,
         error: `Connection failed: ${error.message}`,
         errorDetails,
         gatewayServer: (() => {

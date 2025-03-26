@@ -1,37 +1,38 @@
 /**
  * Utility Service Routes
  * 
- * Routes for proxying requests to the Utility Service.
+ * Configures routes that proxy requests to the utility service.
  */
 import express from 'express';
 import { forwardRequest } from '../utils/request.js';
 
 /**
- * Configure utility routes
+ * Configure utility service routes
  * 
  * @param router Express router
- * @param utilityServiceUrl URL of the utility service
+ * @param serviceUrl URL for the utility service
  * @param authMiddleware Authentication middleware
  */
 export const configureUtilityRoutes = (
   router: express.Router,
-  utilityServiceUrl: string,
+  serviceUrl: string,
   authMiddleware: express.RequestHandler
 ) => {
-  // POST /utility endpoint - forward to utility service
-  router.post('/utility', authMiddleware, async (req: express.Request, res: express.Response) => {
-    return forwardRequest(req, res, utilityServiceUrl, '/utility');
+  // Execute a utility
+  router.post('/call-tool/:id', authMiddleware, async (req, res) => {
+    const utilityId = req.params.id;
+    await forwardRequest(req, res, serviceUrl, `/call-tool/${utilityId}`);
   });
-  
-  // GET /utilities endpoint - forward to utility service
-  router.get('/utilities', authMiddleware, async (req: express.Request, res: express.Response) => {
-    return forwardRequest(req, res, utilityServiceUrl, '/utilities');
+
+  // Get details of a utility
+  router.get('/get-details/:id', authMiddleware, async (req, res) => {
+    const utilityId = req.params.id;
+    await forwardRequest(req, res, serviceUrl, `/get-details/${utilityId}`);
   });
-  
-  // Catch-all for POST to /utility/* paths
-  router.post('/utility/*', authMiddleware, async (req: express.Request, res: express.Response) => {
-    const subPath = req.path;
-    return forwardRequest(req, res, utilityServiceUrl, subPath);
+
+  // List all utilities
+  router.get('/get-list', authMiddleware, async (req, res) => {
+    await forwardRequest(req, res, serviceUrl, '/get-list');
   });
 
   return router;

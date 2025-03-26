@@ -1,7 +1,7 @@
 /**
- * Model Service Routes
+ * Agent Service Routes
  * 
- * Routes for proxying requests to the Model Service.
+ * Routes for proxying requests to the Agent Service.
  */
 import express from 'express';
 import axios from 'axios';
@@ -9,20 +9,20 @@ import { User } from '../types/index.js';
 import { forwardRequest } from '../utils/request.js';
 
 /**
- * Configure model routes
+ * Configure agent routes
  * 
  * @param router Express router
- * @param modelServiceUrl URL of the model service
+ * @param agentServiceUrl URL of the agent service
  * @param authMiddleware Authentication middleware
  */
-export const configureModelRoutes = (
+export const configureAgentRoutes = (
   router: express.Router,
-  modelServiceUrl: string,
+  agentServiceUrl: string,
   authMiddleware: express.RequestHandler
 ) => {
   /**
    * Generate endpoint
-   * Validates API key and forwards request to model service
+   * Validates API key and forwards request to agent service
    * Requires API key and conversation_id
    */
   router.post('/generate', authMiddleware, async (req: express.Request, res: express.Response) => {
@@ -36,8 +36,8 @@ export const configureModelRoutes = (
       });
     }
     
-    // Forward the request to the model service
-    return forwardRequest(req, res, modelServiceUrl, '/generate');
+    // Forward the request to the agent service
+    return forwardRequest(req, res, agentServiceUrl, '/generate');
   });
 
   return router;

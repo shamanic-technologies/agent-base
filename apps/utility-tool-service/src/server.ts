@@ -81,7 +81,7 @@ app.get('/health', (req, res) => {
 });
 
 // List all available utilities
-app.get('/utilities', (req, res) => {
+app.get('/get-list', (req, res) => {
   console.log(`📚 [UTILITY SERVICE] List utilities request received from ${req.ip}`);
   const utilities = registry.listUtilities();
   res.status(200).json({
@@ -90,8 +90,18 @@ app.get('/utilities', (req, res) => {
   });
 });
 
+// Keep legacy endpoint for internal use
+app.get('/utilities', (req, res) => {
+  console.log(`📚 [UTILITY SERVICE] Legacy list utilities request received from ${req.ip}`);
+  const utilities = registry.listUtilities();
+  res.status(200).json({
+    count: utilities.length,
+    utilities
+  });
+});
+
 // Get info about a specific utility
-app.get('/utility-tool/:id', (req, res) => {
+app.get('/get-details/:id', (req, res) => {
   const { id } = req.params;
   console.log(`📚 [UTILITY SERVICE] Get utility info request for ${id} from ${req.ip}`);
   
@@ -112,7 +122,7 @@ app.get('/utility-tool/:id', (req, res) => {
 });
 
 // Execute a utility
-app.post('/utility-tool/:id', async (req, res) => {
+app.post('/call-tool/:id', async (req, res) => {
   const { id } = req.params;
   const { input, conversation_id, user_id } = req.body;
   

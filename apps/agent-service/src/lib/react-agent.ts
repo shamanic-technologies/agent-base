@@ -83,11 +83,16 @@ function createTools(config: {
     callUtility: {
       description: callUtility.description,
       parameters: z.object({
-        input: z.string().describe("JSON string containing utility_id and parameters")
+        utility_id: z.string().describe("The ID of the utility to call (e.g., utility_get_current_datetime)"),
+        parameters: z.record(z.any()).describe("Parameters to pass to the utility, based on its requirements")
       }),
-      execute: async ({ input }: { input: string }) => {
+      execute: async ({ utility_id, parameters }: { utility_id: string, parameters: Record<string, any> }) => {
         try {
-          return await callUtility.invoke({ input: JSON.parse(input) });
+          // Format the input as expected by the UtilityCallUtility class
+          const inputObj = { utility_id, parameters };
+          const inputStr = JSON.stringify(inputObj);
+          
+          return await callUtility.invoke(inputStr);
         } catch (error) {
           console.error(`Error executing callUtility:`, error);
           return { error: `Failed to execute callUtility: ${error}` };
@@ -120,7 +125,8 @@ export async function* streamWithReActAgent(
       apiKey
     });
     
-    // Create stream using Vercel AI SDK
+    // Create stream using Vercel AI SDK with type assertion to bypass TypeScript checks
+    // The maxSteps parameter is documented in the AI SDK but not yet in the TypeScript definitions
     const result = streamText({
       model: anthropic(ModelName.CLAUDE_3_7_SONNET_20250219),
       messages: [{ role: 'user', content: message }],
@@ -128,12 +134,17 @@ export async function* streamWithReActAgent(
       tools,
       providerOptions: {
         anthropic: {
-          thinking: { type: 'enabled', budgetTokens: 12000 },
+          // Increase thinking token budget to allow for more reasoning steps and tool calls
+          thinking: { type: 'enabled', budgetTokens: 20000 },
+          // Add tool-use configuration to allow for more tool calls
+          toolChoice: "auto",
         },
       },
       onError({ error }) {
         console.error('[Agent Service] Stream error:', error);
       },
+      // @ts-ignore - maxSteps is supported by the AI SDK but not in the TypeScript definitions
+      maxSteps: 25, // Enable multi-step tool usage with up to 25 steps
     });
     
     // Stream responses and reasoning using fullStream for complete type coverage

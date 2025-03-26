@@ -121,9 +121,8 @@ export class UtilityListUtilities extends Tool {
       // Use X-API-KEY header instead of Authorization
       headers['x-api-key'] = this.apiKey;
       
-      // Call the API Gateway endpoint for listing utilities using GET
-      // The utility service has a GET /utilities endpoint, not POST
-      const response = await axios.get(`${this.apiGatewayUrl}/utility/utilities`, {
+      // Call the API Gateway endpoint for listing utilities using GET with the new endpoint
+      const response = await axios.get(`${this.apiGatewayUrl}/utility-tool/get-list`, {
         params: {
           user_id: this.userId,
           conversation_id: this.conversationId
@@ -138,7 +137,9 @@ export class UtilityListUtilities extends Tool {
           return 'No utilities are currently available.';
         }
         
-        return `Available utilities: ${utilities.join(', ')}`;
+        // Extract the ID of each utility object rather than using the entire object
+        const utilityIds = utilities.map((utility: any) => utility.id);
+        return `Available utilities: ${utilityIds.join(', ')}`;
       }
       
       throw new Error('Invalid response from API Gateway');

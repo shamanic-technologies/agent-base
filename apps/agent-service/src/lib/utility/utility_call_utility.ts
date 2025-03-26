@@ -191,9 +191,8 @@ export class UtilityCallUtility extends Tool {
       // Use X-API-KEY header instead of Authorization
       headers['x-api-key'] = this.apiKey;
       
-      // Call the API Gateway to forward to the utility service
-      const response = await axios.post(`${this.apiGatewayUrl}/utility/utility`, {
-        operation: utility_id,
+      // Call the API Gateway to forward to the utility service using the new endpoint
+      const response = await axios.post(`${this.apiGatewayUrl}/utility-tool/call-tool/${utility_id}`, {
         input: parameters,
         user_id: this.userId,
         conversation_id: this.conversationId

@@ -5,7 +5,7 @@
  */
 import express from 'express';
 import { configureHealthRoutes } from './health.routes.js';
-import { configureModelRoutes } from './model.routes.js';
+import { configureAgentRoutes } from './agent.routes.js';
 import { configureUtilityRoutes } from './utility.routes.js';
 
 /**
@@ -18,7 +18,7 @@ import { configureUtilityRoutes } from './utility.routes.js';
 export const configureRoutes = (
   app: express.Express,
   serviceUrls: {
-    model: string;
+    agent: string;
     utility: string;
     key: string;
     logging?: string;
@@ -30,13 +30,27 @@ export const configureRoutes = (
   configureHealthRoutes(healthRouter, serviceUrls);
   app.use('/health', healthRouter);
   
-  // Model service routes
-  const modelRouter = express.Router();
-  configureModelRoutes(modelRouter, serviceUrls.model, authMiddleware);
-  app.use('/', modelRouter);
+  // Agent service routes
+  const agentRouter = express.Router();
+  configureAgentRoutes(agentRouter, serviceUrls.agent, authMiddleware);
+  app.use('/', agentRouter);
   
-  // Utility service routes
+  // Debug route to confirm API Gateway is working
+  app.get('/debug', (req, res) => {
+    res.status(200).json({
+      message: 'API Gateway is working',
+      routes: {
+        health: '/health',
+        agent: '/',
+        utility: '/utility-tool'
+      }
+    });
+  });
+  
+  // Utility tool service routes - Mount router directly at root
   const utilityRouter = express.Router();
   configureUtilityRoutes(utilityRouter, serviceUrls.utility, authMiddleware);
-  app.use('/utility', utilityRouter);
+  // The next line means that the routes defined in utility.routes.ts will be available at /utility-tool/*
+  // So /get-list in utility.routes.ts becomes /utility-tool/get-list
+  app.use('/utility-tool', utilityRouter);
 }; 

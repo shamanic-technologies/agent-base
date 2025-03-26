@@ -41,19 +41,19 @@ src/
 ### List Available Utilities
 
 ```
-GET /utilities
+GET /get-list
 ```
 
 ### Get Utility Information
 
 ```
-GET /utility-tool/:id
+GET /get-details/:id
 ```
 
 ### Execute a Utility
 
 ```
-POST /utility-tool/:id
+POST /call-tool/:id
 ```
 Request body:
 ```json
@@ -64,6 +64,16 @@ Request body:
   "conversation_id": "required-conversation-id",
   "user_id": "required-user-id"
 }
+```
+
+## API Gateway Endpoints
+
+When accessing through the API Gateway, use these endpoints:
+
+```
+GET /utility-tool/get-list
+GET /utility-tool/get-details/:id
+POST /utility-tool/call-tool/:id
 ```
 
 ## Utility Examples
