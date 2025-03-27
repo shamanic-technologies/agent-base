@@ -5,8 +5,10 @@ import { Router, Request, Response } from 'express';
 import pino from 'pino';
 import { ApiLogEntry } from '../types/index.js';
 import { logApiCall, getUserLogs } from '../services/database.js';
-import { debitUsage } from '../services/payment.js';
-import { calculatePrice, sanitizeLogData } from '../utils/index.js';
+// We'll temporarily comment out pricing-related imports since we'll focus on just logging first
+// import { debitUsage } from '../services/payment.js';
+// import { calculatePrice, sanitizeLogData } from '../utils/index.js';
+import { sanitizeLogData } from '../utils/index.js';
 
 // Get the logger instance
 const logger = pino({
@@ -42,21 +44,16 @@ router.post('/log', async (req: Request, res: Response) => {
     // If X-USER-ID header is provided, use it (preferred approach)
     if (userId) {
       logEntry.userId = userId;
-      logger.info('Using X-USER-ID header for user identification');
+      logger.info(`Logging request for user: ${userId}, endpoint: ${logEntry.endpoint}`);
     }
     
-    // Complete validation of all required fields
+    // Complete validation of essential fields
     const missingFields: string[] = [];
     
     // Always required fields
     if (!logEntry.userId && !userId) missingFields.push('userId (X-USER-ID header)');
     if (!logEntry.endpoint) missingFields.push('endpoint');
     if (!logEntry.method) missingFields.push('method');
-    
-    // Required fields for pricing on both /generate and /utility endpoints
-    if (logEntry.endpoint?.startsWith('/generate') || logEntry.endpoint?.startsWith('/utility')) {
-      if (!logEntry.responseBody) missingFields.push('responseBody');
-    }
     
     // Return early if any required fields are missing
     if (missingFields.length > 0) {
@@ -81,36 +78,57 @@ router.post('/log', async (req: Request, res: Response) => {
       logEntry.userId = userId;
     }
     
-    // Calculate price if not provided (for /generate and /utility endpoints)
-    if (!logEntry.price && (logEntry.endpoint.startsWith('/generate') || logEntry.endpoint.startsWith('/utility'))) {
-      try {
-        // Calculate price before sanitizing response body
-        logEntry.price = calculatePrice(logEntry);
-      } catch (error) {
-        // If price calculation fails, return error instead of using fallback
-        logger.error(`Price calculation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        return res.status(400).json({
-          success: false,
-          error: `Failed to calculate price: ${error instanceof Error ? error.message : 'Unknown error'}`
-        });
-      }
+    // COMMENTED OUT: Token counting and price calculation
+    // We'll add a simple fixed price for now and skip token counting entirely
+    if (logEntry.endpoint.startsWith('/agent/stream')) {
+      // Fixed price for agent calls
+      logEntry.price = 0.01;
+    } else if (logEntry.endpoint.includes('/utility')) {
+      // Fixed price for utility calls
+      logEntry.price = 0.005;
+    } else {
+      // No charge for other endpoints
+      logEntry.price = 0;
     }
     
+    // Transform camelCase fields to snake_case if needed
+    // This ensures field name consistency with database schema
+    const standardizedLogEntry = {
+      userId: logEntry.userId,
+      apiKey: logEntry.apiKey,
+      endpoint: logEntry.endpoint,
+      method: logEntry.method,
+      statusCode: logEntry.statusCode,
+      ipAddress: logEntry.ipAddress,
+      userAgent: logEntry.userAgent,
+      requestId: logEntry.requestId,
+      requestBody: logEntry.requestBody,
+      responseBody: logEntry.responseBody,
+      durationMs: logEntry.durationMs,
+      errorMessage: logEntry.errorMessage,
+      timestamp: logEntry.timestamp || new Date().toISOString(),
+      price: logEntry.price,
+      inputTokens: logEntry.inputTokens,
+      outputTokens: logEntry.outputTokens,
+      streamingResponse: logEntry.streamingResponse,
+      conversation_id: logEntry.requestBody?.conversation_id || null
+    };
+    
     // Sanitize request body if present
-    if (logEntry.requestBody) {
+    if (standardizedLogEntry.requestBody) {
       logger.debug('Sanitizing request body');
-      logEntry.requestBody = sanitizeLogData(logEntry.requestBody);
+      standardizedLogEntry.requestBody = sanitizeLogData(standardizedLogEntry.requestBody);
     }
     
     // Sanitize response body if present
-    if (logEntry.responseBody) {
+    if (standardizedLogEntry.responseBody) {
       logger.debug('Sanitizing response body');
-      logEntry.responseBody = sanitizeLogData(logEntry.responseBody);
+      standardizedLogEntry.responseBody = sanitizeLogData(standardizedLogEntry.responseBody);
     }
     
     // Log the API call first
     try {
-      const logId = await logApiCall(logEntry);
+      const logId = await logApiCall(standardizedLogEntry);
       
       if (!logId) {
         return res.status(500).json({
@@ -119,6 +137,9 @@ router.post('/log', async (req: Request, res: Response) => {
         });
       }
       
+      // COMMENTED OUT: Payment processing
+      // We'll focus just on logging for now
+      /*
       // Use the already calculated price
       const price = logEntry.price || 0;
       
@@ -138,6 +159,7 @@ router.post('/log', async (req: Request, res: Response) => {
             logger.error(`Exception in debit usage for log ${logId}:`, error);
           });
       }
+      */
       
       res.status(201).json({
         success: true,

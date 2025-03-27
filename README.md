@@ -71,6 +71,7 @@ npm test --filter="@helloworld/auth-service"
 | **api-gateway-service** | API gateway that routes requests to appropriate services | 3002 |
 | **web-gateway-service** | Web gateway that routes requests to appropriate services | 3030 |
 | **utility-service** | Utility functions for application features | 3008 |
+| **logging-service** | API call logging, token usage tracking and billing integration | 3900 |
 | **dev-tool** | Development tools and debugging | 3010 |
 | **web** | Main web application (Next.js) | 3020 |
 | **client** | React client application (Vite) | 3000 |

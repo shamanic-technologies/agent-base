@@ -41,15 +41,15 @@ const LOGGING_SERVICE_URL = process.env.LOGGING_SERVICE_URL;
 app.use(cors());
 app.use(express.json());
 
-// Apply logging middleware to all routes that should be logged
+// Apply the API logger middleware globally
 app.use(apiLoggerMiddleware);
 
 // Configure routes
 configureRoutes(
   app, 
   {
-      agent: AGENT_SERVICE_URL,
-      utility: UTILITY_TOOL_SERVICE_URL,
+    agent: AGENT_SERVICE_URL,
+    utility: UTILITY_TOOL_SERVICE_URL,
     key: KEY_SERVICE_URL,
     logging: LOGGING_SERVICE_URL
   },

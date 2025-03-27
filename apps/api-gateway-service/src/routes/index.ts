@@ -25,6 +25,18 @@ export const configureRoutes = (
   },
   authMiddleware: express.RequestHandler
 ) => {
+  // Debug route to confirm API Gateway is working
+  app.get('/debug', (req, res) => {
+    res.status(200).json({
+      message: 'API Gateway is working',
+      routes: {
+        health: '/health',
+        agent: '/agent',
+        utility: '/utility-tool'
+      }
+    });
+  });
+
   // Health check routes
   const healthRouter = express.Router();
   configureHealthRoutes(healthRouter, serviceUrls);
@@ -35,19 +47,7 @@ export const configureRoutes = (
   configureAgentRoutes(agentRouter, serviceUrls.agent, authMiddleware);
   app.use('/agent', agentRouter);
   
-  // Debug route to confirm API Gateway is working
-  app.get('/debug', (req, res) => {
-    res.status(200).json({
-      message: 'API Gateway is working',
-      routes: {
-        health: '/health',
-        agent: '/',
-        utility: '/utility-tool'
-      }
-    });
-  });
-  
-  // Utility tool service routes - Mount router directly at root
+  // Utility tool service routes
   const utilityRouter = express.Router();
   configureUtilityRoutes(utilityRouter, serviceUrls.utility, authMiddleware);
   // The next line means that the routes defined in utility.routes.ts will be available at /utility-tool/*

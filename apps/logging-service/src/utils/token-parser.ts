@@ -1,5 +1,5 @@
 /**
- * Token parsing utilities
+ * Token parsing utilities for Vercel AI SDK responses
  */
 import pino from 'pino';
 import { ApiLogEntry } from '../types/index.js';
@@ -13,87 +13,78 @@ const logger = pino({
 });
 
 /**
- * Parse token usage from LangChain response body
- * @param responseBody The response body from a /generate call
+ * Parse token usage from Vercel AI SDK response body
+ * @param responseBody The response body from a streaming call
  * @returns Object containing total input and output tokens
+ * @throws Error if token usage information cannot be found
  */
 export function parseTokenUsage(responseBody: any): { inputTokens: number, outputTokens: number } {
   let totalInputTokens = 0;
   let totalOutputTokens = 0;
 
   try {
-    // Check if responseBody has the expected structure
-    if (!responseBody || !responseBody.messages || !Array.isArray(responseBody.messages)) {
-      logger.warn('Response body does not have expected structure for token counting');
-      return { inputTokens: 0, outputTokens: 0 };
-    }
-
-    // Iterate through all messages
-    for (const message of responseBody.messages) {
-      // Look for AIMessageChunk objects which contain usage metadata
-      if (message?.id && 
-          Array.isArray(message.id) && 
-          message.id.includes("AIMessageChunk") &&
-          message?.kwargs?.usage_metadata) {
-        
-        const metadata = message.kwargs.usage_metadata;
-        
-        // Extract token counts, if they're not redacted
-        if (metadata.input_tokens && metadata.input_tokens !== "[REDACTED]") {
-          const inputTokens = parseInt(metadata.input_tokens, 10);
-          if (!isNaN(inputTokens)) {
-            totalInputTokens += inputTokens;
-            logger.debug(`Found ${inputTokens} input tokens in message ${message.kwargs?.id || 'unknown'}`);
-          }
-        }
-        
-        if (metadata.output_tokens && metadata.output_tokens !== "[REDACTED]") {
-          const outputTokens = parseInt(metadata.output_tokens, 10);
-          if (!isNaN(outputTokens)) {
-            totalOutputTokens += outputTokens;
-            logger.debug(`Found ${outputTokens} output tokens in message ${message.kwargs?.id || 'unknown'}`);
-          }
-        }
-      }
-    }
-    
-    // If we couldn't parse any tokens but found [REDACTED] values, log this information
-    const foundRedactedValues = responseBody.messages.some(
-      (msg: any) => msg?.kwargs?.usage_metadata?.input_tokens === "[REDACTED]" || 
-                   msg?.kwargs?.usage_metadata?.output_tokens === "[REDACTED]"
-    );
-    
-    if (totalInputTokens === 0 && totalOutputTokens === 0 && foundRedactedValues) {
-      logger.info('Token counts are redacted in the response. Using estimation based on message length.');
+    // Handle string response (the most common case from the streaming API)
+    if (typeof responseBody === 'string') {
+      // Vercel AI SDK format has lines like: e:{"finishReason":"stop","usage":{"promptTokens":675,"completionTokens":76}}
+      const lines = responseBody.split('\n');
       
-      // Simple estimation based on human-readable content length
-      // This is a fallback when token counts are redacted
-      for (const message of responseBody.messages) {
-        if (message?.kwargs?.content) {
-          // Estimate tokens from content - rough approximation (~4 chars per token)
-          const content = Array.isArray(message.kwargs.content) 
-            ? message.kwargs.content.map((c: any) => c.text || "").join("")
-            : String(message.kwargs.content);
-            
-          const estimatedTokens = Math.ceil(content.length / 4);
-          
-          if (message.id && Array.isArray(message.id)) {
-            if (message.id.includes("HumanMessage")) {
-              totalInputTokens += estimatedTokens;
-            } else if (message.id.includes("AIMessageChunk")) {
-              totalOutputTokens += estimatedTokens;
+      for (const line of lines) {
+        // Look for "e:" or "d:" prefixes that contain usage data
+        if ((line.startsWith('e:') || line.startsWith('d:')) && line.includes('usage')) {
+          try {
+            const data = JSON.parse(line.substring(2));
+            if (data.usage) {
+              if (data.usage.promptTokens && !isNaN(data.usage.promptTokens)) {
+                totalInputTokens = data.usage.promptTokens;
+              }
+              if (data.usage.completionTokens && !isNaN(data.usage.completionTokens)) {
+                totalOutputTokens = data.usage.completionTokens;
+              }
+              // Found valid usage data, no need to continue
+              break;
             }
+          } catch (error) {
+            // Skip this line if we can't parse it as JSON
+            logger.debug(`[Logging Service] Failed to parse line as JSON: ${line}`);
+            continue;
           }
         }
       }
-      
-      logger.info(`Estimated tokens: ${totalInputTokens} input, ${totalOutputTokens} output`);
+    } 
+    // Handle pre-parsed JSON objects
+    else if (responseBody && typeof responseBody === 'object') {
+      // If it's an array, search for usage in items
+      if (Array.isArray(responseBody)) {
+        for (const item of responseBody) {
+          if (item && item.usage) {
+            if (item.usage.promptTokens) totalInputTokens = item.usage.promptTokens;
+            if (item.usage.completionTokens) totalOutputTokens = item.usage.completionTokens;
+            break;
+          }
+        }
+      } 
+      // If it's a direct object with usage
+      else if (responseBody.usage) {
+        if (responseBody.usage.promptTokens) totalInputTokens = responseBody.usage.promptTokens;
+        if (responseBody.usage.completionTokens) totalOutputTokens = responseBody.usage.completionTokens;
+      }
+    } else {
+      throw new Error('[Logging Service] Invalid response body format');
     }
     
+    // If no tokens were found, throw an error
+    if (totalInputTokens === 0 && totalOutputTokens === 0) {
+      logger.error('[Logging Service] No token usage information found in response');
+      throw new Error('[Logging Service] No token usage information found in response');
+    }
+    
+    logger.info(`[Logging Service] Parsed token usage: ${totalInputTokens} input, ${totalOutputTokens} output`);
     return { inputTokens: totalInputTokens, outputTokens: totalOutputTokens };
   } catch (error) {
-    logger.error('Error parsing token usage:', error);
-    return { inputTokens: 0, outputTokens: 0 };
+    logger.error('[Logging Service] Error parsing token usage:', error);
+    throw error instanceof Error 
+      ? error 
+      : new Error('[Logging Service] Failed to parse token usage from response');
   }
 }
 
@@ -101,7 +92,7 @@ export function parseTokenUsage(responseBody: any): { inputTokens: number, outpu
  * Calculate price based on API log entry
  * @param logEntry The API log entry to calculate price for
  * @returns The calculated price in USD
- * @throws Error if token usage cannot be determined for generate endpoints
+ * @throws Error if token usage cannot be determined for agent endpoints
  */
 export function calculatePrice(logEntry: ApiLogEntry): number {
   let price = 0;
@@ -109,11 +100,11 @@ export function calculatePrice(logEntry: ApiLogEntry): number {
   let outputTokens = 0;
 
   // Calculate price based on endpoint
-  if (logEntry.endpoint.startsWith('/utility')) {
+  if (logEntry.endpoint.startsWith('/utility-tool')) {
     // Fixed price for utility calls
     price = 0.01;
-  } else if (logEntry.endpoint.startsWith('/generate')) {
-    // Token-based pricing for generate calls
+  } else if (logEntry.endpoint.startsWith('/agent/stream')) {
+    // Token-based pricing for agent calls
     if (logEntry.responseBody) {
       // Parse token usage from the response body
       const tokenUsage = parseTokenUsage(logEntry.responseBody);
@@ -127,11 +118,13 @@ export function calculatePrice(logEntry: ApiLogEntry): number {
       const outputPrice = outputTokens * 0.00003;
       price = inputPrice + outputPrice;
       
-      logger.info(`Calculated token-based price for ${logEntry.endpoint}: $${price.toFixed(6)} (${inputTokens} input tokens, ${outputTokens} output tokens)`);
+      logger.info(`[Logging Service] Calculated token-based price for ${logEntry.endpoint}: $${price.toFixed(6)} (${inputTokens} input tokens, ${outputTokens} output tokens)`);
     } else {
-      // Throw an error instead of using a fallback price
-      throw new Error(`Cannot calculate price for ${logEntry.endpoint}: No response body available for token counting`);
+      // Throw an error when there is no response body
+      throw new Error(`[Logging Service] Cannot calculate price for ${logEntry.endpoint}: No response body available for token counting`);
     }
+  } else {
+    throw new Error(`[Logging Service] Cannot calculate price for ${logEntry.endpoint}: Not an agent or utility endpoint`);
   }
   
   return price;

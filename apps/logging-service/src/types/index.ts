@@ -27,4 +27,6 @@ export interface ApiLogEntry {
   price?: number;  // Field for pricing
   inputTokens?: number; // Total input tokens
   outputTokens?: number; // Total output tokens
+  streamingResponse?: boolean; // Flag to indicate this is a streaming response where the full body is not included
+  conversation_id?: string; // Conversation ID for tracking related requests
 } 

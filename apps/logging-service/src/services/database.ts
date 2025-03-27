@@ -121,12 +121,12 @@ export async function logApiCall(logEntry: ApiLogEntry): Promise<string | null> 
     }
 
     // Calculate price using the imported calculatePrice function
-    let price = 0;
-    let inputTokens = 0;
-    let outputTokens = 0;
+    let price = logEntry.price || 0;
+    let inputTokens = logEntry.inputTokens || 0;
+    let outputTokens = logEntry.outputTokens || 0;
     
-    // For generate endpoints, calculate price based on tokens
-    if (logEntry.endpoint.startsWith('/generate')) {
+    // For generate endpoints, calculate price based on tokens if not already set
+    if (logEntry.endpoint.startsWith('/generate') && !logEntry.price) {
       // Use the calculatePrice function from utils
       price = calculatePrice(logEntry);
       
@@ -136,10 +136,33 @@ export async function logApiCall(logEntry: ApiLogEntry): Promise<string | null> 
         inputTokens = tokenUsage.inputTokens;
         outputTokens = tokenUsage.outputTokens;
       }
-    } else if (logEntry.endpoint.startsWith('/utility')) {
-      // Fixed price for utility calls
-      price = 0.01;
     }
+
+    // Ensure all field names use snake_case for database compatibility
+    const dbEntry = {
+      id,
+      data: {
+        user_id: logEntry.userId,
+        api_key: logEntry.apiKey,
+        endpoint: logEntry.endpoint,
+        method: logEntry.method,
+        status_code: logEntry.statusCode,
+        ip_address: logEntry.ipAddress,
+        user_agent: logEntry.userAgent,
+        request_id: logEntry.requestId,
+        request_body: logEntry.requestBody,
+        response_body: logEntry.responseBody,
+        duration_ms: logEntry.durationMs,
+        error_message: logEntry.errorMessage,
+        price: price,
+        input_tokens: inputTokens,
+        output_tokens: outputTokens,
+        timestamp,
+        conversation_id: logEntry.conversation_id || (logEntry.requestBody?.conversation_id) || null
+      }
+    };
+
+    logger.debug(`Writing log to database with fields: ${Object.keys(dbEntry.data).join(', ')}`);
 
     // Send userId in both the X-USER-ID header for authentication
     // and include it in the request body data
@@ -149,32 +172,11 @@ export async function logApiCall(logEntry: ApiLogEntry): Promise<string | null> 
         'Content-Type': 'application/json',
         'X-USER-ID': logEntry.userId // Using standard header format for authentication
       },
-      body: JSON.stringify({
-        id,
-        data: {
-          api_key: logEntry.apiKey,
-          user_id: logEntry.userId, // Include user_id in the data object as well
-          endpoint: logEntry.endpoint,
-          method: logEntry.method,
-          status_code: logEntry.statusCode,
-          ip_address: logEntry.ipAddress,
-          user_agent: logEntry.userAgent,
-          request_id: logEntry.requestId,
-          request_body: logEntry.requestBody,
-          response_body: logEntry.responseBody,
-          duration_ms: logEntry.durationMs,
-          error_message: logEntry.errorMessage,
-          price: logEntry.price || price,
-          input_tokens: logEntry.inputTokens || inputTokens,
-          output_tokens: logEntry.outputTokens || outputTokens,
-          timestamp
-        }
-      })
+      body: JSON.stringify(dbEntry)
     });
     
     if (!response.ok) {
-      logger.error(`Failed to log API call: ${response.status}`);
-      return null;
+      throw new Error(`[Logging Service] Failed to log API call: ${response.status} ${response.statusText}`);
     }
     
     const data = await response.json() as any;
@@ -201,12 +203,12 @@ export async function getUserLogs(userId: string, limit = 100, offset = 0): Prom
     }
     
     // Use the database service's query parameter to filter by user_id
-    // This creates a proper SQL query for the JSONB data field
+    // Ensure we always use snake_case field names to match database schema
     const queryParam = encodeURIComponent(JSON.stringify({ "data.user_id": userId }));
     
     logger.info(`Getting logs for user ${userId} with query: ${queryParam}`);
     
-    const response = await fetch(`${DB_SERVICE_URL}/db/api_logs?query=${queryParam}`, {
+    const response = await fetch(`${DB_SERVICE_URL}/db/api_logs?query=${queryParam}&limit=${limit}&offset=${offset}&sort=-created_at`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -215,27 +217,20 @@ export async function getUserLogs(userId: string, limit = 100, offset = 0): Prom
     });
     
     if (!response.ok) {
-      logger.error(`Failed to get API logs: ${response.status}`);
-      return null;
+      throw new Error(`[Logging Service] Failed to get API logs: ${response.status}`);
     }
     
     const data = await response.json() as any;
     logger.info(`Found ${data.data?.items?.length || 0} logs for user ${userId}`);
     
     if (!data.success || !data.data || !data.data.items) {
-      logger.error('Unexpected response structure from database service');
-      return null;
+      throw new Error('[Logging Service] Unexpected response structure from database service');
     }
     
-    // The items are already filtered by the database query
-    // Just sort and paginate them
-    const logs = data.data.items
-      .sort((a: any, b: any) => new Date(b.data.timestamp).getTime() - new Date(a.data.timestamp).getTime())
-      .slice(offset, offset + limit);
-    
-    return logs;
+    // Return the items directly - sorting and pagination handled by database query
+    return data.data.items;
   } catch (error) {
-    logger.error('Error getting user logs', error);
+    logger.error(`[Logging Service] Error getting user logs: ${error}`);
     return null;
   }
 }
