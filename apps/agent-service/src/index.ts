@@ -11,7 +11,7 @@ import fs from 'fs';
 import path from 'path';
 import express from 'express';
 import cors from 'cors';
-import { streamWithAgent } from './lib/agent.js';
+import { createAgent } from './lib/agent.js';
 import { User } from './types/index.js';
 
 // Load environment variables based on NODE_ENV
@@ -149,11 +149,22 @@ app.post('/stream', async (req, res) => {
     // Process the request with our streaming agent
     console.log(`[Agent Service] Processing request for user:${userId}, conversation:${conversation_id}`);
     
+    // Create the agent with credentials
+    const agent = await createAgent({
+      userId,
+      conversationId: conversation_id,
+      apiKey
+    });
+    
     // Get the streaming result from the agent
-    const result = streamWithAgent(message, userId, conversation_id, apiKey);
+    const stream = await agent.processWithAgent([{
+      role: 'user',
+      content: message
+    }]);
     
     // Convert to a proper data stream response with reasoning
-    const response = result.toDataStreamResponse({
+    // @ts-ignore - StreamResult includes toDataStreamResponse method
+    const response = stream.toDataStreamResponse({
       sendReasoning: true
     });
     
@@ -175,7 +186,7 @@ app.post('/stream', async (req, res) => {
       
       res.end();
     } else {
-      throw new Error('No response body from streamWithAgent');
+      throw new Error('No response body from agent.processWithAgent');
     }
   } catch (error) {
     console.error('[Agent Service] Error streaming message with agent:', error);
