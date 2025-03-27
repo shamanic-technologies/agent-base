@@ -13,6 +13,7 @@ import express from 'express';
 import cors from 'cors';
 import { createAgent } from './lib/agent.js';
 import { User } from './types/index.js';
+import { Readable } from 'stream';
 
 // Load environment variables based on NODE_ENV
 const nodeEnv = process.env.NODE_ENV || 'development';
@@ -173,18 +174,11 @@ app.post('/stream', async (req, res) => {
       res.setHeader(key, value);
     });
     
-    // Stream the body to the client
+    // Use response.body directly with Express
     if (response.body) {
-      const reader = response.body.getReader();
-      
-      // Read and forward chunks
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        res.write(value);
-      }
-      
-      res.end();
+      // Pipe the response body to Express response
+      const responseStream = Readable.fromWeb(response.body);
+      responseStream.pipe(res);
     } else {
       throw new Error('No response body from agent.processWithAgent');
     }

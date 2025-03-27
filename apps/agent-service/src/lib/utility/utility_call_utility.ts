@@ -9,6 +9,7 @@
 import { tool } from 'ai';
 import { z } from "zod";
 import axios from 'axios';
+import { UtilityError } from '../../types/index.js';
 
 // API Gateway URL from environment variables with fallback
 const API_GATEWAY_URL = process.env.API_GATEWAY_URL || 'http://localhost:3002';
@@ -28,26 +29,29 @@ export function createCallUtilityTool(credentials: {
     description: 'Execute a specific utility function by its ID.',
     parameters: z.object({
       utility_id: z.string().describe('The ID of the utility to call'),
-      input: z.any().describe('The input data to pass to the utility')
+      parameters: z.record(z.any()).optional().describe('The parameters to pass to the utility')
     }),
-    execute: async ({ utility_id, input }) => {
+    execute: async ({ utility_id, parameters }) => {
       try {
-        console.log(`[Utility Tool] Calling utility ${utility_id} with input:`, input);
+        console.log(`[Utility Tool] Calling utility ${utility_id} with parameters:`, parameters);
         
         if (!utility_id) {
-          return 'Error: utility_id is required';
+          return {
+            error: true,
+            message: 'utility_id is required',
+            status: 'error',
+            code: 'MISSING_PARAMETER'
+          } as UtilityError;
         }
         
         const response = await axios.post(
           `${API_GATEWAY_URL}/utility-tool/call-tool/${utility_id}`, 
           {
-            input_data: input
+            input: parameters || {},
+            conversation_id: conversationId,
+            user_id: userId
           },
           {
-            params: {
-              user_id: userId,
-              conversation_id: conversationId
-            },
             headers: {
               'Content-Type': 'application/json',
               'x-api-key': apiKey
@@ -56,12 +60,15 @@ export function createCallUtilityTool(credentials: {
         );
         
         if (response.data) {
-          return typeof response.data === 'object'
-            ? JSON.stringify(response.data, null, 2)
-            : String(response.data);
+          return response.data;
         }
         
-        return 'Error: Invalid response from API Gateway';
+        return {
+          error: true,
+          message: 'Invalid response from API Gateway',
+          status: 'error',
+          code: 'INVALID_RESPONSE'
+        } as UtilityError;
       } catch (error) {
         console.error(`[Utility Tool] Error calling utility ${utility_id}:`, error);
         return handleErrorWithStatus(error, utility_id);
@@ -73,25 +80,53 @@ export function createCallUtilityTool(credentials: {
 /**
  * Helper function to handle errors with specific status codes
  */
-function handleErrorWithStatus(error: any, utilityId?: string): string {
+function handleErrorWithStatus(error: any, utilityId?: string): UtilityError {
   if (axios.isAxiosError(error)) {
     // Handle network errors or API errors
     if (!error.response) {
-      return `Network error: Failed to connect to API Gateway at ${API_GATEWAY_URL}`;
+      return {
+        error: true,
+        message: `Network error: Failed to connect to API Gateway at ${API_GATEWAY_URL}`,
+        status: 'error',
+        code: 'NETWORK_ERROR'
+      };
     }
     
     // Handle common error codes
     if (error.response.status === 404) {
-      return `Utility not found: ${utilityId}`;
+      return {
+        error: true,
+        message: `Utility not found: ${utilityId}`,
+        status: 'error',
+        code: 'NOT_FOUND',
+        statusCode: 404
+      };
     }
     
     if (error.response.status === 400) {
-      return `Bad request: ${error.response.data?.error || 'Invalid input data for this utility'}`;
+      return {
+        error: true,
+        message: error.response.data?.error || 'Invalid input data for this utility',
+        status: 'error',
+        code: 'BAD_REQUEST',
+        statusCode: 400
+      };
     }
     
-    return `API Gateway error: ${error.response.status} - ${error.response.data?.error || error.message}`;
+    return {
+      error: true,
+      message: error.response.data?.error || error.message,
+      status: 'error',
+      code: 'API_ERROR',
+      statusCode: error.response.status
+    };
   }
   
   // Generic error
-  return `Error: ${error instanceof Error ? error.message : String(error)}`;
+  return {
+    error: true,
+    message: error instanceof Error ? error.message : String(error),
+    status: 'error',
+    code: 'UNKNOWN_ERROR'
+  };
 } 

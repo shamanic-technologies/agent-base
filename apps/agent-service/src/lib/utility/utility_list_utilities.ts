@@ -9,6 +9,7 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 import axios from 'axios';
+import { UtilityError } from '../../types/index.js';
 
 // API Gateway URL from environment variables with fallback
 const API_GATEWAY_URL = process.env.API_GATEWAY_URL || 'http://localhost:3002';
@@ -51,18 +52,23 @@ export function createListUtilitiesTool(credentials: {
           }
         });
         
-        if (response.data && Array.isArray(response.data)) {
-          const formattedUtilities = response.data.map((util: any) => ({
+        if (response.data && response.data.utilities && Array.isArray(response.data.utilities)) {
+          const formattedUtilities = response.data.utilities.map((util: any) => ({
             id: util.id,
-            name: util.name,
+            name: util.name || util.id,
             description: util.description,
-            category: util.category
+            category: util.category || 'general'
           }));
           
-          return JSON.stringify(formattedUtilities, null, 2);
+          return formattedUtilities;
         }
         
-        return 'Error: Invalid response from API Gateway';
+        return {
+          error: true,
+          message: 'Invalid response from API Gateway',
+          status: 'error',
+          code: 'INVALID_RESPONSE'
+        } as UtilityError;
       } catch (error) {
         console.error('[Utility Tool] Error listing utilities:', error);
         return handleAxiosError(error);
@@ -74,16 +80,32 @@ export function createListUtilitiesTool(credentials: {
 /**
  * Helper function to handle Axios errors
  */
-function handleAxiosError(error: any): string {
+function handleAxiosError(error: any): UtilityError {
   if (axios.isAxiosError(error)) {
     // Handle network errors or API errors
     if (!error.response) {
-      return `Network error: Failed to connect to API Gateway at ${API_GATEWAY_URL}`;
+      return {
+        error: true,
+        message: `Network error: Failed to connect to API Gateway at ${API_GATEWAY_URL}`,
+        status: 'error',
+        code: 'NETWORK_ERROR'
+      };
     }
     
-    return `API Gateway error: ${error.response.status} - ${error.response.data?.error || error.message}`;
+    return {
+      error: true,
+      message: error.response.data?.error || error.message,
+      status: 'error',
+      code: 'API_ERROR',
+      statusCode: error.response.status
+    };
   }
   
   // Generic error
-  return `Error: ${error instanceof Error ? error.message : String(error)}`;
+  return {
+    error: true,
+    message: error instanceof Error ? error.message : String(error),
+    status: 'error',
+    code: 'UNKNOWN_ERROR'
+  };
 } 

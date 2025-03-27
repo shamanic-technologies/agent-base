@@ -9,6 +9,7 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 import axios from 'axios';
+import { UtilityError } from '../../types/index.js';
 
 // API Gateway URL from environment variables with fallback
 const API_GATEWAY_URL = process.env.API_GATEWAY_URL || 'http://localhost:3002';
@@ -34,7 +35,12 @@ export function createGetUtilityInfoTool(credentials: {
         console.log(`[Utility Tool] Getting info for utility: ${utility_id}`);
         
         if (!utility_id) {
-          return 'Error: utility_id is required';
+          return {
+            error: true,
+            message: 'utility_id is required',
+            status: 'error',
+            code: 'MISSING_PARAMETER'
+          } as UtilityError;
         }
         
         const response = await axios.get(`${API_GATEWAY_URL}/utility-tool/get-details/${utility_id}`, {
@@ -49,10 +55,15 @@ export function createGetUtilityInfoTool(credentials: {
         });
         
         if (response.data) {
-          return JSON.stringify(response.data, null, 2);
+          return response.data;
         }
         
-        return 'Error: Invalid response from API Gateway';
+        return {
+          error: true,
+          message: 'Invalid response from API Gateway',
+          status: 'error',
+          code: 'INVALID_RESPONSE'
+        } as UtilityError;
       } catch (error) {
         console.error(`[Utility Tool] Error getting info for utility ${utility_id}:`, error);
         return handleAxiosError(error, utility_id);
@@ -64,21 +75,43 @@ export function createGetUtilityInfoTool(credentials: {
 /**
  * Helper function to handle Axios errors
  */
-function handleAxiosError(error: any, utilityId?: string): string {
+function handleAxiosError(error: any, utilityId?: string): UtilityError {
   if (axios.isAxiosError(error)) {
     // Handle network errors or API errors
     if (!error.response) {
-      return `Network error: Failed to connect to API Gateway at ${API_GATEWAY_URL}`;
+      return {
+        error: true,
+        message: `Network error: Failed to connect to API Gateway at ${API_GATEWAY_URL}`,
+        status: 'error',
+        code: 'NETWORK_ERROR'
+      };
     }
     
     // Handle 404 separately if utilityId is provided
     if (utilityId && error.response.status === 404) {
-      return `Utility not found: ${utilityId}`;
+      return {
+        error: true,
+        message: `Utility not found: ${utilityId}`,
+        status: 'error',
+        code: 'NOT_FOUND',
+        statusCode: 404
+      };
     }
     
-    return `API Gateway error: ${error.response.status} - ${error.response.data?.error || error.message}`;
+    return {
+      error: true,
+      message: error.response.data?.error || error.message,
+      status: 'error',
+      code: 'API_ERROR',
+      statusCode: error.response.status
+    };
   }
   
   // Generic error
-  return `Error: ${error instanceof Error ? error.message : String(error)}`;
+  return {
+    error: true,
+    message: error instanceof Error ? error.message : String(error),
+    status: 'error',
+    code: 'UNKNOWN_ERROR'
+  };
 } 

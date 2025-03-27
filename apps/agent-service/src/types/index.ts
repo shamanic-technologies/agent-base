@@ -9,6 +9,18 @@ export interface User {
   provider?: string;
 }
 
+/**
+ * UtilityError Interface
+ * Standardized error structure returned by utility tools
+ */
+export interface UtilityError {
+  error: boolean;
+  message: string;
+  status: string;
+  code: string;
+  statusCode?: number;
+}
+
 // Extend Express Request interface to include user
 declare global {
   namespace Express {

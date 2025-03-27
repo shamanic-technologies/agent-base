@@ -69,6 +69,10 @@ export async function createAgent({
           maxTokens: 12000,
           sendReasoning: true, // Ensure reasoning is sent in the response
         },
+        onToolError: (error, toolName) => {
+          console.error(`[Tool Error] Error executing tool ${toolName}:`, error);
+          // The error will be automatically passed to the UI through the response
+        }
       });
     } catch (error) {
       console.error('Error with agent:', error);
