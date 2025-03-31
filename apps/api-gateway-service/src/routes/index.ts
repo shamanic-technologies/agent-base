@@ -19,7 +19,7 @@ export const configureRoutes = (
   app: express.Express,
   serviceUrls: {
     agent: string;
-    utility: string;
+    utilityTool: string;
     key: string;
     logging?: string;
   },
@@ -32,7 +32,7 @@ export const configureRoutes = (
       routes: {
         health: '/health',
         agent: '/agent',
-        utility: '/utility-tool'
+        utilityTool: '/utility-tool'
       }
     });
   });
@@ -49,7 +49,7 @@ export const configureRoutes = (
   
   // Utility tool service routes
   const utilityRouter = express.Router();
-  configureUtilityRoutes(utilityRouter, serviceUrls.utility, authMiddleware);
+  configureUtilityRoutes(utilityRouter, serviceUrls.utilityTool, authMiddleware);
   // The next line means that the routes defined in utility.routes.ts will be available at /utility-tool/*
   // So /get-list in utility.routes.ts becomes /utility-tool/get-list
   app.use('/utility-tool', utilityRouter);

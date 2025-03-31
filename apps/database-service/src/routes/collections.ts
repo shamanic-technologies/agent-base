@@ -152,6 +152,25 @@ router.get('/db/:collection', async (req: Request, res: Response): Promise<void>
     const countResult = await pgPool.query(countQuery, queryParams);
     const total = parseInt(countResult.rows[0].count);
     
+    // Apply sorting if specified
+    if (sort) {
+      // Handle multiple sort fields separated by commas
+      const sortFields = (sort as string).split(',');
+      const orderClauses = sortFields.map(field => {
+        // Check if it's a descending sort (prefixed with '-')
+        if (field.startsWith('-')) {
+          const fieldName = field.substring(1);
+          return `"${fieldName}" DESC`;
+        }
+        return `"${field}" ASC`;
+      });
+      
+      sqlQuery += ` ORDER BY ${orderClauses.join(', ')}`;
+    } else {
+      // Default sort by created_at descending if exists
+      sqlQuery += ` ORDER BY created_at DESC`;
+    }
+    
     // Apply pagination to the original query
     sqlQuery += ` LIMIT ${limitNum} OFFSET ${offsetNum}`;
     

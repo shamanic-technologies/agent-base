@@ -17,10 +17,10 @@ function initDatabase() {
 }
 
 /**
- * POST /api_logs
+ * POST /api-logs/me
  * Log a raw request from the API Gateway
  */
-router.post('/', async (req: Request, res: Response): Promise<void> => {
+router.post('/me', async (req: Request, res: Response): Promise<void> => {
   try {
     // Initialize database service
     const database = initDatabase();

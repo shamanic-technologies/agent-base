@@ -50,9 +50,14 @@ export class DatabaseService {
   async createLog(logEntry: ApiLogEntry): Promise<DatabaseApiLogEntry> {
     try {
       const response = await axios.post<DatabaseResponse<DatabaseApiLogEntry>>(
-        `${this.baseUrl}/db/api_logs`,
+        `${this.baseUrl}/api-logs/me`,
         {
           data: logEntry
+        },
+        {
+          headers: {
+            'x-user-id': logEntry.user_id
+          }
         }
       );
 
@@ -82,6 +87,9 @@ export class DatabaseService {
       const response = await axios.get<DatabaseResponse<PaginatedResponse<DatabaseApiLogEntry>>>(
         `${this.baseUrl}/api-logs/me`,
         {
+          headers: {
+            'x-user-id': filter.user_id
+          },
           params: {
             query,
             limit,

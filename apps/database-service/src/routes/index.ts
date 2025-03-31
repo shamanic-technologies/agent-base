@@ -16,6 +16,6 @@ router.use(healthRoutes);
 router.use(usersRoutes);
 router.use(apiKeysRoutes);
 router.use(collectionsRoutes);
-router.use('/api_logs', apiLogsRoutes);
+router.use('/api-logs', apiLogsRoutes);
 
 export default router; 

@@ -10,6 +10,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
 import { authMiddleware } from './middlewares/auth.middleware.js';
+import { apiLoggerMiddleware } from './middlewares/logging.middleware.js';
 import { configureRoutes } from './routes/index.js';
 
 // Load environment variables based on NODE_ENV
@@ -40,6 +41,9 @@ const LOGGING_SERVICE_URL = process.env.LOGGING_SERVICE_URL;
 app.use(cors());
 app.use(express.json());
 
+// Apply logging middleware for all API requests
+// app.use(apiLoggerMiddleware);
+
 // Simple request logger
 app.use((req, res, next) => {
   console.log(`📥 ${req.method} ${req.path}`);
@@ -51,7 +55,7 @@ configureRoutes(
   app, 
   {
     agent: AGENT_SERVICE_URL,
-    utility: UTILITY_TOOL_SERVICE_URL,
+    utilityTool: UTILITY_TOOL_SERVICE_URL,
     key: KEY_SERVICE_URL,
     logging: LOGGING_SERVICE_URL
   },

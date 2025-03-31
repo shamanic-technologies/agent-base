@@ -16,7 +16,7 @@ export const configureHealthRoutes = (
   router: express.Router,
   serviceUrls: {
     agent: string;
-    utility: string;
+    utilityTool: string;
     key: string;
     logging?: string;
   }
@@ -30,7 +30,7 @@ export const configureHealthRoutes = (
       status: 'healthy',
       services: {
         agent: serviceUrls.agent,
-        utility: serviceUrls.utility,
+        utilityTool: serviceUrls.utilityTool,
         key: serviceUrls.key,
         ...(serviceUrls.logging && { logging: serviceUrls.logging })
       }
@@ -171,7 +171,7 @@ export const configureHealthRoutes = (
    */
   router.get('/test-utility-connection', async (req: express.Request, res: express.Response) => {
     try {
-      const utilityServiceUrl = serviceUrls.utility;
+      const utilityServiceUrl = serviceUrls.utilityTool;
       console.log(`📡 Testing connection to utility service at: ${utilityServiceUrl}`);
       
       // Try to parse URL components to verify format
@@ -227,7 +227,7 @@ export const configureHealthRoutes = (
       
       res.status(500).json({
         success: false,
-        utilityServiceUrl: serviceUrls.utility,
+        utilityServiceUrl: serviceUrls.utilityTool,
         error: `Connection failed: ${error.message}`,
         errorDetails,
         timestamp: new Date().toISOString()
