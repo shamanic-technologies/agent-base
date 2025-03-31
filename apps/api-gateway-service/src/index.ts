@@ -9,7 +9,6 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
-import { apiLoggerMiddleware } from './middlewares/logging.middleware.js';
 import { authMiddleware } from './middlewares/auth.middleware.js';
 import { configureRoutes } from './routes/index.js';
 
@@ -41,8 +40,11 @@ const LOGGING_SERVICE_URL = process.env.LOGGING_SERVICE_URL;
 app.use(cors());
 app.use(express.json());
 
-// Apply the API logger middleware globally
-app.use(apiLoggerMiddleware);
+// Simple request logger
+app.use((req, res, next) => {
+  console.log(`📥 ${req.method} ${req.path}`);
+  next();
+});
 
 // Configure routes
 configureRoutes(

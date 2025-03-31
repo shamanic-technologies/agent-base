@@ -87,6 +87,36 @@ export async function getClient(): Promise<PoolClient> {
 }
 
 /**
+ * Create a new collection (table) if it doesn't exist
+ * @param {string} collectionName - Name of the collection to create
+ * @returns {Promise<void>}
+ */
+export async function createCollection(collectionName: string): Promise<void> {
+  let client: PoolClient | null = null;
+  try {
+    client = await pgPool.connect();
+    
+    // Create table with id, data (JSONB), created_at, and updated_at columns
+    const query = `
+      CREATE TABLE IF NOT EXISTS "${collectionName}" (
+        id UUID PRIMARY KEY,
+        data JSONB DEFAULT '{}'::jsonb,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+    
+    await client.query(query);
+    console.log(`Collection "${collectionName}" created or already exists`);
+  } catch (error) {
+    console.error(`Error creating collection "${collectionName}":`, error);
+    throw error;
+  } finally {
+    if (client) client.release();
+  }
+}
+
+/**
  * Remove all tables that are not in the whitelist
  * @param {string[]} whitelistedTables - Array of table names to keep
  * @returns {Promise<string[]>} Array of dropped table names

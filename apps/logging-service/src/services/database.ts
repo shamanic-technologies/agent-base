@@ -1,237 +1,107 @@
 /**
  * Database Service
  * 
- * Handles database operations for the logging service
+ * Uses database-service for all database operations
  */
-import fetch from 'node-fetch';
+import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
-import pino from 'pino';
-import { ApiLogEntry } from '../types/index.js';
-import { parseTokenUsage, calculatePrice } from '../utils/index.js';
+import { ApiLogEntry, DatabaseApiLogEntry } from '../types';
 
-// Set up logging with pino
-const logger = pino({
-  level: process.env.LOG_LEVEL || 'info',
-  transport: {
-    target: 'pino-pretty',
-  },
-});
+interface DateFilter {
+  $gte?: string;
+  $lte?: string;
+}
 
-// Database service URL is accessed directly from environment in each function
-// to ensure it's always using the current value
+export interface LogFilter {
+  user_id?: string;
+  api_key?: string;
+  endpoint?: string;
+  method?: string;
+  conversation_id?: string;
+  timestamp?: DateFilter;
+  [key: string]: any;
+}
 
-/**
- * Initialize database tables for logging
- * @throws Error if database connection or initialization fails
- */
-export async function initDatabase(): Promise<void> {
-  try {
-    // Get database service URL from environment
-    const DB_SERVICE_URL = process.env.DATABASE_SERVICE_URL;
-    if (!DB_SERVICE_URL) {
-      throw new Error('DATABASE_SERVICE_URL environment variable is not defined');
+interface DatabaseResponse<T> {
+  success: boolean;
+  data: T;
+  error?: string;
+}
+
+interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+}
+
+export class DatabaseService {
+  private baseUrl: string;
+
+  constructor() {
+    const dbServiceUrl = process.env.DATABASE_SERVICE_URL;
+    if (!dbServiceUrl) {
+      throw new Error('DATABASE_SERVICE_URL not set');
     }
-    
-    // Check connection to database service
-    logger.info(`Checking database service at ${DB_SERVICE_URL}`);
-    
-    // Check if api_logs collection exists
-    const response = await fetch(`${DB_SERVICE_URL}/db`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
+    this.baseUrl = dbServiceUrl;
+  }
+
+  /**
+   * Create a new log entry
+   */
+  async createLog(logEntry: ApiLogEntry): Promise<DatabaseApiLogEntry> {
+    try {
+      const response = await axios.post<DatabaseResponse<DatabaseApiLogEntry>>(
+        `${this.baseUrl}/db/api_logs`,
+        {
+          data: logEntry
+        }
+      );
+
+      if (!response.data.success) {
+        throw new Error(response.data.error || 'Failed to create log entry');
       }
-    });
 
-    if (!response.ok) {
-      const errorText = `Failed to connect to database service: ${response.status} ${response.statusText}`;
-      logger.error(errorText);
-      throw new Error(errorText);
+      return response.data.data;
+    } catch (error) {
+      console.error('Error creating log:', error);
+      throw error;
     }
+  }
 
-    const data = await response.json() as any;
-    
-    if (!data.success) {
-      throw new Error(`Database service returned error: ${data.error || 'Unknown error'}`);
-    }
-    
-    if (!data.data || !Array.isArray(data.data)) {
-      throw new Error('Invalid response format from database service');
-    }
-    
-    const collections = data.data.map((c: any) => c.name);
-    logger.info(`Found collections in database: ${collections.join(', ') || 'none'}`);
-    
-    // If api_logs collection doesn't exist, create it
-    if (!collections.includes('api_logs')) {
-      logger.info('Creating api_logs collection');
+  /**
+   * Get logs with optional filtering
+   */
+  async getLogs(
+    filter: LogFilter = {},
+    limit: number = 100,
+    offset: number = 0
+  ): Promise<{ items: DatabaseApiLogEntry[]; total: number }> {
+    try {
+      // Convert filter to query string
+      const query = encodeURIComponent(JSON.stringify(filter));
       
-      // Database service doesn't have a direct "create table" endpoint,
-      // so we'll create it by inserting a dummy record
-      const dummyLog: ApiLogEntry = {
-        id: uuidv4(),
-        userId: 'setup',
-        endpoint: '/setup',
-        method: 'GET',
-        statusCode: 200,
-        timestamp: new Date().toISOString()
+      const response = await axios.get<DatabaseResponse<PaginatedResponse<DatabaseApiLogEntry>>>(
+        `${this.baseUrl}/api-logs/me`,
+        {
+          params: {
+            query,
+            limit,
+            offset
+          }
+        }
+      );
+
+      if (!response.data.success) {
+        throw new Error(response.data.error || 'Failed to fetch logs');
+      }
+
+      return {
+        items: response.data.data.items,
+        total: response.data.data.total
       };
-      
-      const createResult = await logApiCall(dummyLog);
-      if (!createResult) {
-        throw new Error('Failed to create api_logs collection');
-      }
-      
-      logger.info('api_logs collection created successfully');
-    } else {
-      logger.info('api_logs collection already exists');
+    } catch (error) {
+      console.error('Error fetching logs:', error);
+      throw error;
     }
-    
-    logger.info('Database initialization complete');
-  } catch (error) {
-    const errorMessage = error instanceof Error 
-      ? `Database initialization failed: ${error.message}` 
-      : 'Database initialization failed with unknown error';
-    
-    logger.error(errorMessage);
-    throw error; // Re-throw the error to stop the server
-  }
-}
-
-/**
- * Log an API call to the database
- * @param logEntry The API call log entry
- * @returns The created log entry ID
- * @throws Error if token usage cannot be determined for generate endpoints
- */
-export async function logApiCall(logEntry: ApiLogEntry): Promise<string | null> {
-  try {
-    // Get database service URL from environment
-    const DB_SERVICE_URL = process.env.DATABASE_SERVICE_URL;
-    if (!DB_SERVICE_URL) {
-      throw new Error('DATABASE_SERVICE_URL environment variable is not defined');
-    }
-    
-    const id = logEntry.id || uuidv4();
-    const timestamp = logEntry.timestamp || new Date().toISOString();
-    
-    // Validate required userId
-    if (!logEntry.userId) {
-      throw new Error('[LOGGING SERVICE] userId is required for logging API calls');
-    }
-
-    // Calculate price using the imported calculatePrice function
-    let price = logEntry.price || 0;
-    let inputTokens = logEntry.inputTokens || 0;
-    let outputTokens = logEntry.outputTokens || 0;
-    
-    // For generate endpoints, calculate price based on tokens if not already set
-    if (logEntry.endpoint.startsWith('/generate') && !logEntry.price) {
-      // Use the calculatePrice function from utils
-      price = calculatePrice(logEntry);
-      
-      // Extract token information if available for storage
-      if (logEntry.responseBody) {
-        const tokenUsage = parseTokenUsage(logEntry.responseBody);
-        inputTokens = tokenUsage.inputTokens;
-        outputTokens = tokenUsage.outputTokens;
-      }
-    }
-
-    // Ensure all field names use snake_case for database compatibility
-    const dbEntry = {
-      id,
-      data: {
-        user_id: logEntry.userId,
-        api_key: logEntry.apiKey,
-        endpoint: logEntry.endpoint,
-        method: logEntry.method,
-        status_code: logEntry.statusCode,
-        ip_address: logEntry.ipAddress,
-        user_agent: logEntry.userAgent,
-        request_id: logEntry.requestId,
-        request_body: logEntry.requestBody,
-        response_body: logEntry.responseBody,
-        duration_ms: logEntry.durationMs,
-        error_message: logEntry.errorMessage,
-        price: price,
-        input_tokens: inputTokens,
-        output_tokens: outputTokens,
-        timestamp,
-        conversation_id: logEntry.conversation_id || (logEntry.requestBody?.conversation_id) || null
-      }
-    };
-
-    logger.debug(`Writing log to database with fields: ${Object.keys(dbEntry.data).join(', ')}`);
-
-    // Send userId in both the X-USER-ID header for authentication
-    // and include it in the request body data
-    const response = await fetch(`${DB_SERVICE_URL}/db/api_logs`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-USER-ID': logEntry.userId // Using standard header format for authentication
-      },
-      body: JSON.stringify(dbEntry)
-    });
-    
-    if (!response.ok) {
-      throw new Error(`[Logging Service] Failed to log API call: ${response.status} ${response.statusText}`);
-    }
-    
-    const data = await response.json() as any;
-    return data.data.id;
-  } catch (error) {
-    logger.error('Error logging API call', error);
-    return null;
-  }
-}
-
-/**
- * Get logs for a specific user
- * @param userId The user ID to filter by
- * @param limit Maximum number of logs to return
- * @param offset Pagination offset
- * @returns The logs for the user
- */
-export async function getUserLogs(userId: string, limit = 100, offset = 0): Promise<any[] | null> {
-  try {
-    // Get database service URL from environment
-    const DB_SERVICE_URL = process.env.DATABASE_SERVICE_URL;
-    if (!DB_SERVICE_URL) {
-      throw new Error('DATABASE_SERVICE_URL environment variable is not defined');
-    }
-    
-    // Use the database service's query parameter to filter by user_id
-    // Ensure we always use snake_case field names to match database schema
-    const queryParam = encodeURIComponent(JSON.stringify({ "data.user_id": userId }));
-    
-    logger.info(`Getting logs for user ${userId} with query: ${queryParam}`);
-    
-    const response = await fetch(`${DB_SERVICE_URL}/db/api_logs?query=${queryParam}&limit=${limit}&offset=${offset}&sort=-created_at`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-USER-ID': userId
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error(`[Logging Service] Failed to get API logs: ${response.status}`);
-    }
-    
-    const data = await response.json() as any;
-    logger.info(`Found ${data.data?.items?.length || 0} logs for user ${userId}`);
-    
-    if (!data.success || !data.data || !data.data.items) {
-      throw new Error('[Logging Service] Unexpected response structure from database service');
-    }
-    
-    // Return the items directly - sorting and pagination handled by database query
-    return data.data.items;
-  } catch (error) {
-    logger.error(`[Logging Service] Error getting user logs: ${error}`);
-    return null;
   }
 }
 

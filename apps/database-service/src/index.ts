@@ -10,7 +10,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
-import routes from './routes';
+import routes from './routes/index';
 import { testConnection } from './db';
 
 // Load environment variables based on NODE_ENV

@@ -6,27 +6,28 @@
 
 /**
  * Interface for API call log entry
- * Note: userId is required but should be provided via X-USER-ID header
- * rather than in the request body for proper authentication
+ * Simple logging of incoming requests with essential information
  */
 export interface ApiLogEntry {
-  id?: string;
-  apiKey?: string;
-  userId: string;  // Required user_id field, passed via X-USER-ID header
+  id: string;
+  user_id: string;
+  api_key: string;
   endpoint: string;
   method: string;
-  statusCode?: number;
-  ipAddress?: string;
-  userAgent?: string;
-  requestId?: string;
-  requestBody?: any;
-  responseBody?: any;
-  durationMs?: number;
-  errorMessage?: string;
-  timestamp?: string;
-  price?: number;  // Field for pricing
-  inputTokens?: number; // Total input tokens
-  outputTokens?: number; // Total output tokens
-  streamingResponse?: boolean; // Flag to indicate this is a streaming response where the full body is not included
-  conversation_id?: string; // Conversation ID for tracking related requests
-} 
+  ip_address?: string;
+  user_agent?: string;
+  request_id?: string;
+  request_body?: any;
+  conversation_id?: string;
+  timestamp: string;
+}
+
+/**
+ * Interface for database API log entry
+ * Extends ApiLogEntry with database-specific fields
+ */
+export interface DatabaseApiLogEntry extends ApiLogEntry {
+  created_at: string;
+  updated_at: string;
+}
+
