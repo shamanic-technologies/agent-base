@@ -72,13 +72,8 @@ export async function createAgent({
           maxTokens: 120000,
           sendReasoning: true, // Ensure reasoning is sent in the response
         },
-        // onToolError: (error, toolName) => {
-        //   // Use our separated error handler
-        //   return handleToolError(error, toolName);
-        // }
       });
     } catch (error) {
-      console.error('Error with agent:', error);
       throw error;
     }
   };
