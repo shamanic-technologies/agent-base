@@ -10,9 +10,19 @@ import { tool } from 'ai';
 import { z } from "zod";
 import axios from 'axios';
 import { UtilityError } from '../../types/index.js';
+import { handleAxiosError } from '../utils/errorHandlers.js';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-// API Gateway URL from environment variables with fallback
-const API_GATEWAY_URL = process.env.API_GATEWAY_URL || 'http://localhost:3002';
+// Load environment variables from .env.local
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const rootDir = path.resolve(__dirname, '../../../');
+dotenv.config({ path: path.resolve(rootDir, '.env.local') });
+
+// API Gateway URL from environment variables
+const API_GATEWAY_URL = process.env.API_GATEWAY_URL;
 
 /**
  * Creates the call utility tool with the given credentials
@@ -71,62 +81,8 @@ export function createCallUtilityTool(credentials: {
         } as UtilityError;
       } catch (error) {
         console.error(`[Utility Tool] Error calling utility ${utility_id}:`, error);
-        return handleErrorWithStatus(error, utility_id);
+        return handleAxiosError(error, `${API_GATEWAY_URL}/utility-tool/call-tool/${utility_id}`);
       }
     }
   });
-}
-
-/**
- * Helper function to handle errors with specific status codes
- */
-function handleErrorWithStatus(error: any, utilityId?: string): UtilityError {
-  if (axios.isAxiosError(error)) {
-    // Handle network errors or API errors
-    if (!error.response) {
-      return {
-        error: true,
-        message: `Network error: Failed to connect to API Gateway at ${API_GATEWAY_URL}`,
-        status: 'error',
-        code: 'NETWORK_ERROR'
-      };
-    }
-    
-    // Handle common error codes
-    if (error.response.status === 404) {
-      return {
-        error: true,
-        message: `Utility not found: ${utilityId}`,
-        status: 'error',
-        code: 'NOT_FOUND',
-        statusCode: 404
-      };
-    }
-    
-    if (error.response.status === 400) {
-      return {
-        error: true,
-        message: error.response.data?.error || 'Invalid input data for this utility',
-        status: 'error',
-        code: 'BAD_REQUEST',
-        statusCode: 400
-      };
-    }
-    
-    return {
-      error: true,
-      message: error.response.data?.error || error.message,
-      status: 'error',
-      code: 'API_ERROR',
-      statusCode: error.response.status
-    };
-  }
-  
-  // Generic error
-  return {
-    error: true,
-    message: error instanceof Error ? error.message : String(error),
-    status: 'error',
-    code: 'UNKNOWN_ERROR'
-  };
 } 

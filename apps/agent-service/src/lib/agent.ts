@@ -14,6 +14,9 @@ import { createListUtilitiesTool } from './utility/utility_list_utilities.js';
 import { createGetUtilityInfoTool } from './utility/utility_get_utility_info.js';
 import { createCallUtilityTool } from './utility/utility_call_utility.js';
 
+// Import error handlers
+import { handleToolError } from './utils/errorHandlers.js';
+
 // Default model to use
 const MODEL_NAME = 'claude-3-7-sonnet-20250219';
 
@@ -53,7 +56,7 @@ export async function createAgent({
   /**
    * Process a conversation with the agent
    */
-  const processWithAgent = async (messages: any[]) => {
+  const stream = async (messages: any[]) => {
     try {
       console.log(`Processing with agent for user: ${userId}, conversation: ${conversationId}`);
       
@@ -63,16 +66,16 @@ export async function createAgent({
         messages,
         tools,
         // @ts-ignore - maxSteps property is supported by Vercel AI SDK
-        maxSteps: 5, // Allow multi-step tool usage
+        maxSteps: 25, // Allow multi-step tool usage
         providerOptions: {
           temperature: 0.1,
-          maxTokens: 12000,
+          maxTokens: 120000,
           sendReasoning: true, // Ensure reasoning is sent in the response
         },
-        onToolError: (error, toolName) => {
-          console.error(`[Tool Error] Error executing tool ${toolName}:`, error);
-          // The error will be automatically passed to the UI through the response
-        }
+        // onToolError: (error, toolName) => {
+        //   // Use our separated error handler
+        //   return handleToolError(error, toolName);
+        // }
       });
     } catch (error) {
       console.error('Error with agent:', error);
@@ -80,5 +83,5 @@ export async function createAgent({
     }
   };
 
-  return { processWithAgent };
+  return { stream };
 }

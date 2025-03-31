@@ -10,9 +10,19 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import axios from 'axios';
 import { UtilityError } from '../../types/index.js';
+import { handleAxiosError } from '../utils/errorHandlers.js';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-// API Gateway URL from environment variables with fallback
-const API_GATEWAY_URL = process.env.API_GATEWAY_URL || 'http://localhost:3002';
+// Load environment variables from .env.local
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const rootDir = path.resolve(__dirname, '../../../');
+dotenv.config({ path: path.resolve(rootDir, '.env.local') });
+
+// Get API Gateway URL from environment variables
+const API_GATEWAY_URL = process.env.API_GATEWAY_URL;
 
 /**
  * Creates the list utilities tool with the given credentials
@@ -26,26 +36,13 @@ export function createListUtilitiesTool(credentials: {
   
   return tool({
     name: 'utility_list_utilities',
-    description: 'Get a list of all available utilities, optionally filtered by category.',
-    parameters: z.object({
-      category: z.string().optional().describe('Optional category to filter utilities by'),
-      search: z.string().optional().describe('Optional search term to filter utilities by name or description')
-    }),
-    execute: async ({ category, search }) => {
+    description: 'Get a list of all available utilities.',
+    parameters: z.object({}),
+    execute: async () => {
       try {
-        console.log(`[Utility Tool] Listing utilities with filters: ${category || 'none'}, ${search || 'none'}`);
-        
-        // Build query parameters
-        const params: Record<string, string> = {
-          user_id: userId,
-          conversation_id: conversationId
-        };
-        
-        if (category) params.category = category;
-        if (search) params.search = search;
+        console.log(`[Utility Tool] Listing utilities`);
         
         const response = await axios.get(`${API_GATEWAY_URL}/utility-tool/get-list`, {
-          params,
           headers: {
             'Content-Type': 'application/json',
             'x-api-key': apiKey
@@ -71,41 +68,8 @@ export function createListUtilitiesTool(credentials: {
         } as UtilityError;
       } catch (error) {
         console.error('[Utility Tool] Error listing utilities:', error);
-        return handleAxiosError(error);
+        return handleAxiosError(error, `${API_GATEWAY_URL}/utility-tool/get-list`);
       }
     }
   });
-}
-
-/**
- * Helper function to handle Axios errors
- */
-function handleAxiosError(error: any): UtilityError {
-  if (axios.isAxiosError(error)) {
-    // Handle network errors or API errors
-    if (!error.response) {
-      return {
-        error: true,
-        message: `Network error: Failed to connect to API Gateway at ${API_GATEWAY_URL}`,
-        status: 'error',
-        code: 'NETWORK_ERROR'
-      };
-    }
-    
-    return {
-      error: true,
-      message: error.response.data?.error || error.message,
-      status: 'error',
-      code: 'API_ERROR',
-      statusCode: error.response.status
-    };
-  }
-  
-  // Generic error
-  return {
-    error: true,
-    message: error instanceof Error ? error.message : String(error),
-    status: 'error',
-    code: 'UNKNOWN_ERROR'
-  };
 } 

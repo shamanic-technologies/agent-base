@@ -14,6 +14,9 @@ import cors from 'cors';
 import { createAgent } from './lib/agent.js';
 import { User } from './types/index.js';
 import { Readable } from 'stream';
+import { ToolExecutionError } from 'ai';
+import { InvalidToolArgumentsError } from 'ai';
+import { NoSuchToolError } from 'ai';
 
 // Load environment variables based on NODE_ENV
 const nodeEnv = process.env.NODE_ENV || 'development';
@@ -51,21 +54,18 @@ app.use((req, res, next) => {
   try {
     // Get user ID from header set by API gateway middleware
     const userId = req.headers['x-user-id'] as string;
+    console.log(`[Agent Service] User authenticated: ${userId}`);
     
     if (userId) {
       // Set user object on request for route handlers
       req.user = {
         id: userId,
-        email: req.headers['x-user-email'] as string,
-        name: req.headers['x-user-name'] as string,
-        provider: req.headers['x-user-provider'] as string
       };
-      console.log(`[Auth Middleware] User authenticated: ${userId}`);
     }
     
     next();
   } catch (error) {
-    console.error('[Auth Middleware] Error processing request:', error);
+    console.error('[Agent Service] Error processing request:', error);
     next();
   }
 });
@@ -130,7 +130,7 @@ app.post('/stream', async (req, res) => {
   if (!userId) {
     return res.status(401).json({ 
       error: '[Agent Service] User authentication required',
-      details: 'User ID not found in request. Authentication headers may be missing'
+      details: 'User ID not found in request'
     });
   }
 
@@ -158,30 +158,27 @@ app.post('/stream', async (req, res) => {
     });
     
     // Get the streaming result from the agent
-    const stream = await agent.processWithAgent([{
+    const stream = await agent.stream([{
       role: 'user',
       content: message
     }]);
     
-    // Convert to a proper data stream response with reasoning
-    // @ts-ignore - StreamResult includes toDataStreamResponse method
-    const response = stream.toDataStreamResponse({
-      sendReasoning: true
+    // Stream directly to Express response
+    // @ts-ignore - StreamResult includes pipeDataStreamToResponse method
+    await stream.pipeDataStreamToResponse(res, {
+      getErrorMessage: error => {
+        if (NoSuchToolError.isInstance(error)) {
+          return 'The model tried to call a unknown tool: ' + error.toolName;
+        } else if (InvalidToolArgumentsError.isInstance(error)) {
+          return 'The model called a tool with invalid arguments: ' + error.toolName;
+        } else if (ToolExecutionError.isInstance(error)) {
+          return 'An error occurred during tool execution: ' + error.toolName;
+        } else {
+          return 'An unknown error occurred.';
+        }
+      },
     });
     
-    // Set response headers for streaming
-    response.headers.forEach((value, key) => {
-      res.setHeader(key, value);
-    });
-    
-    // Use response.body directly with Express
-    if (response.body) {
-      // Pipe the response body to Express response
-      const responseStream = Readable.fromWeb(response.body);
-      responseStream.pipe(res);
-    } else {
-      throw new Error('No response body from agent.processWithAgent');
-    }
   } catch (error) {
     console.error('[Agent Service] Error streaming message with agent:', error);
     
@@ -196,8 +193,8 @@ app.post('/stream', async (req, res) => {
 
 // Start server
 const server = app.listen(PORT, () => {
-  console.log(`🤖 [AGENT SERVICE] Claude 3.7 Sonnet Agent Service running on port ${PORT}`);
+  console.log(`🤖 [AGENT SERVICE] Port ${PORT}`);
   console.log(`🌐 [AGENT SERVICE] Environment: ${nodeEnv}`);
-  console.log(`🔑 [AGENT SERVICE] API Key ${process.env.ANTHROPIC_API_KEY ? 'is configured' : 'is MISSING'}`);
+  console.log(`🔑 [AGENT SERVICE] Anthropic API Key ${process.env.ANTHROPIC_API_KEY ? 'is configured' : 'is MISSING'}`);
   console.log(`🔗 [AGENT SERVICE] API Gateway URL: ${process.env.API_GATEWAY_URL || 'not set'}`);
 });
