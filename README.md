@@ -70,7 +70,8 @@ npm test --filter="@helloworld/auth-service"
 | **payment-service** | Subscription and payment processing | 3007 |
 | **api-gateway-service** | API gateway that routes requests to appropriate services | 3002 |
 | **web-gateway-service** | Web gateway that routes requests to appropriate services | 3030 |
-| **utility-service** | Utility functions for application features | 3008 |
+| **utility-tool-service** | Utility functions for application features | 3050 |
+| **tool-auth-service** | OAuth authentication for tools used by AI agents | 3060 |
 | **logging-service** | API call logging, token usage tracking and billing integration | 3900 |
 | **dev-tool** | Development tools and debugging | 3010 |
 | **web** | Main web application (Next.js) | 3020 |
