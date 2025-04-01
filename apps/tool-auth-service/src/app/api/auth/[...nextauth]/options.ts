@@ -109,8 +109,7 @@ export const authOptions: NextAuthOptions = {
         params: {
           prompt: "consent",
           access_type: "offline",
-          response_type: "code",
-          scope: "openid email profile", // Default scopes
+          response_type: "code"
         },
       },
     }),
@@ -121,6 +120,13 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, account, user, profile, trigger, session }) {
+        console.log('jwt callback');
+        console.log('token', JSON.stringify(token, null, 2) );
+        console.log('account', JSON.stringify(account, null, 2) );
+        console.log('user', JSON.stringify(user, null, 2));
+        console.log('profile', JSON.stringify(profile, null, 2));
+        console.log('trigger', trigger);
+        console.log('session', JSON.stringify(session, null, 2));
       // Initial sign in
       if (account && user) {
         // Extract scopes from the account (these come from the authorization request)

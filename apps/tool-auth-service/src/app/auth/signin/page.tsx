@@ -40,8 +40,12 @@ function SignInContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [toolName, setToolName] = useState<string | null>(null);
 
-  // Parse required scopes from URL
-  const scopes = searchParams.get('scopes') || '';
+  // Parse required scopes from URL and add base scopes
+  const requestedScopes = searchParams.get('scopes') || '';
+  const baseScopes = 'openid email profile';
+  const scopes = requestedScopes ? `${baseScopes} ${requestedScopes}` : baseScopes;
+  console.log('scopes', scopes);
+  
   const callbackUrl = searchParams.get('callbackUrl') || '/auth/callback';
 
   useEffect(() => {
@@ -56,10 +60,10 @@ function SignInContent() {
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
-      await signIn('google', {
-        callbackUrl,
-        scope: scopes,
-      });
+      await signIn('google', 
+        { callbackUrl }, 
+        { scope: scopes }
+      );
     } catch (error) {
       console.error('Error signing in with Google:', error);
       setIsLoading(false);
