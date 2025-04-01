@@ -110,6 +110,48 @@ export interface GmailReadRequest {
   userId?: string;
 }
 
+export interface GmailAuthNeededResponse {
+  needs_auth: true;
+  auth_url: string;
+  message: string;
+}
+
+export interface GmailMessageHeader {
+  name: string;
+  value: string;
+}
+
+export interface GmailMessageDetails {
+  id: string;
+  threadId: string;
+  labelIds: string[];
+  subject: string;
+  from: string;
+  to: string;
+  date: string;
+  snippet: string;
+  unread: boolean;
+}
+
+export interface GmailErrorMessageDetails {
+  id: string;
+  error: string;
+}
+
+export interface GmailSuccessResponse {
+  count: number;
+  messages: (GmailMessageDetails | GmailErrorMessageDetails)[];
+  total_messages?: number;
+  message?: string;
+}
+
+export interface GmailErrorResponse {
+  error: string;
+  details?: string;
+}
+
+export type GmailReadResponse = GmailAuthNeededResponse | GmailSuccessResponse | GmailErrorResponse;
+
 /**
  * Database utility types
  */

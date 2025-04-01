@@ -5,7 +5,17 @@
  * Requires OAuth authentication with gmail.modify scope
  */
 import axios from 'axios';
-import { UtilityTool, GmailReadRequest } from '../types/index.js';
+import { 
+  UtilityTool, 
+  GmailReadRequest, 
+  GmailReadResponse, 
+  GmailAuthNeededResponse, 
+  GmailSuccessResponse, 
+  GmailErrorResponse,
+  GmailMessageDetails,
+  GmailErrorMessageDetails,
+  GmailMessageHeader
+} from '../types/index.js';
 import { registry } from '../registry/registry.js';
 
 /**
@@ -32,7 +42,7 @@ const gmailReadUtility: UtilityTool = {
     }
   },
   
-  execute: async (userId: string, conversationId: string, params: GmailReadRequest): Promise<any> => {
+  execute: async (userId: string, conversationId: string, params: GmailReadRequest): Promise<GmailReadResponse> => {
     try {
       // Extract parameters with defaults
       const { 
@@ -44,9 +54,17 @@ const gmailReadUtility: UtilityTool = {
       
       console.log(`📧 [GMAIL_READ] Reading emails for user with query: ${query}`);
       
+      // Get tool auth service URL with fallback
+      const toolAuthServiceUrl = process.env.TOOL_AUTH_SERVICE_URL;
+      console.log(`📧 [GMAIL_READ] Using Tool Auth Service URL: ${toolAuthServiceUrl}`);
+      
+      if (!toolAuthServiceUrl) {
+        throw new Error('TOOL_AUTH_SERVICE_URL environment variable is not set');
+      }
+      
       // Check if user has the required scopes
       const checkAuthResponse = await axios.post(
-        `${process.env.TOOL_AUTH_SERVICE_URL}/api/check-auth`,
+        `${toolAuthServiceUrl}/api/check-auth`,
         {
           userId,
           requiredScopes: ['https://www.googleapis.com/auth/gmail.modify'],
@@ -56,11 +74,12 @@ const gmailReadUtility: UtilityTool = {
       
       // If we don't have auth, return the auth URL for the frontend to handle
       if (!checkAuthResponse.data.hasAuth) {
-        return {
+        const authNeededResponse: GmailAuthNeededResponse = {
           needs_auth: true,
           auth_url: checkAuthResponse.data.authUrl,
           message: 'Gmail access requires authentication. Please use the provided URL to authorize access.'
         };
+        return authNeededResponse;
       }
       
       // If we have auth, use the credentials to make Gmail API calls
@@ -85,11 +104,12 @@ const gmailReadUtility: UtilityTool = {
       
       // If no messages found, return a simple response
       if (messages.length === 0) {
-        return {
+        const emptyResponse: GmailSuccessResponse = {
           count: 0,
           messages: [],
           message: 'No emails found matching the criteria'
         };
+        return emptyResponse;
       }
       
       // Fetch details for each message
@@ -107,18 +127,18 @@ const gmailReadUtility: UtilityTool = {
             
             // Extract relevant message data
             const data = messageDetails.data;
-            const headers = data.payload.headers;
+            const headers = data.payload.headers as GmailMessageHeader[];
             
             // Find important headers
-            const subject = headers.find((h: any) => h.name.toLowerCase() === 'subject')?.value || 'No Subject';
-            const from = headers.find((h: any) => h.name.toLowerCase() === 'from')?.value || 'Unknown Sender';
-            const to = headers.find((h: any) => h.name.toLowerCase() === 'to')?.value || 'Unknown Recipient';
-            const date = headers.find((h: any) => h.name.toLowerCase() === 'date')?.value || 'Unknown Date';
+            const subject = headers.find((h: GmailMessageHeader) => h.name.toLowerCase() === 'subject')?.value || 'No Subject';
+            const from = headers.find((h: GmailMessageHeader) => h.name.toLowerCase() === 'from')?.value || 'Unknown Sender';
+            const to = headers.find((h: GmailMessageHeader) => h.name.toLowerCase() === 'to')?.value || 'Unknown Recipient';
+            const date = headers.find((h: GmailMessageHeader) => h.name.toLowerCase() === 'date')?.value || 'Unknown Date';
             
             // Get snippet of message body
             const snippet = data.snippet || '';
             
-            return {
+            const messageDetail: GmailMessageDetails = {
               id: data.id,
               threadId: data.threadId,
               labelIds: data.labelIds,
@@ -129,37 +149,42 @@ const gmailReadUtility: UtilityTool = {
               snippet,
               unread: data.labelIds.includes('UNREAD')
             };
+            return messageDetail;
           } catch (error) {
             console.error(`❌ [GMAIL_READ] Error fetching message details:`, error);
-            return {
+            const errorMessageDetail: GmailErrorMessageDetails = {
               id: message.id,
               error: 'Failed to fetch message details'
             };
+            return errorMessageDetail;
           }
         })
       );
       
-      return {
+      const successResponse: GmailSuccessResponse = {
         count: messages.length,
         messages: detailedMessages,
         total_messages: gmailResponse.data.resultSizeEstimate || messages.length
       };
+      return successResponse;
       
     } catch (error) {
       console.error("❌ [GMAIL_READ] Error:", error);
       
       // Check if this is an auth error
       if (error.response && error.response.status === 401) {
-        return {
+        const errorResponse: GmailErrorResponse = {
           error: "Authentication failed. You may need to re-authenticate.",
           details: "Your session may have expired. Please try again."
         };
+        return errorResponse;
       }
       
-      return {
+      const errorResponse: GmailErrorResponse = {
         error: "Failed to read emails from Gmail",
         details: error instanceof Error ? error.message : String(error)
       };
+      return errorResponse;
     }
   }
 };
