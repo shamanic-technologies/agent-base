@@ -4,13 +4,13 @@
  * Performs location-based searches using the Google Maps API via SerpAPI.
  * Useful for finding places, businesses, and detailed location information.
  */
-import { BasicUtilityTool, GoogleMapsRequest } from '../../types/index.js';
+import { UtilityTool, GoogleMapsRequest } from '../../types/index.js';
 import { registry } from '../../registry/registry.js';
 
 /**
  * Implementation of the Google Maps utility
  */
-const googleMaps: BasicUtilityTool = {
+const googleMaps: UtilityTool = {
   id: 'utility_google_maps',
   description: 'Search for locations, businesses, and places using Google Maps',
   schema: {

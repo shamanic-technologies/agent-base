@@ -4,13 +4,13 @@
  * Performs web searches using the Google Search API and returns formatted results.
  * Useful for finding up-to-date information from the web.
  */
-import { BasicUtilityTool, GoogleSearchRequest } from '../../types/index.js';
+import { UtilityTool, GoogleSearchRequest } from '../../types/index.js';
 import { registry } from '../../registry/registry.js';
 
 /**
  * Implementation of the Google Search utility
  */
-const googleSearch: BasicUtilityTool = {
+const googleSearch: UtilityTool = {
   id: 'utility_google_search',
   description: 'Search the web using Google Search API to find up-to-date information',
   schema: {

@@ -3,7 +3,7 @@
  * 
  * Creates a new table in the database with the specified name, description, and schema.
  */
-import { BasicUtilityTool, CreateTableRequest } from '../../types/index.js';
+import { UtilityTool, CreateTableRequest } from '../../types/index.js';
 import { registry } from '../../registry/registry.js';
 import { 
   findXataWorkspace, 
@@ -15,7 +15,7 @@ import {
 /**
  * Implementation of the Create Table utility
  */
-const createTableUtility: BasicUtilityTool = {
+const createTableUtility: UtilityTool = {
   id: 'utility_create_table',
   description: 'Create a new table in the user\'s dedicated database',
   schema: {

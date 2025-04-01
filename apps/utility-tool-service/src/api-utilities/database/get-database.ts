@@ -4,7 +4,7 @@
  * Returns database information including name, table info (ids, name, description, schema)
  * Uses Xata to manage databases for users.
  */
-import { BasicUtilityTool } from '../../types/index.js';
+import { UtilityTool } from '../../types/index.js';
 import { registry } from '../../registry/registry.js';
 import { BaseClient } from '@xata.io/client';
 import fetch from 'node-fetch';
@@ -364,7 +364,7 @@ async function getUserDatabase(userId: string): Promise<Record<string, any>> {
 /**
  * Implementation of the Get Database utility
  */
-const getDatabaseUtility: BasicUtilityTool = {
+const getDatabaseUtility: UtilityTool = {
   id: 'utility_get_database',
   description: 'Get information about the user\'s dedicated database, including tables and schemas',
   schema: {

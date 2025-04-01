@@ -29,6 +29,9 @@ import './api-utilities/web/read-webpage.js';
 
 import './basic-utilities/get-current-datetime.js';
 
+// Import OAuth utilities
+import './oauth-utilities/gmail_read.js';
+
 // Load environment variables based on NODE_ENV
 const nodeEnv = process.env.NODE_ENV || 'development';
 

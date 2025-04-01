@@ -3,7 +3,7 @@
  * 
  * Modifies existing table structures in the database
  */
-import { BasicUtilityTool, AlterTableRequest } from '../../types/index.js';
+import { UtilityTool, AlterTableRequest } from '../../types/index.js';
 import { registry } from '../../registry/registry.js';
 import {
   findXataWorkspace,
@@ -14,7 +14,7 @@ import {
 /**
  * Implementation of the Alter Table utility
  */
-const alterTableUtility: BasicUtilityTool = {
+const alterTableUtility: UtilityTool = {
   id: 'utility_alter_table',
   description: 'Modify the structure of existing database tables',
   schema: {

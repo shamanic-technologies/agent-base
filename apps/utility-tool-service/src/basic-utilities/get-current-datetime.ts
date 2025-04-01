@@ -3,13 +3,13 @@
  * 
  * Returns the current date and time in various formats
  */
-import { BasicUtilityTool, DateTimeRequest } from '../types/index.js';
+import { UtilityTool, DateTimeRequest } from '../types/index.js';
 import { registry } from '../registry/registry.js';
 
 /**
  * Implementation of the Current DateTime utility
  */
-const getCurrentDatetimeUtility: BasicUtilityTool = {
+const getCurrentDatetimeUtility: UtilityTool = {
   id: 'utility_get_current_datetime',
   description: 'Get current date and time in various formats',
   schema: {

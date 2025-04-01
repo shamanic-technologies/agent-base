@@ -4,7 +4,7 @@
  * Performs flight searches using the Google Flights API via SerpAPI.
  * Useful for finding flight information, prices, routes, and travel options.
  */
-import { BasicUtilityTool, GoogleFlightsRequest } from '../../types/index.js';
+import { UtilityTool, GoogleFlightsRequest } from '../../types/index.js';
 import { registry } from '../../registry/registry.js';
 
 /**
@@ -19,7 +19,7 @@ function formatDuration(minutes: number): string {
 /**
  * Implementation of the Google Flights utility
  */
-const googleFlights: BasicUtilityTool = {
+const googleFlights: UtilityTool = {
   id: 'utility_google_flights',
   description: 'Search for flights using Google Flights to find routes, prices, and travel options',
   schema: {

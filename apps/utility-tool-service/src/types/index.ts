@@ -5,7 +5,7 @@
 /**
  * Standard interface for all utility tools in the system
  */
-export interface BasicUtilityTool {
+export interface UtilityTool {
   /**
    * Unique identifier for the utility
    */
@@ -98,6 +98,16 @@ export interface GoogleFlightsRequest {
   children?: number;
   infants?: number;
   cabin_class?: string;
+}
+
+/**
+ * Gmail read utility types
+ */
+export interface GmailReadRequest {
+  query?: string;
+  maxResults?: number;
+  labelIds?: string[];
+  userId?: string;
 }
 
 /**

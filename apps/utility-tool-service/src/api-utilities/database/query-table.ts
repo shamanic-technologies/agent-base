@@ -3,7 +3,7 @@
  * 
  * Executes SQL-like queries on database tables and returns results
  */
-import { BasicUtilityTool, QueryTableRequest } from '../../types/index.js';
+import { UtilityTool, QueryTableRequest } from '../../types/index.js';
 import { registry } from '../../registry/registry.js';
 import {
   findXataWorkspace,
@@ -13,7 +13,7 @@ import {
 /**
  * Implementation of the Query Table utility
  */
-const queryTableUtility: BasicUtilityTool = {
+const queryTableUtility: UtilityTool = {
   id: 'utility_query_table',
   description: 'Execute SQL-like queries on database tables and return results',
   schema: {

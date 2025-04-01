@@ -62,15 +62,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
  */
 async function checkUserAuth(userId: string, requiredScopes: string[]): Promise<{ valid: boolean, credentials?: any }> {
   try {
+    // Database integration is not fully implemented yet
+    console.log(`Checking auth for user ${userId} with scopes: ${requiredScopes.join(', ')}`);
+    
+    // Skip database call for now as it's not fully implemented
+    // Return invalid to trigger the auth flow
+    return { valid: false };
+    
+    /* Once database integration is implemented, uncomment this:
     // Call database service to check for credentials
     const response = await axios.get(`${process.env.DATABASE_SERVICE_URL}/credentials/${userId}`);
     
-    // For now, we'll just return invalid until we implement the database integration
-    return {
-      valid: false
-    };
-
-    /* Real implementation would be:
     const userCredentials = response.data;
     
     if (!userCredentials || !userCredentials.accessToken) {
@@ -90,9 +92,8 @@ async function checkUserAuth(userId: string, requiredScopes: string[]): Promise<
         credentials: userCredentials
       };
     }
-    
-    return { valid: false };
     */
+    
   } catch (error) {
     console.error('Error checking user auth:', error);
     return { valid: false };

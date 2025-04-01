@@ -4,13 +4,13 @@
  * Extracts content from web pages using the FireCrawl API and returns it in markdown format.
  * Useful for fetching clean, LLM-friendly content from websites.
  */
-import { BasicUtilityTool, FireCrawlExtractContentRequest } from '../../types/index.js';
+import { UtilityTool, FireCrawlExtractContentRequest } from '../../types/index.js';
 import { registry } from '../../registry/registry.js';
 
 /**
  * Implementation of the FireCrawl content extraction utility
  */
-const readWebPage: BasicUtilityTool = {
+const readWebPage: UtilityTool = {
   id: 'utility_read_webpage',
   description: 'Read the content of a webpage',
   schema: {

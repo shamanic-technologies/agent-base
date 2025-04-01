@@ -3,7 +3,7 @@
  * 
  * Removes a table from the database
  */
-import { BasicUtilityTool, DeleteTableRequest } from '../../types/index.js';
+import { UtilityTool, DeleteTableRequest } from '../../types/index.js';
 import { registry } from '../../registry/registry.js';
 import {
   findXataWorkspace
@@ -12,7 +12,7 @@ import {
 /**
  * Implementation of the Delete Table utility
  */
-const deleteTableUtility: BasicUtilityTool = {
+const deleteTableUtility: UtilityTool = {
   id: 'utility_delete_table',
   description: 'Delete a table from the user\'s database',
   schema: {

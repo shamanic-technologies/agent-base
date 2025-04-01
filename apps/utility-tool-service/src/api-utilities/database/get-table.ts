@@ -3,7 +3,7 @@
  * 
  * Returns information about a database table, including schema and optionally data
  */
-import { BasicUtilityTool, GetTableRequest } from '../../types/index.js';
+import { UtilityTool, GetTableRequest } from '../../types/index.js';
 import { registry } from '../../registry/registry.js';
 import {
   findXataWorkspace,
@@ -13,7 +13,7 @@ import {
 /**
  * Implementation of the Get Table utility
  */
-const getTableUtility: BasicUtilityTool = {
+const getTableUtility: UtilityTool = {
   id: 'utility_get_table',
   description: 'Get information about a database table, including schema and optionally data',
   schema: {

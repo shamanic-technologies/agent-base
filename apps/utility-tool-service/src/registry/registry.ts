@@ -3,19 +3,19 @@
  * 
  * Centralized registry for all utility tools
  */
-import { BasicUtilityTool, UtilityInfo } from '../types/index.js';
+import { UtilityTool, UtilityInfo } from '../types/index.js';
 
 /**
  * Registry class for managing utility tools
  */
 class UtilityRegistry {
-  private utilities: Map<string, BasicUtilityTool> = new Map();
+  private utilities: Map<string, UtilityTool> = new Map();
   
   /**
    * Register a utility tool
    * @param utility The utility tool to register
    */
-  register(utility: BasicUtilityTool): void {
+  register(utility: UtilityTool): void {
     this.utilities.set(utility.id, utility);
     console.log(`📦 Registered utility: ${utility.id}`);
   }
@@ -25,7 +25,7 @@ class UtilityRegistry {
    * @param id The ID of the utility to retrieve
    * @returns The utility if found, undefined otherwise
    */
-  getUtility(id: string): BasicUtilityTool | undefined {
+  getUtility(id: string): UtilityTool | undefined {
     return this.utilities.get(id);
   }
   
@@ -33,7 +33,7 @@ class UtilityRegistry {
    * Get all registered utilities
    * @returns Array of all registered utilities
    */
-  getAllUtilities(): BasicUtilityTool[] {
+  getAllUtilities(): UtilityTool[] {
     return Array.from(this.utilities.values());
   }
   
