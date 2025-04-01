@@ -253,3 +253,44 @@ export interface StripeKeysReadErrorResponse {
 }
 
 export type StripeKeysReadResponse = StripeKeysReadSuccessResponse | StripeKeysReadErrorResponse;
+
+/**
+ * Stripe Transactions utility types
+ */
+export interface StripeListTransactionsRequest {
+  limit?: number;
+  starting_after?: string;
+  ending_before?: string;
+}
+
+export interface StripeAuthNeededResponse {
+  needs_auth: true;
+  form_submit_url: string;
+  message: string;
+}
+
+export interface StripeTransaction {
+  id: string;
+  amount: number;
+  currency: string;
+  description: string;
+  status: string;
+  created: number;
+  customer?: string;
+  metadata?: Record<string, string>;
+}
+
+export interface StripeTransactionsSuccessResponse {
+  success: true;
+  count: number;
+  transactions: StripeTransaction[];
+  has_more: boolean;
+}
+
+export interface StripeTransactionsErrorResponse {
+  success: false;
+  error: string;
+  details?: string;
+}
+
+export type StripeListTransactionsResponse = StripeAuthNeededResponse | StripeTransactionsSuccessResponse | StripeTransactionsErrorResponse;
