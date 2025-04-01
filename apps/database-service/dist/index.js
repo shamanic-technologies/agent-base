@@ -15,7 +15,7 @@ const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
-const routes_1 = __importDefault(require("./routes"));
+const index_1 = __importDefault(require("./routes/index"));
 const db_1 = require("./db");
 // Load environment variables based on NODE_ENV
 const NODE_ENV = process.env.NODE_ENV || 'development';
@@ -40,7 +40,7 @@ const PORT = process.env.PORT;
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
 // Register routes
-app.use(routes_1.default);
+app.use(index_1.default);
 // Start the server
 const startServer = async () => {
     // Test database connection before starting

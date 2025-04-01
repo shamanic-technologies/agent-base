@@ -1,7 +1,7 @@
 import GoogleProvider from "next-auth/providers/google";
 import type { NextAuthOptions } from "next-auth";
 import type { JWT } from "next-auth/jwt";
-import axios from "axios";
+import { createCredentials, updateCredentials, CreateCredentialsInput } from "@/lib/database";
 
 // Extend the Session type to include our custom properties
 declare module "next-auth" {
@@ -29,44 +29,15 @@ declare module "next-auth/jwt" {
 /**
  * Store user credentials in the database
  */
-async function storeCredentials({
-  userId,
-  provider,
-  accessToken,
-  refreshToken,
-  expiresAt,
-  scopes,
-}: {
-  userId: string;
-  provider: string;
-  accessToken: string;
-  refreshToken: string;
-  expiresAt: number;
-  scopes: string[];
-}) {
+async function storeCredentials(input: CreateCredentialsInput) {
   try {
-    // In a real implementation, this would call the database service
-    // For now, we'll just log it
-    console.log("Storing credentials:", {
-      userId,
-      provider,
-      accessToken: accessToken.substring(0, 10) + "...",
-      refreshToken: refreshToken.substring(0, 10) + "...",
-      expiresAt,
-      scopes,
-    });
+    const result = await createCredentials(input);
 
-    // Example of how to call the database service
-    /* 
-    await axios.post(`${process.env.DATABASE_SERVICE_URL}/credentials`, {
-      userId,
-      provider,
-      accessToken,
-      refreshToken,
-      expiresAt,
-      scopes,
-    });
-    */
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to store credentials');
+    }
+
+    return result.data;
   } catch (error) {
     console.error("Failed to store credentials:", error);
     throw error;
@@ -79,32 +50,33 @@ async function storeCredentials({
 async function refreshAccessToken(token: JWT): Promise<JWT> {
   try {
     // Get a fresh token using the refresh token
-    const response = await axios.post(
+    const response = await fetch(
       `https://oauth2.googleapis.com/token`,
-      new URLSearchParams({
-        client_id: process.env.GOOGLE_CLIENT_ID || "",
-        client_secret: process.env.GOOGLE_CLIENT_SECRET || "",
-        grant_type: "refresh_token",
-        refresh_token: token.refreshToken as string,
-      }),
       {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
+          'Content-Type': 'application/x-www-form-urlencoded',
         },
+        body: new URLSearchParams({
+          client_id: process.env.GOOGLE_CLIENT_ID || "",
+          client_secret: process.env.GOOGLE_CLIENT_SECRET || "",
+          grant_type: "refresh_token",
+          refresh_token: token.refreshToken as string,
+        }),
       }
     );
 
-    const refreshedTokens = response.data;
+    const refreshedTokens = await response.json();
 
     // Update database with new tokens
-    await storeCredentials({
-      userId: token.userId as string,
-      provider: token.provider as string,
+    const result = await updateCredentials(token.userId as string, {
       accessToken: refreshedTokens.access_token,
-      refreshToken: token.refreshToken as string, // Use the existing refresh token
       expiresAt: Date.now() + refreshedTokens.expires_in * 1000,
-      scopes: token.scopes || [],
     });
+
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to update credentials');
+    }
 
     return {
       ...token,
@@ -133,6 +105,7 @@ export const authOptions: NextAuthOptions = {
           prompt: "consent",
           access_type: "offline",
           response_type: "code",
+          scope: "openid email profile", // Default scopes
         },
       },
     }),
@@ -142,11 +115,25 @@ export const authOptions: NextAuthOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async jwt({ token, account, user }) {
+    async jwt({ token, account, user, profile, trigger, session }) {
       // Initial sign in
       if (account && user) {
-        // Extract required scopes from search params if available
-        const scopes = token.scopes || [];
+        // Extract scopes from the account (these come from the authorization request)
+        const scopesFromAccount = account.scope?.split(' ') || [];
+        
+        // Check if we have a scope that contains userinfo.email
+        const hasUserInfoEmail = scopesFromAccount.some(scope => 
+          scope === 'https://www.googleapis.com/auth/userinfo.email' || 
+          scope === 'email' ||
+          scope === 'profile'
+        );
+        
+        // If we don't have the basic scopes, add them
+        const scopes = hasUserInfoEmail 
+          ? scopesFromAccount 
+          : [...scopesFromAccount, 'https://www.googleapis.com/auth/userinfo.email'];
+
+        console.log('Storing scopes:', scopes);
 
         // Store auth information
         token.accessToken = account.access_token;

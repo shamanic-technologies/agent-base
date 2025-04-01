@@ -4,7 +4,7 @@
  * Checks if a user has the required OAuth scopes and returns authentication URL if needed
  */
 import { NextRequest, NextResponse } from 'next/server';
-import axios from 'axios';
+import { getCredentials, Credentials } from '@/lib/database';
 
 /**
  * Checks if the user has authorized the required scopes for a tool
@@ -60,40 +60,57 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 /**
  * Checks if a user has valid credentials with the required scopes
  */
-async function checkUserAuth(userId: string, requiredScopes: string[]): Promise<{ valid: boolean, credentials?: any }> {
+async function checkUserAuth(userId: string, requiredScopes: string[]): Promise<{ valid: boolean, credentials?: Credentials }> {
   try {
-    // Database integration is not fully implemented yet
     console.log(`Checking auth for user ${userId} with scopes: ${requiredScopes.join(', ')}`);
     
-    // Skip database call for now as it's not fully implemented
-    // Return invalid to trigger the auth flow
-    return { valid: false };
+    // Get credentials from database service
+    const result = await getCredentials(userId);
+    console.log('Database result:', JSON.stringify(result, null, 2));
     
-    /* Once database integration is implemented, uncomment this:
-    // Call database service to check for credentials
-    const response = await axios.get(`${process.env.DATABASE_SERVICE_URL}/credentials/${userId}`);
+    if (!result.success || !result.data) {
+      console.log('No credentials found for user', userId);
+      return { valid: false };
+    }
     
-    const userCredentials = response.data;
+    const credentials = result.data;
     
-    if (!userCredentials || !userCredentials.accessToken) {
+    // Check if valid access token exists
+    if (!credentials.accessToken) {
+      console.log('No access token found in credentials');
       return { valid: false };
     }
     
     // Check if all required scopes are included in the user's scopes
-    const userScopes = userCredentials.scopes || [];
-    const hasAllScopes = requiredScopes.every(scope => userScopes.includes(scope));
+    const scopes = credentials.scopes || [];
+    console.log('User scopes:', scopes);
+    console.log('Required scopes:', requiredScopes);
+    
+    const hasAllScopes = requiredScopes.every(scope => {
+      const hasScope = scopes.includes(scope);
+      console.log(`Checking scope ${scope}: ${hasScope ? 'FOUND' : 'MISSING'}`);
+      return hasScope;
+    });
+    
+    if (!hasAllScopes) {
+      console.log('User is missing required scopes');
+      return { valid: false };
+    }
     
     // Check if token is expired
-    const isExpired = userCredentials.expiresAt < Date.now();
+    const isExpired = credentials.expiresAt < Date.now();
     
-    if (hasAllScopes && !isExpired) {
-      return {
-        valid: true,
-        credentials: userCredentials
-      };
+    if (isExpired) {
+      console.log('Token is expired');
+      return { valid: false };
     }
-    */
     
+    // All checks passed
+    console.log('User has all required scopes and valid token');
+    return {
+      valid: true,
+      credentials
+    };
   } catch (error) {
     console.error('Error checking user auth:', error);
     return { valid: false };
