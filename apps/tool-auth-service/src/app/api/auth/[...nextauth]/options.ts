@@ -2,7 +2,7 @@ import GoogleProvider from "next-auth/providers/google";
 import type { NextAuthOptions } from "next-auth";
 import type { JWT } from "next-auth/jwt";
 import { createOrUpdateCredentials } from "@/lib/database";
-import { CreateOrUpdateCredentialsInput } from "@agent-base/credentials";
+import { CreateOrUpdateCredentialsInput, CredentialProvider } from "@agent-base/credentials";
 
 // Extend the Session type to include our custom properties
 declare module "next-auth" {
@@ -22,7 +22,7 @@ declare module "next-auth/jwt" {
     accessTokenExpires?: number;
     error?: string;
     userId?: string;
-    provider?: string;
+    provider?: CredentialProvider;
     scopes?: string[];
   }
 }
@@ -72,7 +72,7 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
     // Update database with new tokens
     const result = await createOrUpdateCredentials({
       userId: token.userId as string,
-      provider: token.provider as string,
+      provider: token.provider as CredentialProvider,
       scopes: token.scopes as string[],
       accessToken: refreshedTokens.access_token,
       refreshToken: refreshedTokens.refresh_token ?? token.refreshToken,
@@ -134,14 +134,14 @@ export const authOptions: NextAuthOptions = {
         token.accessTokenExpires = account.expires_at ? account.expires_at * 1000 : 0;
         token.scopes = scopes;
         token.userId = token.userId || user.id;
-        token.provider = account.provider;
+        token.provider = account.provider as CredentialProvider;
 
         // Store credentials in database
         try {
           if (account.access_token && account.refresh_token) {
             await storeCredentials({
               userId: token.userId as string,
-              provider: account.provider,
+              provider: account.provider as CredentialProvider,
               scopes: scopes,
               accessToken: account.access_token,
               refreshToken: account.refresh_token,

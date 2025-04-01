@@ -5,7 +5,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { getCredentials, Credential } from '@/lib/database';
-
+import { CredentialProvider } from '@agent-base/credentials';
 /**
  * Checks if the user has authorized the required scopes for a tool
  * If not, returns an auth URL for the frontend to redirect to
@@ -72,7 +72,7 @@ async function checkUserAuth(userId: string, provider: string, requiredScopes: s
     // Get credentials from database service
     const result = await getCredentials({
       userId: userId,
-      provider: provider,
+      provider: provider as CredentialProvider,
       requiredScopes: requiredScopes
     });
     console.log('Database result:', JSON.stringify(result, null, 2));

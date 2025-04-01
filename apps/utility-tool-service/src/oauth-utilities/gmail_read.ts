@@ -17,6 +17,7 @@ import {
   GmailMessageHeader
 } from '../types/index.js';
 import { registry } from '../registry/registry.js';
+import { CredentialProvider } from '@agent-base/credentials';
 
 /**
  * Implementation of the Gmail Read utility
@@ -67,8 +68,8 @@ const gmailReadUtility: UtilityTool = {
         `${toolAuthServiceUrl}/api/check-auth`,
         {
           userId,
-          requiredScopes: ['https://www.googleapis.com/auth/gmail.modify'],
-          toolName: 'Gmail Read'
+          provider: CredentialProvider.GOOGLE,
+          requiredScopes: ['https://www.googleapis.com/auth/gmail.modify']
         }
       );
       

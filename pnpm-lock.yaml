@@ -53,6 +53,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      credentials:
+        specifier: link:../../packages/credentials
+        version: link:../../packages/credentials
       google-auth-library:
         specifier: ^9.15.1
         version: 9.15.1
@@ -690,6 +693,9 @@ importers:
 
   apps/utility-tool-service:
     dependencies:
+      '@agent-base/credentials':
+        specifier: workspace:^
+        version: link:../../packages/credentials
       '@xata.io/client':
         specifier: ^0.29.1
         version: 0.29.5(typescript@5.8.2)

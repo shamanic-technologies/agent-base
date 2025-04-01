@@ -5,9 +5,17 @@
  * utilities for mapping between database and application formats.
  */
 
+export enum CredentialProvider {
+  GOOGLE = 'google',
+  FACEBOOK = 'facebook',
+  TWITTER = 'twitter',
+  LINKEDIN = 'linkedin',
+  GITHUB = 'github'
+}
+
 export interface Credential {
   userId: string;
-  provider: string;
+  provider: CredentialProvider;
   accessToken: string;
   refreshToken: string;
   expiresAt: number;
@@ -20,7 +28,7 @@ export interface Credential {
 */
 export interface CreateOrUpdateCredentialsInput {
   userId: string;
-  provider: string;
+  provider: CredentialProvider;
   accessToken: string;
   refreshToken: string;
   expiresAt: number;
@@ -31,7 +39,7 @@ export interface CreateOrUpdateCredentialsInput {
 */
 export interface GetUserCredentialsInput {
   userId: string;
-  provider: string;
+  provider: CredentialProvider;
   requiredScopes: string[];
 }
 
@@ -56,7 +64,7 @@ export interface CredentialsResponse<T> extends DatabaseResponse {
  */
 export interface DatabaseRecord {
   user_id: string;
-  provider: string;
+  provider: CredentialProvider;
   access_token: string;
   refresh_token: string;
   expires_at: string | number;
