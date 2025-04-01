@@ -4,8 +4,8 @@
  * API endpoints for managing user credentials
  */
 import express, { RequestHandler } from 'express';
-import { createCredentials, getCredentials, updateCredentials } from '../services/credentials';
-import { CreateCredentialsInput, UpdateCredentialsInput } from '@agent-base/credentials';
+import { createOrUpdateCredentials, getCredentials } from '../services/credentials';
+import { CreateOrUpdateCredentialsInput, GetUserCredentialsInput } from '@agent-base/credentials';
 
 const router = express.Router();
 
@@ -14,7 +14,7 @@ const router = express.Router();
  */
 router.post('/', (async (req, res) => {
   try {
-    const input: CreateCredentialsInput = req.body;
+    const input: CreateOrUpdateCredentialsInput = req.body;
     
     // Validate required fields
     if (!input.userId || !input.provider || !input.accessToken || !input.refreshToken || !input.expiresAt || !input.scopes) {
@@ -25,7 +25,7 @@ router.post('/', (async (req, res) => {
       return;
     }
 
-    const result = await createCredentials(input);
+    const result = await createOrUpdateCredentials(input);
     
     if (!result.success) {
       res.status(400).json(result);
@@ -45,19 +45,19 @@ router.post('/', (async (req, res) => {
 /**
  * Get user credentials by user ID
  */
-router.get('/:userId', (async (req, res) => {
+router.get('/', (async (req, res) => {
   try {
-    const { userId } = req.params;
+    const input: GetUserCredentialsInput = req.body;
     
-    if (!userId) {
+    if (!input.userId || !input.provider || !input.requiredScopes) {
       res.status(400).json({
         success: false,
-        error: 'User ID is required'
+        error: 'Missing required fields'
       });
       return;
     }
 
-    const result = await getCredentials(userId);
+    const result = await getCredentials(input);
     
     if (!result.success) {
       res.status(404).json(result);
@@ -74,45 +74,45 @@ router.get('/:userId', (async (req, res) => {
   }
 }) as RequestHandler);
 
-/**
- * Update user credentials
- */
-router.patch('/:userId', (async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const input: UpdateCredentialsInput = req.body;
+// /**
+//  * Update user credentials
+//  */
+// router.patch('/:userId', (async (req, res) => {
+//   try {
+//     const { userId } = req.params;
+//     const input: UpdateCredentialsInput = req.body;
     
-    if (!userId) {
-      res.status(400).json({
-        success: false,
-        error: 'User ID is required'
-      });
-      return;
-    }
+//     if (!userId) {
+//       res.status(400).json({
+//         success: false,
+//         error: 'User ID is required'
+//       });
+//       return;
+//     }
 
-    if (!input.accessToken || !input.expiresAt) {
-      res.status(400).json({
-        success: false,
-        error: 'Access token and expiration time are required'
-      });
-      return;
-    }
+//     if (!input.accessToken || !input.expiresAt) {
+//       res.status(400).json({
+//         success: false,
+//         error: 'Access token and expiration time are required'
+//       });
+//       return;
+//     }
 
-    const result = await updateCredentials(userId, input);
+//     const result = await updateCredentials(userId, input);
     
-    if (!result.success) {
-      res.status(404).json(result);
-      return;
-    }
+//     if (!result.success) {
+//       res.status(404).json(result);
+//       return;
+//     }
 
-    res.status(200).json(result);
-  } catch (error) {
-    console.error('Error in update credentials route:', error);
-    res.status(500).json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    });
-  }
-}) as RequestHandler);
+//     res.status(200).json(result);
+//   } catch (error) {
+//     console.error('Error in update credentials route:', error);
+//     res.status(500).json({
+//       success: false,
+//       error: error instanceof Error ? error.message : 'Unknown error occurred'
+//     });
+//   }
+// }) as RequestHandler);
 
 export default router; 

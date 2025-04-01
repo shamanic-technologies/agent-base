@@ -1,7 +1,8 @@
 import GoogleProvider from "next-auth/providers/google";
 import type { NextAuthOptions } from "next-auth";
 import type { JWT } from "next-auth/jwt";
-import { createCredentials, updateCredentials, CreateCredentialsInput } from "@/lib/database";
+import { createOrUpdateCredentials } from "@/lib/database";
+import { CreateOrUpdateCredentialsInput } from "@agent-base/credentials";
 
 // Extend the Session type to include our custom properties
 declare module "next-auth" {
@@ -29,15 +30,15 @@ declare module "next-auth/jwt" {
 /**
  * Store user credentials in the database
  */
-async function storeCredentials(input: CreateCredentialsInput) {
+async function storeCredentials(input: CreateOrUpdateCredentialsInput) {
   try {
-    const result = await createCredentials(input);
+    const result = await createOrUpdateCredentials(input);
 
     if (!result.success) {
       throw new Error(result.error || 'Failed to store credentials');
     }
 
-    return result.data;
+    return result;
   } catch (error) {
     console.error("Failed to store credentials:", error);
     throw error;
@@ -69,8 +70,12 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
     const refreshedTokens = await response.json();
 
     // Update database with new tokens
-    const result = await updateCredentials(token.userId as string, {
+    const result = await createOrUpdateCredentials({
+      userId: token.userId as string,
+      provider: token.provider as string,
+      scopes: token.scopes as string[],
       accessToken: refreshedTokens.access_token,
+      refreshToken: refreshedTokens.refresh_token ?? token.refreshToken,
       expiresAt: Date.now() + refreshedTokens.expires_in * 1000,
     });
 
@@ -119,20 +124,8 @@ export const authOptions: NextAuthOptions = {
       // Initial sign in
       if (account && user) {
         // Extract scopes from the account (these come from the authorization request)
-        const scopesFromAccount = account.scope?.split(' ') || [];
-        
-        // Check if we have a scope that contains userinfo.email
-        const hasUserInfoEmail = scopesFromAccount.some(scope => 
-          scope === 'https://www.googleapis.com/auth/userinfo.email' || 
-          scope === 'email' ||
-          scope === 'profile'
-        );
-        
-        // If we don't have the basic scopes, add them
-        const scopes = hasUserInfoEmail 
-          ? scopesFromAccount 
-          : [...scopesFromAccount, 'https://www.googleapis.com/auth/userinfo.email'];
-
+        const scopes = account.scope?.split(' ') || [];
+ 
         console.log('Storing scopes:', scopes);
 
         // Store auth information
@@ -149,10 +142,10 @@ export const authOptions: NextAuthOptions = {
             await storeCredentials({
               userId: token.userId as string,
               provider: account.provider,
+              scopes: scopes,
               accessToken: account.access_token,
               refreshToken: account.refresh_token,
               expiresAt: account.expires_at ? account.expires_at * 1000 : 0,
-              scopes: scopes,
             });
           }
         } catch (error) {
