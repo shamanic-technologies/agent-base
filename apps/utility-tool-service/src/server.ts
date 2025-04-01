@@ -31,6 +31,8 @@ import './basic-utilities/get-current-datetime.js';
 
 // Import OAuth utilities
 import './oauth-utilities/gmail_read.js';
+import './oauth-utilities/request_stripe_api_keys.js';
+import './oauth-utilities/read_stripe_api_keys.js';
 
 // Load environment variables based on NODE_ENV
 const nodeEnv = process.env.NODE_ENV || 'development';

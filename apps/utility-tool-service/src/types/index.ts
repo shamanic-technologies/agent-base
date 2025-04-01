@@ -211,3 +211,45 @@ export type UtilitiesListResponse = {
 export type UtilityInfoResponse = UtilityInfo | {
   error: string;
 };
+
+/**
+ * Stripe API keys request types
+ */
+export interface StripeKeysRequest {
+  key_type?: 'publishable_key' | 'secret_key' | 'both';
+  description?: string;
+}
+
+export interface StripeKeysIframeResponse {
+  iframe_url: string;
+  message: string;
+}
+
+export interface StripeKeysErrorResponse {
+  error: string;
+  details?: string;
+}
+
+export type StripeKeysResponse = StripeKeysIframeResponse | StripeKeysErrorResponse;
+
+/**
+ * Stripe API keys read types
+ */
+export interface StripeKeysReadRequest {
+  key_type?: 'publishable_key' | 'secret_key' | 'both';
+}
+
+export interface StripeKeysReadSuccessResponse {
+  success: true;
+  publishable_key?: string;
+  secret_key_last_four?: string;
+  has_keys: boolean;
+}
+
+export interface StripeKeysReadErrorResponse {
+  success: false;
+  error: string;
+  details?: string;
+}
+
+export type StripeKeysReadResponse = StripeKeysReadSuccessResponse | StripeKeysReadErrorResponse;
