@@ -50,7 +50,6 @@ const gmailReadUtility: UtilityTool = {
         query = '',
         maxResults = 10,
         labelIds = ['INBOX'],
-        userId: gmailUserId = 'me'
       } = params || {};
       
       console.log(`📧 [GMAIL_READ] Reading emails for user with query: ${query}`);
@@ -84,11 +83,20 @@ const gmailReadUtility: UtilityTool = {
       }
       
       // If we have auth, use the credentials to make Gmail API calls
-      const credentials = checkAuthResponse.data.credentials;
+      const credentialsArray = checkAuthResponse.data.credentials;
+      
+      // Find the credential with the gmail.modify scope
+      const gmailCredential = credentialsArray.find(
+        (cred: any) => cred.scope === 'https://www.googleapis.com/auth/gmail.modify'
+      );
+      
+      if (!gmailCredential) {
+        throw new Error('No valid Gmail credentials found with required scope');
+      }
       
       // Call the Gmail API with our access token
       const gmailResponse = await axios.get(
-        `https://gmail.googleapis.com/gmail/v1/users/${gmailUserId}/messages`,
+        `https://gmail.googleapis.com/gmail/v1/users/me/messages`,
         {
           params: {
             q: query,
@@ -96,7 +104,7 @@ const gmailReadUtility: UtilityTool = {
             labelIds: labelIds.join(',')
           },
           headers: {
-            Authorization: `Bearer ${credentials.accessToken}`
+            Authorization: `Bearer ${gmailCredential.accessToken}`
           }
         }
       );
@@ -118,10 +126,10 @@ const gmailReadUtility: UtilityTool = {
         messages.slice(0, maxResults).map(async (message: any) => {
           try {
             const messageDetails = await axios.get(
-              `https://gmail.googleapis.com/gmail/v1/users/${gmailUserId}/messages/${message.id}`,
+              `https://gmail.googleapis.com/gmail/v1/users/me/messages/${message.id}`,
               {
                 headers: {
-                  Authorization: `Bearer ${credentials.accessToken}`
+                  Authorization: `Bearer ${gmailCredential.accessToken}`
                 }
               }
             );

@@ -107,7 +107,6 @@ export interface GmailReadRequest {
   query?: string;
   maxResults?: number;
   labelIds?: string[];
-  userId?: string;
 }
 
 export interface GmailAuthNeededResponse {
