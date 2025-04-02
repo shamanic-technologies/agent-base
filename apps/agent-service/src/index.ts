@@ -16,6 +16,7 @@ import { User } from './types/index.js';
 import { Readable } from 'stream';
 // @ts-ignore
 import { ToolExecutionError, InvalidToolArgumentsError, NoSuchToolError } from 'ai';
+import { fileURLToPath } from 'url'; // Import needed for __dirname in ES Modules
 
 // Import routes configuration
 import { configureRoutes } from './routes/index.js';
@@ -23,14 +24,20 @@ import { configureRoutes } from './routes/index.js';
 // Load environment variables based on NODE_ENV
 const nodeEnv = process.env.NODE_ENV || 'development';
 
+// Get the directory name of the current module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 // Only load from .env file in development
 if (nodeEnv === 'development') {
-  const envFile = path.resolve(process.cwd(), '.env.local');
+  // Construct path relative to the service's root directory (apps/agent-service)
+  // Go up one level from src (__dirname) and then look for .env.local
+  const envFile = path.resolve(__dirname, '..', '.env.local'); 
   if (fs.existsSync(envFile)) {
     console.log(`🔧 Loading development environment from ${envFile}`);
     dotenv.config({ path: envFile });
   } else {
-    console.log(`Environment file ${envFile} not found, using default environment variables.`);
+    console.log(`Local environment file ${envFile} not found for agent-service, using default environment variables.`);
   }
 } else {
   console.log('🚀 Production environment detected, using Railway configuration.');

@@ -22,10 +22,10 @@
   "dependencies": {
     "@agent-base/agents": "workspace:^",
     "@ai-sdk/anthropic": "^1.2.1",
-    "ai": "^4.2.5",
     "@langchain/anthropic": "^0.3.15",
     "@langchain/core": "^0.3.42",
     "@langchain/langgraph": "^0.2.55",
+    "ai": "^4.2.10",
     "axios": "^1.6.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
@@ -34,7 +34,7 @@
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
-    "@types/express": "^4.17.21",
+    "@types/express": "^5.0.1",
     "@types/node": "^20.14.7",
     "eslint": "^8.57.0",
     "tsx": "^4.7.1",
