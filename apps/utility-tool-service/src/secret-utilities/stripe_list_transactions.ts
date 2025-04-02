@@ -51,11 +51,16 @@ const stripeListTransactionsUtility: UtilityTool = {
       
       console.log(`💳 [STRIPE_LIST_TRANSACTIONS] Listing transactions for user: ${userId}`);
       
-      // Get secrets service URL with fallback
+      // Get services URLs with fallbacks
       const secretsServiceUrl = process.env.SECRETS_SERVICE_URL;
+      const apiGatewayUrl = process.env.API_GATEWAY_URL;
       
       if (!secretsServiceUrl) {
         throw new Error('SECRETS_SERVICE_URL environment variable is not set');
+      }
+      
+      if (!apiGatewayUrl) {
+        throw new Error('API_GATEWAY_URL environment variable is not set');
       }
       
       // Check if user has the required API keys
@@ -67,18 +72,17 @@ const stripeListTransactionsUtility: UtilityTool = {
         }
       );
       
-      // If we don't have the API keys, return the form URL for the frontend to handle
+      // If we don't have the API keys, return the API gateway endpoint for secure API key submission
       if (!checkResponse.data.exists) {
-        // Build the form submission URL with query parameters
-        const encodedDescription = encodeURIComponent('Your Stripe API keys are required to list transactions.');
-        const formSubmitUrl = `${secretsServiceUrl}/stripe/form?userId=${userId}&conversationId=${conversationId}&description=${encodedDescription}`;
+        // Create the API endpoint URL that the client should call with their API key authentication
+        const apiEndpoint = `${apiGatewayUrl}/secret/set_stripe_api_keys`;
         
-        console.log(`💳 [STRIPE_LIST_TRANSACTIONS] No API keys found, returning form URL: ${formSubmitUrl}`);
+        console.log(`💳 [STRIPE_LIST_TRANSACTIONS] No API keys found, returning API gateway endpoint: ${apiEndpoint}`);
         
         const authNeededResponse: StripeAuthNeededResponse = {
           needs_auth: true,
-          form_submit_url: formSubmitUrl,
-          message: 'Stripe access requires API keys. Please enter your Stripe API keys in the provided form.'
+          form_submit_url: apiEndpoint, // Use this existing field for API endpoint URL
+          message: 'Stripe access requires API keys. Please submit your Stripe API keys to the provided endpoint using your API key for authentication.'
         };
         return authNeededResponse;
       }
