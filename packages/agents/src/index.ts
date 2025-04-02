@@ -206,4 +206,64 @@ export interface ListUserAgentsResponse extends AgentDatabaseResponse {
  */
 export interface GetUserAgentResponse extends AgentDatabaseResponse {
   data?: AgentRecord;
+}
+
+/**
+ * Structure for a single message record in the database.
+ */
+export interface MessageRecord {
+  message_id: string;
+  conversation_id: string;
+  user_id: string;
+  agent_id: string;
+  role: 'user' | 'assistant' | 'system' | 'tool';
+  content?: string | null; // Content is optional for tool calls/results
+  tool_calls?: any | null; // JSONB in DB - represents assistant tool requests
+  tool_call_id?: string | null; // ID of the tool call this message is a result for
+  tool_result?: any | null; // JSONB in DB - represents tool execution result
+  created_at: string | Date;
+}
+
+/**
+ * Input for saving a message.
+ */
+export interface SaveMessageInput {
+  conversation_id: string;
+  user_id: string;
+  agent_id: string;
+  role: 'user' | 'assistant' | 'system' | 'tool';
+  content?: string | null;
+  tool_calls?: any | null;
+  tool_call_id?: string | null;
+  tool_result?: any | null;
+}
+
+/**
+ * Input for retrieving messages for a conversation.
+ */
+export interface GetMessagesInput {
+  conversation_id: string;
+  user_id: string;
+}
+
+/**
+ * Base response type for message operations.
+ */
+export interface MessageDatabaseResponse {
+  success: boolean;
+  error?: string;
+}
+
+/**
+ * Response for saving a message.
+ */
+export interface SaveMessageResponse extends MessageDatabaseResponse {
+  data?: MessageRecord; // Return the saved message
+}
+
+/**
+ * Response for retrieving messages.
+ */
+export interface GetMessagesResponse extends MessageDatabaseResponse {
+  data?: MessageRecord[]; // Return an array of messages
 } 
