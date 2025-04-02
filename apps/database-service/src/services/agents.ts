@@ -13,11 +13,60 @@ import {
   LinkAgentInput,
   CreateAgentResponse,
   UpdateAgentResponse,
-  LinkAgentToUserResponse
+  LinkAgentToUserResponse,
+  ListUserAgentsInput,
+  ListUserAgentsResponse
 } from '@agent-base/agents';
 
 const AGENTS_TABLE = 'agents';
 const USER_AGENTS_TABLE = 'user_agents';
+
+// SQL definitions for table creation
+const AGENTS_TABLE_SQL = `
+  CREATE TABLE IF NOT EXISTS "${AGENTS_TABLE}" (
+    agent_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    agent_first_name VARCHAR(255) NOT NULL,
+    agent_last_name VARCHAR(255) NOT NULL,
+    agent_profile_picture TEXT NOT NULL,
+    agent_gender VARCHAR(50) NOT NULL,
+    agent_system_prompt TEXT NOT NULL,
+    agent_model_id VARCHAR(255) NOT NULL,
+    agent_memory TEXT NOT NULL,
+    agent_job_title VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+  )
+`;
+
+const USER_AGENTS_TABLE_SQL = `
+  CREATE TABLE IF NOT EXISTS "${USER_AGENTS_TABLE}" (
+    user_id VARCHAR(255) NOT NULL,
+    agent_id UUID NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, agent_id),
+    FOREIGN KEY (agent_id) REFERENCES ${AGENTS_TABLE}(agent_id)
+  )
+`;
+
+/**
+ * Ensures that the required tables exist in the database
+ */
+async function ensureTablesExist(client: PoolClient): Promise<void> {
+  await client.query(AGENTS_TABLE_SQL);
+  await client.query(USER_AGENTS_TABLE_SQL);
+}
+
+/**
+ * Helper function to handle errors in service functions
+ */
+function handleServiceError(error: unknown, errorMessage: string): any {
+  console.error(errorMessage, error);
+  return {
+    success: false,
+    error: error instanceof Error ? error.message : 'Unknown error occurred'
+  };
+}
 
 /**
  * Creates a new agent in the database
@@ -29,22 +78,8 @@ export async function createAgent(
   try {
     client = await getClient();
 
-    // Create agents table if it doesn't exist
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS "${AGENTS_TABLE}" (
-        agent_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        agent_first_name VARCHAR(255) NOT NULL,
-        agent_last_name VARCHAR(255) NOT NULL,
-        agent_profile_picture TEXT NOT NULL,
-        agent_gender VARCHAR(50) NOT NULL,
-        agent_system_prompt TEXT NOT NULL,
-        agent_model_id VARCHAR(255) NOT NULL,
-        agent_memory TEXT NOT NULL,
-        agent_job_title VARCHAR(255) NOT NULL,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
+    // Create tables if they don't exist
+    await ensureTablesExist(client);
 
     // Insert new agent
     const result = await client.query(
@@ -69,11 +104,7 @@ export async function createAgent(
       data: result.rows[0] as AgentRecord
     };
   } catch (error) {
-    console.error('Error creating agent:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    };
+    return handleServiceError(error, 'Error creating agent:');
   } finally {
     if (client) client.release();
   }
@@ -88,6 +119,9 @@ export async function updateAgent(
   let client: PoolClient | null = null;
   try {
     client = await getClient();
+    
+    // Create tables if they don't exist
+    await ensureTablesExist(client);
     
     // Build the SQL update statement dynamically based on provided fields
     const updateFields: string[] = [];
@@ -165,11 +199,7 @@ export async function updateAgent(
       data: result.rows[0] as AgentRecord
     };
   } catch (error) {
-    console.error('Error updating agent:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    };
+    return handleServiceError(error, 'Error updating agent:');
   } finally {
     if (client) client.release();
   }
@@ -185,17 +215,8 @@ export async function linkAgentToUser(
   try {
     client = await getClient();
 
-    // Create user_agents table if it doesn't exist
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS "${USER_AGENTS_TABLE}" (
-        user_id VARCHAR(255) NOT NULL,
-        agent_id UUID NOT NULL,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        PRIMARY KEY (user_id, agent_id),
-        FOREIGN KEY (agent_id) REFERENCES ${AGENTS_TABLE}(agent_id)
-      )
-    `);
+    // Create tables if they don't exist
+    await ensureTablesExist(client);
 
     // Check if the agent exists
     const agentCheck = await client.query(
@@ -236,11 +257,41 @@ export async function linkAgentToUser(
       data: result.rows[0]
     };
   } catch (error) {
-    console.error('Error linking agent to user:', error);
+    return handleServiceError(error, 'Error linking agent to user:');
+  } finally {
+    if (client) client.release();
+  }
+}
+
+/**
+ * Lists all agents for a specific user
+ */
+export async function listUserAgents(
+  input: ListUserAgentsInput
+): Promise<ListUserAgentsResponse> {
+  let client: PoolClient | null = null;
+  try {
+    client = await getClient();
+
+    // Create tables if they don't exist
+    await ensureTablesExist(client);
+
+    // Get all agents for the user by joining the agents and user_agents tables
+    const result = await client.query(
+      `SELECT a.* 
+       FROM "${AGENTS_TABLE}" a
+       INNER JOIN "${USER_AGENTS_TABLE}" ua ON a.agent_id = ua.agent_id
+       WHERE ua.user_id = $1
+       ORDER BY a.created_at DESC`,
+      [input.user_id]
+    );
+
     return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
+      success: true,
+      data: result.rows as AgentRecord[]
     };
+  } catch (error) {
+    return handleServiceError(error, 'Error listing agents for user:');
   } finally {
     if (client) client.release();
   }

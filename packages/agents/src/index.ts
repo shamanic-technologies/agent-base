@@ -70,6 +70,13 @@ export interface LinkAgentInput {
 }
 
 /**
+ * Input for listing agents for a user
+ */
+export interface ListUserAgentsInput {
+  user_id: string;
+}
+
+/**
  * Standard API response format
  */
 export interface AgentDatabaseResponse {
@@ -95,6 +102,13 @@ export interface UpdateAgentResponse<T = AgentRecord> extends AgentDatabaseRespo
  * Standard agent link API response format
  */
 export interface LinkAgentToUserResponse<T = UserAgentRecord> extends AgentDatabaseResponse {
+  data?: T;
+}
+
+/**
+ * Standard agent list API response format
+ */
+export interface ListUserAgentsResponse<T = AgentRecord[]> extends AgentDatabaseResponse {
   data?: T;
 }
 
