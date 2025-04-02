@@ -4,8 +4,8 @@
  * API endpoints for managing agents
  */
 import express, { RequestHandler } from 'express';
-import { createAgent, updateAgent, linkAgentToUser } from '../services/agents';
-import { CreateAgentInput, UpdateAgentInput, LinkAgentInput } from '@agent-base/agents';
+import { createAgent, updateAgent, linkAgentToUser, listUserAgents } from '../services/agents';
+import { CreateAgentInput, UpdateAgentInput, LinkAgentInput, ListUserAgentsInput } from '@agent-base/agents';
 
 const router = express.Router();
 
@@ -103,6 +103,41 @@ router.post('/link', (async (req, res) => {
     res.status(200).json(result);
   } catch (error) {
     console.error('Error in link agent route:', error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
+    });
+  }
+}) as RequestHandler);
+
+/**
+ * List all agents for a user
+ */
+router.get('/list', (async (req, res) => {
+  try {
+    // Extract user_id from query parameters
+    const user_id = req.query.user_id as string;
+    
+    // Validate user_id is provided
+    if (!user_id) {
+      res.status(400).json({
+        success: false,
+        error: 'user_id query parameter is required'
+      });
+      return;
+    }
+
+    const input: ListUserAgentsInput = { user_id };
+    const result = await listUserAgents(input);
+    
+    if (!result.success) {
+      res.status(404).json(result);
+      return;
+    }
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error('Error in list agents route:', error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred'
