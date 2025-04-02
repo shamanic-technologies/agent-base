@@ -20,6 +20,7 @@
     "railway:build": "curl -fsSL https://get.pnpm.io/install.sh | sh - && pnpm install --no-frozen-lockfile && pnpm build"
   },
   "dependencies": {
+    "@agent-base/agents": "workspace:^",
     "@ai-sdk/anthropic": "^1.2.1",
     "ai": "^4.2.5",
     "@langchain/anthropic": "^0.3.15",
