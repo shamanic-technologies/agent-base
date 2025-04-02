@@ -105,9 +105,9 @@ export function calculatePrice(logEntry: ApiLogEntry): number {
     price = 0.01;
   } else if (logEntry.endpoint.startsWith('/agent/stream')) {
     // Token-based pricing for agent calls
-    if (logEntry.responseBody) {
+    if (logEntry.response_body) {
       // Parse token usage from the response body
-      const tokenUsage = parseTokenUsage(logEntry.responseBody);
+      const tokenUsage = parseTokenUsage(logEntry.response_body);
       inputTokens = tokenUsage.inputTokens;
       outputTokens = tokenUsage.outputTokens;
       

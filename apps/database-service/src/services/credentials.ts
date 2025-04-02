@@ -5,7 +5,7 @@
  */
 import { PoolClient } from 'pg';
 import { v4 as uuidv4 } from 'uuid';
-import { getClient } from '../db';
+import { getClient } from '../db.js';
 import { 
   Credential,
   CreateOrUpdateCredentialsInput, 

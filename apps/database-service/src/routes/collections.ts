@@ -3,8 +3,8 @@
  */
 import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { pgPool, listTables, cleanupTables } from '../db';
-import { handleDatabaseError } from '../utils/error-handler';
+import { pgPool, listTables, cleanupTables } from '../db.js';
+import { handleDatabaseError } from '../utils/error-handler.js';
 
 const router = Router();
 

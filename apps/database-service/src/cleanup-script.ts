@@ -3,7 +3,7 @@
  * 
  * This script removes all tables except those in the whitelist.
  */
-import { cleanupTables } from './db';
+import { cleanupTables } from './db.js';
 
 // Tables to keep in whitelist - all others will be removed
 // Add table names to this array to keep them

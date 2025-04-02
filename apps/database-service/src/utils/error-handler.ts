@@ -2,7 +2,7 @@
  * Error handler utility
  */
 import { Response } from 'express';
-import { createCollection } from '../db';
+import { createCollection } from '../db.js';
 
 /**
  * Handle database errors and send appropriate response
