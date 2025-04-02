@@ -50,17 +50,19 @@ const validateApiKey = async (apiKey: string, keyServiceUrl: string): Promise<{v
 export const authMiddleware = (keyServiceUrl: string) => {
   return async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     try {
+      console.log(`[Auth Middleware] Entering auth middleware`);
       // Extract API key from X-API-KEY header only
       const apiKey = req.headers['x-api-key'] as string;
+      console.log(`[Auth Middleware] API key: ${apiKey}`);
       
       // Check for deprecated Authorization header usage
-      if (req.headers['authorization']) {
-        console.error(`[Auth Middleware] Client using deprecated Authorization header for ${req.path}`);
-        return res.status(401).json({
-          success: false,
-          error: 'API Gateway Service: Authorization header is not supported. Please use the X-API-KEY header instead.'
-        });
-      }
+      // if (req.headers['authorization']) {
+      //   console.error(`[Auth Middleware] Client using deprecated Authorization header for ${req.path}`);
+      //   return res.status(401).json({
+      //     success: false,
+      //     error: 'API Gateway Service: Authorization header is not supported. Please use the X-API-KEY header instead.'
+      //   });
+      // }
       
       if (!apiKey) {
         console.log(`[Auth Middleware] No API key provided for ${req.path}`);

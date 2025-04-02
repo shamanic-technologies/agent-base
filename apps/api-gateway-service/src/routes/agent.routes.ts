@@ -32,6 +32,8 @@ export const configureAgentRoutes = (
       if (!userId) {
         return res.status(401).json({ success: false, error: 'User not authenticated' });
       }
+      const apiKey = req.headers['x-api-key'] as string;
+      console.log(`[API Gateway] API key: ${apiKey}`);
       
       // Forward to agent service with userId in header
       const response = await axios({
@@ -41,6 +43,7 @@ export const configureAgentRoutes = (
         headers: {
           'Content-Type': 'application/json',
           'x-user-id': userId,
+          'x-api-key': apiKey,
           'Accept': 'text/event-stream'
         },
         responseType: 'stream'
@@ -70,6 +73,8 @@ export const configureAgentRoutes = (
       if (!userId) {
         return res.status(401).json({ success: false, error: 'User not authenticated' });
       }
+      const apiKey = req.headers['x-api-key'] as string;
+      console.log(`[API Gateway] API key: ${apiKey}`);
       
       // Forward to agent service with userId in header
       const response = await axios({
@@ -78,7 +83,8 @@ export const configureAgentRoutes = (
         data: req.body,
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': userId
+          'x-user-id': userId,
+          'x-api-key': apiKey
         }
       });
       
@@ -100,6 +106,8 @@ export const configureAgentRoutes = (
       if (!userId) {
         return res.status(401).json({ success: false, error: 'User not authenticated' });
       }
+      const apiKey = req.headers['x-api-key'] as string;
+      console.log(`[API Gateway] API key: ${apiKey}`);
       
       // Forward to agent service with userId in header
       const response = await axios({
@@ -108,7 +116,8 @@ export const configureAgentRoutes = (
         data: req.body,
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': userId
+          'x-user-id': userId,
+          'x-api-key': apiKey
         }
       });
       
@@ -130,6 +139,8 @@ export const configureAgentRoutes = (
       if (!userId) {
         return res.status(401).json({ success: false, error: 'User not authenticated' });
       }
+      const apiKey = req.headers['x-api-key'] as string;
+      console.log(`[API Gateway] API key: ${apiKey}`);
       
       // Forward to agent service with userId in header
       const response = await axios({
@@ -137,7 +148,8 @@ export const configureAgentRoutes = (
         url: `${agentServiceUrl}/agent/list`,
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': userId
+          'x-user-id': userId,
+          'x-api-key': apiKey
         }
       });
       
