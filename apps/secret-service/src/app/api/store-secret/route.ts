@@ -9,12 +9,17 @@ import { storeSecret } from '@/lib/google-secret-manager';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userId, secretType, secretValue } = body;
+    // Get userId from request header
+    const userIdFromHeader = request.headers.get('x-user-id');
+    const { secretType, secretValue } = body;
+    
+    // Only use userId from header (from API gateway)
+    const userId = userIdFromHeader;
 
     // Validate required parameters
     if (!userId) {
       return NextResponse.json(
-        { error: 'userId is required' },
+        { error: 'userId is required in x-user-id header' },
         { status: 400 }
       );
     }

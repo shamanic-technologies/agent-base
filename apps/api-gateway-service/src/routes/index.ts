@@ -7,6 +7,7 @@ import express from 'express';
 import { configureHealthRoutes } from './health.routes.js';
 import { configureAgentRoutes } from './agent.routes.js';
 import { configureUtilityRoutes } from './utility.routes.js';
+import { configureSecretRoutes } from './secret.routes.js';
 
 /**
  * Configure all routes for the API Gateway
@@ -32,7 +33,8 @@ export const configureRoutes = (
       routes: {
         health: '/health',
         agent: '/agent',
-        utilityTool: '/utility-tool'
+        utilityTool: '/utility-tool',
+        secret: '/secret'
       }
     });
   });
@@ -53,4 +55,14 @@ export const configureRoutes = (
   // The next line means that the routes defined in utility.routes.ts will be available at /utility-tool/*
   // So /get-list in utility.routes.ts becomes /utility-tool/get-list
   app.use('/utility-tool', utilityRouter);
+
+  // Secret service routes
+  const secretRouter = express.Router();
+  const secretsServiceUrl = process.env.SECRETS_SERVICE_URL;
+  if (secretsServiceUrl) {
+    configureSecretRoutes(secretRouter, secretsServiceUrl, authMiddleware);
+    app.use('/secret', secretRouter);
+  } else {
+    console.warn('SECRETS_SERVICE_URL not set, secret routes will not be available');
+  }
 }; 

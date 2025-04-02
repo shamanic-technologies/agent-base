@@ -266,6 +266,8 @@ export interface StripeListTransactionsRequest {
 export interface StripeAuthNeededResponse {
   needs_auth: true;
   form_submit_url: string;
+  userId?: string;
+  conversationId?: string;
   message: string;
 }
 
@@ -276,8 +278,8 @@ export interface StripeTransaction {
   description: string;
   status: string;
   created: number;
-  customer?: string;
-  metadata?: Record<string, string>;
+  customer: string | null;
+  metadata: Record<string, any>;
 }
 
 export interface StripeTransactionsSuccessResponse {
