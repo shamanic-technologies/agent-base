@@ -58,11 +58,11 @@ export const configureRoutes = (
 
   // Secret service routes
   const secretRouter = express.Router();
-  const secretsServiceUrl = process.env.SECRETS_SERVICE_URL;
-  if (secretsServiceUrl) {
-    configureSecretRoutes(secretRouter, secretsServiceUrl, authMiddleware);
+  const secretServiceUrl = process.env.SECRET_SERVICE_URL;
+  if (secretServiceUrl) {
+    configureSecretRoutes(secretRouter, secretServiceUrl, authMiddleware);
     app.use('/secret', secretRouter);
   } else {
-    console.warn('SECRETS_SERVICE_URL not set, secret routes will not be available');
+    console.warn('SECRET_SERVICE_URL not set, secret routes will not be available');
   }
 }; 

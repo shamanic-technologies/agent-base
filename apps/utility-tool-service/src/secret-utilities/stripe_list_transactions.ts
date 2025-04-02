@@ -52,11 +52,11 @@ const stripeListTransactionsUtility: UtilityTool = {
       console.log(`💳 [STRIPE_LIST_TRANSACTIONS] Listing transactions for user: ${userId}`);
       
       // Get services URLs with fallbacks
-      const secretsServiceUrl = process.env.SECRETS_SERVICE_URL;
+      const secretServiceUrl = process.env.SECRET_SERVICE_URL;
       const apiGatewayUrl = process.env.API_GATEWAY_URL;
       
-      if (!secretsServiceUrl) {
-        throw new Error('SECRETS_SERVICE_URL environment variable is not set');
+      if (!secretServiceUrl) {
+        throw new Error('SECRET_SERVICE_URL environment variable is not set');
       }
       
       if (!apiGatewayUrl) {
@@ -65,7 +65,7 @@ const stripeListTransactionsUtility: UtilityTool = {
       
       // Check if user has the required API keys
       const checkResponse = await axios.post(
-        `${secretsServiceUrl}/api/check-secret`,
+        `${secretServiceUrl}/api/check-secret`,
         {
           userId,
           secretType: 'stripe'
@@ -89,7 +89,7 @@ const stripeListTransactionsUtility: UtilityTool = {
       
       // If we have the API keys, get them to use with Stripe API
       const getResponse = await axios.post(
-        `${secretsServiceUrl}/api/get-secret`,
+        `${secretServiceUrl}/api/get-secret`,
         {
           userId,
           secretType: 'stripe'
@@ -102,8 +102,8 @@ const stripeListTransactionsUtility: UtilityTool = {
       
       const stripeKeys = getResponse.data.data;
       
-      if (!stripeKeys.apiKey) {
-        throw new Error('Stripe API key is missing');
+      if (!stripeKeys.apiSecret) {
+        throw new Error('Stripe API secret is missing');
       }
       
       // Call the Stripe API with the secret key
@@ -118,7 +118,7 @@ const stripeListTransactionsUtility: UtilityTool = {
             ending_before: ending_before || undefined
           },
           headers: {
-            'Authorization': `Bearer ${stripeKeys.apiKey}`,
+            'Authorization': `Bearer ${stripeKeys.apiSecret}`,
             'Content-Type': 'application/x-www-form-urlencoded'
           }
         }
