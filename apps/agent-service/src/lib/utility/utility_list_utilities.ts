@@ -41,6 +41,7 @@ export function createListUtilitiesTool(credentials: {
     execute: async () => {
       try {
         console.log(`[Utility Tool] Listing utilities`);
+        console.log(`[Utility Tool] API key: ${apiKey}`);
         
         const response = await axios.get(`${API_GATEWAY_URL}/utility-tool/get-list`, {
           headers: {

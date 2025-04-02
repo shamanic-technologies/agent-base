@@ -17,12 +17,13 @@ const router = Router();
  */
 router.post('/', async (req: Request, res: Response) => {
   const { messages, conversation_id } = req.body;
-  console.log(`[Agent Service]: Streaming request received` + JSON.stringify(messages));
   console.log(`[Agent Service]: Streaming request received` + conversation_id);
   
   // Extract user ID from req.user (set by auth middleware)
   const userId = (req as any).user?.id as string;
   const apiKey = req.headers['x-api-key'] as string;
+
+  console.log(`[Agent Service] API key: ${apiKey}`);
   
   // Validate required parameters
   if (!messages) {
