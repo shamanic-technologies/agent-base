@@ -2,6 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ["@helloworld/ui"],
+  serverExternalPackages: ['@google-cloud/secret-manager', 'google-gax', '@grpc/grpc-js'],
   async headers() {
     return [
       {
