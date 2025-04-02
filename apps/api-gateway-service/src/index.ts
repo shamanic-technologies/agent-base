@@ -36,13 +36,13 @@ const AGENT_SERVICE_URL = process.env.AGENT_SERVICE_URL;
 const UTILITY_TOOL_SERVICE_URL = process.env.UTILITY_TOOL_SERVICE_URL;
 const KEY_SERVICE_URL = process.env.KEY_SERVICE_URL;
 const LOGGING_SERVICE_URL = process.env.LOGGING_SERVICE_URL;
-
+const SECRET_SERVICE_URL = process.env.SECRET_SERVICE_URL;
 // Set up global middleware
 app.use(cors());
 app.use(express.json());
 
 // Apply logging middleware for all API requests
-// app.use(apiLoggerMiddleware);
+app.use(apiLoggerMiddleware);
 
 // Simple request logger
 app.use((req, res, next) => {
@@ -77,4 +77,5 @@ const server = app.listen(PORT, () => {
   console.log(`🔗 UTILITY_TOOL_SERVICE_URL: ${UTILITY_TOOL_SERVICE_URL || 'not set'}`);
   console.log(`🔗 KEY_SERVICE_URL: ${KEY_SERVICE_URL || 'not set'}`);
   console.log(`🔗 LOGGING_SERVICE_URL: ${LOGGING_SERVICE_URL || 'not set'}`);
+  console.log(`🔗 SECRET_SERVICE_URL: ${SECRET_SERVICE_URL || 'not set'}`);
 });
