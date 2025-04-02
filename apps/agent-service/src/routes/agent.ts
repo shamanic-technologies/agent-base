@@ -33,6 +33,12 @@ import {
   saveMessage 
 } from '../services/database.js';
 
+// --- Add Tool Creator Imports ---
+import { createListUtilitiesTool } from '../lib/utility/utility_list_utilities.js';
+import { createGetUtilityInfoTool } from '../lib/utility/utility_get_utility_info.js';
+import { createCallUtilityTool } from '../lib/utility/utility_call_utility.js';
+// -------------------------------
+
 // Define the Message type explicitly based on common AI SDK structure
 interface Message {
   role: 'user' | 'assistant' | 'system' | 'tool';
@@ -190,10 +196,17 @@ router.post('/run', (req: Request, res: Response) => {
       // Extract data from request body and user context
       ({ agent_id, messages, conversation_id } = req.body);
       userId = (req as any).user?.id as string;
+      // ---> Get API Key from header <---
+      const apiKey = req.headers['x-api-key'] as string;
 
       // Validation
       if (!userId) {
-        res.status(401).json({ success: false, error: 'User authentication required' });
+        res.status(401).json({ success: false, error: 'User authentication required (Missing x-user-id)' });
+        return;
+      }
+      // ---> Add validation for API Key <---
+      if (!apiKey) {
+        res.status(401).json({ success: false, error: 'API Key required (Missing x-api-key header)' });
         return;
       }
       if (!agent_id || !messages || messages.length === 0 || !conversation_id) {
@@ -201,6 +214,20 @@ router.post('/run', (req: Request, res: Response) => {
         return;
       }
 
+      // --- Initialize Tools ---
+      // Pass the apiKey read from the header
+      const toolCredentials = {
+          userId,
+          conversationId: conversation_id, 
+          apiKey // Use the key from the header
+      };
+      const tools = {
+          utility_list_utilities: createListUtilitiesTool(toolCredentials),
+          utility_get_utility_info: createGetUtilityInfoTool(toolCredentials),
+          utility_call_utility: createCallUtilityTool(toolCredentials)
+      };
+      // ----------------------
+      
       // 1. Get Agent Details using the service function
       try {
         agent = await getAgentDetails(userId, agent_id);
@@ -236,8 +263,15 @@ router.post('/run', (req: Request, res: Response) => {
 
       // 4. Call AI model and stream response, handle persistence in onFinish
       const result = await streamText({
-        model: anthropic(agent.agent_model_id || 'claude-3-haiku-20240307'), 
+        model: anthropic(agent.agent_model_id), 
         messages: allMessages as any[], // Cast to any[] 
+        tools: tools,
+        // @ts-ignore - maxSteps property is supported by Vercel AI SDK
+        maxSteps: 25, // Allow multi-step tool usage
+        providerOptions: { // <-- Add providerOptions if needed (like in lib/agent.ts)
+            temperature: 0.1, // Example value
+            sendReasoning: true, // Example value - Check if needed here
+        },
         // @ts-ignore - Suppress potential property not found error for onFinish
         async onFinish({ text, toolCalls, toolResults, finishReason, usage, response }) { // Add 'response' if needed for structured messages
             console.log(`[Agent Service /run] Stream finished via onFinish (Reason: ${finishReason}). Saving messages...`);
@@ -273,9 +307,7 @@ router.post('/run', (req: Request, res: Response) => {
             } catch (dbError) {
               console.error("[Agent Service /run] Error saving messages to DB in onFinish:", dbError);
             }
-        }
-        // Optional: Add error handling for the stream itself
-        // async onError(error) { ... }
+        },
       });
 
       // 5. Pipe the stream directly to the response using the pattern from stream.ts
