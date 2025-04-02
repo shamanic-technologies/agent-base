@@ -2,7 +2,7 @@
  * Stripe List Transactions Utility
  * 
  * Lists transactions from Stripe using the user's API keys
- * If keys are not available, provides a form URL for the user to enter their keys
+ * If keys are not available, provides an API endpoint for the user to submit their keys
  */
 import axios from 'axios';
 import { 
@@ -15,6 +15,13 @@ import {
   StripeTransaction
 } from '../types/index.js';
 import { registry } from '../registry/registry.js';
+import {
+  getStripeEnvironmentVariables,
+  checkStripeApiKeys,
+  generateAuthNeededResponse,
+  getStripeApiKeys,
+  formatStripeErrorResponse
+} from './stripe-utils.js';
 
 /**
  * Implementation of the Stripe List Transactions utility
@@ -51,60 +58,19 @@ const stripeListTransactionsUtility: UtilityTool = {
       
       console.log(`💳 [STRIPE_LIST_TRANSACTIONS] Listing transactions for user: ${userId}`);
       
-      // Get services URLs with fallbacks
-      const secretServiceUrl = process.env.SECRET_SERVICE_URL;
-      const apiGatewayUrl = process.env.API_GATEWAY_URL;
-      
-      if (!secretServiceUrl) {
-        throw new Error('SECRET_SERVICE_URL environment variable is not set');
-      }
-      
-      if (!apiGatewayUrl) {
-        throw new Error('API_GATEWAY_URL environment variable is not set');
-      }
+      // Get environment variables
+      const { secretServiceUrl, apiGatewayUrl } = getStripeEnvironmentVariables();
       
       // Check if user has the required API keys
-      const checkResponse = await axios.post(
-        `${secretServiceUrl}/api/check-secret`,
-        {
-          userId,
-          secretType: 'stripe'
-        }
-      );
+      const { exists } = await checkStripeApiKeys(userId, secretServiceUrl);
       
-      // If we don't have the API keys, return the API gateway endpoint for secure API key submission
-      if (!checkResponse.data.exists) {
-        // Create the API endpoint URL that the client should call with their API key authentication
-        const apiEndpoint = `${apiGatewayUrl}/secret/set_stripe_api_keys`;
-        
-        console.log(`💳 [STRIPE_LIST_TRANSACTIONS] No API keys found, returning API gateway endpoint: ${apiEndpoint}`);
-        
-        const authNeededResponse: StripeAuthNeededResponse = {
-          needs_auth: true,
-          form_submit_url: apiEndpoint, // Use this existing field for API endpoint URL
-          message: 'Stripe access requires API keys. Please submit your Stripe API keys to the provided endpoint using your API key for authentication.'
-        };
-        return authNeededResponse;
+      // If we don't have the API keys, return auth needed response
+      if (!exists) {
+        return generateAuthNeededResponse(apiGatewayUrl, '💳 [STRIPE_LIST_TRANSACTIONS]');
       }
       
-      // If we have the API keys, get them to use with Stripe API
-      const getResponse = await axios.post(
-        `${secretServiceUrl}/api/get-secret`,
-        {
-          userId,
-          secretType: 'stripe'
-        }
-      );
-      
-      if (!getResponse.data.success) {
-        throw new Error(getResponse.data.error || 'Failed to retrieve Stripe API keys');
-      }
-      
-      const stripeKeys = getResponse.data.data;
-      
-      if (!stripeKeys.apiSecret) {
-        throw new Error('Stripe API secret is missing');
-      }
+      // Get the API keys
+      const stripeKeys = await getStripeApiKeys(userId, secretServiceUrl);
       
       // Call the Stripe API with the secret key
       console.log(`💳 [STRIPE_LIST_TRANSACTIONS] Calling Stripe API to list transactions`);
@@ -149,23 +115,7 @@ const stripeListTransactionsUtility: UtilityTool = {
       return successResponse;
     } catch (error) {
       console.error("❌ [STRIPE_LIST_TRANSACTIONS] Error:", error);
-      
-      // Check if this is a Stripe auth error
-      if (error.response && error.response.status === 401) {
-        const errorResponse: StripeTransactionsErrorResponse = {
-          success: false,
-          error: "Stripe authentication failed. Your API key may be invalid.",
-          details: "Please verify your Stripe API key and try again."
-        };
-        return errorResponse;
-      }
-      
-      const errorResponse: StripeTransactionsErrorResponse = {
-        success: false,
-        error: "Failed to list transactions from Stripe",
-        details: error instanceof Error ? error.message : String(error)
-      };
-      return errorResponse;
+      return formatStripeErrorResponse(error);
     }
   }
 };

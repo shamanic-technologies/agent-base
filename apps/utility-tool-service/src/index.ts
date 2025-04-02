@@ -25,6 +25,7 @@ import './basic-utilities/get-current-datetime.js';
 // Import utility tools
 import './oauth-utilities/gmail_read.js';
 import './secret-utilities/stripe_list_transactions.js';
+import './secret-utilities/stripe_refund.js';
 
 // Re-export everything from the registry
 export * from './registry/index.js';
