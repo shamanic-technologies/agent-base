@@ -26,8 +26,13 @@ import './api-utilities/google/flights.js';
 import './api-utilities/web/read-webpage.js';
 import './basic-utilities/get-current-datetime.js';
 import './oauth-utilities/gmail_read.js';
-import './secret-utilities/stripe_list_transactions.js';
+import './secret-utilities/stripe_list_charges.js';
+import './secret-utilities/stripe_list_refunds.js';
+import './secret-utilities/stripe_list_balance_transactions.js';
 import './secret-utilities/stripe_refund.js';
+import './secret-utilities/stripe_list_customers.js';
+import './secret-utilities/stripe_search_customers.js';
+import './secret-utilities/stripe_get_customer.js';
 
 // Load environment variables based on NODE_ENV
 const nodeEnv = process.env.NODE_ENV || 'development';

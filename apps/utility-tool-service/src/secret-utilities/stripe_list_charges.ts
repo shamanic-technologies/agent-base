@@ -1,7 +1,7 @@
 /**
- * Stripe List Transactions Utility
+ * Stripe List Charges Utility
  * 
- * Lists transactions from Stripe using the user's API keys
+ * Lists charges (payments received) from Stripe using the user's API keys
  * If keys are not available, provides an API endpoint for the user to submit their keys
  */
 import axios from 'axios';
@@ -24,26 +24,26 @@ import {
 } from './stripe-utils.js';
 
 /**
- * Implementation of the Stripe List Transactions utility
+ * Implementation of the Stripe List Charges utility
  */
-const stripeListTransactionsUtility: UtilityTool = {
-  id: 'utility_stripe_list_transactions',
-  description: 'List transactions from Stripe',
+const stripeListChargesUtility: UtilityTool = {
+  id: 'utility_stripe_list_charges',
+  description: 'List charges (payments received) from Stripe',
   schema: {
     limit: {
       type: 'number',
       optional: true,
-      description: 'Maximum number of transactions to return (default: 10)'
+      description: 'Maximum number of charges to return (default: 10)'
     },
     starting_after: {
       type: 'string',
       optional: true,
-      description: 'Cursor for pagination, transaction ID to start after'
+      description: 'Cursor for pagination, charge ID to start after'
     },
     ending_before: {
       type: 'string',
       optional: true,
-      description: 'Cursor for pagination, transaction ID to end before'
+      description: 'Cursor for pagination, charge ID to end before'
     }
   },
   
@@ -56,7 +56,7 @@ const stripeListTransactionsUtility: UtilityTool = {
         ending_before
       } = params || {};
       
-      console.log(`💳 [STRIPE_LIST_TRANSACTIONS] Listing transactions for user: ${userId}`);
+      console.log(`💳 [STRIPE_LIST_CHARGES] Listing charges for user: ${userId}`);
       
       // Get environment variables
       const { secretServiceUrl, apiGatewayUrl } = getStripeEnvironmentVariables();
@@ -66,14 +66,14 @@ const stripeListTransactionsUtility: UtilityTool = {
       
       // If we don't have the API keys, return auth needed response
       if (!exists) {
-        return generateAuthNeededResponse(apiGatewayUrl, '💳 [STRIPE_LIST_TRANSACTIONS]');
+        return generateAuthNeededResponse(apiGatewayUrl, '💳 [STRIPE_LIST_CHARGES]');
       }
       
       // Get the API keys
       const stripeKeys = await getStripeApiKeys(userId, secretServiceUrl);
       
       // Call the Stripe API with the secret key
-      console.log(`💳 [STRIPE_LIST_TRANSACTIONS] Calling Stripe API to list transactions`);
+      console.log(`💳 [STRIPE_LIST_CHARGES] Calling Stripe API to list charges`);
       
       const stripeResponse = await axios.get(
         'https://api.stripe.com/v1/charges',
@@ -114,14 +114,14 @@ const stripeListTransactionsUtility: UtilityTool = {
       
       return successResponse;
     } catch (error) {
-      console.error("❌ [STRIPE_LIST_TRANSACTIONS] Error:", error);
+      console.error("❌ [STRIPE_LIST_CHARGES] Error:", error);
       return formatStripeErrorResponse(error);
     }
   }
 };
 
 // Register the utility
-registry.register(stripeListTransactionsUtility);
+registry.register(stripeListChargesUtility);
 
 // Export the utility
-export default stripeListTransactionsUtility;
+export default stripeListChargesUtility;
