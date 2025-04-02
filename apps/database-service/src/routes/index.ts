@@ -9,6 +9,7 @@ import apiKeysRoutes from './api-keys';
 import collectionsRoutes from './collections';
 import apiLogsRoutes from './api-logs';
 import credentialsRoutes from './credentials';
+import agentsRoutes from './agents';
 
 const router = Router();
 
@@ -19,5 +20,6 @@ router.use(apiKeysRoutes);
 router.use(collectionsRoutes);
 router.use('/api-logs', apiLogsRoutes);
 router.use('/credentials', credentialsRoutes);
+router.use('/agents', agentsRoutes);
 
 export default router; 

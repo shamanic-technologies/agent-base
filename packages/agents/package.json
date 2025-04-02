@@ -1,0 +1,16 @@
+{
+  "name": "@agent-base/agents",
+  "version": "0.1.0",
+  "description": "Shared agent types and utilities",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "sh ./build.sh",
+    "dev": "tsc -w"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.0.4"
+  },
+  "private": true
+} 
