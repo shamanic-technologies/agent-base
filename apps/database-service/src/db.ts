@@ -3,7 +3,9 @@
  * 
  * Handles PostgreSQL connection and operations for the database service.
  */
-import { Pool, PoolClient } from 'pg';
+import pg from 'pg';
+const { Pool } = pg;
+import { PoolClient } from 'pg';
 import 'dotenv/config';
 
 // Initialize PostgreSQL connection pool
