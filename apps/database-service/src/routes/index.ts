@@ -3,13 +3,13 @@
  * Combines all route modules
  */
 import { Router } from 'express';
-import healthRoutes from './health';
-import usersRoutes from './users';
-import apiKeysRoutes from './api-keys';
-import collectionsRoutes from './collections';
-import apiLogsRoutes from './api-logs';
-import credentialsRoutes from './credentials';
-import agentsRoutes from './agents';
+import healthRoutes from './health.js';
+import usersRoutes from './users.js';
+import apiKeysRoutes from './api-keys.js';
+import collectionsRoutes from './collections.js';
+import apiLogsRoutes from './api-logs.js';
+import credentialsRoutes from './credentials.js';
+import agentsRoutes from './agents.js';
 
 const router = Router();
 

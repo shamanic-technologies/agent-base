@@ -1,5 +1,15 @@
 packages:
-  - apps/*
+  - apps/logging-service
+  - apps/secret-service
+  - apps/agent-service
+  - apps/database-service
+  - apps/tool-auth-service
+  - apps/utility-tool-service
+  - apps/api-gateway-service
+  - apps/auth-service
+  - apps/web-gateway-service
+  - apps/payment-service
+  - apps/key-service
   - packages/**
   - tooling/*
   - supabase

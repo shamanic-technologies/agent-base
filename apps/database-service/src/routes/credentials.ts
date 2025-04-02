@@ -4,7 +4,7 @@
  * API endpoints for managing user credentials
  */
 import express, { RequestHandler } from 'express';
-import { createOrUpdateCredentials, getCredentials } from '../services/credentials';
+import { createOrUpdateCredentials, getCredentials } from '../services/credentials.js';
 import { CreateOrUpdateCredentialsInput, GetUserCredentialsInput } from '@agent-base/credentials';
 
 const router = express.Router();

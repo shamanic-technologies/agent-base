@@ -70,10 +70,18 @@ export interface LinkAgentInput {
 }
 
 /**
- * Input for listing agents for a user
+ * Input for retrieving a list of agents associated with a user ID.
  */
 export interface ListUserAgentsInput {
   user_id: string;
+}
+
+/**
+ * Input for retrieving a specific agent associated with a user ID.
+ */
+export interface GetUserAgentInput {
+  user_id: string;
+  agent_id: string;
 }
 
 /**
@@ -102,13 +110,6 @@ export interface UpdateAgentResponse<T = AgentRecord> extends AgentDatabaseRespo
  * Standard agent link API response format
  */
 export interface LinkAgentToUserResponse<T = UserAgentRecord> extends AgentDatabaseResponse {
-  data?: T;
-}
-
-/**
- * Standard agent list API response format
- */
-export interface ListUserAgentsResponse<T = AgentRecord[]> extends AgentDatabaseResponse {
   data?: T;
 }
 
@@ -191,4 +192,18 @@ export interface Agent {
   jobTitle: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+/**
+ * Response containing a list of agents.
+ */
+export interface ListUserAgentsResponse extends AgentDatabaseResponse {
+  data?: AgentRecord[];
+}
+
+/**
+ * Response containing a single agent record.
+ */
+export interface GetUserAgentResponse extends AgentDatabaseResponse {
+  data?: AgentRecord;
 } 

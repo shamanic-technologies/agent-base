@@ -2,8 +2,8 @@
  * API Logs routes
  */
 import { Router, Request, Response } from 'express';
-import { pgPool } from '../db';
-import { handleDatabaseError } from '../utils/error-handler';
+import { pgPool } from '../db.js';
+import { handleDatabaseError } from '../utils/error-handler.js';
 import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();

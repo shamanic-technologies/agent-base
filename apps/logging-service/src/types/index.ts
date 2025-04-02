@@ -18,6 +18,7 @@ export interface ApiLogEntry {
   user_agent?: string;
   request_id?: string;
   request_body?: any;
+  response_body?: any;
   conversation_id?: string;
   timestamp: string;
 }

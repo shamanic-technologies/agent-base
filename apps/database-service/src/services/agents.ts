@@ -5,7 +5,7 @@
  */
 import { PoolClient } from 'pg';
 import { v4 as uuidv4 } from 'uuid';
-import { getClient } from '../db';
+import { getClient } from '../db.js';
 import {
   AgentRecord,
   CreateAgentInput,
@@ -15,7 +15,9 @@ import {
   UpdateAgentResponse,
   LinkAgentToUserResponse,
   ListUserAgentsInput,
-  ListUserAgentsResponse
+  ListUserAgentsResponse,
+  GetUserAgentInput,
+  GetUserAgentResponse
 } from '@agent-base/agents';
 
 const AGENTS_TABLE = 'agents';
@@ -292,6 +294,46 @@ export async function listUserAgents(
     };
   } catch (error) {
     return handleServiceError(error, 'Error listing agents for user:');
+  } finally {
+    if (client) client.release();
+  }
+}
+
+/**
+ * Retrieves a specific agent if it belongs to the specified user
+ */
+export async function getUserAgent(
+  input: GetUserAgentInput
+): Promise<GetUserAgentResponse> {
+  let client: PoolClient | null = null;
+  try {
+    client = await getClient();
+
+    // Ensure tables exist (optional, but maintains pattern)
+    await ensureTablesExist(client);
+
+    // Query for the agent, joining with user_agents to verify ownership
+    const result = await client.query(
+      `SELECT a.* \n       FROM "${AGENTS_TABLE}" a\n       JOIN "${USER_AGENTS_TABLE}" ua ON a.agent_id = ua.agent_id\n       WHERE a.agent_id = $1 AND ua.user_id = $2`,
+      [input.agent_id, input.user_id]
+    );
+
+    // Check if an agent was found for this user
+    if (result.rows.length === 0) {
+      return {
+        success: false,
+        error: 'Agent not found or user does not have access' // Specific error message
+      };
+    }
+
+    // Agent found and user has access
+    return {
+      success: true,
+      data: result.rows[0] as AgentRecord // Return the agent data
+    };
+
+  } catch (error) {
+    return handleServiceError(error, 'Error getting user agent:');
   } finally {
     if (client) client.release();
   }

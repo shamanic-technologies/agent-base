@@ -1,8 +1,3 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
 /**
  * HelloWorld Database Service
  *
@@ -10,21 +5,21 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * Acts as a data persistence layer for the other services.
  * Uses Railway PostgreSQL for data storage.
  */
-const express_1 = __importDefault(require("express"));
-const cors_1 = __importDefault(require("cors"));
-const dotenv_1 = __importDefault(require("dotenv"));
-const path_1 = __importDefault(require("path"));
-const fs_1 = __importDefault(require("fs"));
-const index_1 = __importDefault(require("./routes/index"));
-const db_1 = require("./db");
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import path from 'path';
+import fs from 'fs';
+import routes from './routes/index.js';
+import { testConnection } from './db.js';
 // Load environment variables based on NODE_ENV
 const NODE_ENV = process.env.NODE_ENV || 'development';
 // Only load from .env file in development
 if (NODE_ENV === 'development') {
-    const envFile = path_1.default.resolve(process.cwd(), '.env.local');
-    if (fs_1.default.existsSync(envFile)) {
+    const envFile = path.resolve(process.cwd(), '.env.local');
+    if (fs.existsSync(envFile)) {
         console.log(`Loading environment from ${envFile}`);
-        dotenv_1.default.config({ path: envFile });
+        dotenv.config({ path: envFile });
     }
     else {
         console.log(`Environment file ${envFile} not found, using default environment variables.`);
@@ -34,17 +29,17 @@ else {
     console.log('Production environment detected, using Railway configuration.');
 }
 // Initialize Express app
-const app = (0, express_1.default)();
+const app = express();
 const PORT = process.env.PORT;
 // Middleware
-app.use((0, cors_1.default)());
-app.use(express_1.default.json());
+app.use(cors());
+app.use(express.json());
 // Register routes
-app.use(index_1.default);
+app.use(routes);
 // Start the server
 const startServer = async () => {
     // Test database connection before starting
-    const isConnected = await (0, db_1.testConnection)();
+    const isConnected = await testConnection();
     if (!isConnected) {
         console.error('Failed to connect to database, exiting...');
         process.exit(1);

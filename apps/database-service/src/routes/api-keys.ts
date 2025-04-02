@@ -3,9 +3,9 @@
  */
 import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { pgPool } from '../db';
-import { handleDatabaseError } from '../utils/error-handler';
-import { createCollection } from '../db';
+import { pgPool } from '../db.js';
+import { handleDatabaseError } from '../utils/error-handler.js';
+import { createCollection } from '../db.js';
 
 const router = Router();
 
