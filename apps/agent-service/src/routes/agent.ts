@@ -11,7 +11,8 @@ import {
   UpdateUserAgentInput,
   UpdateUserAgentResponse,
   CreateUserAgentResponse,
-  ListUserAgentsResponse
+  ListUserAgentsResponse,
+  GetUserAgentResponse
 } from '@agent-base/agents';
 // Removed AI SDK imports
 // Removed Service function imports for /run
@@ -139,6 +140,49 @@ router.get('/list-user-agents', async (req: Request, res: Response, next: NextFu
 
   } catch (error) {
     console.error('[Agent Service] Error listing agents:', error);
+    // Pass error to Express error handler
+    next(error);
+  }
+});
+
+/**
+ * NEW: Get a specific agent for a user endpoint
+ */
+router.get('/get-user-agent', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // Extract user ID from auth middleware
+    const userId = (req as any).user?.id as string;
+    // Extract agent ID from query params
+    const agentId = req.query.agent_id as string;
+    
+    // Validate user ID
+    if (!userId) {
+      res.status(401).json({ success: false, error: 'User authentication required' });
+      return;
+    }
+    // Validate agent ID
+    if (!agentId) {
+      res.status(400).json({ success: false, error: 'agent_id query parameter is required' });
+      return;
+    }
+
+    // Call database service to get the specific agent for the user
+    console.log(`[Agent Service /get-user-agent] Calling DB service /agents/get-user-agent for user ${userId}, agent ${agentId}`);
+    // Use the correct response type GetUserAgentResponse
+    const response = await axios.get<GetUserAgentResponse>(
+      `${DATABASE_SERVICE_URL}/agents/get-user-agent`, { 
+        params: { 
+          user_id: userId, 
+          agent_id: agentId 
+        }
+      }
+    );
+
+    // Forward the status and data from the database service response
+    res.status(response.status).json(response.data);
+
+  } catch (error) {
+    console.error('[Agent Service] Error getting user agent:', error);
     // Pass error to Express error handler
     next(error);
   }

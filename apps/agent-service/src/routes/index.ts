@@ -17,7 +17,7 @@ export function configureRoutes(app: Express) {
   app.use('/health', healthRoutes);
   app.use('/agent', agentRoutes);
   app.use('/conversation', conversationRoutes);
-  app.use('/agent', runRoutes);
+  app.use('/run', runRoutes);
   app.use('/message', messageRoutes);
 }
 
