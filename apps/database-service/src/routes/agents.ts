@@ -21,22 +21,24 @@ const router = express.Router();
 /**
  * Create a new agent and link it to the specified user
  */
-router.post('/create-user-agent', (async (req, res) => {
+router.post('/create-user-agent', async (req: Request, res: Response): Promise<void> => {
   try {
-    const input: CreateUserAgentInput = req.body;
+    const input = req.body as CreateUserAgentInput;
     const { user_id, ...agentData } = input; // Separate user_id from agent creation data
 
     // --- Validation ---
     // 1. Validate user_id presence
     if (!user_id) {
-      return res.status(400).json({ success: false, error: 'user_id is required in the request body' });
+      res.status(400).json({ success: false, error: 'user_id is required in the request body' });
+      return;
     }
 
     // 2. Validate required agent fields (copied from original /create)
     if (!agentData.agent_first_name || !agentData.agent_last_name || !agentData.agent_profile_picture || 
         !agentData.agent_gender || !agentData.agent_system_prompt || !agentData.agent_model_id || 
         !agentData.agent_memory || !agentData.agent_job_title) {
-      return res.status(400).json({ success: false, error: 'Missing required agent fields' });
+      res.status(400).json({ success: false, error: 'Missing required agent fields' });
+      return;
     }
     // --- End Validation ---
 
@@ -47,7 +49,8 @@ router.post('/create-user-agent', (async (req, res) => {
     if (!createResult.success || !createResult.data) {
       console.error('[DB Service /create-user-agent] Agent creation failed:', createResult.error);
       // Use CreateUserAgentResponse type for consistency if needed, though error shape is generic
-      return res.status(400).json({ success: false, error: `Agent creation failed: ${createResult.error || 'Unknown error'}` } as CreateUserAgentResponse);
+      res.status(400).json({ success: false, error: `Agent creation failed: ${createResult.error || 'Unknown error'}` } as CreateUserAgentResponse);
+      return;
     }
     
     const newAgentId = createResult.data.agent_id;
@@ -64,10 +67,11 @@ router.post('/create-user-agent', (async (req, res) => {
       // If linking fails, we might consider this a partial success or a full failure.
       // For atomicity, let's treat linking failure as an overall failure for this endpoint.
       // TODO: Consider if cleanup (deleting the created agent) is needed on link failure.
-      return res.status(500).json({ 
+      res.status(500).json({ 
         success: false, 
         error: `Agent created (${newAgentId}), but failed to link to user ${user_id}: ${linkResult.error || 'Unknown error'}` 
       } as CreateUserAgentResponse);
+      return;
     }
     console.log(`[DB Service /create-user-agent] Successfully linked agent ${newAgentId} to user ${user_id}.`);
     // --- End Step 2 ---
@@ -83,26 +87,29 @@ router.post('/create-user-agent', (async (req, res) => {
       error: error instanceof Error ? error.message : 'Unknown error occurred during agent creation/linking'
     } as CreateUserAgentResponse); // Use renamed type here too
   }
-}) as RequestHandler);
+});
 
 /**
  * Update an existing agent, ensuring user ownership
  * Renamed from /update
  */
-router.post('/update-user-agent', (async (req, res) => {
+router.post('/update-user-agent', async (req: Request, res: Response): Promise<void> => {
   try {
-    const input: UpdateUserAgentInput = req.body;
+    const input = req.body as UpdateUserAgentInput;
     const { user_id, agent_id, ...agentUpdateData } = input;
     
     // --- Validation ---
     if (!user_id) {
-      return res.status(400).json({ success: false, error: 'user_id is required' });
+      res.status(400).json({ success: false, error: 'user_id is required' });
+      return;
     }
     if (!agent_id) {
-      return res.status(400).json({ success: false, error: 'agent_id is required' });
+      res.status(400).json({ success: false, error: 'agent_id is required' });
+      return;
     }
     if (Object.keys(agentUpdateData).length === 0) {
-       return res.status(400).json({ success: false, error: 'No update data provided' });
+       res.status(400).json({ success: false, error: 'No update data provided' });
+       return;
     }
     // --- End Validation ---
 
@@ -113,10 +120,11 @@ router.post('/update-user-agent', (async (req, res) => {
     if (!ownershipCheckResult.success) {
         // This means agent not found OR not linked to this user.
         console.warn(`[DB Service /update-user-agent] Ownership check failed for agent ${agent_id}, user ${user_id}. Agent not found or not linked.`);
-        return res.status(403).json({ // 403 Forbidden is appropriate here
+        res.status(403).json({ 
             success: false, 
             error: 'Forbidden: User does not own this agent or agent not found.'
         } as UpdateUserAgentResponse);
+         return;
     }
     console.log(`[DB Service /update-user-agent] Ownership confirmed for agent ${agent_id}, user ${user_id}.`);
     // --- End Authorization Check ---
@@ -133,7 +141,8 @@ router.post('/update-user-agent', (async (req, res) => {
        // If updateAgent fails *after* ownership check, it's likely an internal DB error.
        console.error(`[DB Service /update-user-agent] Update failed for agent ${agent_id} AFTER ownership check:`, result.error);
        // Return 500 Internal Server Error
-       return res.status(500).json({ success: false, error: result.error || 'Agent update failed' } as UpdateUserAgentResponse);
+       res.status(500).json({ success: false, error: result.error || 'Agent update failed' } as UpdateUserAgentResponse);
+       return;
     }
 
     console.log(`[DB Service /update-user-agent] Agent ${agent_id} updated successfully.`);
@@ -142,25 +151,28 @@ router.post('/update-user-agent', (async (req, res) => {
 
   } catch (error) {
     console.error('Error in update-user-agent route:', error);
-    res.status(500).json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    } as UpdateUserAgentResponse);
+     if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
+      } as UpdateUserAgentResponse);
+    }
   }
-}) as RequestHandler);
+});
 
 /**
  * List all agents for a user
  */
-router.get('/list-user-agents', (async (req, res) => {
+router.get('/list-user-agents', async (req: Request, res: Response): Promise<void> => {
   try {
     const user_id = req.query.user_id as string;
     
     if (!user_id) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: 'user_id query parameter is required'
       });
+       return;
     }
 
     console.log(`[DB Service /list-user-agents] Fetching agents for user ${user_id}`);
@@ -172,10 +184,11 @@ router.get('/list-user-agents', (async (req, res) => {
       // Log the specific error from the service
       console.error(`[DB Service /list-user-agents] Service error listing agents for user ${user_id}:`, result.error);
       // Return a 500 Internal Server Error for service failures
-      return res.status(500).json({ 
+      res.status(500).json({ 
         success: false, 
         error: result.error || 'Failed to list agents due to an internal error' 
       } as ListUserAgentsResponse);
+       return;
     }
 
     // If service call was successful (result.success is true),
@@ -189,17 +202,19 @@ router.get('/list-user-agents', (async (req, res) => {
   } catch (error) {
     // Catch unexpected errors during route processing
     console.error('Error in list-user-agents route handler:', error);
-    res.status(500).json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown internal server error'
-    } as ListUserAgentsResponse);
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown internal server error'
+      } as ListUserAgentsResponse);
+    }
   }
-}) as RequestHandler);
+});
 
 /**
  * Get a specific agent belonging to a user
  */
-router.get('/get-user-agent', (async (req, res) => {
+router.get('/get-user-agent', async (req: Request, res: Response): Promise<void> => {
   try {
     // Extract user_id and agent_id from query parameters
     const user_id = req.query.user_id as string;
@@ -207,16 +222,18 @@ router.get('/get-user-agent', (async (req, res) => {
 
     // Validate required query parameters
     if (!user_id) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: 'user_id query parameter is required'
       });
+       return;
     }
     if (!agent_id) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: 'agent_id query parameter is required'
       });
+       return;
     }
 
     console.log(`[Database Service /get-user-agent] Request for user: ${user_id}, agent: ${agent_id}`);
@@ -228,7 +245,8 @@ router.get('/get-user-agent', (async (req, res) => {
     // If agent not found or doesn't belong to user, service should return success: false
     if (!result.success) {
       console.log(`[Database Service /get-user-agent] Agent not found or access denied for user: ${user_id}, agent: ${agent_id}`);
-      return res.status(404).json(result); // Return 404
+      res.status(404).json(result); // Return 404
+       return;
     }
 
     console.log(`[Database Service /get-user-agent] Found agent: ${agent_id} for user: ${user_id}`);
@@ -236,11 +254,13 @@ router.get('/get-user-agent', (async (req, res) => {
 
   } catch (error) {
     console.error('Error in get user agent route:', error);
-    res.status(500).json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown internal server error'
-    });
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown internal server error'
+      });
+    }
   }
-}) as RequestHandler);
+});
 
 export default router;

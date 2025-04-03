@@ -8,16 +8,16 @@ import { v4 as uuidv4 } from 'uuid';
 import { getClient } from '../db.js';
 import {
   AgentRecord,
-  CreateAgentInput,
-  UpdateAgentInput,
-  LinkAgentInput,
-  CreateAgentResponse,
-  UpdateAgentResponse,
-  LinkAgentToUserResponse,
+  UserAgentRecord,
+  CreateUserAgentInput,
+  CreateUserAgentResponse,
+  UpdateUserAgentInput,
+  UpdateUserAgentResponse,
   ListUserAgentsInput,
   ListUserAgentsResponse,
   GetUserAgentInput,
-  GetUserAgentResponse
+  GetUserAgentResponse,
+  BaseResponse
 } from '@agent-base/agents';
 
 const AGENTS_TABLE = 'agents';
@@ -52,36 +52,65 @@ const USER_AGENTS_TABLE_SQL = `
 `;
 
 /**
- * Ensures that the required tables exist in the database
+ * Ensures that the specified table exists in the database.
  */
-async function ensureTablesExist(client: PoolClient): Promise<void> {
-  await client.query(AGENTS_TABLE_SQL);
-  await client.query(USER_AGENTS_TABLE_SQL);
+async function ensureTableExists(tableName: string) {
+    let client: PoolClient | null = null;
+    try {
+        client = await getClient();
+        let createTableQuery = '';
+        if (tableName === AGENTS_TABLE) {
+            createTableQuery = `
+                CREATE TABLE IF NOT EXISTS ${AGENTS_TABLE} (
+                    agent_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    agent_first_name VARCHAR(255) NOT NULL,
+                    agent_last_name VARCHAR(255) NOT NULL,
+                    agent_profile_picture TEXT,
+                    agent_gender VARCHAR(50),
+                    agent_system_prompt TEXT,
+                    agent_model_id VARCHAR(255),
+                    agent_memory TEXT,
+                    agent_job_title VARCHAR(255),
+                    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+                );
+            `;
+        } else if (tableName === USER_AGENTS_TABLE) {
+            createTableQuery = `
+                CREATE TABLE IF NOT EXISTS ${USER_AGENTS_TABLE} (
+                    user_id VARCHAR(255) NOT NULL,
+                    agent_id UUID NOT NULL,
+                    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (user_id, agent_id),
+                    FOREIGN KEY (agent_id) REFERENCES ${AGENTS_TABLE}(agent_id) ON DELETE CASCADE
+                );
+            `;
+        } else {
+            throw new Error(`Unsupported table name for creation: ${tableName}`);
+        }
+        await client.query(createTableQuery);
+        // console.log(`Table "${tableName}" ensured.`); // Optional logging
+    } catch (error: any) {
+        console.error(`Error ensuring table "${tableName}" exists:`, error);
+        throw error; // Re-throw error to be handled by the calling function
+    } finally {
+        if (client) {
+            client.release();
+        }
+    }
 }
 
 /**
- * Helper function to handle errors in service functions
+ * Creates a new agent in the database.
+ * Ensures the agents table exists before inserting.
+ * @param input - The agent data to create, excluding user_id.
+ * @returns A BaseResponse indicating success or failure, with the created agent data on success.
  */
-function handleServiceError(error: unknown, errorMessage: string): any {
-  console.error(errorMessage, error);
-  return {
-    success: false,
-    error: error instanceof Error ? error.message : 'Unknown error occurred'
-  };
-}
-
-/**
- * Creates a new agent in the database
- */
-export async function createAgent(
-  input: CreateAgentInput
-): Promise<CreateAgentResponse> {
+export async function createAgent(input: Omit<CreateUserAgentInput, 'user_id'>): Promise<CreateUserAgentResponse> {
+  await ensureTableExists(AGENTS_TABLE);
   let client: PoolClient | null = null;
   try {
     client = await getClient();
-
-    // Create tables if they don't exist
-    await ensureTablesExist(client);
 
     // Insert new agent
     const result = await client.query(
@@ -105,25 +134,27 @@ export async function createAgent(
       success: true,
       data: result.rows[0] as AgentRecord
     };
-  } catch (error) {
-    return handleServiceError(error, 'Error creating agent:');
+  } catch (error: any) {
+    console.error('Error creating agent:', error);
+    return { success: false, error: error.message || 'Failed to create agent' };
   } finally {
-    if (client) client.release();
+    if (client) {
+      client.release();
+    }
   }
 }
 
 /**
- * Updates an existing agent in the database
+ * Updates an existing agent in the database.
+ * Ensures the agents table exists before updating.
+ * @param input - The agent data to update, excluding user_id.
+ * @returns A BaseResponse indicating success or failure, with the updated agent data on success.
  */
-export async function updateAgent(
-  input: UpdateAgentInput
-): Promise<UpdateAgentResponse> {
+export async function updateAgent(input: Omit<UpdateUserAgentInput, 'user_id'>): Promise<UpdateUserAgentResponse> {
+  await ensureTableExists(AGENTS_TABLE);
   let client: PoolClient | null = null;
   try {
     client = await getClient();
-    
-    // Create tables if they don't exist
-    await ensureTablesExist(client);
     
     // Build the SQL update statement dynamically based on provided fields
     const updateFields: string[] = [];
@@ -200,83 +231,66 @@ export async function updateAgent(
       success: true,
       data: result.rows[0] as AgentRecord
     };
-  } catch (error) {
-    return handleServiceError(error, 'Error updating agent:');
+  } catch (error: any) {
+    console.error('Error updating agent:', error);
+    return { success: false, error: error.message || 'Failed to update agent' };
   } finally {
-    if (client) client.release();
+    if (client) {
+      client.release();
+    }
   }
 }
 
 /**
- * Links an agent to a user in the database
+ * Links an agent to a user in the database.
+ * Ensures the user_agents table exists before inserting.
+ * @param input - An object containing user_id and agent_id.
+ * @returns A BaseResponse indicating success or failure.
  */
-export async function linkAgentToUser(
-  input: LinkAgentInput
-): Promise<LinkAgentToUserResponse> {
+export async function linkAgentToUser(input: { user_id: string, agent_id: string }): Promise<BaseResponse> {
+  await ensureTableExists(USER_AGENTS_TABLE);
   let client: PoolClient | null = null;
   try {
     client = await getClient();
+    const query = `
+      INSERT INTO ${USER_AGENTS_TABLE} (user_id, agent_id)
+      VALUES ($1, $2)
+      ON CONFLICT (user_id, agent_id) DO NOTHING
+      RETURNING *;`;
+    const values = [input.user_id, input.agent_id];
+    const result = await client.query(query, values);
 
-    // Create tables if they don't exist
-    await ensureTablesExist(client);
-
-    // Check if the agent exists
-    const agentCheck = await client.query(
-      `SELECT * FROM "${AGENTS_TABLE}" WHERE agent_id = $1`,
-      [input.agent_id]
-    );
-
-    if (agentCheck.rows.length === 0) {
-      return {
-        success: false,
-        error: 'Agent not found'
-      };
+    if (result.rowCount === 0) {
+      // Link might already exist, treat as success or inform?
+      // For now, treat as success
+      console.log(`Link between user ${input.user_id} and agent ${input.agent_id} already exists or insertion skipped.`);
     }
 
-    // Check if the link already exists
-    const linkCheck = await client.query(
-      `SELECT * FROM "${USER_AGENTS_TABLE}" WHERE user_id = $1 AND agent_id = $2`,
-      [input.user_id, input.agent_id]
-    );
-
-    if (linkCheck.rows.length > 0) {
-      return {
-        success: true,
-        data: linkCheck.rows[0]
-      };
-    }
-
-    // Create the link
-    const result = await client.query(
-      `INSERT INTO "${USER_AGENTS_TABLE}" (user_id, agent_id)
-       VALUES ($1, $2)
-       RETURNING *`,
-      [input.user_id, input.agent_id]
-    );
-
-    return {
-      success: true,
-      data: result.rows[0]
-    };
-  } catch (error) {
-    return handleServiceError(error, 'Error linking agent to user:');
+    // Return only success status, no data field for BaseResponse
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error linking agent to user:', error);
+    // Return only success status and error message
+    return { success: false, error: error.message || 'Failed to link agent to user' };
   } finally {
-    if (client) client.release();
+    if (client) {
+      client.release();
+    }
   }
 }
 
 /**
- * Lists all agents for a specific user
+ * Lists all agents linked to a specific user.
+ * Ensures the necessary tables exist before querying.
+ * @param input - An object containing the user_id.
+ * @returns A BaseResponse indicating success or failure, with the list of agents on success.
  */
-export async function listUserAgents(
-  input: ListUserAgentsInput
-): Promise<ListUserAgentsResponse> {
+export async function listUserAgents(input: ListUserAgentsInput): Promise<ListUserAgentsResponse> {
+  await ensureTableExists(AGENTS_TABLE);
+  await ensureTableExists(USER_AGENTS_TABLE);
   let client: PoolClient | null = null;
   try {
     client = await getClient();
-
-    // Create tables if they don't exist
-    await ensureTablesExist(client);
 
     // Get all agents for the user by joining the agents and user_agents tables
     const result = await client.query(
@@ -292,37 +306,44 @@ export async function listUserAgents(
       success: true,
       data: result.rows as AgentRecord[]
     };
-  } catch (error) {
-    return handleServiceError(error, 'Error listing agents for user:');
+  } catch (error: any) {
+    console.error('Error listing user agents:', error);
+    return { success: false, error: error.message || 'Failed to list user agents' };
   } finally {
-    if (client) client.release();
+    if (client) {
+      client.release();
+    }
   }
 }
 
 /**
- * Retrieves a specific agent if it belongs to the specified user
+ * Gets a specific agent if it is linked to the user.
+ * Ensures the necessary tables exist before querying.
+ * @param input - An object containing user_id and agent_id.
+ * @returns A BaseResponse indicating success or failure, with the agent data on success.
  */
-export async function getUserAgent(
-  input: GetUserAgentInput
-): Promise<GetUserAgentResponse> {
+export async function getUserAgent(input: GetUserAgentInput): Promise<GetUserAgentResponse> {
+  await ensureTableExists(AGENTS_TABLE);
+  await ensureTableExists(USER_AGENTS_TABLE);
   let client: PoolClient | null = null;
   try {
     client = await getClient();
 
-    // Ensure tables exist (optional, but maintains pattern)
-    await ensureTablesExist(client);
-
     // Query for the agent, joining with user_agents to verify ownership
-    const result = await client.query(
-      `SELECT a.* \n       FROM "${AGENTS_TABLE}" a\n       JOIN "${USER_AGENTS_TABLE}" ua ON a.agent_id = ua.agent_id\n       WHERE a.agent_id = $1 AND ua.user_id = $2`,
-      [input.agent_id, input.user_id]
-    );
+    const query = `
+      SELECT a.*
+      FROM ${AGENTS_TABLE} a
+      JOIN ${USER_AGENTS_TABLE} ua ON a.agent_id = ua.agent_id
+      WHERE a.agent_id = $1 AND ua.user_id = $2;
+    `;
+    const values = [input.agent_id, input.user_id];
+    const result = await client.query(query, values);
 
     // Check if an agent was found for this user
     if (result.rows.length === 0) {
       return {
         success: false,
-        error: 'Agent not found or user does not have access' // Specific error message
+        error: 'Agent not found or user does not have access'
       };
     }
 
@@ -332,9 +353,12 @@ export async function getUserAgent(
       data: result.rows[0] as AgentRecord // Return the agent data
     };
 
-  } catch (error) {
-    return handleServiceError(error, 'Error getting user agent:');
+  } catch (error: any) {
+    console.error('Error getting user agent:', error);
+    return { success: false, error: error.message || 'Failed to get user agent' };
   } finally {
-    if (client) client.release();
+    if (client) {
+      client.release();
+    }
   }
 }
