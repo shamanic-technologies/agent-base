@@ -21,16 +21,18 @@ const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL || 'http://localho
  * Get messages for the current conversation of a specific agent.
  * GET /get-agent-current-conversation-messages?agent_id=...
  */
-router.get('/get-agent-current-conversation-messages', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/get-agent-current-conversation-messages', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const agentId = req.query.agent_id as string;
         const userId = (req as any).user?.id as string; // For potential auth
 
         if (!userId) {
-            return res.status(401).json({ success: false, error: 'User authentication required' });
+            res.status(401).json({ success: false, error: 'User authentication required' });
+            return;
         }
         if (!agentId) {
-            return res.status(400).json({ success: false, error: 'agent_id query parameter is required' });
+            res.status(400).json({ success: false, error: 'agent_id query parameter is required' });
+            return;
         }
 
         console.log(`[Agent Service /msg] Getting current conversation messages for agent ${agentId}`);

@@ -40,7 +40,7 @@ const runRouter = Router(); // Use a specific router for this file
 /**
  * Run agent interaction endpoint
  */
-runRouter.post('/run', async (req: Request, res: Response, next: NextFunction) => {
+runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
   const handleAgentRun = async () => {
     let agent: AgentRecord; 
     let messages: Message[]; 
