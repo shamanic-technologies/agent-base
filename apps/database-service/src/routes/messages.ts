@@ -3,91 +3,90 @@
  * 
  * API endpoints for managing conversation messages
  */
-import express, { RequestHandler } from 'express';
-import { saveMessage, getMessages } from '../services/messages.js';
-import { SaveMessageInput, GetMessagesInput } from '@agent-base/agents';
+import express, { Request, Response, NextFunction, RequestHandler } from 'express';
+import { 
+  CreateMessageInput, 
+  CreateMessageResponse, 
+  GetMessagesInput 
+} from '@agent-base/agents';
+import { createMessage, getMessages } from '../services/messages.js';
 
 const router = express.Router();
 
 /**
- * Save a new message
- * POST /
+ * Create a new message
+ * POST /create-message
+ * Renamed from POST /create-user-agent-message
  */
-router.post('/', (async (req, res) => {
+router.post('/create-message', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const input: SaveMessageInput = req.body;
+    // Use renamed input type
+    const input: CreateMessageInput = req.body;
 
-    // Basic validation (add more as needed)
-    if (!input.conversation_id || !input.user_id || !input.agent_id || !input.role) {
-      res.status(400).json({
-        success: false,
-        error: 'Missing required fields: conversation_id, user_id, agent_id, role'
-      });
+    // Basic validation 
+    if (!input.conversation_id || !input.role) {
+      // Send error response and end
+      res.status(400).json({ success: false, error: 'Missing required fields: conversation_id, role' } as CreateMessageResponse);
       return;
     }
-
-    const result = await saveMessage(input);
-    
-    if (!result.success) {
-      res.status(500).json(result); // Internal server error if save fails
-      return;
-    }
-
-    res.status(201).json(result); // 201 Created
-  } catch (error) {
-    console.error('Error in POST /messages route:', error);
-    res.status(500).json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    });
-  }
-}) as RequestHandler);
-
-/**
- * Get all messages for a conversation
- * GET /?conversation_id=...&user_id=...
- */
-router.get('/', (async (req, res) => {
-  try {
-    // Extract query parameters
-    const conversation_id = req.query.conversation_id as string;
-    const user_id = req.query.user_id as string;
-
-    // Validate required query parameters
-    if (!conversation_id) {
-      res.status(400).json({
-        success: false,
-        error: 'conversation_id query parameter is required'
-      });
-      return;
-    }
-    if (!user_id) {
-      res.status(400).json({
-        success: false,
-        error: 'user_id query parameter is required'
-      });
-      return;
-    }
-
-    const input: GetMessagesInput = { conversation_id, user_id };
-    const result = await getMessages(input);
-    
-    // Service handles not found, just check for other errors
-    if (!result.success) {
-       // Consider returning 404 if data is empty, handled by service currently
-       res.status(500).json(result); // Or handle specific errors from service
+    if (!['user', 'assistant', 'system', 'tool'].includes(input.role)) {
+       res.status(400).json({ success: false, error: 'Invalid role specified' } as CreateMessageResponse);
        return;
     }
 
+    console.log(`[DB Route /messages] Received request to create message for conv ${input.conversation_id}`);
+    // Call renamed service function
+    const result = await createMessage(input);
+    
+    if (!result.success) {
+      console.error(`[DB Route /messages] Service failed to create message:`, result.error);
+      // Send error response and end
+      res.status(500).json(result as CreateMessageResponse);
+      return;
+    }
+
+    console.log(`[DB Route /messages] Message created successfully with ID: ${result.data?.message_id}`);
+    // Send success response and end
+    res.status(201).json(result as CreateMessageResponse);
+
+  } catch (error) {
+    console.error('Error in POST /messages/create-message route async handler:', error);
+    // Pass error to Express error handling middleware
+    next(error);
+  }
+});
+
+/**
+ * Get all messages for a conversation
+ * GET /get_conversation_messages?conversation_id=...
+ * Renamed from GET /get-user-agent-messages
+ */
+router.get('/get_conversation_messages', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const conversation_id = req.query.conversation_id as string;
+
+    if (!conversation_id) {
+      res.status(400).json({ success: false, error: 'conversation_id query parameter is required' });
+      return;
+    }
+
+    console.log(`[DB Service /messages] Getting messages for conv ${conversation_id}`);
+    const input: GetMessagesInput = { conversation_id }; 
+    const result = await getMessages(input);
+    
+    if (!result.success) {
+       console.error(`[DB Service /messages] Error getting messages:`, result.error);
+       res.status(500).json(result); 
+       return;
+    }
+
+    console.log(`[DB Service /messages] Retrieved ${result.data?.length ?? 0} messages.`);
     res.status(200).json(result);
 
   } catch (error) {
-    console.error('Error in GET /messages route:', error);
-    res.status(500).json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown internal server error'
-    });
+    console.error('Error in GET /messages/get_conversation_messages route:', error);
+    next(error); 
   }
-}) as RequestHandler);
+});
 
 export default router;

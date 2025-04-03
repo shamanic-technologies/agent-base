@@ -6,149 +6,147 @@
 import { PoolClient } from 'pg';
 import { getClient } from '../db.js';
 import {
-  MessageRecord,
-  SaveMessageInput,
+  CreateMessageInput,
+  CreateMessageResponse,
   GetMessagesInput,
-  SaveMessageResponse,
-  GetMessagesResponse
+  GetMessagesResponse,
+  MessageRecord
 } from '@agent-base/agents';
 
-const MESSAGES_TABLE = 'conversation_messages';
+const MESSAGES_TABLE = 'messages';
 
-// SQL definition for messages table creation
+// Updated SQL definition for messages table creation
 const MESSAGES_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS "${MESSAGES_TABLE}" (
     message_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     conversation_id VARCHAR(255) NOT NULL,
-    user_id VARCHAR(255) NOT NULL,
-    agent_id UUID NOT NULL,
     role VARCHAR(50) NOT NULL,
     content TEXT,
     tool_calls JSONB,
     tool_call_id VARCHAR(255),
     tool_result JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (agent_id) REFERENCES agents(agent_id) ON DELETE CASCADE
-  )
+    -- Add foreign key constraint to conversations table
+    FOREIGN KEY (conversation_id) REFERENCES conversations(conversation_id) ON DELETE CASCADE
+  );
+
+  -- Optional: Add index on conversation_id
+  CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON "${MESSAGES_TABLE}"(conversation_id);
 `;
 
 /**
- * Ensures that the required messages table exists in the database
+ * Ensures the messages table exists in the database.
  */
 async function ensureMessagesTableExists(client: PoolClient): Promise<void> {
-  // Check if relation exists before creating
-  const checkTableExists = await client.query(`SELECT to_regclass('public."${MESSAGES_TABLE}"')`);
-  if (!checkTableExists.rows[0].to_regclass) {
-      console.log(`Table ${MESSAGES_TABLE} does not exist. Creating table...`);
-      await client.query(MESSAGES_TABLE_SQL);
-      console.log(`Table ${MESSAGES_TABLE} created.`);
-      
-      // Create index separately after table creation
-      const indexSql = `CREATE INDEX IF NOT EXISTS idx_conversation_messages_conversation_id ON "${MESSAGES_TABLE}" (conversation_id);`;
-      console.log(`Creating index idx_conversation_messages_conversation_id...`);
-      await client.query(indexSql);
-      console.log(`Index idx_conversation_messages_conversation_id created.`);
-      
-  } else {
-      // console.log(`Table ${MESSAGES_TABLE} already exists.`);
+  try {
+    await client.query(MESSAGES_TABLE_SQL);
+    console.log(`[DB Service] Table check/creation for '${MESSAGES_TABLE}' completed.`);
+  } catch (error) {
+    console.error(`[DB Service] Error ensuring '${MESSAGES_TABLE}' table exists:`, error);
+    throw error; // Re-throw the error
   }
 }
 
 /**
- * Helper function to handle errors in service functions
+ * Save a new message to the database.
+ * Renamed from createUserAgentMessage.
+ * user_id and agent_id are now omitted from insertion.
  */
-function handleServiceError(error: unknown, errorMessage: string): any {
-  console.error(errorMessage, error);
-  return {
-    success: false,
-    error: error instanceof Error ? error.message : 'Unknown error occurred'
-  };
-}
+export async function createMessage(input: CreateMessageInput): Promise<CreateMessageResponse> {
+  // Exclude user_id and agent_id from input
+  const { conversation_id, role, content, tool_calls, tool_call_id, tool_result } = input;
+  
+  // Role validation
+  if (!['user', 'assistant', 'system', 'tool'].includes(role)) {
+      console.error(`[DB Service] Invalid role provided to createMessage: ${role}`);
+      return { success: false, error: 'Invalid message role provided' };
+  }
 
-/**
- * Saves a new message to the database
- */
-export async function saveMessage(
-  input: SaveMessageInput
-): Promise<SaveMessageResponse> {
-  let client: PoolClient | null = null;
+  console.log(`[DB Service] Saving message: Conv=${conversation_id}, Role=${role}`);
+
+  const query = `
+    INSERT INTO "${MESSAGES_TABLE}" (conversation_id, role, content, tool_calls, tool_call_id, tool_result)
+    VALUES ($1, $2, $3, $4, $5, $6)
+    RETURNING message_id;
+  `;
+
+  let client: PoolClient | null = null; 
   try {
-    client = await getClient();
+    client = await getClient(); 
+    // Ensure table exists before inserting
     await ensureMessagesTableExists(client);
 
-    // Convert tool_calls and tool_result to JSON strings if they are objects
-    const toolCallsJson = input.tool_calls ? JSON.stringify(input.tool_calls) : null;
-    const toolResultJson = input.tool_result ? JSON.stringify(input.tool_result) : null;
+    const result = await client.query(query, [
+      conversation_id,
+      role,
+      content ?? null,
+      tool_calls ? JSON.stringify(tool_calls) : null,
+      tool_call_id ?? null,
+      tool_result ? JSON.stringify(tool_result) : null
+    ]);
 
-    const result = await client.query(
-      `INSERT INTO "${MESSAGES_TABLE}" 
-       (conversation_id, user_id, agent_id, role, content, tool_calls, tool_call_id, tool_result)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       RETURNING *`,
-      [
-        input.conversation_id,
-        input.user_id,
-        input.agent_id,
-        input.role,
-        input.content,
-        toolCallsJson, // Use JSON string
-        input.tool_call_id,
-        toolResultJson // Use JSON string
-      ]
-    );
-
-    return {
-      success: true,
-      data: result.rows[0] as MessageRecord
-    };
+    // Check if insert was successful
+    if (result.rowCount === 1 && result.rows[0]?.message_id) {
+      console.log(`[DB Service] Message saved with ID: ${result.rows[0].message_id}`);
+      return { 
+        success: true, 
+        data: { message_id: result.rows[0].message_id }
+      };
+    } else {
+      console.error('[DB Service] Failed to insert message or retrieve message_id.');
+      return { success: false, error: 'Failed to save message to database' };
+    }
   } catch (error) {
-    return handleServiceError(error, 'Error saving message:');
+    console.error('[DB Service] Database error saving message:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Database error occurred'
+    };
   } finally {
-    if (client) client.release();
+      if (client) client.release(); 
   }
 }
 
 /**
- * Retrieves all messages for a specific conversation belonging to a user
+ * Get all messages for a conversation.
+ * Updated to remove user_id filtering.
  */
-export async function getMessages(
-  input: GetMessagesInput
-): Promise<GetMessagesResponse> {
-  let client: PoolClient | null = null;
-  try {
-    client = await getClient();
-    await ensureMessagesTableExists(client); // Ensure table exists before query
+export async function getMessages(input: GetMessagesInput): Promise<GetMessagesResponse> {
+   const { conversation_id } = input; // Only conversation_id is needed
+   let client: PoolClient | null = null;
 
-    const result = await client.query(
-      `SELECT * FROM "${MESSAGES_TABLE}" 
-       WHERE conversation_id = $1 AND user_id = $2 
-       ORDER BY created_at ASC`, // Order by creation time
-      [input.conversation_id, input.user_id]
-    );
+   console.log(`[DB Service] Getting messages for conversation: ${conversation_id}`);
 
-    // Return the array of messages
-    // Parse JSONB fields back to objects if needed
-    const messages = result.rows.map(row => ({
-        ...row,
-        // Parse only if the value is a non-null string
-        tool_calls: typeof row.tool_calls === 'string' ? JSON.parse(row.tool_calls) : row.tool_calls,
-        tool_result: typeof row.tool_result === 'string' ? JSON.parse(row.tool_result) : row.tool_result,
-    }));
+   // Updated query: Removed user_id from WHERE clause
+   const query = `
+       SELECT * FROM "${MESSAGES_TABLE}" 
+       WHERE conversation_id = $1 
+       ORDER BY created_at ASC
+   `;
+   
+   try {
+       client = await getClient();
+       // Execute query with only conversation_id
+       const result = await client.query(query, [conversation_id]);
+       
+       console.log(`[DB Service] Found ${result.rowCount} messages for conversation ${conversation_id}`);
+       return { 
+           success: true, 
+           // Map rows to MessageRecord, ensuring correct types (e.g., for JSON fields if needed)
+           data: result.rows.map((row: any) => ({ 
+               ...row, 
+               tool_calls: typeof row.tool_calls === 'string' ? JSON.parse(row.tool_calls) : row.tool_calls,
+               tool_result: typeof row.tool_result === 'string' ? JSON.parse(row.tool_result) : row.tool_result,
+            })) as MessageRecord[] 
+       };
 
-
-    return {
-      success: true,
-      data: messages as MessageRecord[]
-    };
-  } catch (error) {
-    // If the table doesn't exist yet (e.g., first run), return empty success
-    // Note: ensureMessagesTableExists should prevent this, but handle just in case
-    if (error instanceof Error && (error as any).code === '42P01') { // 42P01: undefined_table
-      console.warn(`Messages table check failed or table not found for conversation ${input.conversation_id}, returning empty list.`);
-      return { success: true, data: [] };
-    } 
-    return handleServiceError(error, 'Error getting messages:');
-  } finally {
-    if (client) client.release();
-  }
+   } catch (error) {
+       console.error(`[DB Service] Error getting messages for conversation ${conversation_id}:`, error);
+       return { 
+         success: false, 
+         error: error instanceof Error ? error.message : 'Error getting messages'
+       };
+   } finally {
+       if (client) client.release();
+   }
 }
