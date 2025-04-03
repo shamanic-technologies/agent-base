@@ -6,25 +6,59 @@
 import pg from 'pg';
 const { Pool } = pg;
 import { PoolClient } from 'pg';
-import 'dotenv/config';
 
-// Initialize PostgreSQL connection pool
-const pgPool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-  max: 20, // Maximum number of clients in the pool
-  idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-  connectionTimeoutMillis: 10000, // Return an error after 10 seconds if connection not established
-});
+// Declare pgPool but do not initialize it here.
+// It will be initialized by initDbPool() called from index.ts
+export let pgPool: pg.Pool | null = null;
 
-// Event handlers for the connection pool
-pgPool.on('connect', () => {
-  console.log('New client connected to PostgreSQL pool');
-});
+/**
+ * Initializes the PostgreSQL connection pool.
+ * This function should be called once at application startup after environment variables are loaded.
+ * @param {string} connectionString - The PostgreSQL connection string.
+ */
+export function initDbPool(connectionString: string): void {
+  if (pgPool) {
+    console.warn('Database pool already initialized.');
+    return;
+  }
 
-pgPool.on('error', (err) => {
-  console.error('Unexpected error on idle PostgreSQL client', err);
-});
+  if (!connectionString) {
+    console.error('FATAL: Connection string is missing. Cannot initialize database pool.');
+    // Exit the process because this is a critical failure
+    process.exit(1);
+  }
+
+  console.log('Initializing database pool...');
+  pgPool = new Pool({
+    connectionString: connectionString,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
+  });
+
+  // Event handlers for the connection pool
+  pgPool.on('connect', () => {
+    console.log('New client connected to PostgreSQL pool');
+  });
+
+  pgPool.on('error', (err) => {
+    console.error('Unexpected error on idle PostgreSQL client', err);
+    // Consider attempting to reconnect or handle error appropriately
+  });
+
+  console.log('Database pool initialized successfully.');
+}
+
+// Helper function to ensure pool is initialized before use
+function ensurePoolInitialized(): pg.Pool {
+  if (!pgPool) {
+    // This should ideally not happen if initDbPool is called correctly at startup
+    console.error('FATAL: Database pool accessed before initialization.');
+    throw new Error('Database pool not initialized. Call initDbPool first.');
+  }
+  return pgPool;
+}
 
 /**
  * Test the database connection
@@ -33,14 +67,9 @@ pgPool.on('error', (err) => {
 export async function testConnection(): Promise<boolean> {
   let client: PoolClient | null = null;
   try {
-    // Log connection parameters for debugging (excluding password)
-    console.log('Connecting to PostgreSQL with:');
-    console.log(`- Host: ${process.env.PGHOST}`);
-    console.log(`- Port: ${process.env.PGPORT}`);
-    console.log(`- Database: ${process.env.PGDATABASE}`);
-    console.log(`- User: ${process.env.PGUSER}`);
-    
-    client = await pgPool.connect();
+    const pool = ensurePoolInitialized(); // Get initialized pool
+    console.log('Attempting to connect to PostgreSQL...'); // Message simplified
+    client = await pool.connect();
     const result = await client.query('SELECT NOW()');
     console.log('PostgreSQL connection successful:', result.rows[0]);
     return true;
@@ -59,7 +88,8 @@ export async function testConnection(): Promise<boolean> {
 export async function listTables(): Promise<string[]> {
   let client: PoolClient | null = null;
   try {
-    client = await pgPool.connect();
+    const pool = ensurePoolInitialized(); // Get initialized pool
+    client = await pool.connect();
     const result = await client.query(`
       SELECT tablename 
       FROM pg_catalog.pg_tables 
@@ -81,7 +111,8 @@ export async function listTables(): Promise<string[]> {
  */
 export async function getClient(): Promise<PoolClient> {
   try {
-    return await pgPool.connect();
+    const pool = ensurePoolInitialized(); // Get initialized pool
+    return await pool.connect();
   } catch (error) {
     console.error('Error getting database client:', error);
     throw error;
@@ -96,9 +127,9 @@ export async function getClient(): Promise<PoolClient> {
 export async function createCollection(collectionName: string): Promise<void> {
   let client: PoolClient | null = null;
   try {
-    client = await pgPool.connect();
+    const pool = ensurePoolInitialized(); // Get initialized pool
+    client = await pool.connect();
     
-    // Create table with id, data (JSONB), created_at, and updated_at columns
     const query = `
       CREATE TABLE IF NOT EXISTS "${collectionName}" (
         id UUID PRIMARY KEY,
@@ -128,10 +159,8 @@ export async function removeNonWhitelistedTables(whitelistedTables: string[]): P
   const droppedTables: string[] = [];
   
   try {
-    // Get all current tables
-    const allTables = await listTables();
-    
-    // Find tables that aren't in the whitelist
+    const pool = ensurePoolInitialized(); // Ensure pool is ready
+    const allTables = await listTables(); 
     const tablesToDrop = allTables.filter(table => !whitelistedTables.includes(table));
     
     if (tablesToDrop.length === 0) {
@@ -139,8 +168,7 @@ export async function removeNonWhitelistedTables(whitelistedTables: string[]): P
       return [];
     }
     
-    // Drop each non-whitelisted table
-    client = await pgPool.connect();
+    client = await pool.connect(); 
     for (const tableName of tablesToDrop) {
       try {
         await client.query(`DROP TABLE IF EXISTS "${tableName}" CASCADE`);
@@ -156,7 +184,7 @@ export async function removeNonWhitelistedTables(whitelistedTables: string[]): P
     console.error('Error removing non-whitelisted tables:', error);
     return droppedTables;
   } finally {
-    if (client) client.release();
+    if (client) client.release(); 
   }
 }
 
@@ -170,4 +198,5 @@ export async function cleanupTables(whitelistedTables: string[] = []): Promise<s
   return removeNonWhitelistedTables(whitelistedTables);
 }
 
-export { pgPool }; 
+// No longer need to export pgPool directly if initDbPool is the entry point
+// export { pgPool }; // Keep it exported so routes can still import it after init 
