@@ -6,6 +6,9 @@
 import express from 'express';
 import { configureHealthRoutes } from './health.routes.js';
 import { configureAgentRoutes } from './agent.routes.js';
+import { configureMessageRoutes } from './message.routes.js';
+import { configureConversationRoutes } from './conversation.routes.js';
+import { configureRunRoutes } from './run.routes.js';
 import { configureUtilityRoutes } from './utility.routes.js';
 import { configureSecretRoutes } from './secret.routes.js';
 
@@ -23,6 +26,7 @@ export const configureRoutes = (
     utilityTool: string;
     key: string;
     logging?: string;
+    secret?: string;
   },
   authMiddleware: express.RequestHandler
 ) => {
@@ -44,10 +48,29 @@ export const configureRoutes = (
   configureHealthRoutes(healthRouter, serviceUrls);
   app.use('/health', healthRouter);
   
-  // Agent service routes
+  // --- Agent Service Prefixes --- 
+  // Each prefix gets its own router and forwarding configuration
+
+  // /agent prefix
   const agentRouter = express.Router();
   configureAgentRoutes(agentRouter, serviceUrls.agent, authMiddleware);
   app.use('/agent', agentRouter);
+
+  // /message prefix
+  const messageRouter = express.Router();
+  configureMessageRoutes(messageRouter, serviceUrls.agent, authMiddleware);
+  app.use('/message', messageRouter);
+
+  // /conversation prefix
+  const conversationRouter = express.Router();
+  configureConversationRoutes(conversationRouter, serviceUrls.agent, authMiddleware);
+  app.use('/conversation', conversationRouter);
+
+  // /run prefix
+  const runRouter = express.Router();
+  configureRunRoutes(runRouter, serviceUrls.agent, authMiddleware);
+  app.use('/run', runRouter);
+  // --- End Agent Service Prefixes ---
   
   // Utility tool service routes
   const utilityRouter = express.Router();

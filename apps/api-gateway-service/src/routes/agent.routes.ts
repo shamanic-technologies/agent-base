@@ -6,157 +6,56 @@
 import express from 'express';
 import axios from 'axios';
 import { User } from '../types/index.js';
-import { forwardRequest } from '../utils/request.js';
 
 /**
- * Configure agent routes
- * 
- * @param router Express router
- * @param agentServiceUrl URL of the agent service
- * @param authMiddleware Authentication middleware
+ * Configure generic forwarding for /agent routes
  */
 export const configureAgentRoutes = (
   router: express.Router,
-  agentServiceUrl: string,
+  targetServiceUrl: string,
   authMiddleware: express.RequestHandler
 ) => {
-  /**
-   * Stream endpoint
-   * Validates API key and forwards request to agent service stream endpoint
-   */
-  router.post('/stream', authMiddleware, async (req: express.Request, res: express.Response) => {
-    try {
-      // Extract user ID from auth middleware
+
+  router.use(authMiddleware);
+
+  // Generic forwarder for all methods and paths under /agent
+  router.all('*', async (req: express.Request, res: express.Response) => {
       const userId = req.user ? (req.user as User).id : undefined;
-      
-      if (!userId) {
-        return res.status(401).json({ success: false, error: 'User not authenticated' });
-      }
-      const apiKey = req.headers['x-api-key'] as string;
-      console.log(`[API Gateway] API key: ${apiKey}`);
-      
-      // Forward to agent service with userId in header
+    const apiKey = req.headers['x-api-key'] as string;
+    // Get path relative to /agent mount point
+    const originalPath = req.originalUrl.replace('/agent', ''); 
+    // Construct target URL on the agent service
+    const targetUrl = `${targetServiceUrl}/agent${originalPath}`; 
+
+    console.log(`[API Gateway /agent] Forwarding ${req.method} ${req.originalUrl} to ${targetUrl} for user ${userId}`);
+
+    if (!userId) return res.status(401).json({ success: false, error: 'User not authenticated' });
+
+    try {
       const response = await axios({
-        method: 'post',
-        url: `${agentServiceUrl}/stream`,
+        method: req.method as any,
+        url: targetUrl,
         data: req.body,
+        params: req.query, // Forward query params
         headers: {
-          'Content-Type': 'application/json',
+          ...req.headers,
+          'host': new URL(targetServiceUrl).host,
           'x-user-id': userId,
           'x-api-key': apiKey,
-          'Accept': 'text/event-stream'
+          'connection': undefined,
         },
-        responseType: 'stream'
       });
-      
-      // Set headers for streaming
-      res.setHeader('Content-Type', 'text/event-stream');
-      res.setHeader('Cache-Control', 'no-cache');
-      res.setHeader('Connection', 'keep-alive');
-      
-      // Stream response directly
-      response.data.pipe(res);
-    } catch (error) {
-      console.error('[API Gateway] Error forwarding stream request:', error);
-      res.status(500).json({ success: false, error: 'Failed to process request' });
-    }
-  });
-  
-  /**
-   * Create agent endpoint
-   */
-  router.post('/create', authMiddleware, async (req: express.Request, res: express.Response) => {
-    try {
-      // Extract user ID from auth middleware
-      const userId = req.user ? (req.user as User).id : undefined;
-      
-      if (!userId) {
-        return res.status(401).json({ success: false, error: 'User not authenticated' });
-      }
-      const apiKey = req.headers['x-api-key'] as string;
-      console.log(`[API Gateway] API key: ${apiKey}`);
-      
-      // Forward to agent service with userId in header
-      const response = await axios({
-        method: 'post',
-        url: `${agentServiceUrl}/agent/create`,
-        data: req.body,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': userId,
-          'x-api-key': apiKey
-        }
-      });
-      
+      // Forward status and data
       res.status(response.status).json(response.data);
-    } catch (error) {
-      console.error('[API Gateway] Error forwarding create request:', error);
-      res.status(500).json({ success: false, error: 'Failed to process request' });
-    }
-  });
 
-  /**
-   * Update agent endpoint
-   */
-  router.post('/update', authMiddleware, async (req: express.Request, res: express.Response) => {
-    try {
-      // Extract user ID from auth middleware
-      const userId = req.user ? (req.user as User).id : undefined;
-      
-      if (!userId) {
-        return res.status(401).json({ success: false, error: 'User not authenticated' });
+    } catch (error: any) {
+      console.error(`[API Gateway /agent] Error forwarding request to ${targetUrl}:`, error.message);
+      // Forward error response if possible
+      if (error.response) {
+        res.status(error.response.status).json(error.response.data);
+      } else {
+        res.status(500).json({ success: false, error: 'Gateway error forwarding request', details: error.message });
       }
-      const apiKey = req.headers['x-api-key'] as string;
-      console.log(`[API Gateway] API key: ${apiKey}`);
-      
-      // Forward to agent service with userId in header
-      const response = await axios({
-        method: 'post',
-        url: `${agentServiceUrl}/agent/update`,
-        data: req.body,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': userId,
-          'x-api-key': apiKey
-        }
-      });
-      
-      res.status(response.status).json(response.data);
-    } catch (error) {
-      console.error('[API Gateway] Error forwarding update request:', error);
-      res.status(500).json({ success: false, error: 'Failed to process request' });
-    }
-  });
-
-  /**
-   * List agents endpoint
-   */
-  router.get('/list', authMiddleware, async (req: express.Request, res: express.Response) => {
-    try {
-      // Extract user ID from auth middleware
-      const userId = req.user ? (req.user as User).id : undefined;
-      
-      if (!userId) {
-        return res.status(401).json({ success: false, error: 'User not authenticated' });
-      }
-      const apiKey = req.headers['x-api-key'] as string;
-      console.log(`[API Gateway] API key: ${apiKey}`);
-      
-      // Forward to agent service with userId in header
-      const response = await axios({
-        method: 'get',
-        url: `${agentServiceUrl}/agent/list`,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': userId,
-          'x-api-key': apiKey
-        }
-      });
-      
-      res.status(response.status).json(response.data);
-    } catch (error) {
-      console.error('[API Gateway] Error forwarding list request:', error);
-      res.status(500).json({ success: false, error: 'Failed to process request' });
     }
   });
 
