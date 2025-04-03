@@ -1,3 +1,25 @@
+// Load environment variables FIRST
+import dotenv from 'dotenv';
+import path from 'path';
+import fs from 'fs';
+
+const NODE_ENV = process.env.NODE_ENV || 'development';
+
+// Load .env.local explicitly
+if (NODE_ENV === 'development') {
+  const envFile = path.resolve(process.cwd(), '.env.local');
+  if (fs.existsSync(envFile)) {
+    console.log(`Loading environment from ${envFile}`);
+    dotenv.config({ path: envFile });
+  } else {
+    console.log(`Environment file ${envFile} not found, using default environment variables.`);
+    // Optionally exit or throw error if .env.local is required for development
+  }
+} else {
+  // In production, expect environment variables to be set externally (e.g., Railway)
+  console.log('Production environment detected, using external configuration.');
+}
+
 /**
  * HelloWorld Database Service
  * 
@@ -7,54 +29,54 @@
  */
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
-import path from 'path';
-import fs from 'fs';
-import routes from './routes/index.js';
-import { testConnection } from './db.js';
+import routes from './routes/index.js'; 
+// Import initDbPool and testConnection from db.js
+import { initDbPool, testConnection } from './db.js'; 
 
-// Load environment variables based on NODE_ENV
-const NODE_ENV = process.env.NODE_ENV || 'development';
+// Function to start the server
+async function startServer() {
+  console.log('Starting server process...');
 
-// Only load from .env file in development
-if (NODE_ENV === 'development') {
-  const envFile = path.resolve(process.cwd(), '.env.local');
-  if (fs.existsSync(envFile)) {
-    console.log(`Loading environment from ${envFile}`);
-    dotenv.config({ path: envFile });
-  } else {
-    console.log(`Environment file ${envFile} not found, using default environment variables.`);
-  }
-} else {
-  console.log('Production environment detected, using Railway configuration.');
-}
-
-// Initialize Express app
-const app = express();
-const PORT = process.env.PORT;
-
-// Middleware
-app.use(cors());
-app.use(express.json());
-
-// Register routes
-app.use(routes);
-
-// Start the server
-const startServer = async () => {
-  // Test database connection before starting
-  const isConnected = await testConnection();
-  
-  if (!isConnected) {
-    console.error('Failed to connect to database, exiting...');
+  // Initialize the database pool with the connection string from environment variables
+  // Ensure DATABASE_URL is defined before calling
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    console.error('FATAL: DATABASE_URL is not defined in the environment. Cannot start server.');
     process.exit(1);
   }
-  
-  app.listen(PORT, () => {
-    console.log(`💾 Database Service running on port ${PORT} with Railway PostgreSQL storage`);
-  });
-};
+  initDbPool(databaseUrl);
 
+  // Test database connection AFTER initializing the pool
+  const dbConnected = await testConnection();
+  if (!dbConnected) {
+    console.error('Failed to connect to database after initialization, exiting...');
+    process.exit(1);
+  }
+
+  // Initialize Express app
+  const app = express();
+  const PORT = process.env.PORT || 3006;
+
+  // Middleware
+  app.use(cors());
+  app.use(express.json());
+
+  // Simple request logger
+  app.use((req, res, next) => {
+    console.log(`[DB Service] ${req.method} ${req.path}`);
+    next();
+  });
+
+  // Configure routes
+  app.use(routes); 
+
+  // Start server
+  app.listen(PORT, () => {
+    console.log(`💾 Database Service running on port ${PORT}. DB Pool initialized.`); 
+  });
+}
+
+// Start the server
 startServer().catch(err => {
   console.error('Failed to start server:', err);
   process.exit(1);

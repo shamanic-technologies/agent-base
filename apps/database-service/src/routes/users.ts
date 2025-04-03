@@ -34,6 +34,7 @@ router.get('/db/users/me', async (req: Request, res: Response): Promise<void> =>
       LIMIT 1
     `;
     
+    // Execute query using pgPool directly
     const result = await pgPool.query(query, [userId]);
     
     if (result.rowCount === 0) {
