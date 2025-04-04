@@ -3,8 +3,8 @@
  * 
  * API endpoints for managing agents
  */
-import express, { Request, Response, RequestHandler } from 'express';
-import { createAgent, updateAgent, linkAgentToUser, listUserAgents, getUserAgent } from '../services/agents.js';
+import express, { Request, Response, RequestHandler, NextFunction } from 'express';
+import { createAgent, updateAgent, linkAgentToUser, listUserAgents, getUserAgent, getConversationAgent } from '../services/agents.js';
 import { 
   CreateUserAgentInput, // Import from shared package
   UpdateUserAgentInput, 
@@ -260,6 +260,42 @@ router.get('/get-user-agent', async (req: Request, res: Response): Promise<void>
         error: error instanceof Error ? error.message : 'Unknown internal server error'
       });
     }
+  }
+});
+
+/**
+ * Get the agent for a specific conversation
+ * GET /get-conversation-agent?conversation_id=...
+ */
+router.get('/get-conversation-agent', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // Extract conversation_id from query parameters
+    const conversation_id = req.query.conversation_id as string;
+
+    // Validate conversation_id
+    if (!conversation_id) {
+      res.status(400).json({ 
+        success: false, 
+        error: 'conversation_id query parameter is required' 
+      });
+      return;
+    }
+
+    console.log(`[DB Route /agents] Getting agent for conversation ${conversation_id}`);
+    const result = await getConversationAgent(conversation_id);
+    
+    if (!result.success) {
+      console.error(`[DB Route /agents] Error getting agent for conversation:`, result.error);
+      res.status(result.error.includes('No agent found') ? 404 : 500).json(result);
+      return;
+    }
+
+    console.log(`[DB Route /agents] Retrieved agent for conversation ${conversation_id}`);
+    res.status(200).json(result);
+
+  } catch (error) {
+    console.error('Error in GET /agents/get-conversation-agent route:', error);
+    next(error); 
   }
 });
 

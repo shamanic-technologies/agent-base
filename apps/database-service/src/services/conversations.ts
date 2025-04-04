@@ -45,7 +45,7 @@ const CONVERSATIONS_TABLE_SQL = `
 /**
  * Ensures the conversations table exists in the database.
  */
-async function ensureConversationsTableExists(client: PoolClient): Promise<void> {
+export async function ensureConversationsTableExists(client: PoolClient): Promise<void> {
   try {
     await client.query(CONVERSATIONS_TABLE_SQL);
     console.log(`[DB Service] Table check/creation for '${CONVERSATIONS_TABLE}' completed.`);

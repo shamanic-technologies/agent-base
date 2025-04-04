@@ -17,6 +17,33 @@ import {
 const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL || 'http://localhost:3006';
 
 /**
+ * Fetches agent details for a specific conversation from the database service.
+ */
+export async function getConversationAgent(conversationId: string, userId: string): Promise<AgentRecord> {
+    try {
+        console.log(`[Agent Service DB Client] Fetching agent for conversation ${conversationId}`);
+        const response = await axios.get<{ success: boolean, data?: AgentRecord }>(
+            `${DATABASE_SERVICE_URL}/agents/get-conversation-agent`, 
+            { params: { conversation_id: conversationId },
+              headers: {
+                'x-user-id': userId
+              }
+            } 
+        );
+
+        if (!response.data.success || !response.data.data) {
+            throw new Error('Agent not found for this conversation');
+        }
+        
+        console.log(`[Agent Service DB Client] Successfully retrieved agent for conversation ${conversationId}`);
+        return response.data.data;
+    } catch (error) {
+        console.error(`[Agent Service DB Client] Error fetching agent for conversation ${conversationId}:`, error);
+        throw new Error(`Failed to fetch agent for conversation: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+}
+
+/**
  * Fetches agent details from the database service.
  * Renamed from getAgentDetails
  */

@@ -19,7 +19,7 @@ import { streamText } from 'ai';
 
 // Service function imports
 import { 
-  getUserAgent, 
+  getConversationAgent, 
   getConversationMessages, 
   createMessage 
 } from '../services/database.js';
@@ -46,11 +46,10 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
     let messages: Message[]; 
     let conversation_id: string;
     let userId: string;
-    let agent_id: string;
 
     try {
       // --- Extraction & Validation --- 
-      ({ agent_id, messages, conversation_id } = req.body);
+      ({ messages, conversation_id } = req.body);
       userId = (req as any).user?.id as string;
       const apiKey = req.headers['x-api-key'] as string;
 
@@ -62,8 +61,8 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
         res.status(401).json({ success: false, error: 'API Key required (Missing x-api-key header)' });
         return;
       }
-      if (!agent_id || !messages || messages.length === 0 || !conversation_id) {
-        res.status(400).json({ success: false, error: 'Missing required fields: agent_id, messages array, conversation_id' });
+      if (!messages || messages.length === 0 || !conversation_id) {
+        res.status(400).json({ success: false, error: 'Missing required fields: messages array, conversation_id' });
         return;
       }
       // --- End Extraction & Validation ---
@@ -79,8 +78,8 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       
       // --- Get Agent Details --- 
       try {
-        agent = await getUserAgent(userId, agent_id);
-        console.log(`[Agent Service /run] Fetched agent details for: ${agent_id}, using model: ${agent.agent_model_id}`);
+        agent = await getConversationAgent(conversation_id, userId);
+        console.log(`[Agent Service /run] Fetched agent details for conversation: ${conversation_id}, using model: ${agent.agent_model_id}`);
       } catch (error) {
         console.error(`[Agent Service /run] Failed to fetch agent details:`, error);
         const statusCode = error instanceof Error && error.message.includes('not found') ? 404 : 500;
