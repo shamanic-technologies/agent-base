@@ -126,6 +126,8 @@ export async function getMessages(input: GetMessagesInput): Promise<GetMessagesR
    
    try {
        client = await getClient();
+       await ensureMessagesTableExists(client);
+
        // Execute query with only conversation_id
        const result = await client.query(query, [conversation_id]);
        
