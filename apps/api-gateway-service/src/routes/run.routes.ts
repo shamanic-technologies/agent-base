@@ -19,7 +19,7 @@ export const configureRunRoutes = (
   router.all('*', async (req: express.Request, res: express.Response) => {
     const userId = req.user ? (req.user as User).id : undefined;
     const apiKey = req.headers['x-api-key'] as string;
-    const originalPath = req.originalUrl.replace('/run', ''); 
+    const originalPath = req.path.replace('/run', ''); 
     const targetUrl = `${targetServiceUrl}/run${originalPath}`; 
     const isStreaming = req.headers.accept?.includes('text/event-stream');
 
