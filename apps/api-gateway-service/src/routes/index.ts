@@ -30,18 +30,6 @@ export const configureRoutes = (
   },
   authMiddleware: express.RequestHandler
 ) => {
-  // Debug route to confirm API Gateway is working
-  app.get('/debug', (req, res) => {
-    res.status(200).json({
-      message: 'API Gateway is working',
-      routes: {
-        health: '/health',
-        agent: '/agent',
-        utilityTool: '/utility-tool',
-        secret: '/secret'
-      }
-    });
-  });
 
   // Health check routes
   const healthRouter = express.Router();
@@ -81,11 +69,7 @@ export const configureRoutes = (
 
   // Secret service routes
   const secretRouter = express.Router();
-  const secretServiceUrl = process.env.SECRET_SERVICE_URL;
-  if (secretServiceUrl) {
-    configureSecretRoutes(secretRouter, secretServiceUrl, authMiddleware);
-    app.use('/secret', secretRouter);
-  } else {
-    console.warn('SECRET_SERVICE_URL not set, secret routes will not be available');
-  }
+  configureSecretRoutes(secretRouter, serviceUrls.secret, authMiddleware);
+  app.use('/secret', secretRouter);
+
 }; 

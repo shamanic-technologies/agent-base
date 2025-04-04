@@ -21,11 +21,10 @@ export const configureMessageRoutes = (
   router.all('*', async (req: express.Request, res: express.Response) => {
     const userId = req.user ? (req.user as User).id : undefined;
     const apiKey = req.headers['x-api-key'] as string;
-    const originalPath = req.originalUrl.replace('/message', ''); // Get path relative to /message
+    const originalPath = req.path.replace('/message', ''); // Get path relative to /message
     const targetUrl = `${targetServiceUrl}/message${originalPath}`; // Append to target service URL
-
-    console.log(`[API Gateway /message] Forwarding ${req.method} ${req.originalUrl} to ${targetUrl} for user ${userId}`);
-
+    console.log(`[API Gateway /message] Forwarding ${req.method} ${req.originalUrl} to ${targetUrl} with query ${req.query} for user ${userId}`);
+ 
     if (!userId) {
       // Should have been caught by authMiddleware, but double-check
       return res.status(401).json({ success: false, error: 'User not authenticated' });
@@ -43,9 +42,6 @@ export const configureMessageRoutes = (
           'host': new URL(targetServiceUrl).host, // Set correct host header
           'x-user-id': userId, 
           'x-api-key': apiKey, // Forward the validated user API key
-          // Remove gateway-specific headers if any were added
-          'connection': undefined, 
-          // Add other necessary headers? (e.g., Accept)
         },
         // Handle streaming responses if needed (e.g., for /run)
         // responseType: req.path.includes('stream') ? 'stream' : 'json', // Example conditional streaming

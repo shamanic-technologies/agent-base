@@ -1,8 +1,7 @@
 /**
- * HelloWorld API Gateway Service
+ * API Gateway Service
  * 
- * A service that validates API keys and forwards requests to the Agent Service and Utility Tool Service.
- * This acts as a security layer between clients and the actual services.
+ * A service that acts as a security layer between clients and the actual services.
  */
 import express from 'express';
 import cors from 'cors';
@@ -55,6 +54,7 @@ configureRoutes(
   app, 
   {
     agent: AGENT_SERVICE_URL,
+    secret: SECRET_SERVICE_URL,
     utilityTool: UTILITY_TOOL_SERVICE_URL,
     key: KEY_SERVICE_URL,
     logging: LOGGING_SERVICE_URL
