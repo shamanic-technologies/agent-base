@@ -93,4 +93,57 @@ router.get('/get-agent-current-conversation-messages', async (req: Request, res:
     }
 });
 
+/**
+ * List all messages for a specific conversation
+ * GET /list-messages?conversation_id=...
+ */
+router.get('/list-messages', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        // Extract user ID from auth middleware
+        const userId = (req as any).user?.id as string;
+        // Extract conversation ID from query params
+        const conversationId = req.query.conversation_id as string;
+
+        // --- Validation ---
+        if (!userId) {
+            res.status(401).json({ success: false, error: 'User authentication required' });
+            return;
+        }
+        
+        if (!conversationId) {
+            res.status(400).json({ success: false, error: 'conversation_id query parameter is required' });
+            return;
+        }
+        // --- End Validation ---
+
+        // --- Fetch Messages ---
+        try {
+            console.log(`[Agent Service /msg] Fetching messages for conversation ${conversationId}`);
+            
+            const messagesResponse = await axios.get<GetMessagesResponse>(
+                `${DATABASE_SERVICE_URL}/messages/get-conversation-messages`,
+                { 
+                    params: { conversation_id: conversationId },
+                    headers: {
+                        'x-user-id': userId,
+                    }
+                }
+            );
+            
+            res.status(messagesResponse.status).json(messagesResponse.data);
+            
+        } catch (dbMsgError: any) {
+            const status = dbMsgError.response?.status || 500;
+            const message = dbMsgError.response?.data?.error || 'Failed to get messages from DB';
+            console.error(`[Agent Service /msg] Error fetching messages: ${message}`);
+            res.status(status).json({ success: false, error: message });
+        }
+        // --- End Fetch Messages ---
+        
+    } catch (error) {
+        console.error('[Agent Service /msg] Unexpected error in list-messages handler:', error);
+        next(error);
+    }
+});
+
 export default router; 
