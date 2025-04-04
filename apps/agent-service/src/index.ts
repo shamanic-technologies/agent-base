@@ -11,11 +11,6 @@ import fs from 'fs';
 import path from 'path';
 import express from 'express';
 import cors from 'cors';
-import { createAgent } from './lib/agent.js';
-import { User } from './types/index.js';
-import { Readable } from 'stream';
-// @ts-ignore
-import { ToolExecutionError, InvalidToolArgumentsError, NoSuchToolError } from 'ai';
 import { fileURLToPath } from 'url'; // Import needed for __dirname in ES Modules
 
 // Import routes configuration
@@ -61,6 +56,7 @@ app.use(express.json());
  */
 app.use((req, res, next) => {
   try {
+    console.log(`[Agent Service] Request received:`, req);
     // Get user ID from header set by API gateway middleware
     const userId = req.headers['x-user-id'] as string;
     console.log(`[Agent Service] User authenticated: ${userId}`);
@@ -83,7 +79,7 @@ app.use((req, res, next) => {
 configureRoutes(app);
 
 // Start server
-const server = app.listen(PORT, () => {
+app.listen(PORT, () => {
   console.log(`🤖 [AGENT SERVICE] Port ${PORT}`);
   console.log(`🌐 [AGENT SERVICE] Environment: ${nodeEnv}`);
   console.log(`🔑 [AGENT SERVICE] Anthropic API Key ${process.env.ANTHROPIC_API_KEY ? 'is configured' : 'is MISSING'}`);

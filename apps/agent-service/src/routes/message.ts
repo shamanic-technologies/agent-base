@@ -24,6 +24,7 @@ const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL || 'http://localho
  */
 router.get('/get-agent-current-conversation-messages', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
+        console.log('[Agent Service /msg] Received request:', req.query);
         // Extract user ID from auth middleware
         const userId = (req as any).user?.id as string;
         // Extract optional agent ID and conversation ID from query params
