@@ -27,7 +27,7 @@ export const configureAgentRoutes = (
     // Construct target URL on the agent service
     const targetUrl = `${targetServiceUrl}/agent${originalPath}`; 
 
-    console.log(`[API Gateway /agent] Forwarding ${req.method} ${req.originalUrl} to ${targetUrl} for user ${userId}`);
+    console.log(`[API Gateway /agent] Forwarding ${req.method} ${req.originalUrl} to ${targetUrl} with query ${req.query} for user ${userId}`);
 
     if (!userId) return res.status(401).json({ success: false, error: 'User not authenticated' });
 
