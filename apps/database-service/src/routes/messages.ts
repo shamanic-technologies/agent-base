@@ -58,10 +58,10 @@ router.post('/create-message', async (req: Request, res: Response, next: NextFun
 
 /**
  * Get all messages for a conversation
- * GET /get_conversation_messages?conversation_id=...
+ * GET /get-conversation-messages?conversation_id=...
  * Renamed from GET /get-user-agent-messages
  */
-router.get('/get_conversation_messages', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/get-conversation-messages', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const conversation_id = req.query.conversation_id as string;
 
@@ -84,7 +84,7 @@ router.get('/get_conversation_messages', async (req: Request, res: Response, nex
     res.status(200).json(result);
 
   } catch (error) {
-    console.error('Error in GET /messages/get_conversation_messages route:', error);
+    console.error('Error in GET /messages/get-conversation-messages route:', error);
     next(error); 
   }
 });

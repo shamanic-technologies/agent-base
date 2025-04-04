@@ -13,6 +13,7 @@ import {
     GetAgentCurrentConversationMessagesResponse,
     MessageRecord
 } from '@agent-base/agents';
+import { getOrCreateAgentConversation } from '../services/conversationService.js';
 
 const router = Router();
 const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL || 'http://localhost:3006';
@@ -44,31 +45,26 @@ router.get('/get-agent-current-conversation-messages', async (req: Request, res:
         let conversationIdToUse: string | undefined = conversationIdFromQuery;
 
         // --- Determine Conversation ID --- 
-        // If no specific conversation_id was provided via query param, find the current one for the agent
+        // If no specific conversation_id was provided via query param, get or create it
         if (!conversationIdToUse && agentId) {
-            console.log(`[Agent Service /msg] No conversation_id in query, finding current for agent ${agentId}`);
+            console.log(`[Agent Service /msg] No conversation_id in query, using getOrCreateAgentConversation for agent ${agentId}`);
             try {
-                const convResponse = await axios.get<{ success: boolean, data?: { conversation_id: string } | null }>(
-                    `${DATABASE_SERVICE_URL}/conversations/get-agent-current-conversation`, 
-                    { params: { agent_id: agentId } } // Correct path and params
-                );
-
-                if (convResponse.data.success && convResponse.data.data?.conversation_id) {
-                    conversationIdToUse = convResponse.data.data.conversation_id;
-                    console.log(`[Agent Service /msg] Found current conversation ID: ${conversationIdToUse}`);
-                } else {
-                    // No current conversation exists for this agent
-                    console.log(`[Agent Service /msg] No current conversation found for agent ${agentId}. Returning empty messages.`);
-                    res.status(200).json({ success: true, data: [] }); // Return empty array, success
-                    return;
+                // Call the internal service function 
+                const conversation = await getOrCreateAgentConversation(agentId);
+                conversationIdToUse = conversation.conversation_id;
+                
+                if (!conversationIdToUse) {
+                    // This should technically not happen if getOrCreateAgentConversation works
+                    throw new Error('getOrCreateAgentConversation succeeded but did not return a conversation_id');
                 }
-            } catch (dbError: any) {
-                // Handle errors specifically from the conversation lookup call
-                console.error(`[Agent Service /msg] DB Error finding current conversation for agent ${agentId}:`, dbError.message);
-                const status = dbError.response?.status || 500;
-                const message = dbError.response?.data?.error || 'Failed to get current conversation info';
-                res.status(status).json({ success: false, error: message });
-                return; // Stop execution if we can't find the conversation ID
+                console.log(`[Agent Service /msg] Determined conversation ID via service: ${conversationIdToUse}`);
+
+            } catch (convError: any) {
+                // Handle errors specifically from the get-or-create service call
+                console.error(`[Agent Service /msg] Error during getOrCreateAgentConversation for agent ${agentId}:`, convError.message);
+                // Use a generic 500 error status here, as the service function should handle specifics
+                res.status(500).json({ success: false, error: convError.message || 'Failed to get or create conversation info' });
+                return; // Stop execution if we can't get/create the conversation ID
             }
         }
         // --- End Determine Conversation ID --- 
@@ -84,11 +80,11 @@ router.get('/get-agent-current-conversation-messages', async (req: Request, res:
         // --- Fetch Messages for the Determined Conversation ID --- 
         console.log(`[Agent Service /msg] Calling DB service /messages/get-conversation-messages for conversation ${conversationIdToUse}`);
         try {
+            // Call the DB service directly to get messages (this could also be moved to a service)
             const messagesResponse = await axios.get<GetAgentCurrentConversationMessagesResponse>(
-                `${DATABASE_SERVICE_URL}/messages/get-conversation-messages`, 
-                { params: { conversation_id: conversationIdToUse } } // Use the determined ID
+                `${DATABASE_SERVICE_URL}/messages/get-conversation-messages`,
+                { params: { conversation_id: conversationIdToUse } }
             );
-            // Forward the successful response from the message service
             res.status(messagesResponse.status).json(messagesResponse.data);
 
         } catch (dbMsgError: any) {

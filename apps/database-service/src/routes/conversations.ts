@@ -62,9 +62,9 @@ router.post('/create-conversation', (async (req: Request, res: Response) => {
 
 /**
  * Get all conversations for an agent
- * GET /get_conversations?agent_id=...
+ * GET /get-conversations?agent_id=...
  */
-router.get('/get_conversations', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/get-conversations', async (req: Request, res: Response, next: NextFunction) => {
   try {
     // Extract agent_id from query parameters
     const agent_id = req.query.agent_id as string;
@@ -91,43 +91,49 @@ router.get('/get_conversations', async (req: Request, res: Response, next: NextF
     res.status(200).json(result as GetConversationsResponse);
 
   } catch (error) {
-    console.error('Error in GET /conversations/get_conversations route:', error);
+    console.error('Error in GET /conversations/get-conversations route:', error);
     next(error); 
   }
 });
 
 /**
  * Get the current (latest updated) conversation for an agent
- * GET /get_agent_current_conversation?agent_id=...
+ * GET /get-agent-current-conversation?agent_id=...
  */
-router.get('/get_agent_current_conversation', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/get-agent-current-conversation', async (req: Request, res: Response, next: NextFunction) => {
+  // LOG THE RAW QUERY OBJECT
+  console.log(`[DB Route /conversations] RAW req.query:`, JSON.stringify(req.query)); 
   try {
-    // Extract agent_id from query parameters
+    // Simple extraction - Assuming upstream service sends a valid string
     const agent_id = req.query.agent_id as string;
 
-    // Validate agent_id
+    // Basic validation
     if (!agent_id) {
-      res.status(400).json({ success: false, error: 'agent_id query parameter is required' } as GetAgentCurrentConversationResponse);
+      res.status(400).json({ success: false, error: 'agent_id query parameter is required' });
       return;
     }
-
-    console.log(`[DB Route /conversations] Getting current conversation for agent ${agent_id}`);
-    const input: GetAgentCurrentConversationInput = { agent_id };
-    const result = await getAgentCurrentConversation(input);
-    
-    // Handle service errors
-    if (!result.success) {
-       console.error(`[DB Route /conversations] Service error getting current conversation:`, result.error);
-       res.status(500).json(result as GetAgentCurrentConversationResponse); 
+    if (typeof agent_id !== 'string') {
+       res.status(400).json({ success: false, error: 'agent_id query parameter must be a string' });
        return;
     }
 
-    // Return 200 OK with the data (which could be null if no conversation found)
+    console.log(`[DB Route /conversations] Getting current conversation for agent ${agent_id}`);
+    const input: GetAgentCurrentConversationInput = { agent_id }; 
+    const result = await getAgentCurrentConversation(input);
+    
+    // Handle actual service errors
+    if (!result.success) {
+       console.error(`[DB Route /conversations] Service error getting current conversation:`, result.error);
+       res.status(500).json(result as GetAgentCurrentConversationResponse);
+       return;
+    }
+
+    // Return 200 OK with the service result (data can be null)
     console.log(`[DB Route /conversations] Retrieved current conversation status for agent ${agent_id}. Found: ${!!result.data}`);
     res.status(200).json(result as GetAgentCurrentConversationResponse);
 
   } catch (error) {
-    console.error('Error in GET /conversations/get_agent_current_conversation route:', error);
+    console.error('Error in GET /conversations/get-agent-current-conversation route:', error);
     next(error); 
   }
 });

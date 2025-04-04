@@ -138,12 +138,15 @@ export async function getConversationsByAgent(input: GetConversationsInput): Pro
   let client: PoolClient | null = null;
   try {
     client = await getClient();
+    // Ensure table exists before selecting
+    await ensureConversationsTableExists(client);
+
     const result = await client.query(query, [agent_id]);
 
     console.log(`[DB Service] Found ${result.rowCount} conversations for agent ${agent_id}`);
     return { 
       success: true, 
-      data: result.rows as ConversationRecord[] // Assuming DB columns match ConversationRecord
+      data: result.rows as ConversationRecord[]
     };
 
   } catch (error) {
@@ -169,7 +172,6 @@ export async function getAgentCurrentConversation(input: GetAgentCurrentConversa
     return { success: false, error: 'agent_id is required' };
   }
 
-  // Query to find the latest conversation by updated_at for the given agent_id
   const query = `
     SELECT * FROM conversations 
     WHERE agent_id = $1 
@@ -180,17 +182,18 @@ export async function getAgentCurrentConversation(input: GetAgentCurrentConversa
   let client: PoolClient | null = null;
   try {
     client = await getClient();
+    // Ensure table exists before selecting
+    await ensureConversationsTableExists(client);
+    
     const result = await client.query(query, [agent_id]);
 
     if (result.rowCount === 0) {
-      // No conversation found for this agent
       console.log(`[DB Service] No conversation found for agent ${agent_id}`);
       return { 
         success: true, 
-        data: null // Indicate no current conversation found
+        data: null
       };
     } else {
-      // Conversation found
       console.log(`[DB Service] Found current conversation ${result.rows[0].conversation_id} for agent ${agent_id}`);
       return { 
         success: true, 

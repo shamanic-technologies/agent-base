@@ -12,20 +12,20 @@ import {
     CreateConversationInput,
     CreateConversationResponse
 } from '@agent-base/agents';
+// Import the new service function
+import { getOrCreateAgentConversation } from '../services/conversationService.js';
 
 const router = Router();
 const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL || 'http://localhost:3006';
 
 /**
- * Get the current conversation for a specific agent.
- * GET /get-agent-current-conversation?agent_id=...
+ * Get the current conversation for a specific agent, creating one if it doesn't exist.
+ * GET /get-or-create-current-conversation?agent_id=...
  */
-router.get('/get-agent-current-conversation', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+router.get('/get-or-create-current-conversation', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const agentId = req.query.agent_id as string;
-        // Note: We might also want user_id from auth (req.user.id) for authorization 
-        // even if the DB service doesn't strictly need it for this query.
-        const userId = (req as any).user?.id as string;
+        const userId = (req as any).user?.id as string; // Still useful for auth checks if needed
 
         if (!userId) {
             res.status(401).json({ success: false, error: 'User authentication required' });
@@ -37,29 +37,30 @@ router.get('/get-agent-current-conversation', async (req: Request, res: Response
             return;
         }
 
-        console.log(`[Agent Service /conv] Forwarding request to get current conversation for agent ${agentId}`);
+        console.log(`[Agent Service /conv Route] Handling get-or-create for agent ${agentId}`);
 
-        // Call database service endpoint
-        const response = await axios.get<GetAgentCurrentConversationResponse>(
-            `${DATABASE_SERVICE_URL}/conversations/get_agent_current_conversation`, {
-                params: { agent_id: agentId }
-                // Add headers if DB service requires auth, e.g., { headers: { 'x-user-id': userId } }
-            }
-        );
+        // Call the service function
+        const conversationData = await getOrCreateAgentConversation(agentId);
 
-        res.status(response.status).json(response.data);
+        // Return the conversation data with appropriate status (200 OK is fine here)
+        res.status(200).json({
+            success: true,
+            data: conversationData
+        } as GetAgentCurrentConversationResponse); // Cast to the expected response type
 
-    } catch (error) {
-        console.error('[Agent Service /conv] Error getting current conversation:', error);
-        // Handle potential Axios errors
-        if (axios.isAxiosError(error) && error.response) {
-            res.status(error.response.status).json({ 
+    } catch (error: any) {
+        // Handle errors thrown by the service function
+        console.error(`[Agent Service /conv Route] Error in get-or-create for agent ${req.query.agent_id}:`, error.message);
+         // Determine appropriate status code based on the error, if possible
+         // For now, defaulting to 500, but could inspect error message/type for 4xx codes
+        if (!res.headersSent) {
+            res.status(500).json({ 
                 success: false, 
-                error: `Database service error: ${error.response.data?.error || error.message}`
+                error: error.message || 'Failed to get or create conversation'
             });
-        }    
-        // Pass other errors to general error handler
-        next(error);
+        }
+        // Optionally call next(error) if you have a generic error handler middleware
+        // next(error); 
     }
 });
 
