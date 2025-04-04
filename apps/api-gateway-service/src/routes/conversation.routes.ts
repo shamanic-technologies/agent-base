@@ -22,7 +22,7 @@ export const configureConversationRoutes = (
     const originalPath = req.path.replace('/conversation', ''); 
     const targetUrl = `${targetServiceUrl}/conversation${originalPath}`; 
 
-    console.log(`[API Gateway /conversation] Forwarding ${req.method} ${req.originalUrl} to ${targetUrl} for user ${userId}`);
+    console.log(`[API Gateway /conversation] Forwarding ${req.method} ${req.originalUrl} to ${targetUrl} with query ${JSON.stringify(req.query)} for user ${userId}`);
 
     if (!userId) return res.status(401).json({ success: false, error: 'User not authenticated' });
 

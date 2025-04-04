@@ -11,7 +11,8 @@ import {
     GetAgentCurrentConversationResponse,
     CreateConversationInput,
     CreateConversationResponse,
-    GetConversationsResponse
+    GetConversationsResponse,
+    ConversationRecord
 } from '@agent-base/agents';
 // Import the new service function
 import { getOrCreateCurrentConversationFromAgent } from '../services/conversationService.js';
@@ -153,9 +154,13 @@ router.get('/list-conversations', async (req: Request, res: Response, next: Next
         // Call the database service endpoint
         const response = await axios.get<GetConversationsResponse>(
             `${DATABASE_SERVICE_URL}/conversations/get-conversations`,
-            { params: { agent_id: agentId } }
+            { params: { agent_id: agentId },
+              headers: {
+                'x-user-id': userId
+            }
+            }
         );
-
+        console.log(`[Agent Service] Response from database service:`, JSON.stringify(response.data));
         // Forward the response from the database service
         res.status(response.status).json(response.data);
 
@@ -176,6 +181,123 @@ router.get('/list-conversations', async (req: Request, res: Response, next: Next
                     error: error instanceof Error ? error.message : 'Unknown error fetching conversations'
                 });
             }
+        }
+    }
+});
+
+/**
+ * List all conversations for a specific agent, or create one if none exist
+ * GET /list-or-create-conversations?agent_id=...
+ */
+router.get('/list-or-create-conversations', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const agentId = req.query.agent_id as string;
+        const userId = (req as any).user?.id as string;
+
+        // Validate user authentication
+        if (!userId) {
+            res.status(401).json({ success: false, error: 'User authentication required' });
+            return;
+        }
+
+        // Validate agent_id parameter
+        if (!agentId) {
+            res.status(400).json({ success: false, error: 'agent_id query parameter is required' });
+            return;
+        }
+
+        console.log(`[Agent Service] Getting or creating conversations for agent ${agentId}`);
+
+        // Step 1: Try to get existing conversations
+        let conversationsResponse: GetConversationsResponse;
+        try {
+            const response = await axios.get<GetConversationsResponse>(
+                `${DATABASE_SERVICE_URL}/conversations/get-conversations`,
+                { 
+                    params: { agent_id: agentId },
+                    headers: { 'x-user-id': userId }
+                }
+            );
+            conversationsResponse = response.data;
+        } catch (error) {
+            console.error('[Agent Service] Error listing conversations:', error);
+            if (axios.isAxiosError(error) && error.response) {
+                res.status(error.response.status).json({ 
+                    success: false, 
+                    error: `Database service error: ${error.response.data?.error || error.message}`
+                });
+            } else {
+                throw error; // Re-throw for the outer catch
+            }
+            return;
+        }
+
+        // Step 2: Check if we got any conversations
+        if (conversationsResponse.success && Array.isArray(conversationsResponse.data) && conversationsResponse.data.length === 0) {
+            console.log(`[Agent Service] No conversations found for agent ${agentId}, creating one...`);
+            
+            // Create a new conversation
+            const conversation_id = randomUUID();
+            const channel_id = 'web'; // Default channel
+
+            const createInput: CreateConversationInput = {
+                conversation_id,
+                agent_id: agentId,
+                channel_id
+            };
+
+            try {
+                const createResponse = await axios.post<CreateConversationResponse>(
+                    `${DATABASE_SERVICE_URL}/conversations/create-conversation`,
+                    createInput
+                );
+
+                if (!createResponse.data.success) {
+                    console.error('[Agent Service] Failed to create conversation:', createResponse.data.error);
+                    res.status(500).json({ 
+                        success: false, 
+                        error: `Failed to create conversation: ${createResponse.data.error}`
+                    });
+                    return;
+                }
+
+                // Add the newly created conversation to the list
+                const newConversation: ConversationRecord = {
+                    conversation_id,
+                    agent_id: agentId,
+                    channel_id,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                };
+
+                // Update the response
+                conversationsResponse.data = [newConversation];
+                console.log(`[Agent Service] Created new conversation ${conversation_id} for agent ${agentId}`);
+            } catch (createError) {
+                console.error('[Agent Service] Error creating conversation:', createError);
+                if (axios.isAxiosError(createError) && createError.response) {
+                    res.status(createError.response.status).json({ 
+                        success: false, 
+                        error: `Database service error: ${createError.response.data?.error || createError.message}`
+                    });
+                } else {
+                    throw createError; // Re-throw for the outer catch
+                }
+                return;
+            }
+        }
+
+        // Return the list of conversations (either existing or with the new one)
+        console.log(`[Agent Service] Returning ${conversationsResponse.data?.length || 0} conversations for agent ${agentId}`);
+        res.status(200).json(conversationsResponse);
+
+    } catch (error) {
+        console.error('[Agent Service] Unexpected error in list-or-create-conversations:', error);
+        if (!res.headersSent) {
+            res.status(500).json({
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error processing conversations'
+            });
         }
     }
 });
