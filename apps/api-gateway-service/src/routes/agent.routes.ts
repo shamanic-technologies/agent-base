@@ -23,7 +23,7 @@ export const configureAgentRoutes = (
       const userId = req.user ? (req.user as User).id : undefined;
     const apiKey = req.headers['x-api-key'] as string;
     // Get path relative to /agent mount point
-    const originalPath = req.originalUrl.replace('/agent', ''); 
+    const originalPath = req.path.replace('/agent', ''); 
     // Construct target URL on the agent service
     const targetUrl = `${targetServiceUrl}/agent${originalPath}`; 
 

@@ -19,7 +19,7 @@ export const configureConversationRoutes = (
   router.all('*', async (req: express.Request, res: express.Response) => {
     const userId = req.user ? (req.user as User).id : undefined;
     const apiKey = req.headers['x-api-key'] as string;
-    const originalPath = req.originalUrl.replace('/conversation', ''); 
+    const originalPath = req.path.replace('/conversation', ''); 
     const targetUrl = `${targetServiceUrl}/conversation${originalPath}`; 
 
     console.log(`[API Gateway /conversation] Forwarding ${req.method} ${req.originalUrl} to ${targetUrl} for user ${userId}`);

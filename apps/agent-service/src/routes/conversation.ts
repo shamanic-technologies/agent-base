@@ -10,7 +10,8 @@ import {
     // Import necessary types
     GetAgentCurrentConversationResponse,
     CreateConversationInput,
-    CreateConversationResponse
+    CreateConversationResponse,
+    GetConversationsResponse
 } from '@agent-base/agents';
 // Import the new service function
 import { getOrCreateCurrentConversationFromAgent } from '../services/conversationService.js';
@@ -122,6 +123,59 @@ router.post('/create-conversation', async (req: Request, res: Response, next: Ne
         } else {
             // Pass other errors to the default Express error handler
             next(error); 
+        }
+    }
+});
+
+/**
+ * List all conversations for a specific agent
+ * GET /list-conversations?agent_id=...
+ */
+router.get('/list-conversations', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const agentId = req.query.agent_id as string;
+        const userId = (req as any).user?.id as string; // For auth checks if needed
+
+        // Validate user authentication if required
+        if (!userId) {
+            res.status(401).json({ success: false, error: 'User authentication required' });
+            return;
+        }
+
+        // Validate agent_id parameter
+        if (!agentId) {
+            res.status(400).json({ success: false, error: 'agent_id query parameter is required' });
+            return;
+        }
+
+        console.log(`[Agent Service] Listing conversations for agent ${agentId}`);
+
+        // Call the database service endpoint
+        const response = await axios.get<GetConversationsResponse>(
+            `${DATABASE_SERVICE_URL}/conversations/get-conversations`,
+            { params: { agent_id: agentId } }
+        );
+
+        // Forward the response from the database service
+        res.status(response.status).json(response.data);
+
+    } catch (error) {
+        console.error('[Agent Service] Error listing conversations:', error);
+        
+        // Handle Axios errors more gracefully
+        if (axios.isAxiosError(error) && error.response) {
+            res.status(error.response.status).json({ 
+                success: false, 
+                error: `Database service error: ${error.response.data?.error || error.message}`
+            });
+        } else {
+            // For non-Axios errors
+            if (!res.headersSent) {
+                res.status(500).json({
+                    success: false,
+                    error: error instanceof Error ? error.message : 'Unknown error fetching conversations'
+                });
+            }
         }
     }
 });
