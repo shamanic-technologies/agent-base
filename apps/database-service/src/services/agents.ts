@@ -22,6 +22,8 @@ import {
 
 const AGENTS_TABLE = 'agents';
 const USER_AGENTS_TABLE = 'user_agents';
+const CONVERSATIONS_TABLE = 'conversations';
+import { ensureConversationsTableExists } from './conversations.js';
 
 // SQL definitions for table creation
 const AGENTS_TABLE_SQL = `
@@ -33,7 +35,7 @@ const AGENTS_TABLE_SQL = `
     agent_gender VARCHAR(50) NOT NULL,
     agent_system_prompt TEXT NOT NULL,
     agent_model_id VARCHAR(255) NOT NULL,
-    agent_memory TEXT NOT NULL,
+    agent_memory TEXT,
     agent_job_title VARCHAR(255) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -60,31 +62,9 @@ async function ensureTableExists(tableName: string) {
         client = await getClient();
         let createTableQuery = '';
         if (tableName === AGENTS_TABLE) {
-            createTableQuery = `
-                CREATE TABLE IF NOT EXISTS ${AGENTS_TABLE} (
-                    agent_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                    agent_first_name VARCHAR(255) NOT NULL,
-                    agent_last_name VARCHAR(255) NOT NULL,
-                    agent_profile_picture TEXT,
-                    agent_gender VARCHAR(50),
-                    agent_system_prompt TEXT,
-                    agent_model_id VARCHAR(255),
-                    agent_memory TEXT,
-                    agent_job_title VARCHAR(255),
-                    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-                );
-            `;
+            createTableQuery = AGENTS_TABLE_SQL;
         } else if (tableName === USER_AGENTS_TABLE) {
-            createTableQuery = `
-                CREATE TABLE IF NOT EXISTS ${USER_AGENTS_TABLE} (
-                    user_id VARCHAR(255) NOT NULL,
-                    agent_id UUID NOT NULL,
-                    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-                    PRIMARY KEY (user_id, agent_id),
-                    FOREIGN KEY (agent_id) REFERENCES ${AGENTS_TABLE}(agent_id) ON DELETE CASCADE
-                );
-            `;
+            createTableQuery = USER_AGENTS_TABLE_SQL;
         } else {
             throw new Error(`Unsupported table name for creation: ${tableName}`);
         }
@@ -360,5 +340,56 @@ export async function getUserAgent(input: GetUserAgentInput): Promise<GetUserAge
     if (client) {
       client.release();
     }
+  }
+}
+
+/**
+ * Get the agent associated with a specific conversation.
+ * @param conversation_id The ID of the conversation
+ * @returns The agent record or error
+ */
+export async function getConversationAgent(conversation_id: string): Promise<BaseResponse & { data?: AgentRecord }> {
+  console.log(`[DB Service] Getting agent for conversation: ${conversation_id}`);
+
+  if (!conversation_id) {
+    return { success: false, error: 'conversation_id is required' };
+  }
+
+  const query = `
+    SELECT a.* FROM ${AGENTS_TABLE} a
+    JOIN ${CONVERSATIONS_TABLE} c ON a.agent_id = c.agent_id
+    WHERE c.conversation_id = $1
+  `;
+
+  let client: PoolClient | null = null;
+  try {
+    client = await getClient();
+    await ensureTableExists(AGENTS_TABLE);
+    await ensureConversationsTableExists(client);
+
+    const result = await client.query(query, [conversation_id]);
+
+    if (result.rowCount === 0) {
+      console.log(`[DB Service] No agent found for conversation ${conversation_id}`);
+      return { 
+        success: false, 
+        error: 'No agent found for this conversation'
+      };
+    } 
+
+    console.log(`[DB Service] Found agent ${result.rows[0].agent_id} for conversation ${conversation_id}`);
+    return { 
+      success: true, 
+      data: result.rows[0] as AgentRecord 
+    };
+
+  } catch (error) {
+    console.error(`[DB Service] Error getting agent for conversation ${conversation_id}:`, error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Database error occurred'
+    };
+  } finally {
+    if (client) client.release();
   }
 }

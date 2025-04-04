@@ -41,7 +41,7 @@ router.get('/get-or-create-current-conversation', async (req: Request, res: Resp
         console.log(`[Agent Service /conv Route] Handling get-or-create for agent ${agentId}`);
 
         // Call the service function
-        const conversationData = await getOrCreateCurrentConversationFromAgent(agentId);
+        const conversationData = await getOrCreateCurrentConversationFromAgent(agentId, userId);
 
         // Return the conversation data with appropriate status (200 OK is fine here)
         res.status(200).json({

@@ -12,7 +12,11 @@ import {
     GetAgentCurrentConversationInput,
     GetAgentCurrentConversationResponse
 } from '@agent-base/agents';
-import { createConversation, getConversationsByAgent, getAgentCurrentConversation } from '../services/conversations.js';
+import { 
+    createConversation, 
+    getConversationsByAgent, 
+    getAgentCurrentConversation
+} from '../services/conversations.js';
 
 const router = express.Router();
 
@@ -137,6 +141,8 @@ router.get('/get-agent-current-conversation', async (req: Request, res: Response
     next(error); 
   }
 });
+
+// The get-conversation-agent endpoint has been moved to agents.ts routes
 
 // Add other conversation endpoints here later (GET, DELETE, etc.)
 
