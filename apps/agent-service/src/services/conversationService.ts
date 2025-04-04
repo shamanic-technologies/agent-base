@@ -21,21 +21,22 @@ const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL || 'http://localho
  * @returns The conversation record (containing conversation_id).
  * @throws Throws an error if the operation fails.
  */
-export async function getOrCreateAgentConversation(agentId: string): Promise<ConversationRecord> {
+export async function getOrCreateCurrentConversationFromAgent(agentId: string, userId: string): Promise<ConversationRecord> {
     
     if (!agentId) {
         throw new Error('[Agent Service - Conv Service] agentId is required');
     }
 
-    console.log(`[Agent Service - Conv Service] Getting or creating current conversation for agent ${agentId}`);
-
     // --- Step 1: Try to get the current conversation --- 
     let existingConversation: ConversationRecord | null = null;
     try {
-        console.log(`[Agent Service - Conv Service] Attempting to GET current conversation from DB service...`);
         const getResponse = await axios.get<GetAgentCurrentConversationResponse>(
             `${DATABASE_SERVICE_URL}/conversations/get-agent-current-conversation`,
-            { params: { agent_id: agentId } }
+            { params: { agent_id: agentId },
+              headers: {
+                'x-user-id': userId,
+              }
+            }
         );
 
         // Check if the DB service reported success
@@ -45,12 +46,10 @@ export async function getOrCreateAgentConversation(agentId: string): Promise<Con
 
         // If successful and data exists, store it and return later
         if (getResponse.data.data) {
-            console.log(`[Agent Service - Conv Service] Found existing current conversation: ${getResponse.data.data.conversation_id}`);
             existingConversation = getResponse.data.data as ConversationRecord;
             return existingConversation; // Found it, we are done.
         } else {
             // Success was true, but data was null - means we need to create
-            console.log(`[Agent Service - Conv Service] No existing conversation found (DB returned data:null). Proceeding to create.`);
         }
 
     } catch (getError: any) {
@@ -63,7 +62,6 @@ export async function getOrCreateAgentConversation(agentId: string): Promise<Con
     }
 
     // --- Step 2: Create a new conversation (Only reached if GET returned data:null) --- 
-    console.log(`[Agent Service - Conv Service] Creating a new conversation via DB service...`);
     try {
         const createInput: CreateConversationInput = {
             conversation_id: randomUUID(),
@@ -73,18 +71,21 @@ export async function getOrCreateAgentConversation(agentId: string): Promise<Con
 
         const createResponse = await axios.post<CreateConversationResponse>(
             `${DATABASE_SERVICE_URL}/conversations/create-conversation`,
-            createInput
+            createInput,
+            {
+                headers: {
+                    'x-user-id': userId,
+                }
+            }
         );
 
         // Check if the DB service reported success
         if (!createResponse.data.success || !createResponse.data.data) {
              const errMsg = createResponse.data.error || 'DB service create endpoint returned no data';
-             console.error('[Agent Service - Conv Service] DB service indicated failure or missing data during CREATE:', errMsg);
              throw new Error(`DB service failed to create conversation: ${errMsg}`);
         }
 
         // Creation successful
-        console.log(`[Agent Service - Conv Service] Successfully created new conversation: ${createResponse.data.data.conversation_id}`);
         return createResponse.data.data as ConversationRecord;
 
     } catch (createError: any) {

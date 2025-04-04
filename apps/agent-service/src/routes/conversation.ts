@@ -13,7 +13,7 @@ import {
     CreateConversationResponse
 } from '@agent-base/agents';
 // Import the new service function
-import { getOrCreateAgentConversation } from '../services/conversationService.js';
+import { getOrCreateCurrentConversationFromAgent } from '../services/conversationService.js';
 
 const router = Router();
 const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL || 'http://localhost:3006';
@@ -40,7 +40,7 @@ router.get('/get-or-create-current-conversation', async (req: Request, res: Resp
         console.log(`[Agent Service /conv Route] Handling get-or-create for agent ${agentId}`);
 
         // Call the service function
-        const conversationData = await getOrCreateAgentConversation(agentId);
+        const conversationData = await getOrCreateCurrentConversationFromAgent(agentId);
 
         // Return the conversation data with appropriate status (200 OK is fine here)
         res.status(200).json({
