@@ -10,7 +10,7 @@ import { registry } from '../registry/registry.js';
 import {
   getStripeEnvironmentVariables,
   checkStripeApiKeys,
-  generateAuthNeededResponse,
+  generateSetupNeededResponse,
   getStripeApiKeys,
   formatStripeErrorResponse
 } from './stripe-utils.js';
@@ -60,8 +60,18 @@ interface StripeListCustomersErrorResponse {
   };
 }
 
-// Combined response type
-type StripeListCustomersResponse = StripeListCustomersSuccessResponse | StripeListCustomersErrorResponse;
+// Define the setup needed response type (optional but good practice)
+type SetupNeededResponse = {
+  status: 'success';
+  data: {
+    needs_setup: true;
+    popupUrl: string;
+    provider: string;
+  };
+};
+
+// Update the main response type
+type StripeListCustomersResponse = StripeListCustomersSuccessResponse | StripeListCustomersErrorResponse | SetupNeededResponse;
 
 /**
  * Implementation of the Stripe List Customers utility
@@ -103,6 +113,7 @@ const stripeListCustomersUtility: UtilityTool = {
   },
   
   execute: async (userId: string, conversationId: string, params: StripeListCustomersRequest & { created_after?: number, created_before?: number }): Promise<StripeListCustomersResponse> => {
+    const logPrefix = '💳 [STRIPE_LIST_CUSTOMERS]';
     try {
       // Extract parameters with defaults
       const { 
@@ -114,29 +125,24 @@ const stripeListCustomersUtility: UtilityTool = {
         created_before
       } = params || {};
       
-      console.log(`💳 [STRIPE_LIST_CUSTOMERS] Listing customers for user: ${userId}`);
+      console.log(`${logPrefix} Listing customers for user: ${userId}`);
       
       // Get environment variables
-      const { secretServiceUrl, apiGatewayUrl } = getStripeEnvironmentVariables();
+      const { secretServiceUrl } = getStripeEnvironmentVariables();
       
       // Check if user has the required API keys
       const { exists } = await checkStripeApiKeys(userId, secretServiceUrl);
       
-      // If we don't have the API keys, return auth needed response
+      // If we don't have the API keys, return setup needed response
       if (!exists) {
-        return {
-          success: false,
-          error: {
-            message: `Stripe API keys not found for user ${userId}. Please provide your Stripe API keys at ${apiGatewayUrl}/api/secrets/stripe.`
-          }
-        };
+        return generateSetupNeededResponse(userId, conversationId, logPrefix);
       }
       
       // Get the API keys
       const stripeKeys = await getStripeApiKeys(userId, secretServiceUrl);
       
       // Call the Stripe API with the secret key
-      console.log(`💳 [STRIPE_LIST_CUSTOMERS] Calling Stripe API to list customers`);
+      console.log(`${logPrefix} Calling Stripe API to list customers`);
       
       // Build query parameters
       const queryParams: any = {
@@ -153,6 +159,7 @@ const stripeListCustomersUtility: UtilityTool = {
         if (created_before) queryParams.created.lt = created_before;
       }
       
+      // Use standard axios
       const stripeResponse = await axios.get(
         'https://api.stripe.com/v1/customers',
         {
@@ -189,7 +196,7 @@ const stripeListCustomersUtility: UtilityTool = {
       
       return successResponse;
     } catch (error) {
-      console.error("❌ [STRIPE_LIST_CUSTOMERS] Error:", error);
+      console.error(`${logPrefix} Error:`, error);
       
       // Create a proper error response
       return {

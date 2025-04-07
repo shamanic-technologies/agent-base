@@ -19,7 +19,7 @@ import { registry } from '../registry/registry.js';
 import {
   getStripeEnvironmentVariables,
   checkStripeApiKeys,
-  generateAuthNeededResponse,
+  generateSetupNeededResponse,
   getStripeApiKeys,
   formatStripeErrorResponse
 } from './stripe-utils.js';
@@ -37,6 +37,19 @@ type StripeTransactionType =
   'payment' | 
   'payout' | 
   'transfer';
+
+// Add SetupNeededResponse type
+type SetupNeededResponse = {
+  status: 'success';
+  data: {
+    needs_setup: true;
+    popupUrl: string;
+    provider: string;
+  };
+};
+
+// Combined response type
+type StripeListBalanceTransactionsResponse = StripeTransactionsSuccessResponse | StripeTransactionsErrorResponse | SetupNeededResponse;
 
 /**
  * Implementation of the Stripe List Balance Transactions utility
@@ -67,7 +80,8 @@ const stripeListBalanceTransactionsUtility: UtilityTool = {
     }
   },
   
-  execute: async (userId: string, conversationId: string, params: StripeListTransactionsRequest & { type?: string }): Promise<StripeListTransactionsResponse> => {
+  execute: async (userId: string, conversationId: string, params: StripeListTransactionsRequest & { type?: string }): Promise<StripeListBalanceTransactionsResponse> => {
+    const logPrefix = '💳 [STRIPE_LIST_BALANCE_TRANSACTIONS]';
     try {
       // Extract parameters with defaults
       const { 
@@ -77,7 +91,7 @@ const stripeListBalanceTransactionsUtility: UtilityTool = {
         type
       } = params || {};
       
-      console.log(`💳 [STRIPE_LIST_BALANCE_TRANSACTIONS] Listing balance transactions for user: ${userId}`);
+      console.log(`${logPrefix} Listing balance transactions for user: ${userId}`);
       
       // Get environment variables
       const { secretServiceUrl, apiGatewayUrl } = getStripeEnvironmentVariables();
@@ -87,14 +101,14 @@ const stripeListBalanceTransactionsUtility: UtilityTool = {
       
       // If we don't have the API keys, return auth needed response
       if (!exists) {
-        return generateAuthNeededResponse(apiGatewayUrl, '💳 [STRIPE_LIST_BALANCE_TRANSACTIONS]');
+        return generateSetupNeededResponse(userId, conversationId, logPrefix);
       }
       
       // Get the API keys
       const stripeKeys = await getStripeApiKeys(userId, secretServiceUrl);
       
       // Call the Stripe API with the secret key
-      console.log(`💳 [STRIPE_LIST_BALANCE_TRANSACTIONS] Calling Stripe API to list balance transactions`);
+      console.log(`${logPrefix} Calling Stripe API to list balance transactions`);
       
       // Build query parameters
       const queryParams: any = {

@@ -10,7 +10,9 @@ import { registry } from '../registry/registry.js';
 import {
   getStripeEnvironmentVariables,
   checkStripeApiKeys,
-  getStripeApiKeys
+  generateSetupNeededResponse,
+  getStripeApiKeys,
+  formatStripeErrorResponse
 } from './stripe-utils.js';
 
 // Request parameters
@@ -52,8 +54,18 @@ interface StripeSearchCustomersErrorResponse {
   };
 }
 
+// Add SetupNeededResponse type
+type SetupNeededResponse = {
+  status: 'success';
+  data: {
+    needs_setup: true;
+    popupUrl: string;
+    provider: string;
+  };
+};
+
 // Combined response type
-type StripeSearchCustomersResponse = StripeSearchCustomersSuccessResponse | StripeSearchCustomersErrorResponse;
+type StripeSearchCustomersResponse = StripeSearchCustomersSuccessResponse | StripeSearchCustomersErrorResponse | SetupNeededResponse;
 
 /**
  * Implementation of the Stripe Search Customers utility
@@ -80,6 +92,7 @@ const stripeSearchCustomersUtility: UtilityTool = {
   },
   
   execute: async (userId: string, conversationId: string, params: StripeSearchCustomersRequest): Promise<StripeSearchCustomersResponse> => {
+    const logPrefix = '💳 [STRIPE_SEARCH_CUSTOMERS]';
     try {
       // Validate required parameters
       if (!params.query) {
@@ -98,44 +111,35 @@ const stripeSearchCustomersUtility: UtilityTool = {
         page
       } = params;
       
-      console.log(`💳 [STRIPE_SEARCH_CUSTOMERS] Searching customers for user: ${userId} with query: ${query}`);
+      console.log(`${logPrefix} Searching customers for user: ${userId}`);
       
       // Get environment variables
-      const { secretServiceUrl, apiGatewayUrl } = getStripeEnvironmentVariables();
+      const { secretServiceUrl } = getStripeEnvironmentVariables();
       
       // Check if user has the required API keys
       const { exists } = await checkStripeApiKeys(userId, secretServiceUrl);
       
-      // If we don't have the API keys, return auth needed response
       if (!exists) {
-        return {
-          success: false,
-          error: {
-            message: `Stripe API keys not found for user ${userId}. Please provide your Stripe API keys at ${apiGatewayUrl}/api/secrets/stripe.`
-          }
-        };
+        return generateSetupNeededResponse(userId, conversationId, logPrefix);
       }
       
       // Get the API keys
       const stripeKeys = await getStripeApiKeys(userId, secretServiceUrl);
       
       // Call the Stripe API with the secret key
-      console.log(`💳 [STRIPE_SEARCH_CUSTOMERS] Calling Stripe API to search customers`);
+      console.log(`${logPrefix} Calling Stripe API`);
       
-      // Build query parameters
-      const queryParams: any = {
-        query,
-        limit,
-        page
-      };
-      
+      // Use standard axios.get
       const stripeResponse = await axios.get(
         'https://api.stripe.com/v1/customers/search',
         {
-          params: queryParams,
+          params: {
+            query,
+            limit,
+            page,
+          },
           headers: {
             'Authorization': `Bearer ${stripeKeys.apiSecret}`,
-            'Content-Type': 'application/x-www-form-urlencoded'
           }
         }
       );

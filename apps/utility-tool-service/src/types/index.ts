@@ -109,10 +109,21 @@ export interface GmailReadRequest {
   labelIds?: string[];
 }
 
-export interface GmailAuthNeededResponse {
-  needs_auth: true;
-  auth_url: string;
+/**
+ * Standardized auth needed response for all providers
+ */
+export interface AuthNeededResponse {
+  needs_setup: true;
+  setup_url: string;
+  provider: string;
   message: string;
+  title: string;
+  description: string;
+  button_text: string;
+}
+
+export interface GmailAuthNeededResponse extends AuthNeededResponse {
+  provider: 'gmail';
 }
 
 export interface GmailMessageHeader {
@@ -263,12 +274,10 @@ export interface StripeListTransactionsRequest {
   ending_before?: string;
 }
 
-export interface StripeAuthNeededResponse {
-  needs_auth: true;
-  form_submit_url: string;
+export interface StripeAuthNeededResponse extends AuthNeededResponse {
+  provider: 'stripe';
   userId?: string;
   conversationId?: string;
-  message: string;
 }
 
 export interface StripeTransaction {

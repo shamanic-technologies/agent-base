@@ -1,10 +1,10 @@
-/**
- * Stripe List Charges Utility
+/** * Stripe List Charges Utility
  * 
  * Lists charges (payments received) from Stripe using the user's API keys
  * If keys are not available, provides an API endpoint for the user to submit their keys
  */
 import axios from 'axios';
+const axiosClient = axios;
 import { 
   UtilityTool, 
   StripeListTransactionsRequest, 
@@ -18,10 +18,23 @@ import { registry } from '../registry/registry.js';
 import {
   getStripeEnvironmentVariables,
   checkStripeApiKeys,
-  generateAuthNeededResponse,
   getStripeApiKeys,
-  formatStripeErrorResponse
+  formatStripeErrorResponse,
+  generateSetupNeededResponse
 } from './stripe-utils.js';
+
+// Add SetupNeededResponse type
+type SetupNeededResponse = {
+  status: 'success';
+  data: {
+    needs_setup: true;
+    popupUrl: string;
+    provider: string;
+  };
+};
+
+// Combined response type
+type StripeListChargesResponse = StripeTransactionsSuccessResponse | StripeTransactionsErrorResponse | SetupNeededResponse;
 
 /**
  * Implementation of the Stripe List Charges utility
@@ -47,7 +60,8 @@ const stripeListChargesUtility: UtilityTool = {
     }
   },
   
-  execute: async (userId: string, conversationId: string, params: StripeListTransactionsRequest): Promise<StripeListTransactionsResponse> => {
+  execute: async (userId: string, conversationId: string, params: StripeListTransactionsRequest): Promise<StripeListChargesResponse> => {
+    const logPrefix = '💳 [STRIPE_LIST_CHARGES]';
     try {
       // Extract parameters with defaults
       const { 
@@ -56,33 +70,36 @@ const stripeListChargesUtility: UtilityTool = {
         ending_before
       } = params || {};
       
-      console.log(`💳 [STRIPE_LIST_CHARGES] Listing charges for user: ${userId}`);
+      console.log(`${logPrefix} Listing charges for user: ${userId}`);
       
       // Get environment variables
-      const { secretServiceUrl, apiGatewayUrl } = getStripeEnvironmentVariables();
+      const { secretServiceUrl } = getStripeEnvironmentVariables();
       
       // Check if user has the required API keys
       const { exists } = await checkStripeApiKeys(userId, secretServiceUrl);
       
-      // If we don't have the API keys, return auth needed response
+      // If we don't have the API keys, return setup needed response
       if (!exists) {
-        return generateAuthNeededResponse(apiGatewayUrl, '💳 [STRIPE_LIST_CHARGES]');
+        return generateSetupNeededResponse(userId, conversationId, logPrefix);
       }
       
       // Get the API keys
       const stripeKeys = await getStripeApiKeys(userId, secretServiceUrl);
       
       // Call the Stripe API with the secret key
-      console.log(`💳 [STRIPE_LIST_CHARGES] Calling Stripe API to list charges`);
+      console.log(`${logPrefix} Calling Stripe API`);
       
-      const stripeResponse = await axios.get(
+      const queryParams = {
+        limit,
+        starting_after: starting_after || undefined,
+        ending_before: ending_before || undefined
+      };
+      
+      // @ts-ignore - axios typing issue with version 1.8.4
+      const stripeResponse = await axiosClient.get(
         'https://api.stripe.com/v1/charges',
         {
-          params: {
-            limit,
-            starting_after: starting_after || undefined,
-            ending_before: ending_before || undefined
-          },
+          params: queryParams,
           headers: {
             'Authorization': `Bearer ${stripeKeys.apiSecret}`,
             'Content-Type': 'application/x-www-form-urlencoded'
@@ -125,3 +142,4 @@ registry.register(stripeListChargesUtility);
 
 // Export the utility
 export default stripeListChargesUtility;
+

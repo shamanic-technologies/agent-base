@@ -14,7 +14,7 @@ import { registry } from '../registry/registry.js';
 import {
   getStripeEnvironmentVariables,
   checkStripeApiKeys,
-  generateAuthNeededResponse,
+  generateSetupNeededResponse,
   getStripeApiKeys,
   formatStripeErrorResponse
 } from './stripe-utils.js';
@@ -46,7 +46,19 @@ interface StripeRefundSuccessResponse {
 /**
  * Union type for all possible refund responses
  */
-type StripeRefundResponse = StripeAuthNeededResponse | StripeRefundSuccessResponse | StripeTransactionsErrorResponse;
+type StripeRefundResponse = StripeAuthNeededResponse | StripeRefundSuccessResponse | StripeTransactionsErrorResponse | SetupNeededResponse;
+
+/**
+ * Add SetupNeededResponse type
+ */
+type SetupNeededResponse = {
+  status: 'success';
+  data: {
+    needs_setup: true;
+    popupUrl: string;
+    provider: string;
+  };
+};
 
 /**
  * Implementation of the Stripe Refund utility
@@ -73,6 +85,7 @@ const stripeRefundUtility: UtilityTool = {
   },
   
   execute: async (userId: string, conversationId: string, params: StripeRefundRequest): Promise<StripeRefundResponse> => {
+    const logPrefix = '💳 [STRIPE_REFUND]';
     try {
       // Extract required parameters
       const { 
@@ -91,7 +104,7 @@ const stripeRefundUtility: UtilityTool = {
         throw new Error('Invalid charge_id format. It should start with "ch_"');
       }
       
-      console.log(`💳 [STRIPE_REFUND] Processing refund for charge: ${charge_id}, user: ${userId}`);
+      console.log(`${logPrefix} Processing refund for charge: ${charge_id}, user: ${userId}`);
       
       // Get environment variables
       const { secretServiceUrl, apiGatewayUrl } = getStripeEnvironmentVariables();
@@ -101,14 +114,14 @@ const stripeRefundUtility: UtilityTool = {
       
       // If we don't have the API keys, return auth needed response
       if (!exists) {
-        return generateAuthNeededResponse(apiGatewayUrl, '💳 [STRIPE_REFUND]');
+        return generateSetupNeededResponse(userId, conversationId, logPrefix);
       }
       
       // Get the API keys
       const stripeKeys = await getStripeApiKeys(userId, secretServiceUrl);
       
-      // Call the Stripe API with the secret key to create the refund
-      console.log(`💳 [STRIPE_REFUND] Calling Stripe API to refund charge: ${charge_id}`);
+      // Call the Stripe API with the secret key
+      console.log(`${logPrefix} Calling Stripe API to create refund for charge: ${charge_id}`);
       
       // Build the request body for the refund
       const refundPayload: any = {
@@ -128,7 +141,7 @@ const stripeRefundUtility: UtilityTool = {
       // Make the API call to create the refund
       const stripeResponse = await axios.post(
         'https://api.stripe.com/v1/refunds',
-        new URLSearchParams(refundPayload).toString(), // Format as form URL encoded data
+        new URLSearchParams(refundPayload).toString(),
         {
           headers: {
             'Authorization': `Bearer ${stripeKeys.apiSecret}`,
