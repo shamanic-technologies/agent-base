@@ -12,4 +12,3 @@ packages:
   - apps/key-service
   - packages/**
   - tooling/*
-  - supabase

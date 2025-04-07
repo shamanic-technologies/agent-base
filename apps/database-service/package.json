@@ -19,6 +19,7 @@
     "@agent-base/credentials": "workspace:^",
     "@agent-base/types": "workspace:^",
     "@types/uuid": "^10.0.0",
+    "ai": "4.3.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",

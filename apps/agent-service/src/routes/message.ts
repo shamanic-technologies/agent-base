@@ -4,104 +4,30 @@
  * Handles retrieving messages, potentially based on agent context.
  */
 import { Router, Request, Response, NextFunction } from 'express';
-import axios from 'axios';
+// @ts-ignore - Message not directly exported from 'ai' in this context
+import { Message } from 'ai'; // Changed import to Message from 'ai'
 import {
     // Import necessary types
-    ConversationRecord,
-    GetAgentCurrentConversationResponse,
-    GetMessagesResponse,
-    GetAgentCurrentConversationMessagesResponse,
-    MessageRecord
+    GetConversationResponse, // Needed for getConversationById
+    GetConversationsResponse, // Needed for getOrCreateConversationsFromAgent
+    ConversationRecord // Keep for type safety
 } from '@agent-base/agents';
-import { getOrCreateCurrentConversationFromAgent } from '../services/conversationService.js';
+// Import the database service functions
+import { 
+    getConversationById, 
+    getOrCreateConversationsFromAgent 
+} from '../services/database.js';
 
 const router = Router();
-const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL || 'http://localhost:3006';
+// DATABASE_SERVICE_URL is no longer needed here
 
 /**
- * Get messages for the current conversation of a given agent and user, 
- * OR for a specific conversation if conversation_id is provided.
+ * Get all messages for a specific conversation
+ * GET /get-messages-from-conversation?conversation_id=...
  */
-router.get('/get-agent-current-conversation-messages', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+router.get('/get-messages-from-conversation', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-        // Extract user ID from auth middleware
         const userId = (req as any).user?.id as string;
-        // Extract optional agent ID and conversation ID from query params
-        const agentId = req.query.agent_id as string; 
-
-        // --- Validation --- 
-        if (!userId) {
-            res.status(401).json({ success: false, error: 'User authentication required' });
-            return;
-        }
-        // Need agent_id (to find the current conversation)
-        if (!agentId) {
-            res.status(400).json({ success: false, error: 'agent_id query parameter is required' });
-            return;
-        }
-        // --- End Validation --- 
-
-        let currentConversationId: string;
-        // --- Determine Conversation ID --- 
-        // If no specific conversation_id was provided via query param, get or create it
-        if (agentId) {
-            console.log(`[Agent Service /msg] No conversation_id in query, using getOrCreateAgentConversation for agent ${agentId}`);
-            try {
-                // Call the internal service function 
-                const conversation = await getOrCreateCurrentConversationFromAgent(agentId, userId);
-                currentConversationId = conversation.conversation_id;
-                
-                if (!currentConversationId) {
-                    // This should technically not happen if getOrCreateAgentConversation works
-                    throw new Error('getOrCreateAgentConversation succeeded but did not return a conversation_id');
-                }
-
-            } catch (convError: any) {
-                // Use a generic 500 error status here, as the service function should handle specifics
-                res.status(500).json({ success: false, error: convError.message || 'Failed to get or create conversation info' });
-                return; // Stop execution if we can't get/create the conversation ID
-            }
-        }
-        // --- End Determine Conversation ID --- 
-
-        // --- Fetch Messages for the Determined Conversation ID --- 
-        try {
-            // Call the DB service directly to get messages (this could also be moved to a service)
-            const messagesResponse = await axios.get<GetMessagesResponse>(
-                `${DATABASE_SERVICE_URL}/messages/get-conversation-messages`,
-                { params: { conversation_id: currentConversationId },
-                  headers: {
-                    'x-user-id': userId,
-                  }
-                }
-            );
-            res.status(messagesResponse.status).json(messagesResponse.data);
-
-        } catch (dbMsgError: any) {
-            // Handle errors specifically from the message fetching call
-            const status = dbMsgError.response?.status || 500;
-            const message = dbMsgError.response?.data?.error || 'Failed to get messages from DB';
-            res.status(status).json({ success: false, error: message });
-            // No need to call next(error) here as we are handling the response
-        }
-        // --- End Fetch Messages --- 
-
-    } catch (error) {
-        // Catch any unexpected errors not caught by specific handlers above
-        console.error('[Agent Service /msg] Unexpected error in handler:', error);
-        next(error); // Pass to the main Express error handler
-    }
-});
-
-/**
- * List all messages for a specific conversation
- * GET /list-messages?conversation_id=...
- */
-router.get('/list-messages', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-        // Extract user ID from auth middleware
-        const userId = (req as any).user?.id as string;
-        // Extract conversation ID from query params
         const conversationId = req.query.conversation_id as string;
 
         // --- Validation ---
@@ -109,52 +35,46 @@ router.get('/list-messages', async (req: Request, res: Response, next: NextFunct
             res.status(401).json({ success: false, error: 'User authentication required' });
             return;
         }
-        
         if (!conversationId) {
             res.status(400).json({ success: false, error: 'conversation_id query parameter is required' });
             return;
         }
         // --- End Validation ---
 
-        // --- Fetch Messages ---
         try {
-            console.log(`[Agent Service /msg] Fetching messages for conversation ${conversationId}`);
+            console.log(`[Agent Service /msg] Fetching conversation ${conversationId} to extract messages`);
+            const conversationResponse = await getConversationById(conversationId, userId);
+
+            if (!conversationResponse.success || !conversationResponse.data) {
+                // If conversation not found or other DB error
+                console.warn(`[Agent Service /msg] Conversation ${conversationId} not found or error fetching.`);
+                res.status(404).json({ success: false, error: 'Conversation not found or access denied' });
+                return;
+            }
             
-            const messagesResponse = await axios.get<GetMessagesResponse>(
-                `${DATABASE_SERVICE_URL}/messages/get-conversation-messages`,
-                { 
-                    params: { conversation_id: conversationId },
-                    headers: {
-                        'x-user-id': userId,
-                    }
-                }
-            );
+            // Extract and return messages
+            const messages: Message[] = conversationResponse.data.messages || [];
+            console.log(`[Agent Service /msg] Returning ${messages.length} messages for conversation ${conversationId}`);
+            res.status(200).json({ success: true, data: messages }); // Return messages in a structured response
             
-            res.status(messagesResponse.status).json(messagesResponse.data);
-            
-        } catch (dbMsgError: any) {
-            const status = dbMsgError.response?.status || 500;
-            const message = dbMsgError.response?.data?.error || 'Failed to get messages from DB';
-            console.error(`[Agent Service /msg] Error fetching messages: ${message}`);
-            res.status(status).json({ success: false, error: message });
+        } catch (dbError: any) {
+            console.error(`[Agent Service /msg] Error fetching conversation ${conversationId}:`, dbError);
+            res.status(500).json({ success: false, error: dbError.message || 'Failed to get conversation data' });
         }
-        // --- End Fetch Messages ---
         
     } catch (error) {
-        console.error('[Agent Service /msg] Unexpected error in list-messages handler:', error);
+        console.error('[Agent Service /msg] Unexpected error in get-messages-from-conversation handler:', error);
         next(error);
     }
 });
 
 /**
- * List all messages for a specific agent across all conversations
- * GET /list-agent-messages?agent_id=...
+ * Get all messages for a specific agent across all their conversations
+ * GET /get-messages-from-agent?agent_id=...
  */
-router.get('/list-agent-messages', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+router.get('/get-messages-from-agent', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-        // Extract user ID from auth middleware
         const userId = (req as any).user?.id as string;
-        // Extract agent ID from query params
         const agentId = req.query.agent_id as string;
 
         // --- Validation ---
@@ -162,39 +82,44 @@ router.get('/list-agent-messages', async (req: Request, res: Response, next: Nex
             res.status(401).json({ success: false, error: 'User authentication required' });
             return;
         }
-        
         if (!agentId) {
             res.status(400).json({ success: false, error: 'agent_id query parameter is required' });
             return;
         }
         // --- End Validation ---
 
-        // --- Fetch Messages by Agent ID ---
         try {
-            console.log(`[Agent Service /msg] Fetching messages for agent ${agentId}`);
-            
-            const messagesResponse = await axios.get(
-                `${DATABASE_SERVICE_URL}/messages/get-agent-messages`,
-                { 
-                    params: { agent_id: agentId },
-                    headers: {
-                        'x-user-id': userId,
-                    }
+            console.log(`[Agent Service /msg] Fetching conversations for agent ${agentId} to extract messages`);
+            const conversationsResponse = await getOrCreateConversationsFromAgent(agentId, userId);
+
+            if (!conversationsResponse.success || !conversationsResponse.data) {
+                 console.warn(`[Agent Service /msg] No conversations found or error fetching for agent ${agentId}.`);
+                 // Return empty list if no conversations found or error occurs
+                 res.status(200).json({ success: true, data: [] }); 
+                 return;
+            }
+
+            // Combine messages from all conversations
+            let allMessages: Message[] = [];
+            conversationsResponse.data.forEach(conv => {
+                if (conv.messages && Array.isArray(conv.messages)) {
+                    allMessages = allMessages.concat(conv.messages);
                 }
-            );
+            });
             
-            res.status(messagesResponse.status).json(messagesResponse.data);
+            // Optional: Sort combined messages by timestamp if needed (requires message structure to have timestamp)
+            // allMessages.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+            console.log(`[Agent Service /msg] Returning ${allMessages.length} total messages for agent ${agentId}`);
+            res.status(200).json({ success: true, data: allMessages }); // Return combined messages
             
-        } catch (dbMsgError: any) {
-            const status = dbMsgError.response?.status || 500;
-            const message = dbMsgError.response?.data?.error || 'Failed to get messages from DB';
-            console.error(`[Agent Service /msg] Error fetching messages for agent: ${message}`);
-            res.status(status).json({ success: false, error: message });
+        } catch (dbError: any) {
+            console.error(`[Agent Service /msg] Error fetching conversations for agent ${agentId}:`, dbError);
+            res.status(500).json({ success: false, error: dbError.message || 'Failed to get conversations data' });
         }
-        // --- End Fetch Messages ---
         
     } catch (error) {
-        console.error('[Agent Service /msg] Unexpected error in list-agent-messages handler:', error);
+        console.error('[Agent Service /msg] Unexpected error in get-messages-from-agent handler:', error);
         next(error);
     }
 });
