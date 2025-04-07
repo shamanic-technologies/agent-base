@@ -33,6 +33,7 @@ import './secret-utilities/stripe_refund.js';
 import './secret-utilities/stripe_list_customers.js';
 import './secret-utilities/stripe_search_customers.js';
 import './secret-utilities/stripe_get_customer.js';
+import './webhook-utilities/crisp_subscribe_message_send.js';
 
 // Load environment variables based on NODE_ENV
 const nodeEnv = process.env.NODE_ENV || 'development';
@@ -149,6 +150,13 @@ app.post('/call-tool/:id', async (req, res) => {
       return res.status(400).json(result);
     }
     
+    // Check if result already has a status field (like from generateSetupNeededResponse)
+    if (result && result.status) {
+      // Result already formatted with status, return directly
+      return res.status(200).json(result);
+    }
+    
+    // Otherwise wrap in standard success response
     res.status(200).json({
       status: 'success',
       data: result

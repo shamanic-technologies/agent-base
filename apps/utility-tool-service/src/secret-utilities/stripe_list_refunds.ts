@@ -18,10 +18,23 @@ import { registry } from '../registry/registry.js';
 import {
   getStripeEnvironmentVariables,
   checkStripeApiKeys,
-  generateAuthNeededResponse,
+  generateSetupNeededResponse,
   getStripeApiKeys,
   formatStripeErrorResponse
 } from './stripe-utils.js';
+
+// Add SetupNeededResponse type
+type SetupNeededResponse = {
+  status: 'success';
+  data: {
+    needs_setup: true;
+    popupUrl: string;
+    provider: string;
+  };
+};
+
+// Combined response type
+type StripeListRefundsResponse = StripeTransactionsSuccessResponse | StripeTransactionsErrorResponse | SetupNeededResponse;
 
 /**
  * Implementation of the Stripe List Refunds utility
@@ -52,7 +65,8 @@ const stripeListRefundsUtility: UtilityTool = {
     }
   },
   
-  execute: async (userId: string, conversationId: string, params: StripeListTransactionsRequest & { charge?: string }): Promise<StripeListTransactionsResponse> => {
+  execute: async (userId: string, conversationId: string, params: StripeListTransactionsRequest & { charge?: string }): Promise<StripeListRefundsResponse> => {
+    const logPrefix = '💳 [STRIPE_LIST_REFUNDS]';
     try {
       // Extract parameters with defaults
       const { 
@@ -62,7 +76,7 @@ const stripeListRefundsUtility: UtilityTool = {
         charge
       } = params || {};
       
-      console.log(`💳 [STRIPE_LIST_REFUNDS] Listing refunds for user: ${userId}`);
+      console.log(`${logPrefix} Listing refunds for user: ${userId}`);
       
       // Get environment variables
       const { secretServiceUrl, apiGatewayUrl } = getStripeEnvironmentVariables();
@@ -72,14 +86,14 @@ const stripeListRefundsUtility: UtilityTool = {
       
       // If we don't have the API keys, return auth needed response
       if (!exists) {
-        return generateAuthNeededResponse(apiGatewayUrl, '💳 [STRIPE_LIST_REFUNDS]');
+        return generateSetupNeededResponse(userId, conversationId, logPrefix);
       }
       
       // Get the API keys
       const stripeKeys = await getStripeApiKeys(userId, secretServiceUrl);
       
       // Call the Stripe API with the secret key
-      console.log(`💳 [STRIPE_LIST_REFUNDS] Calling Stripe API to list refunds`);
+      console.log(`${logPrefix} Calling Stripe API`);
       
       // Build query parameters
       const queryParams: any = {
@@ -94,7 +108,7 @@ const stripeListRefundsUtility: UtilityTool = {
       }
       
       const stripeResponse = await axios.get(
-        'https://api.stripe.com/v1/refunds',
+        `https://api.stripe.com/v1/charges/${charge}/refunds`,
         {
           params: queryParams,
           headers: {

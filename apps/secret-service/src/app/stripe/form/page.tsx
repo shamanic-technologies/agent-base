@@ -6,34 +6,39 @@
  */
 import React from 'react';
 import ClientForm from './client-form';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 
 // Loading skeleton to show while form is loading
 function FormSkeleton() {
   return (
-    <div className="animate-pulse">
-      <div className="h-10 bg-gray-200 rounded mb-4"></div>
-      <div className="h-10 bg-gray-200 rounded mb-4"></div>
-      <div className="h-10 bg-gray-200 rounded"></div>
+    <div className="animate-pulse space-y-4">
+      <div className="h-10 bg-gray-200/20 rounded-md"></div>
+      <div className="h-10 bg-gray-200/20 rounded-md"></div>
+      <div className="h-10 bg-gray-200/20 rounded-md"></div>
     </div>
   );
 }
 
 export default function StripeFormPage() {
   return (
-    <div className="p-6 max-w-md mx-auto bg-white rounded-xl shadow-md">
-      <h2 className="text-2xl font-bold mb-4">Connect Stripe Account</h2>
-      <p className="mb-6 text-gray-600">
-        Your Stripe API keys are needed to perform operations with your Stripe account.
-      </p>
+    <Card className="w-full max-w-md border border-border/40 shadow-lg bg-card">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-2xl font-semibold text-center">Connect Stripe Account</CardTitle>
+        <CardDescription className="text-center">
+          Your Stripe API keys are needed to perform operations with your Stripe account.
+        </CardDescription>
+      </CardHeader>
       
-      <React.Suspense fallback={<FormSkeleton />}>
-        <ClientForm />
-      </React.Suspense>
+      <CardContent>
+        <React.Suspense fallback={<FormSkeleton />}>
+          <ClientForm />
+        </React.Suspense>
+      </CardContent>
       
-      <div className="mt-6 text-xs text-gray-500">
+      <CardFooter className="flex flex-col text-xs text-muted-foreground">
         <p>Your keys are stored securely and are not accessible by the AI Agent.</p>
         <p className="mt-1">Only authorized operations will use these keys.</p>
-      </div>
-    </div>
+      </CardFooter>
+    </Card>
   );
 } 

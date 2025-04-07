@@ -75,9 +75,13 @@ const gmailReadUtility: UtilityTool = {
       // If we don't have auth, return the auth URL for the frontend to handle
       if (!checkAuthResponse.data.hasAuth) {
         const authNeededResponse: GmailAuthNeededResponse = {
-          needs_auth: true,
-          auth_url: checkAuthResponse.data.authUrl,
-          message: 'Gmail access requires authentication. Please use the provided URL to authorize access.'
+          needs_setup: true,
+          setup_url: checkAuthResponse.data.authUrl,
+          provider: 'gmail',
+          message: 'Gmail access requires authentication.',
+          title: "Connect Gmail Account",
+          description: "Secure access is required to read your emails",
+          button_text: "Continue with Gmail"
         };
         return authNeededResponse;
       }

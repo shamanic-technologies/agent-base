@@ -23,5 +23,10 @@ export const configureSecretRoutes = (
     await forwardRequest(req, res, serviceUrl, '/api/store-secret');
   });
 
+  // Set Crisp webhook secret
+  router.post('/set_crisp_webhook_secret', authMiddleware, async (req, res) => {
+    await forwardRequest(req, res, serviceUrl, '/api/store-secret');
+  });
+
   return router;
 }; 

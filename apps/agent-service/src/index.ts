@@ -48,7 +48,9 @@ app.use(cors({
   credentials: true,
   exposedHeaders: ['Content-Type', 'Cache-Control', 'Connection']
 }));
-app.use(express.json());
+// Increase the limit (e.g., to 50mb, adjust as needed)
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 /**
  * Authentication middleware - extracts user from x-user-* headers
@@ -56,7 +58,6 @@ app.use(express.json());
  */
 app.use((req, res, next) => {
   try {
-    console.log(`[Agent Service] Request received:`, req);
     // Get user ID from header set by API gateway middleware
     const userId = req.headers['x-user-id'] as string;
     console.log(`[Agent Service] User authenticated: ${userId}`);

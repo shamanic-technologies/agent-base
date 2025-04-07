@@ -4,7 +4,7 @@
  * Shared functions for Stripe API operations
  */
 import axios from 'axios';
-import { StripeAuthNeededResponse } from '../types/index.js';
+// import { StripeAuthNeededResponse } from '../types/index.js';
 
 /**
  * Stripe API key structure
@@ -62,29 +62,43 @@ export async function checkStripeApiKeys(userId: string, secretServiceUrl: strin
 }
 
 /**
- * Generate authentication needed response when API keys are missing
- * @param userId User ID requesting the operation
- * @param conversationId Conversation ID for the request
- * @param apiGatewayUrl API gateway URL
+ * Generate the response indicating that setup is needed
+ * @param userId User ID for whom the setup is needed
+ * @param conversationId Conversation ID for context
  * @param logPrefix Prefix for console logs
- * @returns Authentication needed response object
+ * @returns Object indicating setup is needed
  */
-export function generateAuthNeededResponse(
-  apiGatewayUrl: string,
+export function generateSetupNeededResponse(
+  userId: string, 
+  conversationId: string,
   logPrefix: string
-): StripeAuthNeededResponse {
-  // Create the API endpoint URL that the client should call with their API key authentication
-  const apiEndpoint = `${apiGatewayUrl}/secret/set_stripe_api_keys`;
+): { needs_setup: true; setup_url: string; provider: string; message?: string; title: string; description: string; button_text: string } {
   
-  console.log(`${logPrefix} No API keys found, returning API gateway endpoint: ${apiEndpoint}`);
+  // Construct the popup URL using the environment variable
+  const secretServiceBaseUrl = process.env.SECRET_SERVICE_URL;
   
-  const authNeededResponse: StripeAuthNeededResponse = {
-    needs_auth: true,
-    form_submit_url: apiEndpoint, // Use this existing field for API endpoint URL
-    message: 'Stripe access requires API keys. Please submit your Stripe API keys to the provided endpoint using your API key for authentication.'
+  if (!secretServiceBaseUrl) {
+    // This should ideally not happen if environment is set up correctly
+    // Handle error appropriately - maybe throw or return an error response
+    console.error(`${logPrefix} Error: SECRET_SERVICE_URL is not set. Cannot generate popup URL.`);
+    // For now, let's throw to make the issue clear during development
+    throw new Error('Configuration error: SECRET_SERVICE_URL is not set'); 
+  }
+  
+  const setupUrl = `${secretServiceBaseUrl}/stripe/form?userId=${userId}&conversationId=${conversationId}`;
+  
+  console.log(`${logPrefix} Stripe keys not found, returning setup URL: ${setupUrl}`);
+  
+  // New standardized format with dynamic UI text
+  return {
+    needs_setup: true,
+    setup_url: setupUrl,
+    provider: "stripe",
+    message: "Stripe API keys are required.",
+    title: "Connect Stripe Account",
+    description: "Your API keys are needed to access your Stripe data",
+    button_text: "Connect Stripe Account"
   };
-  
-  return authNeededResponse;
 }
 
 /**
