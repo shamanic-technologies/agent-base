@@ -17,14 +17,14 @@ export interface AgentRecord {
   agent_model_id: string;
   agent_memory: string;
   agent_job_title: string;
-  created_at: string | Date;
-  updated_at: string | Date;
+  created_at: Date;
+  updated_at: Date;
 }
 
 export interface UserAgentRecord {
   user_id: string;
   agent_id: string;
-  created_at: string | Date;
+  created_at: Date;
 }
 
 // --- Agent Input Fields & Inputs ---
