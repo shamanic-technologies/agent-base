@@ -9,7 +9,7 @@
 import { config } from 'dotenv';
 config({ path: '.env.local' });
 
-import express from 'express';
+import express, { Request, Response, NextFunction, RequestHandler } from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import { createServer } from 'node:http';
@@ -59,7 +59,7 @@ function startServer() {
    * Enforces X-USER-ID header authentication for protected routes
    * Skips authentication for /health and /log endpoints
    */
-  app.use((req, res, next) => {
+  app.use('/', ((req: Request, res: Response, next: NextFunction) => {
     // Skip authentication for health checks
     if (req.path === '/health') {
       return next();
@@ -77,7 +77,7 @@ function startServer() {
     
     logger.info(`Auth Middleware: User ${userId} authenticated for ${req.path}`);
     next();
-  });
+  }) as RequestHandler);
 
   // Routes
   app.use('/', routes);

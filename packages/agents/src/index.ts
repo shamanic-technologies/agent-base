@@ -11,9 +11,6 @@ export * from './types/common.js';
 // Export agent-related types
 export * from './types/agent.js';
 
-// Export message-related types
-export * from './types/message.js';
-
 // Export conversation-related types
 export * from './types/conversation.js';
 

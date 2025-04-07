@@ -4,18 +4,20 @@
  * API endpoints for managing conversations
  */
 import express, { RequestHandler, Request, Response, NextFunction } from 'express';
-import { 
-    CreateConversationInput, 
+import { UIMessage } from 'ai';
+import {
+    CreateConversationInput,
     CreateConversationResponse,
-    GetConversationsInput,
     GetConversationsResponse,
-    GetAgentCurrentConversationInput,
-    GetAgentCurrentConversationResponse
+    ConversationRecord,
+    GetConversationsFromAgentInput,
+    BaseResponse,
 } from '@agent-base/agents';
-import { 
-    createConversation, 
-    getConversationsByAgent, 
-    getAgentCurrentConversation
+import {
+    createConversation,
+    getConversation,
+    getConversationsByAgent,
+    updateConversationMessages,
 } from '../services/conversations.js';
 
 const router = express.Router();
@@ -66,9 +68,9 @@ router.post('/create-conversation', (async (req: Request, res: Response) => {
 
 /**
  * Get all conversations for an agent
- * GET /get-conversations?agent_id=...
+ * GET /get-conversations-from-agent?agent_id=...
  */
-router.get('/get-conversations', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/get-conversations-from-agent', async (req: Request, res: Response, next: NextFunction) => {
   try {
     // Extract agent_id from query parameters
     const agent_id = req.query.agent_id as string;
@@ -80,7 +82,7 @@ router.get('/get-conversations', async (req: Request, res: Response, next: NextF
     }
 
     console.log(`[DB Route /conversations] Getting conversations for agent ${agent_id}`);
-    const input: GetConversationsInput = { agent_id };
+    const input: GetConversationsFromAgentInput = { agent_id };
     const result = await getConversationsByAgent(input);
     
     // Handle service errors
@@ -95,55 +97,50 @@ router.get('/get-conversations', async (req: Request, res: Response, next: NextF
     res.status(200).json(result as GetConversationsResponse);
 
   } catch (error) {
-    console.error('Error in GET /conversations/get-conversations route:', error);
+    console.error('Error in GET /conversations/get-conversations-from-agent route:', error);
     next(error); 
   }
 });
 
 /**
- * Get the current (latest updated) conversation for an agent
- * GET /get-agent-current-conversation?agent_id=...
+ * Update the messages array for a specific conversation
+ * POST /update-conversation
+ * Body: { conversation_id: string, messages: UIMessage[] }
  */
-router.get('/get-agent-current-conversation', async (req: Request, res: Response, next: NextFunction) => {
-  // LOG THE RAW QUERY OBJECT
-  console.log(`[DB Route /conversations] RAW req.query:`, JSON.stringify(req.query)); 
+router.post('/update-conversation', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Simple extraction - Assuming upstream service sends a valid string
-    const agent_id = req.query.agent_id as string;
+    const { conversation_id, messages } = req.body;
 
-    // Basic validation
-    if (!agent_id) {
-      res.status(400).json({ success: false, error: 'agent_id query parameter is required' });
-      return;
+    // --- Validation ---
+    if (!conversation_id) {
+      return res.status(400).json({ success: false, error: 'conversation_id is required' } as BaseResponse);
     }
-    if (typeof agent_id !== 'string') {
-       res.status(400).json({ success: false, error: 'agent_id query parameter must be a string' });
-       return;
+    if (!messages || !Array.isArray(messages)) {
+      return res.status(400).json({ success: false, error: 'messages is required and must be an array' } as BaseResponse);
     }
+    // TODO: Add more robust validation for UIMessage structure if needed
+    // --- End Validation ---
 
-    console.log(`[DB Route /conversations] Getting current conversation for agent ${agent_id}`);
-    const input: GetAgentCurrentConversationInput = { agent_id }; 
-    const result = await getAgentCurrentConversation(input);
-    
-    // Handle actual service errors
+    console.log(`[DB Route /conversations] Updating messages for conversation ${conversation_id}`);
+    const result = await updateConversationMessages(conversation_id, messages);
+
     if (!result.success) {
-       console.error(`[DB Route /conversations] Service error getting current conversation:`, result.error);
-       res.status(500).json(result as GetAgentCurrentConversationResponse);
-       return;
+      // Service function returns success:false if conversation not found or DB error
+      // Determine status code based on error message (heuristic)
+      const statusCode = result.error?.toLowerCase().includes('not found') ? 404 : 500;
+      console.error(`[DB Route /conversations] Service error updating messages for ${conversation_id}:`, result.error);
+      return res.status(statusCode).json(result as BaseResponse);
     }
 
-    // Return 200 OK with the service result (data can be null)
-    console.log(`[DB Route /conversations] Retrieved current conversation status for agent ${agent_id}. Found: ${!!result.data}`);
-    res.status(200).json(result as GetAgentCurrentConversationResponse);
+    // Return 200 OK on successful update
+    console.log(`[DB Route /conversations] Successfully updated messages for ${conversation_id}`);
+    return res.status(200).json(result as BaseResponse);
 
   } catch (error) {
-    console.error('Error in GET /conversations/get-agent-current-conversation route:', error);
-    next(error); 
+    console.error('Error in POST /conversations/update-conversation route:', error);
+    next(error); // Pass to default error handler
   }
 });
 
-// The get-conversation-agent endpoint has been moved to agents.ts routes
-
-// Add other conversation endpoints here later (GET, DELETE, etc.)
 
 export default router; 

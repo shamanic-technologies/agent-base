@@ -3,13 +3,14 @@
  */
 import { BaseResponse } from './common.js';
 import { ConversationRecord as ConversationRecordType } from './conversation.js'; // Self-import for consistency if needed, or define directly
-
+import { UIMessage } from 'ai';
 // --- Conversation Records and Inputs ---
 
 export interface ConversationRecord {
   conversation_id: string;
   agent_id: string;
   channel_id: string;
+  messages: UIMessage[];
   created_at: string | Date;
   updated_at: string | Date;
 }
@@ -20,7 +21,7 @@ export interface CreateConversationInput {
   channel_id: string;
 }
 
-export interface GetConversationsInput {
+export interface GetConversationsFromAgentInput {
   agent_id: string;
 }
 
@@ -34,17 +35,6 @@ export interface GetConversationsResponse extends BaseResponse {
     data?: ConversationRecord[]; // Use the defined type
 }
 
-/**
- * Input for retrieving the current conversation for an agent.
- */
-export interface GetAgentCurrentConversationInput {
-  agent_id: string;
+export interface GetConversationResponse extends BaseResponse {
+    data?: ConversationRecord; // Use the defined type
 }
-
-/**
- * Response for retrieving the current conversation for an agent.
- * Returns a single record or null/undefined in data if not found.
- */
-export interface GetAgentCurrentConversationResponse extends BaseResponse {
-    data?: ConversationRecord | null;
-} 

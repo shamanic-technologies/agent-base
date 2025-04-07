@@ -12,6 +12,7 @@ import {
     GetMessagesResponse,
     GetMessagesInput
 } from '@agent-base/agents';
+import { Message } from 'ai/react';
 
 // Ensure the URL points to the correct database service port (e.g., 3006)
 const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL || 'http://localhost:3006';
@@ -68,7 +69,7 @@ export async function getUserAgent(userId: string, agentId: string): Promise<Age
  * Retrieves conversation messages for a given conversation.
  * Renamed from getConversationHistory
  */
-export async function getConversationMessages(conversationId: string): Promise<MessageRecord[]> {
+export async function getConversationMessages(conversationId: string): Promise<Message[]> {
   try {
     console.log(`[Agent Service DB Client] Calling DB service to get messages for conv ${conversationId}`);
     const paramsInput: GetMessagesInput = { conversation_id: conversationId };
@@ -95,7 +96,7 @@ export async function getConversationMessages(conversationId: string): Promise<M
 /**
  * Creates a message in the database service.
  */
-export async function createMessage(input: CreateMessageInput): Promise<CreateMessageResponse> {
+export async function createMessage(input: Message): Promise<CreateMessageResponse> {
   try {
     console.log(`[Agent Service DB Client] Calling DB service to create message for conv ${input.conversation_id}, role ${input.role}`);
     const response = await axios.post<CreateMessageResponse>(

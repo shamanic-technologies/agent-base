@@ -146,4 +146,57 @@ router.get('/list-messages', async (req: Request, res: Response, next: NextFunct
     }
 });
 
+/**
+ * List all messages for a specific agent across all conversations
+ * GET /list-agent-messages?agent_id=...
+ */
+router.get('/list-agent-messages', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        // Extract user ID from auth middleware
+        const userId = (req as any).user?.id as string;
+        // Extract agent ID from query params
+        const agentId = req.query.agent_id as string;
+
+        // --- Validation ---
+        if (!userId) {
+            res.status(401).json({ success: false, error: 'User authentication required' });
+            return;
+        }
+        
+        if (!agentId) {
+            res.status(400).json({ success: false, error: 'agent_id query parameter is required' });
+            return;
+        }
+        // --- End Validation ---
+
+        // --- Fetch Messages by Agent ID ---
+        try {
+            console.log(`[Agent Service /msg] Fetching messages for agent ${agentId}`);
+            
+            const messagesResponse = await axios.get(
+                `${DATABASE_SERVICE_URL}/messages/get-agent-messages`,
+                { 
+                    params: { agent_id: agentId },
+                    headers: {
+                        'x-user-id': userId,
+                    }
+                }
+            );
+            
+            res.status(messagesResponse.status).json(messagesResponse.data);
+            
+        } catch (dbMsgError: any) {
+            const status = dbMsgError.response?.status || 500;
+            const message = dbMsgError.response?.data?.error || 'Failed to get messages from DB';
+            console.error(`[Agent Service /msg] Error fetching messages for agent: ${message}`);
+            res.status(status).json({ success: false, error: message });
+        }
+        // --- End Fetch Messages ---
+        
+    } catch (error) {
+        console.error('[Agent Service /msg] Unexpected error in list-agent-messages handler:', error);
+        next(error);
+    }
+});
+
 export default router; 

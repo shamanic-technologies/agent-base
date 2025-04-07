@@ -9,9 +9,11 @@
     "build": "sh ./build.sh",
     "dev": "tsc -w"
   },
-  "dependencies": {},
+  "dependencies": {
+    "ai": "^4.3.2"
+  },
   "devDependencies": {
     "typescript": "^5.0.4"
   },
   "private": true
-} 
+}
