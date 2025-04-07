@@ -7,18 +7,18 @@ import { Router, Request, Response, NextFunction } from 'express';
 import {
     // Import all types needed specifically for the /run endpoint
     AgentRecord, 
-    CreateMessageInput, // Renamed input type
 } from '@agent-base/agents';
 // AI SDK imports
 import { anthropic } from '@ai-sdk/anthropic';
-import { streamText } from 'ai'; 
-import { Message } from 'ai/react';
+import { streamText } from 'ai';
+// @ts-ignore - Message not directly exported from 'ai' in this context
+import { Message } from 'ai';
 
 // Service function imports
 import { 
-  getConversationAgent, 
-  getConversationMessages, 
-  createMessage 
+  getAgentFromConversation, 
+  getConversationById,
+  updateConversationMessagesInDb
 } from '../services/database.js';
 
 // Tool Creator Imports
@@ -32,12 +32,6 @@ import { appendClientMessage } from 'ai';
 // @ts-ignore - appendResponseMessages is in the Vercel AI SDK documentation
 import { appendResponseMessages } from 'ai';
 
-// Define the Message type (copied from agent.ts)
-// interface Message {
-//   role: 'user' | 'assistant' | 'system' | 'tool';
-//   content: string;
-// }
-
 const runRouter = Router(); // Use a specific router for this file
 
 /**
@@ -46,13 +40,13 @@ const runRouter = Router(); // Use a specific router for this file
 runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
   const handleAgentRun = async () => {
     let agent: AgentRecord; 
-    let message: Message; 
+    let currentMessage: Message;
     let conversation_id: string;
     let userId: string;
 
     try {
       // --- Extraction & Validation --- 
-      ({ message, conversation_id } = req.body);
+      ({ message: currentMessage, conversation_id } = req.body);
       userId = (req as any).user?.id as string;
       const apiKey = req.headers['x-api-key'] as string;
 
@@ -64,7 +58,7 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
         res.status(401).json({ success: false, error: 'API Key required (Missing x-api-key header)' });
         return;
       }
-      if (!message || !conversation_id) {
+      if (!currentMessage || !conversation_id) {
         res.status(400).json({ success: false, error: 'Missing required fields: message, conversation_id' });
         return;
       }
@@ -81,27 +75,35 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       
       // --- Get Agent Details --- 
 
-      agent = await getConversationAgent(conversation_id, userId);
+      agent = await getAgentFromConversation(conversation_id, userId);
       console.log(`[Agent Service /run] Fetched agent details for conversation: ${conversation_id}, using model: ${agent.agent_model_id}`);
       // --- End Get Agent Details ---
 
-      // --- Get Conversation Messages ---
-      const historyMessages: Message[] = [];//await getConversationMessages(conversation_id);
+      // --- Get Conversation & History --- 
+      let historyMessages: Message[] = [];
+      try {
+          const conversationResponse = await getConversationById(conversation_id, userId);
+          if (conversationResponse.success && conversationResponse.data) {
+              historyMessages = conversationResponse.data.messages || [];
+              console.log(`[Agent Service /run] Fetched ${historyMessages.length} history messages for conv: ${conversation_id}`);
+          } else {
+              console.warn(`[Agent Service /run] Conversation ${conversation_id} not found or error fetching, starting with empty history.`);
+              // Proceed with empty history if conversation isn't found (e.g., first message)
+          }
+      } catch (fetchError) {
+          console.error(`[Agent Service /run] Error fetching conversation ${conversation_id}, proceeding with empty history:`, fetchError);
+          // Proceed with empty history on error
+      }
       // --- Combine Messages --- 
-      const allMessages: Message[] = appendClientMessage({
-        messages: historyMessages,
-        message
+      const allMessages: Message[] = appendClientMessage({ 
+        messages: historyMessages, 
+        message: currentMessage 
       });
-      console.log(`[Agent Service /run] Fetched ${historyMessages.length} messages for conv: ${conversation_id}`);
-      // --- End Combine Messages ---
-      // --- End Get Conversation Messages ---
-
-
-      // --- End Combine Messages ---
+      // --- End Combine Messages --- 
 
       // --- Call AI Model --- 
       const result = await streamText({
-        model: anthropic(agent.agent_model_id), 
+        model: anthropic(agent.agent_model_id),
         messages: allMessages as any[],
         tools: tools,
         // @ts-ignore - maxSteps is a valid property
@@ -115,24 +117,25 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
         async onFinish({ text, toolCalls, response }) { 
             console.log(`[Agent Service /run] Stream finished via onFinish... Saving messages...`);
             try {
-                console.log(`[Agent Service /run] onFinish... Saving messages...`);
-                console.log(`[Agent Service /run] response.messages:`, JSON.stringify(response.messages, null, 2));
-                const messages = appendResponseMessages({
-                  messages: allMessages,
+                console.log(`[Agent Service /run] onFinish... Appending response messages...`);
+                // Construct the final list including the latest assistant/tool responses
+                const finalMessages: Message[] = appendResponseMessages({
+                  messages: allMessages, 
                   responseMessages: response.messages
                 });
-                console.log(`[Agent Service /run] messages:`, JSON.stringify(messages, null, 2));
-                await createMessage(response.messages);
-            //   const userMessage = messages[messages.length - 1];
-            //   if (userMessage && userMessage.role === 'user') {
-            //     const userSaveInput: CreateMessageInput = { conversation_id, role: 'user', content: userMessage.content };
-            //     await createMessage(userSaveInput);
-            //   }
-            //   const assistantSaveInput: CreateMessageInput = { conversation_id, role: 'assistant', content: text, tool_calls: toolCalls };
-            //   await createMessage(assistantSaveInput);
-            //   console.log("[Agent Service /run] Messages saved successfully via onFinish.");
+                console.log(`[Agent Service /run] finalMessages to save:`, JSON.stringify(finalMessages, null, 2));
+                
+                // Save the complete, updated message list back to the database service
+                const saveResult = await updateConversationMessagesInDb(conversation_id, finalMessages, userId);
+                
+                if (!saveResult.success) {
+                    console.error("[Agent Service /run] Error saving messages to DB in onFinish:", saveResult.error);
+                } else {
+                    console.log("[Agent Service /run] Messages saved successfully via onFinish.");
+                }
+                
             } catch (dbError) {
-              console.error("[Agent Service /run] Error saving messages to DB in onFinish:", dbError);
+              console.error("[Agent Service /run] Error calling database service to save messages in onFinish:", dbError);
             }
         },
       });

@@ -9,7 +9,7 @@ import {
   GetConversationResponse,
 } from '@agent-base/agents';
 import { getClient } from '../db.js';
-import { UIMessage } from 'ai';
+import { Message } from 'ai';
 
 // No need for our custom interface - we'll use ConversationRecord directly
 
@@ -125,7 +125,7 @@ export async function createConversation(input: CreateConversationInput): Promis
  */
 export async function updateConversationMessages(
   conversation_id: string, 
-  messages: UIMessage[]
+  messages: Message[]
 ): Promise<BaseResponse> {
   console.log(`[DB Service] Updating all messages in conversation: ${conversation_id}`);
 
