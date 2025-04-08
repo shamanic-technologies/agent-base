@@ -10,6 +10,7 @@ import {
   ToastViewport,
 } from "@/components/ui/toast"
 
+// Still keep the Toaster for other parts of the app that might use it
 export function Toaster() {
   const { toasts } = useToast()
 
