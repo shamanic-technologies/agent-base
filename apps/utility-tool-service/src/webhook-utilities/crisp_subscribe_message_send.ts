@@ -6,12 +6,12 @@
  */
 import { UtilityTool } from '../types/index.js';
 import { registry } from '../registry/registry.js';
+import { SetupNeededResponse } from '../types/index.js';
 import { 
   checkCrispWebsiteId, 
   getCrispWebsiteId, 
   getCrispEnvironmentVariables,
-  generateSetupNeededResponse,
-  SetupNeededResponse
+  generateSetupNeededResponse
 } from './crisp-utils.js';
 
 // --- Request Parameters --- 
@@ -104,7 +104,7 @@ const crispSubscribeMessageSendUtility: UtilityTool = {
       // If we don't have the website ID, return setup needed response
       if (!exists) {
         console.log(`🔔 [CRISP] No website ID found for user ${userId}`);
-        return generateSetupNeededResponse(apiGatewayUrl, "[CRISP]");
+        return generateSetupNeededResponse(secretServiceUrl, "[CRISP]");
       }
       
       // Get the website ID
