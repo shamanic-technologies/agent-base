@@ -5,192 +5,173 @@
  * If keys are not available, provides an API endpoint for the user to submit their keys
  */
 import axios from 'axios';
-import { UtilityTool } from '../types/index.js';
+import {
+  UtilityTool,
+  SetupNeededResponse,
+  UtilityErrorResponse
+} from '../types/index.js';
 import { registry } from '../registry/registry.js';
 import {
   getStripeEnvironmentVariables,
   checkStripeApiKeys,
-  generateSetupNeededResponse,
   getStripeApiKeys,
+  generateSetupNeededResponse,
   formatStripeErrorResponse
 } from './stripe-utils.js';
 
-// Request parameters
-interface StripeSearchCustomersRequest {
-  query: string;
-  limit?: number;
-  page?: string;
-}
+// --- Local Type Definitions for this Utility ---
 
-// Customer object
-interface StripeCustomer {
+/**
+ * Represents a single customer object returned by Stripe list/search.
+ */
+interface StripeCustomerSummary {
   id: string;
-  email: string | null;
-  name: string | null;
-  phone: string | null;
-  description: string | null;
-  created: number;
-  currency: string | null;
-  default_source: string | null;
-  metadata: any;
+  email?: string | null;
+  name?: string | null;
+  phone?: string | null;
+  created: string;
+  currency?: string | null;
+  description?: string | null;
 }
 
-// Success response
+/**
+ * Represents a successful response when searching Stripe customers.
+ */
 interface StripeSearchCustomersSuccessResponse {
-  success: true;
-  count: number;
-  customers: StripeCustomer[];
-  has_more: boolean;
-  next_page?: string;
-}
-
-// Error response
-interface StripeSearchCustomersErrorResponse {
-  success: false;
-  error: {
-    message: string;
-    type?: string;
-    code?: string;
-  };
-}
-
-// Add SetupNeededResponse type
-type SetupNeededResponse = {
   status: 'success';
-  data: {
-    needs_setup: true;
-    popupUrl: string;
-    provider: string;
-  };
-};
+  count: number;
+  has_more: boolean;
+  data: StripeCustomerSummary[];
+  query_used: string; // Include the query used for the search
+}
 
-// Combined response type
-type StripeSearchCustomersResponse = StripeSearchCustomersSuccessResponse | StripeSearchCustomersErrorResponse | SetupNeededResponse;
+/**
+ * Union type representing all possible outcomes of the search customers utility.
+ */
+type StripeSearchCustomersResponse = 
+  SetupNeededResponse | 
+  StripeSearchCustomersSuccessResponse | 
+  UtilityErrorResponse;
+
+/**
+ * Request parameters for searching Stripe customers
+ */
+interface StripeSearchCustomersParams {
+  query: string; // Required search query (uses Stripe Query Language)
+  limit?: number;
+  page?: string; // Pagination token for search results
+}
+
+// --- End Local Type Definitions ---
 
 /**
  * Implementation of the Stripe Search Customers utility
  */
 const stripeSearchCustomersUtility: UtilityTool = {
-  id: 'utility_stripe_search_customers',
-  description: 'Search customers from Stripe using advanced query syntax',
+  id: 'stripe_search_customers',
+  description: 'Searches for customers in Stripe using a query string.',
   schema: {
     query: {
       type: 'string',
       optional: false,
-      description: 'Search query in Stripe Query Language (e.g. "name:\'John\' OR email:\'john@example.com\'")'
+      description: `Search query using Stripe Query Language (e.g., "email:'test@example.com'").`
     },
     limit: {
       type: 'number',
       optional: true,
-      description: 'Maximum number of customers to return (default: 10, max: 100)'
+      description: 'Maximum number of customers to return (1-100, default 10).'
     },
     page: {
       type: 'string',
       optional: true,
-      description: 'Page token for pagination'
+      description: 'Pagination token for fetching next page of results.'
     }
   },
   
-  execute: async (userId: string, conversationId: string, params: StripeSearchCustomersRequest): Promise<StripeSearchCustomersResponse> => {
-    const logPrefix = '💳 [STRIPE_SEARCH_CUSTOMERS]';
+  execute: async (userId: string, conversationId: string, params: StripeSearchCustomersParams): Promise<StripeSearchCustomersResponse> => {
+    const logPrefix = '🔍 [STRIPE_SEARCH_CUSTOMERS]';
     try {
-      // Validate required parameters
-      if (!params.query) {
-        return {
-          success: false,
-          error: {
-            message: 'Search query is required'
-          }
-        };
-      }
-      
-      // Extract parameters with defaults
       const { 
         query,
         limit = 10,
         page
-      } = params;
+      } = params || {};
       
-      console.log(`${logPrefix} Searching customers for user: ${userId}`);
+      if (!query) {
+         console.error(`${logPrefix} Missing required parameter: query`);
+         return formatStripeErrorResponse({ message: 'Missing required parameter: query.' });
+      }
       
-      // Get environment variables
+      console.log(`${logPrefix} Searching customers for user: ${userId}, Query: ${query}`);
+      
+      // Get environment variables and keys
       const { secretServiceUrl } = getStripeEnvironmentVariables();
-      
-      // Check if user has the required API keys
       const { exists } = await checkStripeApiKeys(userId, secretServiceUrl);
-      
       if (!exists) {
         return generateSetupNeededResponse(userId, conversationId, logPrefix);
       }
-      
-      // Get the API keys
       const stripeKeys = await getStripeApiKeys(userId, secretServiceUrl);
       
-      // Call the Stripe API with the secret key
-      console.log(`${logPrefix} Calling Stripe API`);
+      // Construct query parameters for Stripe Search API
+      const queryParams: any = { 
+        query: query,
+        limit: Math.min(limit, 100) 
+      };
+      if (page) queryParams.page = page;
       
-      // Use standard axios.get
+      console.log(`${logPrefix} Calling Stripe API: GET /v1/customers/search with params:`, queryParams);
+
+      // Call the Stripe Search API
       const stripeResponse = await axios.get(
-        'https://api.stripe.com/v1/customers/search',
+        `https://api.stripe.com/v1/customers/search`,
         {
-          params: {
-            query,
-            limit,
-            page,
-          },
+          params: queryParams,
           headers: {
             'Authorization': `Bearer ${stripeKeys.apiSecret}`,
+            'Stripe-Version': '2024-04-10'
           }
         }
       );
       
+      console.log(`${logPrefix} Stripe API response status: ${stripeResponse.status}`);
       const customers = stripeResponse.data.data || [];
       
-      // Map the Stripe customers to our customer format
-      const mappedCustomers: StripeCustomer[] = customers.map((customer: any) => ({
-        id: customer.id,
-        email: customer.email,
-        name: customer.name,
-        phone: customer.phone,
-        description: customer.description,
-        created: customer.created,
-        currency: customer.currency,
-        default_source: customer.default_source,
-        metadata: customer.metadata || {}
+      // Map response to summary format
+      const customerSummaries = customers.map((cust: any): StripeCustomerSummary => ({
+        id: cust.id,
+        email: cust.email,
+        name: cust.name,
+        phone: cust.phone,
+        created: new Date(cust.created * 1000).toISOString(),
+        currency: cust.currency,
+        description: cust.description
       }));
       
-      // Return the customers
+      // Construct success response
       const successResponse: StripeSearchCustomersSuccessResponse = {
-        success: true,
-        count: mappedCustomers.length,
-        customers: mappedCustomers,
-        has_more: stripeResponse.data.has_more || false
+        status: 'success',
+        count: customerSummaries.length,
+        has_more: stripeResponse.data.has_more,
+        query_used: stripeResponse.data.query, // Include the query from response
+        data: customerSummaries
       };
-      
-      // Add next_page if available
-      if (stripeResponse.data.next_page) {
-        successResponse.next_page = stripeResponse.data.next_page;
-      }
       
       return successResponse;
-    } catch (error) {
-      console.error("❌ [STRIPE_SEARCH_CUSTOMERS] Error:", error);
       
-      // Create a proper error response
-      return {
-        success: false,
-        error: {
-          message: error instanceof Error ? error.message : 'An unknown error occurred',
-          type: error.response?.data?.error?.type,
-          code: error.response?.data?.error?.code
-        }
-      };
+    } catch (error: any) {
+      console.error("❌ [STRIPE_SEARCH_CUSTOMERS] Error:", error);
+      // Handle potential query syntax errors from Stripe (often 400)
+      if (axios.isAxiosError(error) && error.response?.status === 400) {
+         return formatStripeErrorResponse({ 
+            message: `Stripe query error: ${error.response?.data?.error?.message || 'Invalid query syntax.'}`, 
+            details: `Query used: ${params?.query}`
+        });
+      }
+      return formatStripeErrorResponse(error);
     }
   }
 };
 
-// Register the utility
+// Register and Export
 registry.register(stripeSearchCustomersUtility);
-
-// Export the utility
 export default stripeSearchCustomersUtility; 

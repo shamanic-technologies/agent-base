@@ -3,11 +3,22 @@
  * 
  * Removes a table from the database
  */
-import { UtilityTool, DeleteTableRequest } from '../../types/index.js';
+import { 
+  UtilityTool, 
+  UtilityErrorResponse,
+  // Removed DeleteTableRequest - defined locally
+} from '../../types/index.js';
 import { registry } from '../../registry/registry.js';
 import {
   findXataWorkspace
 } from '../../xata-client.js';
+
+// --- Local Type Definitions ---
+export interface DeleteTableRequest {
+  table: string;
+  confirm?: boolean;
+}
+// --- End Local Definitions ---
 
 /**
  * Implementation of the Delete Table utility

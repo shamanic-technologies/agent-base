@@ -5,19 +5,58 @@
  * Requires OAuth authentication with gmail.modify scope
  */
 import axios from 'axios';
+import { google } from 'googleapis';
 import { 
-  UtilityTool, 
-  GmailReadRequest, 
-  GmailReadResponse, 
+  UtilityTool,
   SetupNeededResponse,
-  GmailSuccessResponse, 
-  UtilityErrorResponse,
-  GmailMessageDetails,
-  GmailErrorMessageDetails,
-  GmailMessageHeader,
+  UtilityErrorResponse
 } from '../types/index.js';
 import { registry } from '../registry/registry.js';
-import { CredentialProvider } from '@agent-base/credentials';
+
+// --- Local Type Definitions for this Utility ---
+
+export interface GmailReadRequest {
+  query?: string;
+  maxResults?: number;
+  labelIds?: string[];
+}
+
+export interface GmailMessageHeader {
+  name: string;
+  value: string;
+}
+
+export interface GmailMessageDetails {
+  id: string;
+  threadId: string;
+  labelIds: string[];
+  subject: string;
+  from: string;
+  to: string;
+  date: string;
+  snippet: string;
+  unread: boolean;
+}
+
+export interface GmailErrorMessageDetails {
+  id: string;
+  error: string;
+}
+
+export interface GmailSuccessResponse {
+  status: 'success';
+  count: number;
+  messages: (GmailMessageDetails | GmailErrorMessageDetails)[];
+  total_messages?: number;
+  message?: string;
+}
+
+export type GmailReadResponse = 
+  SetupNeededResponse | 
+  GmailSuccessResponse | 
+  UtilityErrorResponse;
+
+// --- End Local Type Definitions ---
 
 /**
  * Implementation of the Gmail Read utility
@@ -72,23 +111,26 @@ const gmailReadUtility: UtilityTool = {
         `${toolAuthServiceUrl}/api/check-auth`,
         {
           userId,
-          provider: CredentialProvider.GOOGLE,
+          provider: 'google',
           requiredScopes: ['https://www.googleapis.com/auth/gmail.modify']
         }
       );
+      console.log('checkAuthResponse', JSON.stringify(checkAuthResponse.data));
       
       // If we don't have auth, return the auth URL for the frontend to handle
       if (!checkAuthResponse.data.hasAuth) {
         // Return the standardized SetupNeededResponse
         const setupNeededResponse: SetupNeededResponse = {
-          status: 'needs_setup',
-          needs_setup: true,
-          setup_url: checkAuthResponse.data.authUrl,
-          provider: 'gmail',
-          message: 'Gmail access requires authentication.',
-          title: "Connect Gmail Account",
-          description: "Secure access is required to read your emails",
-          button_text: "Continue with Gmail"
+          status: 'success',
+          data: {
+            needs_setup: true,
+            setup_url: checkAuthResponse.data.authUrl,
+            provider: 'gmail',
+            message: 'Gmail access requires authentication.',
+            title: "Connect Gmail Account",
+            description: "Secure access is required to read your emails",
+            button_text: "Continue with Gmail"
+          }
         };
         return setupNeededResponse;
       }

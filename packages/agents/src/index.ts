@@ -31,7 +31,6 @@ export function mapFromDatabase(record: AgentRecord): Agent {
     lastName: record.agent_last_name,
     profilePicture: record.agent_profile_picture,
     gender: record.agent_gender,
-    systemPrompt: record.agent_system_prompt,
     modelId: record.agent_model_id,
     memory: record.agent_memory,
     jobTitle: record.agent_job_title,
@@ -53,7 +52,6 @@ export function mapToDatabase(agent: Partial<Agent>): Partial<AgentRecord> {
   if (agent.lastName !== undefined) record.agent_last_name = agent.lastName;
   if (agent.profilePicture !== undefined) record.agent_profile_picture = agent.profilePicture;
   if (agent.gender !== undefined) record.agent_gender = agent.gender;
-  if (agent.systemPrompt !== undefined) record.agent_system_prompt = agent.systemPrompt;
   if (agent.modelId !== undefined) record.agent_model_id = agent.modelId;
   if (agent.memory !== undefined) record.agent_memory = agent.memory;
   if (agent.jobTitle !== undefined) record.agent_job_title = agent.jobTitle;

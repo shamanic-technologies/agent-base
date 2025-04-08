@@ -4,6 +4,7 @@
  * Shared functions for Crisp API operations
  */
 import axios from 'axios';
+import { SetupNeededResponse } from '../types/index.js';
 
 /**
  * Crisp website details structure
@@ -19,19 +20,6 @@ export interface CrispErrorResponse {
   success: false;
   error: string;
   details?: string;
-}
-
-/**
- * Response when setup is needed
- */
-export interface SetupNeededResponse {
-  needs_setup: boolean;
-  setup_url: string;
-  provider: string;
-  message: string;
-  title: string;
-  description: string;
-  button_text: string;
 }
 
 /**
@@ -98,14 +86,17 @@ export function generateSetupNeededResponse(
   
   // Return standardized SetupNeededResponse
   return {
-    needs_setup: true,
-    setup_url: setupUrl,
-    provider: "crisp",
-    message: "Crisp webhook setup is required.",
-    title: "Connect Crisp Account",
-    description: "Your webhook setup is needed to subscribe to Crisp webhook events",
-    button_text: "Connect Crisp Account"
-  } as SetupNeededResponse;
+    status: 'success',
+    data: {
+      needs_setup: true,
+      setup_url: setupUrl,
+      provider: "crisp",
+      message: "Crisp webhook setup is required.",
+      title: "Connect Crisp Account",
+      description: "Your webhook setup is needed to subscribe to Crisp webhook events",
+      button_text: "Connect Crisp Account"
+    }
+  };
 }
 
 /**

@@ -7,112 +7,83 @@
 import axios from 'axios';
 import { 
   UtilityTool,
-  StripeAuthNeededResponse,
-  StripeTransactionsErrorResponse
+  SetupNeededResponse,
+  UtilityErrorResponse
 } from '../types/index.js';
 import { registry } from '../registry/registry.js';
 import {
   getStripeEnvironmentVariables,
   checkStripeApiKeys,
-  generateSetupNeededResponse,
   getStripeApiKeys,
+  generateSetupNeededResponse,
   formatStripeErrorResponse
 } from './stripe-utils.js';
+
+// --- Local Type Definitions for this Utility ---
+
+/**
+ * Represents a successful response when creating a Stripe refund.
+ */
+interface StripeRefundSuccessResponse {
+  status: 'success';
+  refund_id: string;
+  charge_id: string;
+  amount: number;
+  currency: string;
+  created: string;
+  reason?: string | null;
+  refund_status: string; // e.g., succeeded, pending, failed
+}
+
+/**
+ * Union type representing all possible outcomes of this refund utility.
+ */
+type StripeRefundResponse = 
+  SetupNeededResponse | 
+  StripeRefundSuccessResponse | 
+  UtilityErrorResponse;
 
 /**
  * Request parameters for refunding a Stripe charge
  */
-interface StripeRefundRequest {
+interface StripeRefundParams {
   charge_id: string;
   amount?: number;
-  reason?: 'duplicate' | 'fraudulent' | 'requested_by_customer';
+  reason?: string;
 }
 
-/**
- * Successful refund response
- */
-interface StripeRefundSuccessResponse {
-  success: true;
-  refund: {
-    id: string;
-    amount: number;
-    currency: string;
-    charge: string;
-    status: string;
-    created: number;
-  };
-}
-
-/**
- * Union type for all possible refund responses
- */
-type StripeRefundResponse = StripeAuthNeededResponse | StripeRefundSuccessResponse | StripeTransactionsErrorResponse | SetupNeededResponse;
-
-/**
- * Add SetupNeededResponse type
- */
-type SetupNeededResponse = {
-  status: 'success';
-  data: {
-    needs_setup: true;
-    popupUrl: string;
-    provider: string;
-  };
-};
+// --- End Local Type Definitions ---
 
 /**
  * Implementation of the Stripe Refund utility
  */
 const stripeRefundUtility: UtilityTool = {
-  id: 'utility_stripe_refund',
-  description: 'Refund a Stripe charge',
+  id: 'stripe_refund',
+  description: 'Processes a refund for a specific charge in Stripe.',
   schema: {
-    charge_id: {
-      type: 'string',
-      optional: false,
-      description: 'ID of the charge to refund (e.g., ch_...)'
-    },
-    amount: {
-      type: 'number',
-      optional: true,
-      description: 'Amount to refund in dollars (default: full amount)'
-    },
-    reason: {
-      type: 'string',
-      optional: true,
-      description: 'Reason for the refund: "duplicate", "fraudulent", or "requested_by_customer"'
-    }
+    charge_id: { type: 'string', optional: false, description: 'The ID of the charge to refund.' },
+    amount: { type: 'number', optional: true, description: 'The amount to refund in cents. If omitted, the entire charge is refunded.' },
+    reason: { type: 'string', optional: true, description: 'Reason for the refund (e.g., duplicate, fraudulent, requested_by_customer).' },
   },
   
-  execute: async (userId: string, conversationId: string, params: StripeRefundRequest): Promise<StripeRefundResponse> => {
-    const logPrefix = '💳 [STRIPE_REFUND]';
+  execute: async (userId: string, conversationId: string, params: StripeRefundParams): Promise<StripeRefundResponse> => {
+    const logPrefix = '💸 [STRIPE_REFUND]';
     try {
-      // Extract required parameters
-      const { 
-        charge_id,
-        amount,
-        reason
-      } = params || {};
-      
-      // Validate charge_id
-      if (!charge_id) {
-        throw new Error('charge_id is required');
+      // Validate required parameters
+      if (!params?.charge_id) {
+        console.error(`${logPrefix} Missing required parameter: charge_id`);
+        return formatStripeErrorResponse({ message: 'Missing required parameter: charge_id.' });
       }
       
-      // Validate charge_id format
-      if (!charge_id.startsWith('ch_')) {
-        throw new Error('Invalid charge_id format. It should start with "ch_"');
-      }
+      const { charge_id, amount, reason } = params;
       
-      console.log(`${logPrefix} Processing refund for charge: ${charge_id}, user: ${userId}`);
+      console.log(`${logPrefix} Processing refund for charge: ${charge_id}, User: ${userId}`);
       
       // Get environment variables
-      const { secretServiceUrl, apiGatewayUrl } = getStripeEnvironmentVariables();
+      const { secretServiceUrl } = getStripeEnvironmentVariables();
       
       // Check if user has the required API keys
       const { exists } = await checkStripeApiKeys(userId, secretServiceUrl);
-      
-      // If we don't have the API keys, return auth needed response
       if (!exists) {
         return generateSetupNeededResponse(userId, conversationId, logPrefix);
       }
@@ -120,53 +91,48 @@ const stripeRefundUtility: UtilityTool = {
       // Get the API keys
       const stripeKeys = await getStripeApiKeys(userId, secretServiceUrl);
       
-      // Call the Stripe API with the secret key
-      console.log(`${logPrefix} Calling Stripe API to create refund for charge: ${charge_id}`);
-      
-      // Build the request body for the refund
-      const refundPayload: any = {
-        charge: charge_id,
-      };
-      
-      // Add optional parameters if provided
-      if (amount) {
-        // Convert dollars to cents for Stripe
-        refundPayload.amount = Math.round(amount * 100);
+      // Prepare the request body for Stripe API
+      const requestBody: any = { charge: charge_id };
+      if (amount !== undefined) {
+        requestBody.amount = amount;
       }
-      
       if (reason) {
-        refundPayload.reason = reason;
+        requestBody.reason = reason;
       }
       
-      // Make the API call to create the refund
+      console.log(`${logPrefix} Calling Stripe API: POST /v1/refunds with body:`, requestBody);
+
+      // Call the Stripe API to create the refund
       const stripeResponse = await axios.post(
         'https://api.stripe.com/v1/refunds',
-        new URLSearchParams(refundPayload).toString(),
+        requestBody,
         {
           headers: {
             'Authorization': `Bearer ${stripeKeys.apiSecret}`,
-            'Content-Type': 'application/x-www-form-urlencoded'
+            'Content-Type': 'application/x-www-form-urlencoded', // Stripe expects form-encoded data for POST
+            'Stripe-Version': '2024-04-10'
           }
         }
       );
       
+      console.log(`${logPrefix} Stripe API response status: ${stripeResponse.status}`);
       const refund = stripeResponse.data;
       
-      // Format and return the successful refund response
+      // Construct success response, converting amount from cents
       const successResponse: StripeRefundSuccessResponse = {
-        success: true,
-        refund: {
-          id: refund.id,
-          amount: refund.amount / 100, // Convert cents to dollars
-          currency: refund.currency,
-          charge: refund.charge,
-          status: refund.status,
-          created: refund.created
-        }
+        status: 'success',
+        refund_id: refund.id,
+        charge_id: refund.charge,
+        amount: refund.amount / 100, // Divide amount by 100
+        currency: refund.currency,
+        created: new Date(refund.created * 1000).toISOString(), // Convert timestamp
+        reason: refund.reason,
+        refund_status: refund.status
       };
       
       return successResponse;
-    } catch (error) {
+      
+    } catch (error: any) {
       console.error("❌ [STRIPE_REFUND] Error:", error);
       return formatStripeErrorResponse(error);
     }

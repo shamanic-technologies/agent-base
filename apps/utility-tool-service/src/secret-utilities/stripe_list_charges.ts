@@ -7,12 +7,8 @@ import axios from 'axios';
 const axiosClient = axios;
 import { 
   UtilityTool, 
-  StripeListTransactionsRequest, 
-  StripeListTransactionsResponse,
-  StripeAuthNeededResponse,
-  StripeTransactionsSuccessResponse,
-  StripeTransactionsErrorResponse,
-  StripeTransaction
+  SetupNeededResponse,
+  UtilityErrorResponse
 } from '../types/index.js';
 import { registry } from '../registry/registry.js';
 import {
@@ -20,21 +16,14 @@ import {
   checkStripeApiKeys,
   getStripeApiKeys,
   formatStripeErrorResponse,
-  generateSetupNeededResponse
+  generateSetupNeededResponse,
+  StripeTransactionsRequest, 
+  StripeTransactionsResponse,
+  StripeTransaction
 } from './stripe-utils.js';
 
-// Add SetupNeededResponse type
-type SetupNeededResponse = {
-  status: 'success';
-  data: {
-    needs_setup: true;
-    popupUrl: string;
-    provider: string;
-  };
-};
-
-// Combined response type
-type StripeListChargesResponse = StripeTransactionsSuccessResponse | StripeTransactionsErrorResponse | SetupNeededResponse;
+// Combined response type - simplified as StripeTransactionsResponse handles the union
+// type StripeListChargesResponse = StripeTransactionsResponse | SetupNeededResponse;
 
 /**
  * Implementation of the Stripe List Charges utility
@@ -60,7 +49,7 @@ const stripeListChargesUtility: UtilityTool = {
     }
   },
   
-  execute: async (userId: string, conversationId: string, params: StripeListTransactionsRequest): Promise<StripeListChargesResponse> => {
+  execute: async (userId: string, conversationId: string, params: StripeTransactionsRequest): Promise<StripeTransactionsResponse> => {
     const logPrefix = '💳 [STRIPE_LIST_CHARGES]';
     try {
       // Extract parameters with defaults
@@ -109,28 +98,31 @@ const stripeListChargesUtility: UtilityTool = {
       
       const charges = stripeResponse.data.data || [];
       
-      // Map the Stripe charges to our transaction format
-      const transactions: StripeTransaction[] = charges.map((charge: any) => ({
+      // Map Stripe charges to your StripeTransaction format and convert amount
+      const transactions = charges.map((charge: any): StripeTransaction => ({
         id: charge.id,
-        amount: charge.amount / 100, // Convert from cents to dollars
+        object: charge.object,
+        amount: charge.amount / 100, // Divide amount by 100
         currency: charge.currency,
-        description: charge.description || '',
+        created: new Date(charge.created * 1000).toISOString(), // Convert timestamp
         status: charge.status,
-        created: charge.created,
+        description: charge.description,
         customer: charge.customer,
-        metadata: charge.metadata
+        // Add amount_captured if it exists, also divided by 100
+        amount_captured: charge.amount_captured ? charge.amount_captured / 100 : undefined,
+        // Add amount_refunded if it exists, also divided by 100
+        amount_refunded: charge.amount_refunded ? charge.amount_refunded / 100 : undefined
       }));
-      
-      // Return the transactions
-      const successResponse: StripeTransactionsSuccessResponse = {
-        success: true,
+
+      // Return success response matching StripeTransactionsSuccessResponse structure
+      const successResponse: StripeTransactionsResponse = {
+        status: 'success',
         count: transactions.length,
-        transactions,
-        has_more: stripeResponse.data.has_more || false
+        has_more: stripeResponse.data.has_more,
+        data: transactions,
       };
-      
-      return successResponse;
-    } catch (error) {
+      return successResponse; // Return the correctly typed object
+    } catch (error: any) {
       console.error("❌ [STRIPE_LIST_CHARGES] Error:", error);
       return formatStripeErrorResponse(error);
     }

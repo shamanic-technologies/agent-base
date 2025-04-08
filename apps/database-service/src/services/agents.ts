@@ -33,7 +33,6 @@ const AGENTS_TABLE_SQL = `
     agent_last_name VARCHAR(255) NOT NULL,
     agent_profile_picture TEXT NOT NULL,
     agent_gender VARCHAR(50) NOT NULL,
-    agent_system_prompt TEXT NOT NULL,
     agent_model_id VARCHAR(255) NOT NULL,
     agent_memory TEXT,
     agent_job_title VARCHAR(255) NOT NULL,
@@ -95,15 +94,14 @@ export async function createAgent(input: Omit<CreateUserAgentInput, 'user_id'>):
     // Insert new agent
     const result = await client.query(
       `INSERT INTO "${AGENTS_TABLE}" 
-      (agent_first_name, agent_last_name, agent_profile_picture, agent_gender, agent_system_prompt, agent_model_id, agent_memory, agent_job_title)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      (agent_first_name, agent_last_name, agent_profile_picture, agent_gender, agent_model_id, agent_memory, agent_job_title)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *`,
       [
         input.agent_first_name,
         input.agent_last_name,
         input.agent_profile_picture,
         input.agent_gender,
-        input.agent_system_prompt,
         input.agent_model_id,
         input.agent_memory,
         input.agent_job_title
@@ -159,11 +157,6 @@ export async function updateAgent(input: Omit<UpdateUserAgentInput, 'user_id'>):
     if (input.agent_gender !== undefined) {
       updateFields.push(`agent_gender = $${paramIndex++}`);
       params.push(input.agent_gender);
-    }
-    
-    if (input.agent_system_prompt !== undefined) {
-      updateFields.push(`agent_system_prompt = $${paramIndex++}`);
-      params.push(input.agent_system_prompt);
     }
     
     if (input.agent_model_id !== undefined) {

@@ -8,19 +8,21 @@
 import Stripe from 'stripe';
 import { 
   UtilityTool,
-  StripeTransactionsRequest,
-  StripeTransactionsResponse,
-  StripeTransactionsSuccessResponse,
   SetupNeededResponse,
-  UtilityErrorResponse,
-  StripeTransaction
-} from '../types/index.js';
+  UtilityErrorResponse
+} from '../types/index.js'; // Keep generic types
 import { registry } from '../registry/registry.js';
 import {
+  getStripeEnvironmentVariables,
   checkStripeApiKeys,
-  generateSetupNeededResponse,
   getStripeApiKeys,
-  formatStripeErrorResponse
+  generateSetupNeededResponse,
+  formatStripeErrorResponse,
+  // Import Stripe-specific types from stripe-utils
+  StripeTransactionsRequest, 
+  StripeTransactionsResponse,
+  StripeTransaction,
+  StripeTransactionsSuccessResponse // Also needed for constructing success response
 } from './stripe-utils.js';
 
 /**
@@ -88,14 +90,27 @@ const stripeListBalanceTransactions: UtilityTool = {
       };
 
       // Fetch transactions
-      const transactions = await stripe.balanceTransactions.list(listParams);
+      const transactionsResponse = await stripe.balanceTransactions.list(listParams);
       
-      // Prepare success response
+      // Map transactions and convert amount from cents to main unit
+      const processedData = transactionsResponse.data.map(tx => ({
+        ...tx,
+        // Convert Unix timestamp (seconds) to ISO 8601 string
+        created: new Date(tx.created * 1000).toISOString(), 
+        // Divide amount by 100 to convert from cents to main currency unit
+        amount: tx.amount / 100,
+        // Ensure net amount is also converted if it exists (common in balance transactions)
+        net: tx.net ? tx.net / 100 : undefined,
+        // Ensure fee is also converted if it exists
+        fee: tx.fee ? tx.fee / 100 : undefined
+      }));
+      
+      // Prepare success response with processed data
       const successResponse: StripeTransactionsSuccessResponse = {
         status: 'success',
-        count: transactions.data.length,
-        has_more: transactions.has_more,
-        data: transactions.data as unknown as StripeTransaction[], // Cast needed if types differ
+        count: processedData.length,
+        has_more: transactionsResponse.has_more,
+        data: processedData as unknown as StripeTransaction[], // Use processed data
       };
       return successResponse;
       

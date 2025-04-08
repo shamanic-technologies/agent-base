@@ -4,8 +4,25 @@
  * Performs location-based searches using the Google Maps API via SerpAPI.
  * Useful for finding places, businesses, and detailed location information.
  */
-import { UtilityTool, GoogleMapsRequest } from '../../types/index.js';
-import { registry } from '../../registry/registry.js';
+import axios from 'axios';
+import { 
+  UtilityTool,
+  // Removed GoogleMapsRequest - defined locally
+  UtilityErrorResponse 
+} from '../../types/index.js'; // Corrected path relative to api-utilities/google/
+import { registry } from '../../registry/registry.js'; // Corrected path
+
+// --- Local Type Definitions for this Utility ---
+
+export interface GoogleMapsRequest {
+  query: string;
+  location?: string;
+  limit?: number;
+}
+
+// Removed placeholder local response types
+
+// --- End Local Type Definitions ---
 
 /**
  * Implementation of the Google Maps utility

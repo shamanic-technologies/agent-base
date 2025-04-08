@@ -7,142 +7,133 @@
 import axios from 'axios';
 import { 
   UtilityTool,
-  StripeListTransactionsRequest, 
-  StripeListTransactionsResponse,
-  StripeAuthNeededResponse,
-  StripeTransactionsSuccessResponse,
-  StripeTransactionsErrorResponse,
-  StripeTransaction
+  SetupNeededResponse,
+  UtilityErrorResponse
 } from '../types/index.js';
 import { registry } from '../registry/registry.js';
 import {
   getStripeEnvironmentVariables,
   checkStripeApiKeys,
-  generateSetupNeededResponse,
   getStripeApiKeys,
-  formatStripeErrorResponse
+  generateSetupNeededResponse,
+  formatStripeErrorResponse,
+  StripeTransactionsResponse,
+  StripeTransaction
 } from './stripe-utils.js';
 
-// Add SetupNeededResponse type
-type SetupNeededResponse = {
-  status: 'success';
-  data: {
-    needs_setup: true;
-    popupUrl: string;
-    provider: string;
-  };
-};
+// Define the specific parameters for this utility
+interface StripeListRefundsParams {
+    limit?: number;
+    starting_after?: string; 
+    ending_before?: string; 
+    charge_id?: string; // Specific param for listing refunds by charge
+}
 
-// Combined response type
-type StripeListRefundsResponse = StripeTransactionsSuccessResponse | StripeTransactionsErrorResponse | SetupNeededResponse;
+// Combined response type - simplified as StripeTransactionsResponse handles the union
+// type StripeListRefundsResponse = StripeTransactionsResponse | SetupNeededResponse;
 
 /**
  * Implementation of the Stripe List Refunds utility
  */
 const stripeListRefundsUtility: UtilityTool = {
-  id: 'utility_stripe_list_refunds',
-  description: 'List refunds (money returned to customers) from Stripe',
+  id: 'stripe_list_refunds',
+  description: 'List Stripe refunds, optionally filtered by customer or other criteria.',
   schema: {
-    limit: {
-      type: 'number',
-      optional: true,
-      description: 'Maximum number of refunds to return (default: 10)'
-    },
-    starting_after: {
-      type: 'string',
-      optional: true,
-      description: 'Cursor for pagination, refund ID to start after'
-    },
-    ending_before: {
-      type: 'string',
-      optional: true,
-      description: 'Cursor for pagination, refund ID to end before'
-    },
-    charge: {
-      type: 'string',
-      optional: true,
-      description: 'Only return refunds for this charge ID'
-    }
+    limit: { type: 'number', optional: true, description: 'Maximum number of refunds to return (1-100)' },
+    starting_after: { type: 'string', optional: true, description: 'Cursor for pagination (refund ID)' },
+    ending_before: { type: 'string', optional: true, description: 'Cursor for pagination (refund ID)' },
+    charge_id: { type: 'string', optional: true, description: 'Only return refunds for a specific charge ID.' },
+    // Removed customer_id as Stripe refunds list doesn't filter by customer directly
   },
   
-  execute: async (userId: string, conversationId: string, params: StripeListTransactionsRequest & { charge?: string }): Promise<StripeListRefundsResponse> => {
-    const logPrefix = '💳 [STRIPE_LIST_REFUNDS]';
+  execute: async (userId: string, conversationId: string, params: StripeListRefundsParams): Promise<StripeTransactionsResponse> => {
+    const logPrefix = '💸 [STRIPE_LIST_REFUNDS]';
     try {
       // Extract parameters with defaults
       const { 
         limit = 10,
         starting_after,
         ending_before,
-        charge
+        charge_id
       } = params || {};
       
-      console.log(`${logPrefix} Listing refunds for user: ${userId}`);
-      
-      // Get environment variables
-      const { secretServiceUrl, apiGatewayUrl } = getStripeEnvironmentVariables();
-      
-      // Check if user has the required API keys
-      const { exists } = await checkStripeApiKeys(userId, secretServiceUrl);
-      
-      // If we don't have the API keys, return auth needed response
-      if (!exists) {
-        return generateSetupNeededResponse(userId, conversationId, logPrefix);
+      if (!userId || !conversationId) {
+        console.error(`${logPrefix} Missing userId or conversationId`);
+        return formatStripeErrorResponse({ message: 'Internal server error: Missing user or conversation context.' });
       }
       
-      // Get the API keys
+      // Get necessary environment variables
+      const { secretServiceUrl } = getStripeEnvironmentVariables(); // Error handled within the function
+
+      // Check if Stripe keys exist
+      const { exists } = await checkStripeApiKeys(userId, secretServiceUrl);
+      if (!exists) {
+          console.log(`${logPrefix} Stripe setup needed for user ${userId}`);
+          return generateSetupNeededResponse(userId, conversationId, logPrefix);
+      }
+      
+      // Get Stripe keys
       const stripeKeys = await getStripeApiKeys(userId, secretServiceUrl);
+      // stripeKeys will contain { apiKey, apiSecret }
       
-      // Call the Stripe API with the secret key
-      console.log(`${logPrefix} Calling Stripe API`);
-      
-      // Build query parameters
-      const queryParams: any = {
-        limit,
-        starting_after: starting_after || undefined,
-        ending_before: ending_before || undefined
-      };
+      // Construct query parameters for Stripe API
+      const queryParams: any = { limit: Math.min(limit, 100) }; // Ensure limit is within 1-100
+      if (starting_after) queryParams.starting_after = starting_after;
+      if (ending_before) queryParams.ending_before = ending_before;
       
       // Add charge filter if provided
-      if (charge) {
-        queryParams.charge = charge;
+      if (charge_id) {
+        queryParams.charge = charge_id; // Use the correct param name for Stripe API
+      } else {
+        // According to Stripe docs, listing refunds requires *either* charge OR payment_intent
+        // This utility seems designed to list refunds for a specific charge.
+        // If charge_id is not provided, we should return an error or clarify the utility's purpose.
+        console.error(`${logPrefix} Missing required parameter: charge_id`);
+        return formatStripeErrorResponse({ message: 'Missing required parameter: charge_id is needed to list refunds.' });
       }
       
+      console.log(`${logPrefix} Calling Stripe API: GET /v1/refunds with params:`, queryParams);
+      
+      // Make the request to Stripe API
+      // Note: Stripe lists refunds under /v1/refunds, optionally filtered by charge
       const stripeResponse = await axios.get(
-        `https://api.stripe.com/v1/charges/${charge}/refunds`,
+        `https://api.stripe.com/v1/refunds`, // Use the correct refunds endpoint
         {
           params: queryParams,
           headers: {
-            'Authorization': `Bearer ${stripeKeys.apiSecret}`,
-            'Content-Type': 'application/x-www-form-urlencoded'
+            Authorization: `Bearer ${stripeKeys.apiSecret}`, // Use the fetched secret key
+            'Stripe-Version': '2024-04-10' // Use a specific API version
           }
         }
       );
       
+      console.log(`${logPrefix} Stripe API response status: ${stripeResponse.status}`);
+      
       const refunds = stripeResponse.data.data || [];
       
-      // Map the Stripe refunds to our transaction format
-      const transactions: StripeTransaction[] = refunds.map((refund: any) => ({
+      // Map Stripe refunds to your StripeTransaction format and convert amount
+      const transactions = refunds.map((refund: any): StripeTransaction => ({
         id: refund.id,
-        amount: -1 * refund.amount / 100, // Convert to negative dollars to indicate outflow
+        object: refund.object,
+        amount: refund.amount / 100, // Divide amount by 100
         currency: refund.currency,
-        description: `Refund for charge: ${refund.charge}`,
+        created: new Date(refund.created * 1000).toISOString(), // Convert timestamp
         status: refund.status,
-        created: refund.created,
-        metadata: refund.metadata,
-        reason: refund.reason || null,
-        charge_id: refund.charge
+        description: refund.reason || refund.description, // Use reason if available
+        customer: undefined, // Refund object doesn't directly link to customer
+        // Add other relevant refund fields if needed
       }));
       
-      // Return the transactions
-      const successResponse: StripeTransactionsSuccessResponse = {
-        success: true,
+      // Return success response matching StripeTransactionsSuccessResponse structure
+      const successResponse: StripeTransactionsResponse = {
+        status: 'success',
         count: transactions.length,
-        transactions,
-        has_more: stripeResponse.data.has_more || false
+        has_more: stripeResponse.data.has_more,
+        data: transactions,
       };
       
       return successResponse;
-    } catch (error) {
+    } catch (error: any) {
       console.error("❌ [STRIPE_LIST_REFUNDS] Error:", error);
       return formatStripeErrorResponse(error);
     }

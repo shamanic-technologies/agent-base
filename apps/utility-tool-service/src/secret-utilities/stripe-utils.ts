@@ -7,6 +7,59 @@ import axios from 'axios';
 import { SetupNeededResponse, UtilityErrorResponse } from '../types/index.js';
 // import { StripeAuthNeededResponse } from '../types/index.js';
 
+// --- Relocated Stripe Type Definitions ---
+
+/**
+ * Represents the parameters for requesting Stripe transactions.
+ */
+export interface StripeTransactionsRequest {
+  limit?: number;
+  starting_after?: string; // For pagination
+  ending_before?: string; // For pagination
+  type?: string; // e.g., 'charge', 'payment_intent'
+  customer_id?: string;
+}
+
+/**
+ * Represents a single Stripe transaction (charge, refund, etc.).
+ * Fields should align with common properties from Stripe API objects.
+ */
+export interface StripeTransaction {
+  id: string;
+  object: string;
+  amount: number;
+  currency: string;
+  created: string;
+  status: string;
+  description?: string | null;
+  customer?: string | null;
+  // Add other relevant fields as needed based on specific Stripe objects
+  amount_captured?: number | null;
+  amount_refunded?: number | null;
+  net?: number | null;
+  fee?: number | null;
+}
+
+/**
+ * Represents a successful response when listing Stripe transactions.
+ */
+export interface StripeTransactionsSuccessResponse {
+  status: 'success';
+  count: number;
+  has_more: boolean;
+  data: StripeTransaction[];
+}
+
+/**
+ * Union type representing all possible outcomes of a Stripe transaction-listing utility.
+ */
+export type StripeTransactionsResponse = 
+  SetupNeededResponse | 
+  StripeTransactionsSuccessResponse | 
+  UtilityErrorResponse;
+
+// --- End Relocated Stripe Type Definitions ---
+
 /**
  * Stripe API key structure
  */
@@ -46,7 +99,7 @@ export async function checkStripeApiKeys(userId: string, secretServiceUrl: strin
     `${secretServiceUrl}/api/check-secret`,
     {
       userId,
-      secretType: 'stripe'
+      secretType: 'stripe_api_keys'
     }
   );
   
@@ -87,14 +140,16 @@ export function generateSetupNeededResponse(
   
   // Return the standard SetupNeededResponse
   return {
-    status: 'needs_setup',
-    needs_setup: true,
-    setup_url: setupUrl,
-    provider: "stripe",
-    message: "Stripe API keys are required.",
-    title: "Connect Stripe Account",
-    description: "Your API keys are needed to access your Stripe data",
-    button_text: "Connect Stripe Account"
+    status: 'success',
+    data: {
+      needs_setup: true,
+      setup_url: setupUrl,
+      provider: "stripe",
+      message: "Stripe API keys are required.",
+      title: "Connect Stripe Account",
+      description: "Your API keys are needed to access your Stripe data",
+      button_text: "Connect Stripe Account"
+    }
   };
 }
 
@@ -110,7 +165,7 @@ export async function getStripeApiKeys(userId: string, secretServiceUrl: string)
     `${secretServiceUrl}/api/get-secret`,
     {
       userId,
-      secretType: 'stripe'
+      secretType: 'stripe_api_keys'
     }
   );
   
@@ -118,13 +173,27 @@ export async function getStripeApiKeys(userId: string, secretServiceUrl: string)
     throw new Error(getResponse.data.error || 'Failed to retrieve Stripe API keys');
   }
   
-  const stripeKeys = getResponse.data.data;
+  // Raw data retrieved from secret service (contains publishable_key and secret_key)
+  const retrievedKeys = getResponse.data.data;
   
-  if (!stripeKeys.apiSecret) {
-    throw new Error('Stripe API secret is missing');
+  // Validate the structure received from GSM
+  if (!retrievedKeys || typeof retrievedKeys !== 'object') {
+    throw new Error('Invalid data structure received for Stripe keys');
   }
   
-  return stripeKeys;
+  if (!retrievedKeys.secret_key) {
+    throw new Error('Stripe secret_key is missing in the stored secret');
+  }
+  
+  if (!retrievedKeys.publishable_key) {
+    throw new Error('Stripe publishable_key is missing in the stored secret');
+  }
+  
+  // Map the retrieved keys to the expected StripeKeys interface structure
+  return {
+    apiKey: retrievedKeys.publishable_key,
+    apiSecret: retrievedKeys.secret_key
+  };
 }
 
 /**
@@ -172,4 +241,49 @@ export function formatStripeErrorResponse(error: any): UtilityErrorResponse {
     error: responseError,
     details: responseDetails
   };
-} 
+}
+
+// --- Stripe Key Management Types (Moved from types/index.ts) ---
+
+/**
+ * Stripe API keys request types (for creation/update)
+ */
+export interface StripeKeysRequest {
+  key_type?: 'publishable_key' | 'secret_key' | 'both';
+  description?: string;
+}
+
+export interface StripeKeysSuccessResponse {
+  status: 'success'; 
+  message: string;
+  keys?: { 
+    publishable_key?: string;
+    secret_key?: string; 
+  }
+}
+
+// Union response type for creating/updating keys
+// Needs SetupNeededResponse and UtilityErrorResponse from ../types/index.js
+export type StripeKeysResponse = SetupNeededResponse | StripeKeysSuccessResponse | UtilityErrorResponse;
+
+/**
+ * Stripe API keys read types
+ */
+export interface StripeKeysReadRequest {
+  key_type?: 'publishable_key' | 'secret_key' | 'both';
+}
+
+export interface StripeKeysReadSuccessResponse {
+  status: 'success'; 
+  success?: true; // Consider removing redundant success field
+  keys: {
+    publishable_key?: string;
+    secret_key?: string;
+  };
+}
+
+// Union response type for reading keys
+// Needs SetupNeededResponse and UtilityErrorResponse from ../types/index.js
+export type StripeKeysReadResponse = SetupNeededResponse | StripeKeysReadSuccessResponse | UtilityErrorResponse;
+
+// --- End Stripe Key Management Types --- 

@@ -3,12 +3,20 @@
  * 
  * Executes SQL-like queries on database tables and returns results
  */
-import { UtilityTool, QueryTableRequest } from '../../types/index.js';
+import { UtilityTool, UtilityErrorResponse } from '../../types/index.js';
 import { registry } from '../../registry/registry.js';
 import {
   findXataWorkspace,
   getXataClient
 } from '../../xata-client.js';
+
+// --- Local Type Definitions ---
+export interface QueryTableRequest {
+  table: string;
+  query: string;
+  params?: Record<string, any>;
+}
+// --- End Local Definitions ---
 
 /**
  * Implementation of the Query Table utility
