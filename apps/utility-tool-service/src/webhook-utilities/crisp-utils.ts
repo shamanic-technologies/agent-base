@@ -71,18 +71,18 @@ export async function checkCrispWebsiteId(userId: string, secretServiceUrl: stri
 
 /**
  * Generate setup needed response when Crisp website ID is missing
- * @param apiGatewayUrl API gateway URL
+ * @param secretServiceUrl Secret service URL
  * @param logPrefix Prefix for console logs
  * @returns Setup needed response object
  */
 export function generateSetupNeededResponse(
-  apiGatewayUrl: string,
+  secretServiceUrl: string,
   logPrefix: string
 ): SetupNeededResponse {
-  // Create direct instructions for storing website ID
-  const setupUrl = `${apiGatewayUrl}/secret/set_crisp_website_id`;
+  // Construct the URL pointing to the secret-service Crisp configuration form page
+  const setupUrl = `${secretServiceUrl}/crisp/form`;
   
-  console.log(`${logPrefix} No Crisp website ID found. Client should set up Crisp integration at: ${setupUrl}`);
+  console.log(`${logPrefix} No Crisp website ID found. Client should use popup for setup at: ${setupUrl}`);
   
   // Return standardized SetupNeededResponse
   return {
