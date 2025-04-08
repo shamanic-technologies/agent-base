@@ -15,9 +15,6 @@ export default function CrispFormPage() {
             <Card className="w-full max-w-md">
                 <CardHeader>
                     <CardTitle>Configure Crisp Integration</CardTitle>
-                    <CardDescription>
-                        Enter your Crisp Website ID to connect your account. You can find this ID in your Crisp settings under Website Settings &gt; Setup Instructions.
-                    </CardDescription>
                 </CardHeader>
                 <CardContent>
                     {/* Pass any server-fetched data as props if needed */}

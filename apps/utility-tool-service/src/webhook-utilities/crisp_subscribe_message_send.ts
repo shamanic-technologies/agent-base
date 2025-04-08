@@ -104,7 +104,7 @@ const crispSubscribeMessageSendUtility: UtilityTool = {
       // If we don't have the website ID, return setup needed response
       if (!exists) {
         console.log(`🔔 [CRISP] No website ID found for user ${userId}`);
-        return generateSetupNeededResponse(secretServiceUrl, "[CRISP]");
+        return generateSetupNeededResponse(userId, secretServiceUrl, "[CRISP]");
       }
       
       // Get the website ID
