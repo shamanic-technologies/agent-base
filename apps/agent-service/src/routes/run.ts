@@ -32,6 +32,9 @@ import { appendClientMessage } from 'ai';
 // @ts-ignore - appendResponseMessages is in the Vercel AI SDK documentation
 import { appendResponseMessages } from 'ai';
 
+// Import error handler
+import { handleToolError } from '../lib/utils/errorHandlers.js'; // Import the modified handler
+
 const runRouter = Router(); // Use a specific router for this file
 
 /**
@@ -146,21 +149,7 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       // --- Pipe Stream --- 
       // @ts-ignore - Assuming pipeDataStreamToResponse exists
       await result.pipeDataStreamToResponse(res, {
-        getErrorMessage: error => {
-            if (error == null) {
-              return 'unknown error';
-            }
-      
-            if (typeof error === 'string') {
-              return error;
-            }
-      
-            if (error instanceof Error) {
-              return error.message;
-            }
-      
-            return JSON.stringify(error);
-          },
+        getErrorMessage: handleToolError // Use the imported handler directly
       });
       // --- End Pipe Stream ---
 
