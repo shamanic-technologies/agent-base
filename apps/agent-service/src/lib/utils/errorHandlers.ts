@@ -44,35 +44,23 @@ export function handleAxiosError(error: any, apiUrl: string = 'API'): UtilityErr
 /**
  * Handle tool errors for AI SDK
  * Format according to Vercel AI SDK error protocol
+ * Formats an error into a simple string message suitable for stream piping responses.
  */
-export function handleToolError(error: any): any {
-  console.error(`[Tool Error] Error executing tool:`, error);
+export function handleToolError(error: any): string {
+  console.error(`[Tool Error] Formatting error for stream pipe:`, error);
+
+  if (error == null) return 'unknown error';
+  if (typeof error === 'string') return error;
+  if (error instanceof Error) return error.message;
+  // Check for our structured error format { error: { message: '...' } }
+  if (typeof error === 'object' && error?.error?.message) return error.error.message;
   
-  let errorMessage: string;
-  let errorCode: string = 'TOOL_ERROR';
-  
-  // Extract error message from various error types
-  if (typeof error === 'string') {
-    errorMessage = error;
-  } else if (error instanceof Error) {
-    errorMessage = error.message;
-    errorCode = error.name || errorCode;
-  } else if (typeof error === 'object' && error !== null) {
-    errorMessage = error.message || error.error || JSON.stringify(error);
-    errorCode = error.code || error.status || errorCode;
-  } else {
-    errorMessage = String(error);
+  // Fallback: attempt to stringify, handle if it fails
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return 'unserializable error object';
   }
-  
-  // Format error according to Vercel AI SDK stream protocol
-  return {
-    type: 'error',
-    error: {
-      message: errorMessage,
-      code: errorCode,
-      details: `Tool failed with error: ${errorMessage}`
-    }
-  };
 }
 
 /**
