@@ -82,7 +82,9 @@ export function generateSetupNeededResponse(
   logPrefix: string
 ): SetupNeededResponse {
   // Construct the URL pointing to the secret-service Crisp configuration form page
-  const setupUrl = `${secretServiceUrl}/crisp/form?userId=${encodeURIComponent(userId)}`;
+  // Append userId
+  // const utilityType = 'crisp'; // No longer needed here
+  const setupUrl = `${secretServiceUrl}/crisp?userId=${encodeURIComponent(userId)}`; // Point to /crisp
   
   console.log(`${logPrefix} No Crisp website ID found. Client should use popup for setup at: ${setupUrl}`);
   
@@ -114,6 +116,7 @@ export async function getCrispWebsiteId(userId: string, secretServiceUrl: string
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'x-user-id': userId
       },
       body: JSON.stringify({
         userId,
@@ -121,22 +124,27 @@ export async function getCrispWebsiteId(userId: string, secretServiceUrl: string
       })
     });
     
-    const data = await response.json();
+    const result = await response.json(); 
     
-    if (!data.success) {
-      throw new Error(data.error || 'Failed to retrieve Crisp website ID');
+    if (!response.ok) {
+        throw new Error(result?.error || `Failed to retrieve Crisp website ID (HTTP ${response.status})`);
+    }
+
+    if (!result.success) {
+      throw new Error(result.error || 'Secret service indicated failure retrieving Crisp website ID');
     }
     
-    const crispDetails = data.data;
+    const websiteIdString = result.data;
     
-    if (!crispDetails.websiteId) {
-      throw new Error('Crisp website ID is missing');
+    if (typeof websiteIdString !== 'string' || !websiteIdString.trim()) {
+      console.error('Retrieved secret data is not a valid string:', websiteIdString);
+      throw new Error('Crisp website ID retrieved from secret is invalid or empty');
     }
     
-    return crispDetails;
+    return { websiteId: websiteIdString.trim() }; 
   } catch (error) {
     console.error("Failed to get Crisp website ID:", error);
-    throw error;
+    throw error; 
   }
 }
 

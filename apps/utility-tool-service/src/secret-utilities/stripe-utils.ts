@@ -123,19 +123,12 @@ export function generateSetupNeededResponse(
   
   if (!secretServiceBaseUrl) {
     console.error(`${logPrefix} Error: SECRET_SERVICE_URL is not set. Cannot generate popup URL.`);
-    // Consider returning a UtilityErrorResponse here instead of throwing
-    // For consistency, let's return an error response:
-    const errorResponse: UtilityErrorResponse = {
-        status: 'error',
-        error: 'Configuration error: SECRET_SERVICE_URL is not set'
-    };
-    // This function's signature currently returns SetupNeededResponse, 
-    // so throwing might be necessary unless we change the signature or how it's used.
-    // Sticking with throw for now based on original code, but flag for review.
     throw new Error('Configuration error: SECRET_SERVICE_URL is not set'); 
   }
   
-  const setupUrl = `${secretServiceBaseUrl}/stripe/form?userId=${userId}&conversationId=${conversationId}`;
+  // Point to the specific /stripe endpoint and add userId
+  const setupUrl = `${secretServiceBaseUrl}/stripe?userId=${encodeURIComponent(userId)}`; 
+  
   console.log(`${logPrefix} Stripe keys not found, returning setup URL: ${setupUrl}`);
   
   // Return the standard SetupNeededResponse
