@@ -3,7 +3,12 @@
  * 
  * Creates a new table in the database with the specified name, description, and schema.
  */
-import { UtilityTool, CreateTableRequest } from '../../types/index.js';
+import { 
+  UtilityTool, 
+  UtilityErrorResponse,
+  // Removed CreateTableRequest - defined locally
+  // Removed DatabaseTableSchema - defined locally
+} from '../../types/index.js';
 import { registry } from '../../registry/registry.js';
 import { 
   findXataWorkspace, 
@@ -11,6 +16,18 @@ import {
   generateUniqueDatabaseName,
   addXataTableColumn
 } from '../../xata-client.js';
+
+// --- Local Type Definitions ---
+export interface DatabaseTableSchema {
+  [field: string]: string;
+}
+export interface CreateTableRequest {
+  name: string;
+  description: string;
+  schema: Record<string, string>;
+}
+// REVERTED local response type
+// --- End Local Definitions ---
 
 /**
  * Implementation of the Create Table utility

@@ -12,7 +12,8 @@
     "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist",
     "test": "jest",
     "db:migrate": "node-pg-migrate",
-    "db:seed": "ts-node src/seed.ts"
+    "db:seed": "ts-node src/seed.ts",
+    "db:cleanup": "tsc && node dist/cleanup-script.js"
   },
   "dependencies": {
     "@agent-base/agents": "workspace:^",

@@ -35,7 +35,7 @@ router.post('/create-user-agent', async (req: Request, res: Response): Promise<v
 
     // 2. Validate required agent fields (copied from original /create)
     if (!agentData.agent_first_name || !agentData.agent_last_name || !agentData.agent_profile_picture || 
-        !agentData.agent_gender || !agentData.agent_system_prompt || !agentData.agent_model_id || 
+        !agentData.agent_gender || !agentData.agent_model_id || 
         !agentData.agent_memory || !agentData.agent_job_title) {
       res.status(400).json({ success: false, error: 'Missing required agent fields' });
       return;

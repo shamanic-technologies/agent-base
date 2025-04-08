@@ -3,13 +3,28 @@
  * 
  * Modifies existing table structures in the database
  */
-import { UtilityTool, AlterTableRequest } from '../../types/index.js';
+import { UtilityTool, UtilityErrorResponse } from '../../types/index.js';
 import { registry } from '../../registry/registry.js';
 import {
   findXataWorkspace,
   getXataClient,
   addXataTableColumn
 } from '../../xata-client.js';
+
+// --- Local Type Definitions ---
+export interface AlterTableRequest {
+  table: string;
+  addColumn?: {
+    name: string;
+    type: string;
+  };
+  removeColumn?: string;
+  renameColumn?: {
+    oldName: string;
+    newName: string;
+  };
+}
+// --- End Local Definitions ---
 
 /**
  * Implementation of the Alter Table utility

@@ -5,163 +5,128 @@
  * If keys are not available, provides an API endpoint for the user to submit their keys
  */
 import axios from 'axios';
-import { UtilityTool } from '../types/index.js';
+import {
+  UtilityTool,
+  SetupNeededResponse,
+  UtilityErrorResponse
+} from '../types/index.js';
 import { registry } from '../registry/registry.js';
 import {
   getStripeEnvironmentVariables,
   checkStripeApiKeys,
-  generateSetupNeededResponse,
   getStripeApiKeys,
+  generateSetupNeededResponse,
   formatStripeErrorResponse
 } from './stripe-utils.js';
 
-// Request parameters
-interface StripeGetCustomerRequest {
-  customer_id: string;
-  expand?: string[];
-}
+// --- Local Type Definitions for this Utility ---
 
-// Customer object
-interface StripeCustomer {
-  id: string;
-  email: string | null;
-  name: string | null;
-  phone: string | null;
-  description: string | null;
-  created: number;
-  currency: string | null;
-  default_source: string | null;
-  metadata: any;
-  address: any | null;
-  balance: number | null;
-  shipping: any | null;
-  discount: any | null;
-  subscriptions?: any[];
-  cards?: any[];
-  sources?: any[];
-}
-
-// Success response
+/**
+ * Represents a successful response when fetching a Stripe customer.
+ */
 interface StripeGetCustomerSuccessResponse {
-  success: true;
-  customer: StripeCustomer;
-}
-
-// Error response
-interface StripeGetCustomerErrorResponse {
-  success: false;
-  error: {
-    message: string;
-    type?: string;
-    code?: string;
-  };
-}
-
-// Add SetupNeededResponse type (can be moved to a shared types file later)
-type SetupNeededResponse = {
   status: 'success';
-  data: {
-    needs_setup: true;
-    popupUrl: string;
-    provider: string;
-  };
-};
+  customer_id: string;
+  email?: string | null;
+  name?: string | null;
+  phone?: string | null;
+  created: string;
+  currency?: string | null;
+  // Add other relevant customer fields from Stripe API
+}
 
-// Combined response type
-type StripeGetCustomerResponse = StripeGetCustomerSuccessResponse | StripeGetCustomerErrorResponse | SetupNeededResponse;
+/**
+ * Union type representing all possible outcomes of the Stripe get customer utility.
+ */
+type StripeGetCustomerResponse = 
+  SetupNeededResponse | 
+  StripeGetCustomerSuccessResponse | 
+  UtilityErrorResponse;
+
+/**
+ * Request parameters for fetching a Stripe customer
+ */
+interface StripeGetCustomerParams {
+  customer_id: string; // Required Stripe customer ID (cus_...)
+}
+
+// --- End Local Type Definitions ---
 
 /**
  * Implementation of the Stripe Get Customer utility
  */
 const stripeGetCustomerUtility: UtilityTool = {
-  id: 'utility_stripe_get_customer',
-  description: 'Retrieve a specific customer from Stripe by ID',
+  id: 'stripe_get_customer',
+  description: 'Retrieves details for a specific Stripe customer by ID.',
   schema: {
-    customer_id: {
-      type: 'string',
-      optional: false,
-      description: 'Stripe Customer ID (starts with "cus_")'
-    },
-    expand: {
-      type: 'array',
-      optional: true,
-      description: 'Additional data to include (e.g. "subscriptions", "sources", "cards")'
-    }
+    customer_id: { type: 'string', optional: false, description: 'The ID of the Stripe customer (e.g., cus_...).' }
   },
   
-  execute: async (userId: string, conversationId: string, params: StripeGetCustomerRequest): Promise<StripeGetCustomerResponse> => {
-    const logPrefix = '💳 [STRIPE_GET_CUSTOMER]';
+  execute: async (userId: string, conversationId: string, params: StripeGetCustomerParams): Promise<StripeGetCustomerResponse> => {
+    const logPrefix = '👤 [STRIPE_GET_CUSTOMER]';
     try {
-      const { customer_id } = params;
-      if (!customer_id || typeof customer_id !== 'string') {
-        throw new Error('Invalid or missing customer_id parameter');
+      // Validate required parameters
+      if (!params?.customer_id) {
+        console.error(`${logPrefix} Missing required parameter: customer_id`);
+        return formatStripeErrorResponse({ message: 'Missing required parameter: customer_id.' });
       }
-
-      console.log(`${logPrefix} Getting customer ${customer_id} for user: ${userId}`);
-
+      
+      const { customer_id } = params;
+      
+      console.log(`${logPrefix} Fetching customer: ${customer_id}, User: ${userId}`);
+      
+      // Get environment variables and keys (following the standard pattern)
       const { secretServiceUrl } = getStripeEnvironmentVariables();
       const { exists } = await checkStripeApiKeys(userId, secretServiceUrl);
-
       if (!exists) {
-        // Use the new function
         return generateSetupNeededResponse(userId, conversationId, logPrefix);
       }
-
       const stripeKeys = await getStripeApiKeys(userId, secretServiceUrl);
-      console.log(`${logPrefix} Calling Stripe API to get customer ${customer_id}`);
+      
+      console.log(`${logPrefix} Calling Stripe API: GET /v1/customers/${customer_id}`);
 
-      // Use standard axios.get
+      // Call the Stripe API to get the customer
       const stripeResponse = await axios.get(
         `https://api.stripe.com/v1/customers/${customer_id}`,
         {
           headers: {
             'Authorization': `Bearer ${stripeKeys.apiSecret}`,
-            'Content-Type': 'application/x-www-form-urlencoded'
+            'Stripe-Version': '2024-04-10'
           }
         }
       );
-
+      
+      console.log(`${logPrefix} Stripe API response status: ${stripeResponse.status}`);
       const customer = stripeResponse.data;
-
-      // Map the Stripe customer to our format
-      const mappedCustomer: StripeCustomer = {
-        id: customer.id,
+      
+      // Construct success response
+      const successResponse: StripeGetCustomerSuccessResponse = {
+        status: 'success',
+        customer_id: customer.id,
         email: customer.email,
         name: customer.name,
         phone: customer.phone,
-        description: customer.description,
-        created: customer.created,
-        currency: customer.currency,
-        default_source: customer.default_source,
-        metadata: customer.metadata || {},
-        address: customer.address,
-        balance: customer.balance,
-        shipping: customer.shipping,
-        discount: customer.discount,
+        created: new Date(customer.created * 1000).toISOString(),
+        currency: customer.currency
+        // Map other fields as needed
       };
-
-      const successResponse: StripeGetCustomerSuccessResponse = {
-        success: true,
-        customer: mappedCustomer
-      };
-
+      
       return successResponse;
+      
     } catch (error: any) {
-      console.error(`${logPrefix} Error:`, error);
-      return {
-        success: false,
-        error: {
-          message: error.message || 'An unknown error occurred',
-          type: error.response?.data?.error?.type,
-          code: error.response?.data?.error?.code
-        }
-      };
+      console.error("❌ [STRIPE_GET_CUSTOMER] Error:", error);
+      // Specific check for 404 Customer Not Found
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        return formatStripeErrorResponse({ 
+            message: `Stripe customer with ID '${params?.customer_id}' not found.`, 
+            details: error.response?.data?.error?.message 
+        });
+      }
+      return formatStripeErrorResponse(error);
     }
   }
 };
 
-// Register the utility
+// Register and Export
 registry.register(stripeGetCustomerUtility);
-
-// Export the utility
 export default stripeGetCustomerUtility; 

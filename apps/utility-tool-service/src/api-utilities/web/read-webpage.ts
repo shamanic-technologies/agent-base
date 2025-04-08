@@ -4,8 +4,19 @@
  * Extracts content from web pages using the FireCrawl API and returns it in markdown format.
  * Useful for fetching clean, LLM-friendly content from websites.
  */
-import { UtilityTool, FireCrawlExtractContentRequest } from '../../types/index.js';
+import { UtilityTool } from '../../types/index.js';
 import { registry } from '../../registry/registry.js';
+
+// --- Local Type Definitions ---
+// Moved from types/index.ts
+export interface FireCrawlExtractContentRequest {
+  url: string;
+  onlyMainContent?: boolean;
+}
+// Assuming success response is the complex object returned by FireCrawl
+// Assuming error is handled by throwing
+type ReadWebPageResponse = any; // Use specific type if known, or keep 'any'
+// --- End Local Definitions ---
 
 /**
  * Implementation of the FireCrawl content extraction utility
@@ -25,7 +36,7 @@ const readWebPage: UtilityTool = {
     }
   },
   
-  execute: async (userId: string, conversationId: string, params: FireCrawlExtractContentRequest): Promise<any> => {
+  execute: async (userId: string, conversationId: string, params: FireCrawlExtractContentRequest): Promise<ReadWebPageResponse> => {
     try {
       // Extract and validate parameters
       const { url, onlyMainContent = true } = params;
@@ -46,7 +57,7 @@ const readWebPage: UtilityTool = {
       if (!apiKey) {
         throw new Error("FIRECRAWL_API_KEY is not configured in environment variables");
       }
-      
+      console.log('Firecrawl apiKey', apiKey);
       const response = await fetch("https://api.firecrawl.dev/v1/scrape", {
         method: "POST",
         headers: {
@@ -56,10 +67,10 @@ const readWebPage: UtilityTool = {
         body: JSON.stringify({
           url: url,
           onlyMainContent: onlyMainContent,
-          formats: ["markdown", "text"] // Get content in markdown and plain text formats
+          formats: ["markdown"] // Removed "text" as it's invalid according to FireCrawl API
         })
       });
-      
+
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`FireCrawl API error (${response.status}): ${errorText}`);

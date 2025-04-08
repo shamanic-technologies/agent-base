@@ -4,15 +4,42 @@
  * Performs web searches using the Google Search API and returns formatted results.
  * Useful for finding up-to-date information from the web.
  */
+import axios from 'axios';
 import { 
   UtilityTool, 
-  GoogleSearchRequest, 
-  GoogleSearchResponse, 
-  GoogleSearchSuccessResponse, 
-  UtilityErrorResponse,
-  GoogleSearchResult 
-} from '../../types/index.js';
-import { registry } from '../../registry/registry.js';
+  // Removed GoogleSearchRequest - defined locally
+  UtilityErrorResponse 
+  // Removed GoogleSearchResponse, GoogleSearchResult, GoogleSearchSuccessResponse - defined locally
+} from '../../types/index.js'; // Corrected path relative to api-utilities/google/
+import { registry } from '../../registry/registry.js'; // Corrected path
+
+// --- Local Type Definitions for this Utility ---
+
+export interface GoogleSearchRequest {
+  query: string;
+  limit?: number;
+}
+
+export interface GoogleSearchResult {
+  title: string;
+  link: string;
+  snippet: string;
+  position: number;
+}
+
+export interface GoogleSearchSuccessResponse {
+  status: 'success';
+  query: string;
+  results_count: number;
+  results: GoogleSearchResult[];
+  message?: string;
+}
+
+export type GoogleSearchResponse = 
+  GoogleSearchSuccessResponse | 
+  UtilityErrorResponse;
+
+// --- End Local Type Definitions ---
 
 /**
  * Implementation of the Google Search utility

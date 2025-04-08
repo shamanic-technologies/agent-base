@@ -3,12 +3,20 @@
  * 
  * Returns information about a database table, including schema and optionally data
  */
-import { UtilityTool, GetTableRequest } from '../../types/index.js';
+import { UtilityTool, UtilityErrorResponse } from '../../types/index.js';
 import { registry } from '../../registry/registry.js';
 import {
   findXataWorkspace,
   getXataClient
 } from '../../xata-client.js';
+
+// --- Local Type Definitions ---
+export interface GetTableRequest {
+  table: string;
+  includeData?: boolean;
+  limit?: number;
+}
+// --- End Local Definitions ---
 
 /**
  * Implementation of the Get Table utility

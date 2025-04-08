@@ -4,8 +4,29 @@
  * Performs flight searches using the Google Flights API via SerpAPI.
  * Useful for finding flight information, prices, routes, and travel options.
  */
-import { UtilityTool, GoogleFlightsRequest } from '../../types/index.js';
+import axios from 'axios';
+import { 
+  UtilityTool,
+  UtilityErrorResponse 
+} from '../../types/index.js';
 import { registry } from '../../registry/registry.js';
+
+// --- Local Type Definitions for this Utility ---
+
+export interface GoogleFlightsRequest {
+  origin: string;
+  destination: string;
+  departure_date: string;
+  return_date?: string;
+  adults?: number;
+  children?: number;
+  infants?: number;
+  cabin_class?: string;
+}
+
+// Define local response types if needed, or keep existing generic return
+
+// --- End Local Type Definitions ---
 
 /**
  * Helper function to format duration in minutes to human-readable format

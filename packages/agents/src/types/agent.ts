@@ -13,7 +13,6 @@ export interface AgentRecord {
   agent_last_name: string;
   agent_profile_picture: string;
   agent_gender: Gender;
-  agent_system_prompt: string;
   agent_model_id: string;
   agent_memory: string;
   agent_job_title: string;
@@ -34,7 +33,6 @@ export interface AgentCreationFields {
   agent_last_name: string;
   agent_profile_picture: string;
   agent_gender: Gender;
-  agent_system_prompt: string;
   agent_model_id: string;
   agent_memory: string;
   agent_job_title: string;
@@ -50,7 +48,6 @@ export interface UpdateAgentInputFields {
   agent_last_name?: string;
   agent_profile_picture?: string;
   agent_gender?: Gender;
-  agent_system_prompt?: string;
   agent_model_id?: string;
   agent_memory?: string;
   agent_job_title?: string;
@@ -95,7 +92,6 @@ export interface Agent {
   lastName: string;
   profilePicture: string;
   gender: Gender;
-  systemPrompt: string;
   modelId: string;
   memory: string;
   jobTitle: string;

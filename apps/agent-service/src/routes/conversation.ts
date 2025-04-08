@@ -10,7 +10,7 @@ import {
     ConversationRecord
 } from '@agent-base/agents';
 // Import the new service function
-import { getOrCreateConversationsFromAgent } from '../services/database.js'; // Updated import
+import { getOrCreateConversationsFromAgent } from '../services/index.js'; // Updated import
 
 const router = Router();
 const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL || 'http://localhost:3006'; // This is now unused here
@@ -36,16 +36,13 @@ router.get('/get-or-create-conversations-from-agent', async (req: Request, res: 
             return;
         }
 
-        console.log(`[Agent Service] Requesting conversations (or creation) for agent ${agentId} from database service.`);
-
         // Call the database service wrapper function
         try {
             // Call the new function from database.ts
             const conversationsResponse = await getOrCreateConversationsFromAgent(agentId, userId);
-
+            console.log('[Agent Service] Conversations response:', JSON.stringify(conversationsResponse, null, 2));
             // Forward the successful response from the database service
             // Note: The service function already returns the structured response
-            console.log(`[Agent Service] Received response from database service for agent ${agentId}. Success: ${conversationsResponse.success}, Count: ${conversationsResponse.data?.length ?? 0}`);
             res.status(200).json(conversationsResponse);
 
         } catch (error) {

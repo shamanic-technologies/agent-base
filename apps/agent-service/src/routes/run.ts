@@ -13,13 +13,17 @@ import { anthropic } from '@ai-sdk/anthropic';
 import { streamText } from 'ai';
 // @ts-ignore - Message not directly exported from 'ai' in this context
 import { Message } from 'ai';
+// Import User type
+import { User } from '../types/index.js';
+import { ServiceResponse } from '../types/index.js';
 
 // Service function imports
 import { 
   getAgentFromConversation, 
   getConversationById,
-  updateConversationMessagesInDb
-} from '../services/database.js';
+  updateConversationMessagesInDb,
+  getUserProfileById
+} from '../services/index.js'; // Updated path to barrel file
 
 // Tool Creator Imports
 import { createListUtilitiesTool } from '../lib/utility/utility_list_utilities.js';
@@ -32,6 +36,9 @@ import { appendClientMessage } from 'ai';
 // @ts-ignore - appendResponseMessages is in the Vercel AI SDK documentation
 import { appendResponseMessages } from 'ai';
 
+// Prompt Builder import
+import { buildSystemPrompt } from '../lib/promptBuilder.js';
+
 // Import error handler
 import { handleToolError } from '../lib/utils/errorHandlers.js'; // Import the modified handler
 
@@ -42,7 +49,8 @@ const runRouter = Router(); // Use a specific router for this file
  */
 runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
   const handleAgentRun = async () => {
-    let agent: AgentRecord; 
+    let agent: AgentRecord | null = null; // Initialize as null
+    let userProfile: User | null = null; // Initialize as null
     let currentMessage: Message;
     let conversation_id: string;
     let userId: string;
@@ -67,7 +75,19 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       }
       // --- End Extraction & Validation ---
       
-      // --- Initialize Tools ---
+      // --- Get Agent Details --- 
+      const agentResponse = await getAgentFromConversation(conversation_id, userId);
+      if (!agentResponse.success || !agentResponse.data) {
+          console.error(`[Agent Service /run] Failed to get agent for conversation ${conversation_id}:`, agentResponse.error);
+          // Decide appropriate error response - potentially 404 or 500
+          res.status(500).json({ success: false, error: `Failed to load agent configuration: ${agentResponse.error}` });
+          return;
+      }
+      agent = agentResponse.data; // Assign agent data
+      console.log(`[Agent Service /run] Fetched agent details for conversation: ${conversation_id}, using model: ${agent.agent_model_id}`);
+      // --- End Get Agent Details ---
+
+      // --- Initialize Tools (Requires Agent to be fetched first) ---
       const toolCredentials = { userId, conversationId: conversation_id, apiKey };
       const tools = {
           utility_list_utilities: createListUtilitiesTool(toolCredentials),
@@ -76,27 +96,31 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       };
       // --- End Initialize Tools ---
       
-      // --- Get Agent Details --- 
-
-      agent = await getAgentFromConversation(conversation_id, userId);
-      console.log(`[Agent Service /run] Fetched agent details for conversation: ${conversation_id}, using model: ${agent.agent_model_id}`);
-      // --- End Get Agent Details ---
+      // --- Get User Profile --- 
+      const profileResponse= await getUserProfileById(userId); // Call the service
+      if (profileResponse.success && profileResponse.data) {
+          userProfile = profileResponse.data as User;
+          console.log(`[Agent Service /run] Fetched user profile for user: ${userId}`);
+          console.log(`[Agent Service /run] User profile: ${JSON.stringify(userProfile)}`);
+      } else {
+          // Log warning but continue - profile is optional context
+          console.warn(`[Agent Service /run] Could not fetch profile for user ${userId}:`, profileResponse.error);
+      }
+      // --- End Get User Profile --- 
 
       // --- Get Conversation & History --- 
       let historyMessages: Message[] = [];
-      try {
-          const conversationResponse = await getConversationById(conversation_id, userId);
-          if (conversationResponse.success && conversationResponse.data) {
-              historyMessages = conversationResponse.data.messages || [];
-              console.log(`[Agent Service /run] Fetched ${historyMessages.length} history messages for conv: ${conversation_id}`);
-          } else {
-              console.warn(`[Agent Service /run] Conversation ${conversation_id} not found or error fetching, starting with empty history.`);
-              // Proceed with empty history if conversation isn't found (e.g., first message)
-          }
-      } catch (fetchError) {
-          console.error(`[Agent Service /run] Error fetching conversation ${conversation_id}, proceeding with empty history:`, fetchError);
-          // Proceed with empty history on error
+      const conversationResponse = await getConversationById(conversation_id, userId);
+      // Now check the success field of the ServiceResponse
+      if (conversationResponse.success && conversationResponse.data?.messages) {
+          historyMessages = conversationResponse.data.messages;
+          console.log(`[Agent Service /run] Fetched ${historyMessages.length} history messages for conv: ${conversation_id}`);
+      } else {
+          // Log warning if fetching failed or conversation has no messages
+          console.warn(`[Agent Service /run] Conversation ${conversation_id} not found, error fetching, or no messages present. Starting with empty history. Error: ${conversationResponse.error}`);
       }
+      // --- End Get History --- 
+
       // --- Combine Messages --- 
       const allMessages: Message[] = appendClientMessage({ 
         messages: historyMessages, 
@@ -104,10 +128,18 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       });
       // --- End Combine Messages --- 
 
+      // --- Construct System Prompt --- 
+      const systemPrompt = buildSystemPrompt(agent, userProfile); // Pass the whole agent object
+      console.log(`[Agent Service /run] Constructed System Prompt length: ${systemPrompt.length}`); // Log length for debugging
+      console.log(`[Agent Service /run] System Prompt: ${systemPrompt}`); // Log the prompt for debugging
+      // --- End Construct System Prompt --- 
+
       // --- Call AI Model --- 
       const result = await streamText({
         model: anthropic(agent.agent_model_id),
         messages: allMessages as any[],
+        // @ts-ignore - system is supported by Vercel AI SDK but might not be in inferred type
+        system: systemPrompt, // Use the dynamic prompt
         tools: tools,
         // @ts-ignore - maxSteps is a valid property
         maxSteps: 25, 
@@ -117,7 +149,7 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
             prefix: 'msgs',
             size: 16,
         }),
-        async onFinish({ text, toolCalls, response }) { 
+        async onFinish({ response }) { // Destructure response directly
             console.log(`[Agent Service /run] Stream finished via onFinish... Saving messages...`);
             try {
                 console.log(`[Agent Service /run] onFinish... Appending response messages...`);
@@ -126,19 +158,21 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
                   messages: allMessages, 
                   responseMessages: response.messages
                 });
-                console.log(`[Agent Service /run] finalMessages to save:`, JSON.stringify(finalMessages, null, 2));
+                console.log(`[Agent Service /run] finalMessages count to save: ${finalMessages.length}`);
                 
                 // Save the complete, updated message list back to the database service
+                // Use the refactored service function
                 const saveResult = await updateConversationMessagesInDb(conversation_id, finalMessages, userId);
                 
                 if (!saveResult.success) {
+                    // Log the error returned from the service function
                     console.error("[Agent Service /run] Error saving messages to DB in onFinish:", saveResult.error);
                 } else {
                     console.log("[Agent Service /run] Messages saved successfully via onFinish.");
                 }
                 
             } catch (dbError) {
-              console.error("[Agent Service /run] Error calling database service to save messages in onFinish:", dbError);
+              console.error("[Agent Service /run] Exception calling database service to save messages in onFinish:", dbError);
             }
         },
       });
@@ -154,6 +188,7 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       // --- End Pipe Stream ---
 
     } catch (error) {
+       console.error("[Agent Service /run] Unhandled error in handleAgentRun:", error); // Log the top-level error
        next(error); // Pass errors to Express error handler
     }
   };

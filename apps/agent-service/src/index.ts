@@ -60,7 +60,6 @@ app.use((req, res, next) => {
   try {
     // Get user ID from header set by API gateway middleware
     const userId = req.headers['x-user-id'] as string;
-    console.log(`[Agent Service] User authenticated: ${userId}`);
     
     if (userId) {
       // Set user object on request for route handlers

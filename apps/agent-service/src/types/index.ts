@@ -2,23 +2,42 @@
  * User Interface
  * Represents a user in the model service.
  */
+
 export interface User {
   id: string;
-  email?: string;
-  name?: string;
-  provider?: string;
+  data: {
+    name: string;
+    email: string;
+    picture: string;
+    provider: string;
+    created_at: string;
+    last_login: string;
+    providerId: string;
+  };
+  created_at: string;
+  updated_at: string;
 }
 
 /**
  * UtilityError Interface
- * Standardized error structure returned by utility tools
+ * Standardized error structure returned by utility tools or services.
  */
 export interface UtilityError {
   error: boolean;
   message: string;
-  status: string;
+  status: string; // Consider using specific statuses like 'error', 'success', 'not_found'
   code: string;
   statusCode?: number;
+}
+
+/**
+ * Generic Service Response Interface
+ * Standardized response structure for service calls.
+ */
+export interface ServiceResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: UtilityError | string; // Allow either structured error or simple string message
 }
 
 // Extend Express Request interface to include user
