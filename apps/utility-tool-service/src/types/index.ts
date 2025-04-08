@@ -36,11 +36,11 @@ export interface UtilityTool {
 }
 
 /**
- * Common response structure
+ * Standardized error response structure for all utility tools
  */
-export interface UtilityResponse {
-  data?: any;
-  error?: string;
+export interface UtilityErrorResponse {
+  status: 'error'; // Added status field for clarity
+  error: string;
   details?: string;
 }
 
@@ -76,6 +76,26 @@ export interface GoogleSearchRequest {
   query: string;
   limit?: number;
 }
+
+// Define the structure for a single search result
+export interface GoogleSearchResult {
+  title: string;
+  link: string;
+  snippet: string;
+  position: number;
+}
+
+// Define the success response structure
+export interface GoogleSearchSuccessResponse {
+  status: 'success'; // Added status field for consistency
+  query: string;
+  results_count: number;
+  results: GoogleSearchResult[];
+  message?: string; // Optional message, e.g., for no results
+}
+
+// Update the union type for the Google Search response
+export type GoogleSearchResponse = GoogleSearchSuccessResponse | UtilityErrorResponse;
 
 /**
  * Google Maps utility types
@@ -113,6 +133,7 @@ export interface GmailReadRequest {
  * Standardized auth needed response for all providers
  */
 export interface SetupNeededResponse {
+  status: 'needs_setup'; // Added status field for clarity
   needs_setup: true;
   setup_url: string;
   provider: string;
@@ -145,18 +166,15 @@ export interface GmailErrorMessageDetails {
 }
 
 export interface GmailSuccessResponse {
+  status: 'success'; // Added status field for consistency
   count: number;
   messages: (GmailMessageDetails | GmailErrorMessageDetails)[];
   total_messages?: number;
   message?: string;
 }
 
-export interface GmailErrorResponse {
-  error: string;
-  details?: string;
-}
-
-export type GmailReadResponse = GmailAuthNeededResponse | GmailSuccessResponse | GmailErrorResponse;
+// Update the GmailReadResponse type definition
+export type GmailReadResponse = SetupNeededResponse | GmailSuccessResponse | UtilityErrorResponse;
 
 /**
  * Database utility types
@@ -227,17 +245,17 @@ export interface StripeKeysRequest {
   description?: string;
 }
 
-export interface StripeKeysIframeResponse {
-  iframe_url: string;
+export interface StripeKeysSuccessResponse {
+  status: 'success'; 
   message: string;
+  keys?: { 
+    publishable_key?: string;
+    secret_key?: string; 
+  }
 }
 
-export interface StripeKeysErrorResponse {
-  error: string;
-  details?: string;
-}
-
-export type StripeKeysResponse = StripeKeysIframeResponse | StripeKeysErrorResponse;
+// Update the StripeKeysResponse type definition to use SetupNeededResponse
+export type StripeKeysResponse = SetupNeededResponse | StripeKeysSuccessResponse | UtilityErrorResponse;
 
 /**
  * Stripe API keys read types
@@ -247,57 +265,47 @@ export interface StripeKeysReadRequest {
 }
 
 export interface StripeKeysReadSuccessResponse {
-  success: true;
-  publishable_key?: string;
-  secret_key_last_four?: string;
-  has_keys: boolean;
+  status: 'success'; 
+  success?: true; // Consider removing redundant success field
+  keys: {
+    publishable_key?: string;
+    secret_key?: string;
+  };
 }
 
-export interface StripeKeysReadErrorResponse {
-  success: false;
-  error: string;
-  details?: string;
-}
-
-export type StripeKeysReadResponse = StripeKeysReadSuccessResponse | StripeKeysReadErrorResponse;
+// Update Stripe Keys Read response type to use SetupNeededResponse
+export type StripeKeysReadResponse = SetupNeededResponse | StripeKeysReadSuccessResponse | UtilityErrorResponse;
 
 /**
  * Stripe Transactions utility types
  */
-export interface StripeListTransactionsRequest {
+export interface StripeTransactionsRequest {
   limit?: number;
-  starting_after?: string;
-  ending_before?: string;
-}
-
-export interface StripeAuthNeededResponse extends SetupNeededResponse {
-  provider: 'stripe';
-  userId?: string;
-  conversationId?: string;
+  starting_after?: string; // For pagination
+  ending_before?: string; // For pagination
+  type?: string; // e.g., 'charge', 'payment_intent'
+  customer_id?: string;
 }
 
 export interface StripeTransaction {
+  // Define the structure of a single transaction object based on Stripe API
   id: string;
+  object: string;
   amount: number;
   currency: string;
-  description: string;
-  status: string;
   created: number;
-  customer: string | null;
-  metadata: Record<string, any>;
+  status: string;
+  description?: string | null;
+  customer?: string | null;
+  // Add other relevant fields as needed
 }
 
 export interface StripeTransactionsSuccessResponse {
-  success: true;
+  status: 'success';
   count: number;
-  transactions: StripeTransaction[];
   has_more: boolean;
+  data: StripeTransaction[];
 }
 
-export interface StripeTransactionsErrorResponse {
-  success: false;
-  error: string;
-  details?: string;
-}
-
-export type StripeListTransactionsResponse = StripeAuthNeededResponse | StripeTransactionsSuccessResponse | StripeTransactionsErrorResponse;
+// Update Stripe Transactions response type to use SetupNeededResponse
+export type StripeTransactionsResponse = SetupNeededResponse | StripeTransactionsSuccessResponse | UtilityErrorResponse;

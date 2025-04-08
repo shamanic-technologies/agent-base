@@ -9,13 +9,12 @@ import {
   UtilityTool, 
   GmailReadRequest, 
   GmailReadResponse, 
-  GmailAuthNeededResponse, 
+  SetupNeededResponse,
   GmailSuccessResponse, 
-  GmailErrorResponse,
+  UtilityErrorResponse,
   GmailMessageDetails,
   GmailErrorMessageDetails,
   GmailMessageHeader,
-  SetupNeededResponse
 } from '../types/index.js';
 import { registry } from '../registry/registry.js';
 import { CredentialProvider } from '@agent-base/credentials';
@@ -60,7 +59,12 @@ const gmailReadUtility: UtilityTool = {
       console.log(`📧 [GMAIL_READ] Using Tool Auth Service URL: ${toolAuthServiceUrl}`);
       
       if (!toolAuthServiceUrl) {
-        throw new Error('TOOL_AUTH_SERVICE_URL environment variable is not set');
+        // Return UtilityErrorResponse for configuration issues
+        const errorResponse: UtilityErrorResponse = {
+          status: 'error',
+          error: 'TOOL_AUTH_SERVICE_URL environment variable is not set'
+        };
+        return errorResponse;
       }
       
       // Check if user has the required scopes
@@ -75,7 +79,9 @@ const gmailReadUtility: UtilityTool = {
       
       // If we don't have auth, return the auth URL for the frontend to handle
       if (!checkAuthResponse.data.hasAuth) {
+        // Return the standardized SetupNeededResponse
         const setupNeededResponse: SetupNeededResponse = {
+          status: 'needs_setup',
           needs_setup: true,
           setup_url: checkAuthResponse.data.authUrl,
           provider: 'gmail',
@@ -96,7 +102,12 @@ const gmailReadUtility: UtilityTool = {
       );
       
       if (!gmailCredential) {
-        throw new Error('No valid Gmail credentials found with required scope');
+        // Return UtilityErrorResponse if credentials are not found
+        const errorResponse: UtilityErrorResponse = {
+          status: 'error',
+          error: 'No valid Gmail credentials found with required scope'
+        };
+        return errorResponse;
       }
       
       // Call the Gmail API with our access token
@@ -119,6 +130,7 @@ const gmailReadUtility: UtilityTool = {
       // If no messages found, return a simple response
       if (messages.length === 0) {
         const emptyResponse: GmailSuccessResponse = {
+          status: 'success',
           count: 0,
           messages: [],
           message: 'No emails found matching the criteria'
@@ -176,6 +188,7 @@ const gmailReadUtility: UtilityTool = {
       );
       
       const successResponse: GmailSuccessResponse = {
+        status: 'success',
         count: messages.length,
         messages: detailedMessages,
         total_messages: gmailResponse.data.resultSizeEstimate || messages.length
@@ -185,19 +198,21 @@ const gmailReadUtility: UtilityTool = {
     } catch (error) {
       console.error("❌ [GMAIL_READ] Error:", error);
       
-      // Check if this is an auth error
-      if (error.response && error.response.status === 401) {
-        const errorResponse: GmailErrorResponse = {
+      // Prepare UtilityErrorResponse for caught errors
+      let errorResponse: UtilityErrorResponse;
+      if (axios.isAxiosError(error) && error.response && error.response.status === 401) {
+        errorResponse = {
+          status: 'error',
           error: "Authentication failed. You may need to re-authenticate.",
-          details: "Your session may have expired. Please try again."
+          details: "Your session may have expired or permissions changed."
         };
-        return errorResponse;
+      } else {
+        errorResponse = {
+          status: 'error',
+          error: "Failed to read emails from Gmail",
+          details: error instanceof Error ? error.message : String(error)
+        };
       }
-      
-      const errorResponse: GmailErrorResponse = {
-        error: "Failed to read emails from Gmail",
-        details: error instanceof Error ? error.message : String(error)
-      };
       return errorResponse;
     }
   }

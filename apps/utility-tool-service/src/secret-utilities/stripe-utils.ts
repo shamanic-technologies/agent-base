@@ -4,7 +4,7 @@
  * Shared functions for Stripe API operations
  */
 import axios from 'axios';
-import { SetupNeededResponse } from 'src/types/index.js';
+import { SetupNeededResponse, UtilityErrorResponse } from '../types/index.js';
 // import { StripeAuthNeededResponse } from '../types/index.js';
 
 /**
@@ -13,15 +13,6 @@ import { SetupNeededResponse } from 'src/types/index.js';
 export interface StripeKeys {
   apiKey: string;    // Publishable key (pk_)
   apiSecret: string; // Secret key (sk_)
-}
-
-/**
- * Base Stripe API error response
- */
-export interface StripeErrorResponse {
-  success: false;
-  error: string;
-  details?: string;
 }
 
 /**
@@ -67,31 +58,36 @@ export async function checkStripeApiKeys(userId: string, secretServiceUrl: strin
  * @param userId User ID for whom the setup is needed
  * @param conversationId Conversation ID for context
  * @param logPrefix Prefix for console logs
- * @returns Object indicating setup is needed
+ * @returns SetupNeededResponse object
  */
 export function generateSetupNeededResponse(
   userId: string, 
   conversationId: string,
   logPrefix: string
-): { needs_setup: true; setup_url: string; provider: string; message?: string; title: string; description: string; button_text: string } {
+): SetupNeededResponse {
   
-  // Construct the popup URL using the environment variable
   const secretServiceBaseUrl = process.env.SECRET_SERVICE_URL;
   
   if (!secretServiceBaseUrl) {
-    // This should ideally not happen if environment is set up correctly
-    // Handle error appropriately - maybe throw or return an error response
     console.error(`${logPrefix} Error: SECRET_SERVICE_URL is not set. Cannot generate popup URL.`);
-    // For now, let's throw to make the issue clear during development
+    // Consider returning a UtilityErrorResponse here instead of throwing
+    // For consistency, let's return an error response:
+    const errorResponse: UtilityErrorResponse = {
+        status: 'error',
+        error: 'Configuration error: SECRET_SERVICE_URL is not set'
+    };
+    // This function's signature currently returns SetupNeededResponse, 
+    // so throwing might be necessary unless we change the signature or how it's used.
+    // Sticking with throw for now based on original code, but flag for review.
     throw new Error('Configuration error: SECRET_SERVICE_URL is not set'); 
   }
   
   const setupUrl = `${secretServiceBaseUrl}/stripe/form?userId=${userId}&conversationId=${conversationId}`;
-  
   console.log(`${logPrefix} Stripe keys not found, returning setup URL: ${setupUrl}`);
   
-  // New standardized format with dynamic UI text
+  // Return the standard SetupNeededResponse
   return {
+    status: 'needs_setup',
     needs_setup: true,
     setup_url: setupUrl,
     provider: "stripe",
@@ -99,7 +95,7 @@ export function generateSetupNeededResponse(
     title: "Connect Stripe Account",
     description: "Your API keys are needed to access your Stripe data",
     button_text: "Connect Stripe Account"
-  } as SetupNeededResponse;
+  };
 }
 
 /**
@@ -134,32 +130,46 @@ export async function getStripeApiKeys(userId: string, secretServiceUrl: string)
 /**
  * Format a Stripe API error response
  * @param error Error object from caught exception
- * @returns Formatted error response
+ * @returns UtilityErrorResponse object
  */
-export function formatStripeErrorResponse(error: any): StripeErrorResponse {
-  // Check if this is a Stripe auth error
-  if (error.response && error.response.status === 401) {
-    return {
-      success: false,
-      error: "Stripe authentication failed. Your API key may be invalid.",
-      details: "Please verify your Stripe API key and try again."
-    };
-  }
+export function formatStripeErrorResponse(error: any): UtilityErrorResponse {
+  let responseError: string = "Failed to process Stripe operation";
+  let responseDetails: string | undefined = undefined;
   
-  // Check for Stripe API errors and extract meaningful messages
-  if (error.response && error.response.data && error.response.data.error) {
-    const stripeError = error.response.data.error;
-    return {
-      success: false,
-      error: `Stripe API error: ${stripeError.type}`,
-      details: stripeError.message || "An error occurred with the Stripe API"
-    };
+  if (axios.isAxiosError(error)) {
+    if (error.response) {
+      // Handle HTTP errors (like 401)
+      if (error.response.status === 401) {
+        responseError = "Stripe authentication failed. Your API key may be invalid.";
+        responseDetails = "Please verify your Stripe API key and try again.";
+      } else if (error.response.data && error.response.data.error) {
+        // Handle specific Stripe API errors
+        const stripeError = error.response.data.error;
+        responseError = `Stripe API error: ${stripeError.type}`;
+        responseDetails = stripeError.message || "An error occurred with the Stripe API";
+      } else {
+        // Other HTTP errors
+        responseDetails = `HTTP error ${error.response.status}: ${error.response.statusText}`;
+      }
+    } else if (error.request) {
+      // Request made but no response received
+      responseError = "No response received from Stripe API";
+      responseDetails = "Please check your network connection and Stripe's status.";
+    } else {
+      // Error setting up the request
+      responseDetails = error.message;
+    }
+  } else if (error instanceof Error) {
+    // Non-Axios errors
+    responseDetails = error.message;
+  } else {
+    // Unknown error type
+    responseDetails = String(error);
   }
-  
-  // Default error response
+
   return {
-    success: false,
-    error: "Failed to process Stripe operation",
-    details: error instanceof Error ? error.message : String(error)
+    status: 'error',
+    error: responseError,
+    details: responseDetails
   };
 } 

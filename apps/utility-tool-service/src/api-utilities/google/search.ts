@@ -4,7 +4,14 @@
  * Performs web searches using the Google Search API and returns formatted results.
  * Useful for finding up-to-date information from the web.
  */
-import { UtilityTool, GoogleSearchRequest } from '../../types/index.js';
+import { 
+  UtilityTool, 
+  GoogleSearchRequest, 
+  GoogleSearchResponse, 
+  GoogleSearchSuccessResponse, 
+  UtilityErrorResponse,
+  GoogleSearchResult 
+} from '../../types/index.js';
 import { registry } from '../../registry/registry.js';
 
 /**
@@ -25,13 +32,18 @@ const googleSearch: UtilityTool = {
     }
   },
   
-  execute: async (userId: string, conversationId: string, params: GoogleSearchRequest): Promise<any> => {
+  execute: async (userId: string, conversationId: string, params: GoogleSearchRequest): Promise<GoogleSearchResponse> => {
+    // Extract and validate parameters
+    const { query, limit = 5 } = params;
+
     try {
-      // Extract and validate parameters
-      const { query, limit = 5 } = params;
-      
+      // Validate query
       if (!query || typeof query !== 'string') {
-        throw new Error("Search query is required and must be a string");
+        const errorResponse: UtilityErrorResponse = {
+          status: 'error',
+          error: "Search query is required and must be a string"
+        };
+        return errorResponse;
       }
       
       // Ensure limit is between 1 and 10
@@ -39,46 +51,73 @@ const googleSearch: UtilityTool = {
       
       console.log(`🔍 [GOOGLE SEARCH] Performing search for: "${query}" (limit: ${validatedLimit})`);
       
-      // Use SerpAPI to perform the search
+      // Check for SerpAPI API key
       const apiKey = process.env.SERPAPI_API_KEY;
       if (!apiKey) {
-        throw new Error("SERPAPI_API_KEY is not configured in environment variables");
-      }
-      
-      const response = await fetch(`https://serpapi.com/search.json?q=${encodeURIComponent(query)}&api_key=${apiKey}`);
-      
-      if (!response.ok) {
-        throw new Error(`Google Search request failed with status ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      if (!data.organic_results || data.organic_results.length === 0) {
-        return {
-          query,
-          message: "No search results found for your query.",
-          results: []
+        const errorResponse: UtilityErrorResponse = {
+          status: 'error',
+          error: "SERPAPI_API_KEY is not configured in environment variables"
         };
+        return errorResponse;
+      }
+      
+      // Perform the search using SerpAPI
+      const apiResponse = await fetch(`https://serpapi.com/search.json?q=${encodeURIComponent(query)}&api_key=${apiKey}`);
+      
+      // Handle API errors
+      if (!apiResponse.ok) {
+        const errorDetails = await apiResponse.text(); // Get more details if possible
+        const errorResponse: UtilityErrorResponse = {
+          status: 'error',
+          error: `Google Search request failed with status ${apiResponse.status}`,
+          details: errorDetails
+        };
+        return errorResponse;
       }
 
-      // Format the search results
-      const results = data.organic_results
+      // Parse the response data
+      const data = await apiResponse.json();
+      
+      // Handle cases where no results are found
+      if (!data.organic_results || data.organic_results.length === 0) {
+        const successResponse: GoogleSearchSuccessResponse = {
+          status: 'success',
+          query,
+          results_count: 0,
+          results: [],
+          message: "No search results found for your query."
+        };
+        return successResponse;
+      }
+
+      // Format the search results according to the defined type
+      const results: GoogleSearchResult[] = data.organic_results
         .slice(0, validatedLimit)
-        .map((result: any) => ({
+        .map((result: any): GoogleSearchResult => ({ // Explicitly type the mapped result
           title: result.title || 'No title',
           link: result.link || 'No link',
           snippet: result.snippet || 'No snippet available',
           position: result.position
         }));
 
-      return {
+      // Prepare the success response
+      const successResponse: GoogleSearchSuccessResponse = {
+        status: 'success',
         query,
         results_count: results.length,
         results
       };
+      return successResponse;
+      
     } catch (error) {
-      console.error("❌ [GOOGLE SEARCH] Error:", error);
-      throw error;
+      // Handle unexpected errors during execution
+      console.error("❌ [GOOGLE SEARCH] Unexpected error:", error);
+      const errorResponse: UtilityErrorResponse = {
+        status: 'error',
+        error: "An unexpected error occurred during the Google search",
+        details: error instanceof Error ? error.message : "Unknown error"
+      };
+      return errorResponse;
     }
   }
 };
