@@ -6,10 +6,10 @@
 import axios from 'axios';
 
 /**
- * Crisp webhook secret structure
+ * Crisp website details structure
  */
-export interface CrispWebhookSecret {
-  webhookSecret: string;
+export interface CrispWebsiteDetails {
+  websiteId: string;
 }
 
 /**
@@ -19,6 +19,19 @@ export interface CrispErrorResponse {
   success: false;
   error: string;
   details?: string;
+}
+
+/**
+ * Response when setup is needed
+ */
+export interface SetupNeededResponse {
+  needs_setup: boolean;
+  setup_url: string;
+  provider: string;
+  message: string;
+  title: string;
+  description: string;
+  button_text: string;
 }
 
 /**
@@ -42,12 +55,12 @@ export function getCrispEnvironmentVariables(): { secretServiceUrl: string; apiG
 }
 
 /**
- * Check if the user has Crisp webhook secret stored
+ * Check if the user has Crisp website ID stored
  * @param userId User ID to check
  * @param secretServiceUrl Secret service URL
  * @returns Object with exists flag
  */
-export async function checkCrispWebhookSecret(userId: string, secretServiceUrl: string): Promise<{ exists: boolean }> {
+export async function checkCrispWebsiteId(userId: string, secretServiceUrl: string): Promise<{ exists: boolean }> {
   try {
     const response = await fetch(`${secretServiceUrl}/api/check-secret`, {
       method: 'POST',
@@ -56,53 +69,53 @@ export async function checkCrispWebhookSecret(userId: string, secretServiceUrl: 
       },
       body: JSON.stringify({
         userId,
-        secretType: 'crisp_webhook'
+        secretType: 'crisp_website_id'
       })
     });
     
     const data = await response.json();
     return { exists: data.exists };
   } catch (error) {
-    console.error("Failed to check if Crisp webhook secret exists:", error);
+    console.error("Failed to check if Crisp website ID exists:", error);
     return { exists: false };
   }
 }
 
 /**
- * Generate authentication needed response when webhook secret is missing
+ * Generate setup needed response when Crisp website ID is missing
  * @param apiGatewayUrl API gateway URL
  * @param logPrefix Prefix for console logs
- * @returns Authentication needed response object
+ * @returns Setup needed response object
  */
-export function generateAuthNeededResponse(
+export function generateSetupNeededResponse(
   apiGatewayUrl: string,
   logPrefix: string
-): { needs_auth: boolean; auth_instructions: string; secret_type: string; message: string; form_submit_url: string } {
-  // Create direct instructions for storing webhook secret
-  const apiEndpoint = `${apiGatewayUrl}/secret/set_crisp_webhook_secret`;
+): SetupNeededResponse {
+  // Create direct instructions for storing website ID
+  const setupUrl = `${apiGatewayUrl}/secret/set_crisp_website_id`;
   
-  console.log(`${logPrefix} No webhook secret found. Client should store secret at: ${apiEndpoint}`);
+  console.log(`${logPrefix} No Crisp website ID found. Client should set up Crisp integration at: ${setupUrl}`);
   
-  // Return updated response with form_submit_url to match existing patterns
-  const authNeededResponse = {
-    needs_auth: true,
-    auth_instructions: 'Store your Crisp webhook secret using the form below',
-    secret_type: 'crisp_webhook',
-    message: 'Crisp webhook verification requires a webhook secret. Please provide your Crisp webhook secret to continue.',
-    form_submit_url: apiEndpoint
-  };
-  
-  return authNeededResponse;
+  // Return standardized SetupNeededResponse
+  return {
+    needs_setup: true,
+    setup_url: setupUrl,
+    provider: "crisp",
+    message: "Crisp webhook setup is required.",
+    title: "Connect Crisp Account",
+    description: "Your webhook setup is needed to subscribe to Crisp webhook events",
+    button_text: "Connect Crisp Account"
+  } as SetupNeededResponse;
 }
 
 /**
- * Retrieve Crisp webhook secret for a user
+ * Retrieve Crisp website ID for a user
  * @param userId User ID
  * @param secretServiceUrl Secret service URL
- * @returns Object containing the webhook secret if successful
- * @throws Error if retrieval fails or secret is invalid
+ * @returns Object containing the website ID if successful
+ * @throws Error if retrieval fails or ID is invalid
  */
-export async function getCrispWebhookSecret(userId: string, secretServiceUrl: string): Promise<CrispWebhookSecret> {
+export async function getCrispWebsiteId(userId: string, secretServiceUrl: string): Promise<CrispWebsiteDetails> {
   try {
     const response = await fetch(`${secretServiceUrl}/api/get-secret`, {
       method: 'POST',
@@ -111,25 +124,25 @@ export async function getCrispWebhookSecret(userId: string, secretServiceUrl: st
       },
       body: JSON.stringify({
         userId,
-        secretType: 'crisp_webhook'
+        secretType: 'crisp_website_id'
       })
     });
     
     const data = await response.json();
     
     if (!data.success) {
-      throw new Error(data.error || 'Failed to retrieve Crisp webhook secret');
+      throw new Error(data.error || 'Failed to retrieve Crisp website ID');
     }
     
-    const crispSecret = data.data;
+    const crispDetails = data.data;
     
-    if (!crispSecret.webhookSecret) {
-      throw new Error('Crisp webhook secret is missing');
+    if (!crispDetails.websiteId) {
+      throw new Error('Crisp website ID is missing');
     }
     
-    return crispSecret;
+    return crispDetails;
   } catch (error) {
-    console.error("Failed to get Crisp webhook secret:", error);
+    console.error("Failed to get Crisp website ID:", error);
     throw error;
   }
 }
@@ -144,8 +157,8 @@ export function formatCrispErrorResponse(error: any): CrispErrorResponse {
   if (error.response && error.response.status === 401) {
     return {
       success: false,
-      error: "Crisp authentication failed. Your webhook secret may be invalid.",
-      details: "Please verify your Crisp webhook secret and try again."
+      error: "Crisp authentication failed. Your website ID may be invalid.",
+      details: "Please verify your Crisp website ID and try again."
     };
   }
   

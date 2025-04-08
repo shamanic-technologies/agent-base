@@ -14,7 +14,8 @@ import {
   GmailErrorResponse,
   GmailMessageDetails,
   GmailErrorMessageDetails,
-  GmailMessageHeader
+  GmailMessageHeader,
+  SetupNeededResponse
 } from '../types/index.js';
 import { registry } from '../registry/registry.js';
 import { CredentialProvider } from '@agent-base/credentials';
@@ -74,7 +75,7 @@ const gmailReadUtility: UtilityTool = {
       
       // If we don't have auth, return the auth URL for the frontend to handle
       if (!checkAuthResponse.data.hasAuth) {
-        const authNeededResponse: GmailAuthNeededResponse = {
+        const setupNeededResponse: SetupNeededResponse = {
           needs_setup: true,
           setup_url: checkAuthResponse.data.authUrl,
           provider: 'gmail',
@@ -83,7 +84,7 @@ const gmailReadUtility: UtilityTool = {
           description: "Secure access is required to read your emails",
           button_text: "Continue with Gmail"
         };
-        return authNeededResponse;
+        return setupNeededResponse;
       }
       
       // If we have auth, use the credentials to make Gmail API calls

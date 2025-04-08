@@ -4,6 +4,7 @@
  * Shared functions for Stripe API operations
  */
 import axios from 'axios';
+import { SetupNeededResponse } from 'src/types/index.js';
 // import { StripeAuthNeededResponse } from '../types/index.js';
 
 /**
@@ -98,7 +99,7 @@ export function generateSetupNeededResponse(
     title: "Connect Stripe Account",
     description: "Your API keys are needed to access your Stripe data",
     button_text: "Connect Stripe Account"
-  };
+  } as SetupNeededResponse;
 }
 
 /**
