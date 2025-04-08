@@ -7,10 +7,11 @@
 import { UtilityTool } from '../types/index.js';
 import { registry } from '../registry/registry.js';
 import { 
-  checkCrispWebhookSecret, 
-  getCrispWebhookSecret, 
+  checkCrispWebsiteId, 
+  getCrispWebsiteId, 
   getCrispEnvironmentVariables,
-  generateAuthNeededResponse
+  generateSetupNeededResponse,
+  SetupNeededResponse
 } from './crisp-utils.js';
 
 // --- Request Parameters --- 
@@ -24,29 +25,23 @@ interface CrispSubscribeMessageSendRequest {
 // --- Response Types --- 
 interface CrispSubscribeSuccessResponse {
   success: true;
-  data: {
+  message: {
+    id: string;
     status: string;
-    message_snippet: string;
+    content: string;
+    snippet: string;
     session_id: string;
+    created: number;
   };
 }
 
 interface CrispSubscribeErrorResponse {
   success: false;
-  error: {
-    message: string;
-  };
+  error: string;
+  details?: string;
 }
 
-// Auth needed response type
-interface CrispSubscribeAuthNeededResponse {
-  needs_auth: true;
-  auth_instructions: string;
-  secret_type: string;
-  message: string;
-}
-
-type CrispSubscribeResponse = CrispSubscribeSuccessResponse | CrispSubscribeErrorResponse | CrispSubscribeAuthNeededResponse;
+type CrispSubscribeResponse = CrispSubscribeSuccessResponse | CrispSubscribeErrorResponse | SetupNeededResponse;
 
 // --- Utility Definition --- 
 const crispSubscribeMessageSendUtility: UtilityTool = {
@@ -95,26 +90,25 @@ const crispSubscribeMessageSendUtility: UtilityTool = {
         console.error('[CRISP] Missing required parameters.');
         return {
           success: false,
-          error: {
-            message: 'Missing required parameters: website_id, session_id, message_content.'
-          }
+          error: 'Missing required parameters',
+          details: 'website_id, session_id, and message_content are all required.'
         };
       }
 
       // Get environment variables
       const { secretServiceUrl, apiGatewayUrl } = getCrispEnvironmentVariables();
       
-      // Check if user has the required webhook secret
-      const { exists } = await checkCrispWebhookSecret(userId, secretServiceUrl);
+      // Check if user has the required website ID
+      const { exists } = await checkCrispWebsiteId(userId, secretServiceUrl);
       
-      // If we don't have the webhook secret, return auth needed response
+      // If we don't have the website ID, return setup needed response
       if (!exists) {
-        console.log(`🔔 [CRISP] No webhook secret found for user ${userId}`);
-        return generateAuthNeededResponse(apiGatewayUrl, "[CRISP]") as CrispSubscribeAuthNeededResponse;
+        console.log(`🔔 [CRISP] No website ID found for user ${userId}`);
+        return generateSetupNeededResponse(apiGatewayUrl, "[CRISP]");
       }
       
-      // Get the webhook secret
-      const crispSecret = await getCrispWebhookSecret(userId, secretServiceUrl);
+      // Get the website ID
+      const crispDetails = await getCrispWebsiteId(userId, secretServiceUrl);
 
       // --- Mock API Call --- 
       console.log(`🔔 [CRISP] Simulating sending message to Crisp:`);
@@ -122,18 +116,24 @@ const crispSubscribeMessageSendUtility: UtilityTool = {
       console.log(`  - Session ID: ${session_id}`);
       console.log(`  - Type: ${message_type}`);
       console.log(`  - Content: \"${message_content.substring(0, 50)}...\"`);
-      console.log(`  - Using webhook secret: ${crispSecret.webhookSecret.substring(0, 3)}...`);
+      console.log(`  - Using website ID: ${crispDetails.websiteId.substring(0, 3)}...`);
 
       // For now, we'll simulate success without making a real API call
       // In a real implementation, we would make a fetch to the Crisp API here
       
-      // Simulate success
+      // Simulate success - Format similar to Stripe response structure
+      const messageId = `msg_${Math.random().toString(36).substring(2, 15)}`;
+      const timestamp = Math.floor(Date.now() / 1000);
+      
       const response: CrispSubscribeSuccessResponse = {
         success: true,
-        data: {
+        message: {
+          id: messageId,
           status: 'sent',
-          message_snippet: `${message_content.substring(0, 20)}...`,
-          session_id: session_id
+          content: message_content,
+          snippet: `${message_content.substring(0, 20)}...`,
+          session_id: session_id,
+          created: timestamp
         }
       };
       
@@ -143,9 +143,8 @@ const crispSubscribeMessageSendUtility: UtilityTool = {
       console.error("❌ [CRISP / crisp_subscribe_message_send] Error:", error);
       return {
         success: false,
-        error: {
-          message: error instanceof Error ? error.message : 'An unknown error occurred'
-        }
+        error: error instanceof Error ? error.message : 'An unknown error occurred',
+        details: 'Error occurred while sending message to Crisp'
       };
     }
   }

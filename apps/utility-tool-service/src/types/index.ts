@@ -112,7 +112,7 @@ export interface GmailReadRequest {
 /**
  * Standardized auth needed response for all providers
  */
-export interface AuthNeededResponse {
+export interface SetupNeededResponse {
   needs_setup: true;
   setup_url: string;
   provider: string;
@@ -120,10 +120,6 @@ export interface AuthNeededResponse {
   title: string;
   description: string;
   button_text: string;
-}
-
-export interface GmailAuthNeededResponse extends AuthNeededResponse {
-  provider: 'gmail';
 }
 
 export interface GmailMessageHeader {
@@ -274,7 +270,7 @@ export interface StripeListTransactionsRequest {
   ending_before?: string;
 }
 
-export interface StripeAuthNeededResponse extends AuthNeededResponse {
+export interface StripeAuthNeededResponse extends SetupNeededResponse {
   provider: 'stripe';
   userId?: string;
   conversationId?: string;
