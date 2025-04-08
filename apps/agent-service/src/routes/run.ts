@@ -146,10 +146,21 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       // --- Pipe Stream --- 
       // @ts-ignore - Assuming pipeDataStreamToResponse exists
       await result.pipeDataStreamToResponse(res, {
-        getErrorMessage: (error: Error) => {
-          console.error("[Agent Service /run] Error during stream piping:", error);
-          return "An error occurred while processing the AI response.";
-        }
+        getErrorMessage: error => {
+            if (error == null) {
+              return 'unknown error';
+            }
+      
+            if (typeof error === 'string') {
+              return error;
+            }
+      
+            if (error instanceof Error) {
+              return error.message;
+            }
+      
+            return JSON.stringify(error);
+          },
       });
       // --- End Pipe Stream ---
 
