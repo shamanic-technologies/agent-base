@@ -63,13 +63,15 @@ class UtilityRegistry {
    * @param userId The ID of the user making the request
    * @param conversationId The ID of the conversation context
    * @param params The parameters to pass to the utility
+   * @param agentId The ID of the agent making the request
    * @returns The result of the utility execution or an error
    */
   async execute(
     utilityId: string,
     userId: string,
     conversationId: string,
-    params: any
+    params: any,
+    agentId?: string
   ): Promise<any> {
     const utility = this.getUtility(utilityId);
     
@@ -82,7 +84,7 @@ class UtilityRegistry {
     
     try {
       console.log(`⚙️ Executing utility: ${utilityId}`);
-      return await utility.execute(userId, conversationId, params);
+      return await utility.execute(userId, conversationId, params, agentId);
     } catch (error) {
       console.error(`❌ Error executing utility ${utilityId}:`, error);
       return {

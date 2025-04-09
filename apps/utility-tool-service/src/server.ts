@@ -131,8 +131,12 @@ app.get('/get-details/:id', (req, res) => {
 app.post('/call-tool/:id', async (req, res) => {
   const { id } = req.params;
   const { input, conversation_id, user_id } = req.body;
+  const agent_id = req.headers['x-agent-id'] as string | undefined;
   
   console.log(`⚙️ [UTILITY SERVICE] Execute utility request for ${id} from ${req.ip}`);
+  if (agent_id) {
+    console.log(`⚙️ [UTILITY SERVICE] Request made by agent: ${agent_id}`);
+  }
   
   if (!conversation_id) {
     return res.status(400).json({ error: 'conversation_id is required' });
@@ -143,7 +147,7 @@ app.post('/call-tool/:id', async (req, res) => {
   }
   
   try {
-    const result = await registry.execute(id, user_id, conversation_id, input);
+    const result = await registry.execute(id, user_id, conversation_id, input, agent_id);
     
     if (result && result.error) {
       // Error returned from utility execution

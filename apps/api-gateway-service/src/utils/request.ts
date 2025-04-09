@@ -28,12 +28,14 @@ export const forwardRequest = async (
   // Get user info from middleware
   const userId = req.user ? (req.user as User).id : undefined;
   const apiKey = req.headers['x-api-key'] as string | undefined;
+  const agentId = req.headers['x-agent-id'] as string | undefined;
   
   // Set up headers to include user ID and API key if available
   const headers = {
     'Content-Type': 'application/json',
     ...(userId && { 'x-user-id': userId }),
     ...(apiKey && { 'x-api-key': apiKey }),
+    ...(agentId && { 'x-agent-id': agentId }),
     // Add host header for proper internal routing
     'host': new URL(serviceUrl).host
   };
