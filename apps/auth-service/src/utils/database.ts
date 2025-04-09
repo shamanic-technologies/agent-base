@@ -6,7 +6,7 @@
 import axios from 'axios';
 import { UserProfile } from './passport';
 import { config } from '../config/env';
-import { v4 as uuidv4 } from 'uuid';
+import { GetOrCreateUserInput, GetOrCreateUserResponse, UserRecord } from '@agent-base/agents';
 
 const dbServiceUrl = config.databaseServiceUrl;
 
@@ -20,35 +20,48 @@ export async function saveUserToDatabase(user: UserProfile): Promise<UserProfile
   try {
     console.log(`Saving user data to database service via get-or-create endpoint`);
     
-    // Format user data according to the database schema
-    const userData = {
-      id: uuidv4(),
-      data: {
-        providerId: user.id,
-        email: user.email,
-        name: user.name,
-        picture: user.picture,
-        provider: user.provider,
-        last_login: new Date().toISOString()
-      }
+    // Format user data according to the GetOrCreateUserInput interface
+    const userData: GetOrCreateUserInput = {
+      provider_user_id: user.id,
+      email: user.email,
+      display_name: user.name,
+      profile_image: user.picture
     };
     
-    // Use the get-or-create-user endpoint to handle the save/update logic efficiently
-    const response = await axios.post(`${dbServiceUrl}/db/users/get-or-create-user`, userData);
+    // Use the correct endpoint to handle the save/update logic efficiently
+    const response = await axios.post<GetOrCreateUserResponse>(
+      `${dbServiceUrl}/users/get-or-create-by-provider-user-id`, 
+      userData
+    );
     
-    if (response.data?.success) {
-      if (response.data?.created) {
-        console.log(`Successfully created user with provider ID ${user.id} in database`);
-      } else {
-        console.log(`Successfully updated user with provider ID ${user.id} in database`);
-      }
-      return response.data?.data || null;
-    } else {
+    if (!response.data?.success) {
       console.error('Error saving user in database:', response.data?.error);
       return null;
     }
+    
+    // Log appropriate message based on whether user was created or updated
+    if (response.data.created) {
+      console.log(`Successfully created user with provider ID ${user.id} in database`);
+    } else {
+      console.log(`Successfully updated user with provider ID ${user.id} in database`);
+    }
+    
+    // Map the database record back to a UserProfile
+    const dbUser = response.data.data as UserRecord;
+    if (!dbUser) {
+      console.error('No user data returned from database service');
+      return null;
+    }
+    
+    return {
+      id: dbUser.user_id,         // Use the database user_id as the main ID
+      email: dbUser.email,
+      name: dbUser.display_name,
+      picture: dbUser.profile_image,
+      provider: user.provider     // Keep the original provider since it might not be in the response
+    };
   } catch (error: any) {
-    console.error('Error saving user in database:', error);
+    console.error('Error saving user in database:', error.message || error);
     throw error;
   }
 } 

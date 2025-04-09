@@ -12,7 +12,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 
 // Import routes
-import crispWebhookRouter from './routes/crispWebhook.js';
+import setupWebhookRouter from './routes/setupWebhookRoute.js';
 
 // Load environment variables based on NODE_ENV
 const nodeEnv = process.env.NODE_ENV || 'development';
@@ -52,7 +52,7 @@ app.get('/health', (req: express.Request, res: express.Response) => {
 });
 
 // Register routes
-app.use('/webhooks/crisp', crispWebhookRouter);
+app.use('/', setupWebhookRouter);
 
 // Default 404 handler
 app.use((req: express.Request, res: express.Response) => {
