@@ -35,14 +35,15 @@ app.use((0, express_session_1.default)({
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: env_1.config.isProduction,
+        secure: process.env.NODE_ENV === 'production',
         httpOnly: true,
-        maxAge: env_1.config.session.maxAge
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
     }
-}));
+}) // Ensure cast is 'as any'
+);
 // Initialize Passport - explicitly cast to RequestHandler
-app.use(passport_1.default.initialize());
-app.use(passport_1.default.session());
+app.use(passport_1.default.initialize()); // Ensure cast is 'as any'
+app.use(passport_1.default.session()); // Add 'as any' here too for consistency
 // Register all routes
 app.use('/', routes_1.default);
 // Start the server

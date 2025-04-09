@@ -3,15 +3,6 @@
  * 
  * Functions for sanitizing sensitive data before storage.
  */
-import pino from 'pino';
-
-// Get the logger instance
-const logger = pino({
-  level: process.env.LOG_LEVEL || 'info',
-  transport: {
-    target: 'pino-pretty',
-  },
-});
 
 /**
  * Sanitize log data to prevent storing sensitive information

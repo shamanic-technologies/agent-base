@@ -1,7 +1,7 @@
 /**
  * Route handlers for the logging service
  */
-import express from 'express';
+import express, { Request, Response } from 'express';
 import { DatabaseService } from '../services/database';
 import apiLogsRoutes from './api-logs';
 
@@ -18,8 +18,8 @@ function initDatabase() {
 /**
  * Health check endpoint
  */
-router.get('/health', (req, res) => {
-  res.status(200).json({ 
+router.get('/health', (req: Request, res: Response) => {
+  (res as any).status(200).json({ 
     status: 'healthy',
     service: 'logging-service'
   });

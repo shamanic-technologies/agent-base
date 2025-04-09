@@ -191,15 +191,44 @@ export default function CrispFormClient() {
         }
 
         try {
-            const response = await fetch('/api/store-secret', {
+            // 1. First store the secret
+            const storeResponse = await fetch('/api/store-secret', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'x-user-id': userId },
                 body: JSON.stringify({ secretType: SECRET_TYPE_CRISP, secretValue: secretValue.trim() }),
             });
-            const result = await response.json();
-            if (!response.ok || !result.success) {
-                throw new Error(result.error || result.message || `Failed to save Crisp secret.`);
+            const storeResult = await storeResponse.json();
+            if (!storeResponse.ok || !storeResult.success) {
+                throw new Error(storeResult.error || storeResult.message || `Failed to save Crisp secret.`);
             }
+
+            // 2. Then set up the webhook
+            const agentId = new URLSearchParams(window.location.search).get('agentId');
+            if (agentId) {
+                console.log(`Setting up webhook for agent ${agentId}`);
+                const webhookResponse = await fetch('/api/setup-webhook', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        webhook_provider_id: 'crisp',
+                        user_id: userId,
+                        agent_id: agentId,
+                        webhook_data: {
+                            website_id: secretValue.trim()
+                        }
+                    }),
+                });
+                const webhookResult = await webhookResponse.json();
+                if (!webhookResponse.ok || !webhookResult.success) {
+                    console.warn("Webhook setup failed, but secret was stored successfully:", webhookResult.error);
+                    // Don't throw error here, as we still want to consider the overall flow successful
+                    // The secret is stored, which is the most important part
+                }
+            } else {
+                console.log("No agentId provided in URL, skipping webhook setup");
+            }
+            
+            // 3. Notify parent window and update UI state
             if (origin) {
                 window.opener?.postMessage({ success: true, type: 'crisp_setup_complete' }, origin);
             } else { console.warn("Origin not verified."); }

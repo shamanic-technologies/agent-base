@@ -15,7 +15,7 @@ import { streamText } from 'ai';
 import { Message } from 'ai';
 // Import User type
 import { User } from '../types/index.js';
-import { ServiceResponse } from '../types/index.js';
+import { ServiceResponse, UtilityToolCredentials } from '../types/index.js';
 
 // Service function imports
 import { 
@@ -88,7 +88,12 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       // --- End Get Agent Details ---
 
       // --- Initialize Tools (Requires Agent to be fetched first) ---
-      const toolCredentials = { userId, conversationId: conversation_id, apiKey };
+      const toolCredentials: UtilityToolCredentials = {
+        userId, 
+        conversationId: conversation_id, 
+        apiKey, 
+        agent_id: agent.agent_id
+      };
       const tools = {
           utility_list_utilities: createListUtilitiesTool(toolCredentials),
           utility_get_utility_info: createGetUtilityInfoTool(toolCredentials),

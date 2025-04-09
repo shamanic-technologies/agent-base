@@ -15,6 +15,7 @@ import { fileURLToPath } from 'url'; // Import needed for __dirname in ES Module
 
 // Import routes configuration
 import { configureRoutes } from './routes/index.js';
+import { User } from './types/index.js'; // Add .js extension
 
 // Load environment variables based on NODE_ENV
 const nodeEnv = process.env.NODE_ENV || 'development';
@@ -63,9 +64,10 @@ app.use((req, res, next) => {
     
     if (userId) {
       // Set user object on request for route handlers
-      req.user = {
+      // Use Partial<User> if only id is available here
+      (req as any).user = {
         id: userId,
-      };
+      } as Partial<User>; // Assign as Partial<User>
     }
     
     next();

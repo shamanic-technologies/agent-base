@@ -5,15 +5,8 @@
  * debiting usage costs from user accounts.
  */
 import fetch from 'node-fetch';
-import pino from 'pino';
-
-// Set up logging with pino
-const logger = pino({
-  level: process.env.LOG_LEVEL || 'info',
-  transport: {
-    target: 'pino-pretty',
-  },
-});
+import { config } from 'dotenv';
+import axios from 'axios';
 
 // Payment service URL is accessed directly from environment in each function
 // to ensure it's always using the current value
@@ -35,11 +28,11 @@ export async function debitUsage(userId: string, amount: number, description: st
 
     // Skip debiting if amount is too small
     if (amount < 0.001) {
-      logger.info(`Skipping payment debit for user ${userId} - amount ${amount} is too small (less than $0.001)`);
+      console.info(`Skipping payment debit for user ${userId} - amount ${amount} is too small (less than $0.001)`);
       return { success: true };
     }
 
-    logger.info(`Debiting ${amount.toFixed(6)} USD from user ${userId} for ${description}`);
+    console.info(`Debiting ${amount.toFixed(6)} USD from user ${userId} for ${description}`);
     
     // Direct connection to payment service
     const debitUrl = `${PAYMENT_SERVICE_URL}/payment/deduct-credit`;
@@ -73,11 +66,11 @@ export async function debitUsage(userId: string, amount: number, description: st
       
       if (!response.ok || !data.success) {
         const errorMessage = data.error || `Failed to debit usage: ${response.status}`;
-        logger.error(`Payment service error: ${errorMessage}`, data);
+        console.error(`Payment service error: ${errorMessage}`, data);
         return { success: false, error: errorMessage };
       }
       
-      logger.info(`Successfully debited ${amount.toFixed(6)} USD from user ${userId}`, {
+      console.info(`Successfully debited ${amount.toFixed(6)} USD from user ${userId}`, {
         transaction: data.data?.transaction?.id,
         newBalance: data.data?.newBalance
       });
@@ -89,11 +82,11 @@ export async function debitUsage(userId: string, amount: number, description: st
         ? `Network error connecting to payment service: ${fetchError.message}`
         : 'Unknown network error connecting to payment service';
       
-      logger.error(errorMessage);
+      console.error(errorMessage);
       return { success: false, error: errorMessage };
     }
   } catch (error) {
-    logger.error(`Failed to debit usage for user ${userId}:`, error);
+    console.error(`Failed to debit usage for user ${userId}:`, error);
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error debiting usage'
