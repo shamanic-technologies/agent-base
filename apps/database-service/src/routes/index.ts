@@ -11,6 +11,7 @@ import apiLogsRoutes from './api-logs.js';
 import credentialsRoutes from './credentials.js';
 import agentsRoutes from './agents.js';
 import conversationsRoutes from './conversations.js';
+import webhooksRoutes from './webhooks.js';
 
 const router = Router();
 
@@ -23,5 +24,6 @@ router.use('/api-logs', apiLogsRoutes);
 router.use('/credentials', credentialsRoutes);
 router.use('/agents', agentsRoutes);
 router.use('/conversations', conversationsRoutes);
+router.use('/webhooks', webhooksRoutes);
 
 export default router; 

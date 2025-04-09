@@ -29,21 +29,6 @@ export async function createOrUpdateCredentials(
     try {
         client = await getClient();
     
-        // Create table if it doesn't exist
-        await client.query(`
-        CREATE TABLE IF NOT EXISTS "${COLLECTION_NAME}" (
-            user_id VARCHAR(255) NOT NULL,
-            provider VARCHAR(50) NOT NULL,
-            scope TEXT NOT NULL,
-            access_token TEXT NOT NULL,
-            refresh_token TEXT NOT NULL,
-            expires_at BIGINT NOT NULL,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (user_id, provider, scope)
-        )
-        `);
-
         // Convert input to database format
         const dbInput = mapToDatabase(input);
 

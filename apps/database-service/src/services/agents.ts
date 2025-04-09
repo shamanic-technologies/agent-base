@@ -8,7 +8,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { getClient } from '../db.js';
 import {
   AgentRecord,
-  UserAgentRecord,
   CreateUserAgentInput,
   CreateUserAgentResponse,
   UpdateUserAgentInput,
@@ -23,70 +22,13 @@ import {
 const AGENTS_TABLE = 'agents';
 const USER_AGENTS_TABLE = 'user_agents';
 const CONVERSATIONS_TABLE = 'conversations';
-import { ensureConversationsTableExists } from './conversations.js';
-
-// SQL definitions for table creation
-const AGENTS_TABLE_SQL = `
-  CREATE TABLE IF NOT EXISTS "${AGENTS_TABLE}" (
-    agent_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    agent_first_name VARCHAR(255) NOT NULL,
-    agent_last_name VARCHAR(255) NOT NULL,
-    agent_profile_picture TEXT NOT NULL,
-    agent_gender VARCHAR(50) NOT NULL,
-    agent_model_id VARCHAR(255) NOT NULL,
-    agent_memory TEXT,
-    agent_job_title VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-  )
-`;
-
-const USER_AGENTS_TABLE_SQL = `
-  CREATE TABLE IF NOT EXISTS "${USER_AGENTS_TABLE}" (
-    user_id VARCHAR(255) NOT NULL,
-    agent_id UUID NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (user_id, agent_id),
-    FOREIGN KEY (agent_id) REFERENCES ${AGENTS_TABLE}(agent_id)
-  )
-`;
-
-/**
- * Ensures that the specified table exists in the database.
- */
-async function ensureTableExists(tableName: string) {
-    let client: PoolClient | null = null;
-    try {
-        client = await getClient();
-        let createTableQuery = '';
-        if (tableName === AGENTS_TABLE) {
-            createTableQuery = AGENTS_TABLE_SQL;
-        } else if (tableName === USER_AGENTS_TABLE) {
-            createTableQuery = USER_AGENTS_TABLE_SQL;
-        } else {
-            throw new Error(`Unsupported table name for creation: ${tableName}`);
-        }
-        await client.query(createTableQuery);
-        // console.log(`Table "${tableName}" ensured.`); // Optional logging
-    } catch (error: any) {
-        console.error(`Error ensuring table "${tableName}" exists:`, error);
-        throw error; // Re-throw error to be handled by the calling function
-    } finally {
-        if (client) {
-            client.release();
-        }
-    }
-}
 
 /**
  * Creates a new agent in the database.
- * Ensures the agents table exists before inserting.
  * @param input - The agent data to create, excluding user_id.
  * @returns A BaseResponse indicating success or failure, with the created agent data on success.
  */
 export async function createAgent(input: Omit<CreateUserAgentInput, 'user_id'>): Promise<CreateUserAgentResponse> {
-  await ensureTableExists(AGENTS_TABLE);
   let client: PoolClient | null = null;
   try {
     client = await getClient();
@@ -124,12 +66,10 @@ export async function createAgent(input: Omit<CreateUserAgentInput, 'user_id'>):
 
 /**
  * Updates an existing agent in the database.
- * Ensures the agents table exists before updating.
  * @param input - The agent data to update, excluding user_id.
  * @returns A BaseResponse indicating success or failure, with the updated agent data on success.
  */
 export async function updateAgent(input: Omit<UpdateUserAgentInput, 'user_id'>): Promise<UpdateUserAgentResponse> {
-  await ensureTableExists(AGENTS_TABLE);
   let client: PoolClient | null = null;
   try {
     client = await getClient();
@@ -216,12 +156,10 @@ export async function updateAgent(input: Omit<UpdateUserAgentInput, 'user_id'>):
 
 /**
  * Links an agent to a user in the database.
- * Ensures the user_agents table exists before inserting.
  * @param input - An object containing user_id and agent_id.
  * @returns A BaseResponse indicating success or failure.
  */
 export async function linkAgentToUser(input: { user_id: string, agent_id: string }): Promise<BaseResponse> {
-  await ensureTableExists(USER_AGENTS_TABLE);
   let client: PoolClient | null = null;
   try {
     client = await getClient();
@@ -233,17 +171,10 @@ export async function linkAgentToUser(input: { user_id: string, agent_id: string
     const values = [input.user_id, input.agent_id];
     const result = await client.query(query, values);
 
-    if (result.rowCount === 0) {
-      // Link might already exist, treat as success or inform?
-      // For now, treat as success
-      console.log(`Link between user ${input.user_id} and agent ${input.agent_id} already exists or insertion skipped.`);
-    }
-
-    // Return only success status, no data field for BaseResponse
+    // Even if no new row was created (due to ON CONFLICT DO NOTHING), still consider it a success
     return { success: true };
   } catch (error: any) {
     console.error('Error linking agent to user:', error);
-    // Return only success status and error message
     return { success: false, error: error.message || 'Failed to link agent to user' };
   } finally {
     if (client) {
@@ -254,13 +185,10 @@ export async function linkAgentToUser(input: { user_id: string, agent_id: string
 
 /**
  * Lists all agents linked to a specific user.
- * Ensures the necessary tables exist before querying.
  * @param input - An object containing the user_id.
  * @returns A BaseResponse indicating success or failure, with the list of agents on success.
  */
 export async function listUserAgents(input: ListUserAgentsInput): Promise<ListUserAgentsResponse> {
-  await ensureTableExists(AGENTS_TABLE);
-  await ensureTableExists(USER_AGENTS_TABLE);
   let client: PoolClient | null = null;
   try {
     client = await getClient();
@@ -291,13 +219,10 @@ export async function listUserAgents(input: ListUserAgentsInput): Promise<ListUs
 
 /**
  * Gets a specific agent if it is linked to the user.
- * Ensures the necessary tables exist before querying.
  * @param input - An object containing user_id and agent_id.
  * @returns A BaseResponse indicating success or failure, with the agent data on success.
  */
 export async function getUserAgent(input: GetUserAgentInput): Promise<GetUserAgentResponse> {
-  await ensureTableExists(AGENTS_TABLE);
-  await ensureTableExists(USER_AGENTS_TABLE);
   let client: PoolClient | null = null;
   try {
     client = await getClient();
@@ -357,8 +282,6 @@ export async function getConversationAgent(conversation_id: string): Promise<Bas
   let client: PoolClient | null = null;
   try {
     client = await getClient();
-    await ensureTableExists(AGENTS_TABLE);
-    await ensureConversationsTableExists(client);
 
     const result = await client.query(query, [conversation_id]);
 

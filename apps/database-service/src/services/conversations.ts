@@ -15,53 +15,6 @@ import { Message } from 'ai';
 
 const CONVERSATIONS_TABLE = 'conversations'; // Define table name constant
 
-// SQL definition for conversations table creation with JSONB for messages
-const CONVERSATIONS_TABLE_SQL = `
-  CREATE TABLE IF NOT EXISTS "${CONVERSATIONS_TABLE}" (
-    conversation_id VARCHAR(255) PRIMARY KEY,
-    agent_id UUID NOT NULL,
-    channel_id VARCHAR(255) NOT NULL,
-    messages JSONB DEFAULT '[]',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (agent_id) REFERENCES agents(agent_id) ON DELETE CASCADE
-  );
-
-  -- Index on agent_id for faster lookups
-  CREATE INDEX IF NOT EXISTS idx_conversations_agent_id ON "${CONVERSATIONS_TABLE}"(agent_id);
-  
-  -- Index on JSONB messages array for potential queries
-  CREATE INDEX IF NOT EXISTS idx_conversations_messages_gin ON "${CONVERSATIONS_TABLE}" USING GIN (messages);
-  
-  -- Updated trigger for timestamp
-  CREATE OR REPLACE FUNCTION update_updated_at_column()
-  RETURNS TRIGGER AS $$
-  BEGIN
-      NEW.updated_at = NOW();
-      RETURN NEW;
-  END;
-  $$ language 'plpgsql';
-
-  DROP TRIGGER IF EXISTS update_conversations_updated_at ON "${CONVERSATIONS_TABLE}";
-  CREATE TRIGGER update_conversations_updated_at
-  BEFORE UPDATE ON "${CONVERSATIONS_TABLE}"
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
-`;
-
-/**
- * Ensures the conversations table exists in the database.
- */
-export async function ensureConversationsTableExists(client: PoolClient): Promise<void> {
-  try {
-    await client.query(CONVERSATIONS_TABLE_SQL);
-    console.log(`[DB Service] Table check/creation for '${CONVERSATIONS_TABLE}' completed.`);
-  } catch (error) {
-    console.error(`[DB Service] Error ensuring '${CONVERSATIONS_TABLE}' table exists:`, error);
-    throw error;
-  }
-}
-
 /**
  * Create a new conversation record in the database.
  */
@@ -84,7 +37,6 @@ export async function createConversation(input: CreateConversationInput): Promis
   let client: PoolClient | null = null;
   try {
     client = await getClient();
-    await ensureConversationsTableExists(client);
 
     const result = await client.query(query, [
       conversation_id,
@@ -228,7 +180,6 @@ export async function getConversationsByAgent(input: GetConversationsFromAgentIn
   let client: PoolClient | null = null;
   try {
     client = await getClient();
-    await ensureConversationsTableExists(client);
 
     const result = await client.query(query, [agent_id]);
     
