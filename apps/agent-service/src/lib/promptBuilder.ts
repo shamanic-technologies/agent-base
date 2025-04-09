@@ -4,8 +4,7 @@
  * Contains constants and functions to construct system prompts.
  */
 
-import { User } from '../types/index.js';
-import { AgentRecord } from '@agent-base/agents';
+import { User, AgentRecord } from '@agent-base/agents';
 
 /**
  * Default system prompt prefix for the AI agent.
@@ -56,12 +55,12 @@ export function buildSystemPrompt(
     // Append user profile information if available
     prompt += `
     ### User Profile Information
-    Name: ${userProfile.data.name}
-    Email: ${userProfile.data.email}
-    Picture: ${userProfile.data.picture}
-    Last Login: ${userProfile.data.last_login}
-    Created At: ${userProfile.created_at}
-    Updated At: ${userProfile.updated_at}
+    Name: ${userProfile.displayName}
+    Email: ${userProfile.email}
+    Picture: ${userProfile.profileImage || 'Not provided'}
+    Last Login: ${userProfile.lastLogin}
+    Created At: ${userProfile.createdAt}
+    Updated At: ${userProfile.updatedAt}
     `;
 
     return prompt;

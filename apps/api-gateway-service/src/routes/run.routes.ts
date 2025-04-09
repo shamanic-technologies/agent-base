@@ -57,17 +57,17 @@ export const configureRunRoutes = (
       }
 
     } catch (error: any) {
-      console.error(`[API Gateway /run] Error forwarding request to ${targetUrl}:`, error.message);
-      if (error.response) {
-        // Try to forward error structure, handling potential stream errors
-        if (error.response.data && typeof error.response.data === 'object') {
-             res.status(error.response.status).json(error.response.data);
-        } else {
-             res.status(error.response.status).send(error.response.data || 'Unknown service error');
-        }
-      } else {
-        res.status(500).json({ success: false, error: 'Gateway error forwarding request', details: error.message });
-      }
+      // Determine the status code from the downstream error or default to 500
+      const status = error.response?.status || 500;
+      
+      // Log the original error message for server-side debugging
+      console.error(`[API Gateway /run] Error forwarding request to ${targetUrl}: Status ${status}, Original Error: ${error.message}`);
+      
+      // Send a simple, generic error response to the client
+      res.status(status).json({ 
+        success: false, 
+        error: `Gateway encountered an error (Status: ${status}) while communicating with the agent service.` 
+      });
     }
   });
 

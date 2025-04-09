@@ -5,8 +5,9 @@
  */
 import { Router, Request, Response, NextFunction } from 'express';
 import {
-    // Import all types needed specifically for the /run endpoint
     AgentRecord, 
+    mapUserFromDatabase, 
+    User
 } from '@agent-base/agents';
 // AI SDK imports
 import { anthropic } from '@ai-sdk/anthropic';
@@ -14,15 +15,14 @@ import { streamText } from 'ai';
 // @ts-ignore - Message not directly exported from 'ai' in this context
 import { Message } from 'ai';
 // Import User type
-import { User } from '../types/index.js';
-import { ServiceResponse, UtilityToolCredentials } from '../types/index.js';
+import { UtilityToolCredentials } from '../types/index.js';
 
 // Service function imports
 import { 
   getAgentFromConversation, 
   getConversationById,
   updateConversationMessagesInDb,
-  getUserProfileById
+  getUserById
 } from '../services/index.js'; // Updated path to barrel file
 
 // Tool Creator Imports
@@ -102,9 +102,9 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       // --- End Initialize Tools ---
       
       // --- Get User Profile --- 
-      const profileResponse= await getUserProfileById(userId); // Call the service
+      const profileResponse= await getUserById(userId); // Call the service
       if (profileResponse.success && profileResponse.data) {
-          userProfile = profileResponse.data as User;
+          userProfile = mapUserFromDatabase(profileResponse.data);
           console.log(`[Agent Service /run] Fetched user profile for user: ${userId}`);
           console.log(`[Agent Service /run] User profile: ${JSON.stringify(userProfile)}`);
       } else {

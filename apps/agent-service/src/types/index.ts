@@ -1,22 +1,9 @@
 /**
- * User Interface
- * Represents a user in the model service.
+ * Agent service local types
  */
 
-export interface User {
-  id: string;
-  data: {
-    name: string;
-    email: string;
-    picture: string;
-    provider: string;
-    created_at: string;
-    last_login: string;
-    providerId: string;
-  };
-  created_at: string;
-  updated_at: string;
-}
+// Import shared User type for Express Request augmentation
+import { User } from '@agent-base/agents';
 
 /**
  * UtilityError Interface
@@ -41,24 +28,17 @@ export interface UtilityToolCredentials {
   agent_id: string;
 }
 
-/**
- * Generic Service Response Interface
- * Standardized response structure for service calls.
- */
-export interface ServiceResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: UtilityError | string; // Allow either structured error or simple string message
-}
+// Removed local User interface
+// Removed local ServiceResponse interface
 
-// Extend Express Request interface to include user
+// Extend Express Request interface to include the shared User type
 declare global {
   namespace Express {
     interface Request {
-      user?: User;
+      user?: User; // Use the imported shared User type
     }
   }
 }
 
-// Export all other types from the module
+// Export only necessary local types
 export * from './agent-config.js'; 

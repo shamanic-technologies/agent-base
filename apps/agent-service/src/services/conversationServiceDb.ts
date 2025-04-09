@@ -11,7 +11,6 @@ import {
 } from '@agent-base/agents'; // Shared types for payloads
 // @ts-ignore - Message not directly exported from 'ai' in this context
 import { Message } from 'ai';
-import { ServiceResponse } from '../types/index.js'; // Local ServiceResponse
 import { handleAxiosError } from '../lib/utils/errorHandlers.js'; // Assuming path
 
 // Consider moving this to a shared config/constants file

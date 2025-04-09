@@ -8,7 +8,6 @@ import {
   createWebhook, 
   getAgentForWebhook, 
   mapAgentToWebhook, 
-  unmapAgentFromWebhook 
 } from '../services/webhooks.js';
 
 const router = Router();
@@ -24,7 +23,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
   try {
     // Extract webhook provider ID, user ID, and optional data from the request body.
     const { webhook_provider_id, user_id, webhook_data } = req.body;
-    
+    console.log(`[Webhook Service /] Received webhook data: ${webhook_data}`, null, 2);
     // Validate required parameters.
     if (!webhook_provider_id || !user_id) {
       res.status(400).json({
@@ -36,7 +35,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     
     // Call the service function to create or update the webhook.
     // Errors from the service will be caught by the catch block.
-    await createWebhook(webhook_provider_id, user_id, webhook_data || {});
+    await createWebhook(webhook_provider_id, user_id, webhook_data);
     
     // Send a success response.
     res.status(200).json({
@@ -44,7 +43,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
       data: {
         webhook_provider_id, // Updated field name
         user_id,
-        webhook_data: webhook_data || {}
+        webhook_data: webhook_data
       }
     });
 
@@ -116,71 +115,6 @@ router.post('/map-agent', async (req: Request, res: Response): Promise<void> => 
     res.status(500).json({
       success: false,
       error: 'Failed to map agent to webhook',
-      details: error instanceof Error ? error.message : 'Unknown internal server error'
-    });
-  }
-});
-
-/**
- * @route POST /webhooks/unmap-agent
- * @description Removes the mapping between an agent and a webhook provider for a user.
- *              Expects webhook_provider_id and user_id in the request body. 
- *              Optionally accepts agent_id for validation, but primarily uses webhook_provider_id and user_id to find the mapping.
- * @param {Request} req - Express request object.
- * @param {Response} res - Express response object.
- */
-router.post('/unmap-agent', async (req: Request, res: Response): Promise<void> => {
-  try {
-    // Extract parameters from the request body.
-    const { agent_id, webhook_provider_id, user_id } = req.body;
-    
-    // Validate required parameters for identifying the mapping.
-    if (!webhook_provider_id || !user_id) {
-      res.status(400).json({
-        success: false,
-        error: 'webhook_provider_id and user_id are required' // Updated parameter name
-      });
-      return;
-    }
-    
-    // Get the currently mapped agent (if any) for validation.
-    const existingAgentId = await getAgentForWebhook(webhook_provider_id, user_id);
-    
-    // If no agent is mapped, return a 404 Not Found response.
-    if (!existingAgentId) {
-      res.status(404).json({
-        success: false,
-        error: `No agent is mapped to ${webhook_provider_id} webhook for user ${user_id}` // Updated parameter name
-      });
-      return;
-    }
-    
-    // Optional: If agent_id was provided, validate it matches the existing mapping.
-    // This prevents accidental unmapping if the client sends an incorrect agent_id.
-    if (agent_id && existingAgentId !== agent_id) {
-      res.status(400).json({
-        success: false,
-        error: `Agent ${agent_id} is not the one mapped to ${webhook_provider_id} webhook for user ${user_id}. Mapped agent is ${existingAgentId}.` // Updated parameter name
-      });
-      return;
-    }
-    
-    // Call the service function to unmap the agent.
-    await unmapAgentFromWebhook(webhook_provider_id, user_id);
-    
-    // Respond with 200 OK for successful unmapping.
-    res.status(200).json({
-      success: true,
-      message: `Agent ${existingAgentId} unmapped from ${webhook_provider_id} webhook for user ${user_id}` // Updated parameter name
-    });
-
-  } catch (error) {
-    // Log the error.
-    console.error('Error in POST /webhooks/unmap-agent route:', error);
-    // Send a generic 500 error response.
-    res.status(500).json({
-      success: false,
-      error: 'Failed to unmap agent from webhook',
       details: error instanceof Error ? error.message : 'Unknown internal server error'
     });
   }
