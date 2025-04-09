@@ -7,26 +7,34 @@ import { PoolClient } from 'pg';
 import { getClient } from '../db.js';
 
 /**
- * Get the agent ID mapped to a webhook for a user
- * @param webhook_id - ID of the webhook
- * @param user_id - ID of the user
- * @returns Agent ID if found, null otherwise
+ * Retrieves the agent ID mapped to a specific webhook provider for a given user.
+ * 
+ * @param {string} webhook_provider_id - The identifier of the webhook provider (e.g., 'slack', 'discord').
+ * @param {string} user_id - The UUID of the user who owns the webhook configuration.
+ * @returns {Promise<string | null>} A promise that resolves to the agent's UUID if a mapping exists, otherwise null.
+ * @throws {Error} Throws an error if the database query fails.
  */
-export async function getAgentForWebhook(webhook_id: string, user_id: string): Promise<string | null> {
+export async function getAgentForWebhook(webhook_provider_id: string, user_id: string): Promise<string | null> {
   let client: PoolClient | null = null;
   try {
+    // Obtain a database client from the pool.
     client = await getClient();
     
+    // Execute the query to find the agent_id associated with the webhook_provider_id and user_id.
     const result = await client.query(
-      'SELECT agent_id FROM agent_webhook WHERE webhook_id = $1 AND user_id = $2',
-      [webhook_id, user_id]
+      'SELECT agent_id FROM agent_webhook WHERE webhook_provider_id = $1 AND user_id = $2', // Updated column name
+      [webhook_provider_id, user_id]
     );
     
+    // Return the agent_id if a row is found, otherwise return null.
     return result.rows.length > 0 ? result.rows[0].agent_id : null;
   } catch (error: any) {
+    // Log the error for debugging purposes.
     console.error('Error getting agent for webhook:', error);
-    return null;
+    // Rethrow the error to be handled by the caller.
+    throw new Error(`Failed to get agent for webhook: ${error.message}`);
   } finally {
+    // Release the client back to the pool if it was acquired.
     if (client) {
       client.release();
     }
@@ -34,46 +42,54 @@ export async function getAgentForWebhook(webhook_id: string, user_id: string): P
 }
 
 /**
- * Create a webhook in the database
- * @param webhook_id - ID of the webhook provider
- * @param user_id - ID of the user
- * @param webhook_data - Additional webhook data as JSON
- * @returns True if successful, false otherwise
+ * Creates a new webhook registration or updates an existing one for a user.
+ * If a webhook with the same provider ID and user ID already exists, its data is updated.
+ * 
+ * @param {string} webhook_provider_id - The identifier of the webhook provider.
+ * @param {string} user_id - The UUID of the user.
+ * @param {Record<string, any>} [webhook_data={}] - Optional JSON data associated with the webhook configuration.
+ * @returns {Promise<boolean>} A promise that resolves to true if the operation was successful, otherwise false (though errors are thrown).
+ * @throws {Error} Throws an error if the database operation fails.
  */
 export async function createWebhook(
-  webhook_id: string, 
+  webhook_provider_id: string, // Renamed parameter
   user_id: string, 
   webhook_data: Record<string, any> = {}
 ): Promise<boolean> {
   let client: PoolClient | null = null;
   try {
+    // Obtain a database client.
     client = await getClient();
     
-    // Check if webhook exists
+    // Check if a webhook entry already exists for this provider and user.
     const existingWebhook = await client.query(
-      'SELECT webhook_id FROM webhook WHERE webhook_id = $1 AND user_id = $2',
-      [webhook_id, user_id]
+      'SELECT webhook_provider_id FROM webhook WHERE webhook_provider_id = $1 AND user_id = $2', // Updated column name
+      [webhook_provider_id, user_id]
     );
     
     if (existingWebhook.rows.length > 0) {
-      // Update existing webhook
+      // If it exists, update the webhook_data and updated_at timestamp.
       await client.query(
-        'UPDATE webhook SET webhook_data = $1, updated_at = CURRENT_TIMESTAMP WHERE webhook_id = $2 AND user_id = $3',
-        [JSON.stringify(webhook_data), webhook_id, user_id]
+        'UPDATE webhook SET webhook_data = $1, updated_at = CURRENT_TIMESTAMP WHERE webhook_provider_id = $2 AND user_id = $3', // Updated column name
+        [JSON.stringify(webhook_data), webhook_provider_id, user_id]
       );
     } else {
-      // Insert new webhook
+      // If it doesn't exist, insert a new webhook entry.
       await client.query(
-        'INSERT INTO webhook (webhook_id, user_id, webhook_data) VALUES ($1, $2, $3)',
-        [webhook_id, user_id, JSON.stringify(webhook_data)]
+        'INSERT INTO webhook (webhook_provider_id, user_id, webhook_data) VALUES ($1, $2, $3)', // Updated column name
+        [webhook_provider_id, user_id, JSON.stringify(webhook_data)]
       );
     }
     
+    // Return true indicating success.
     return true;
   } catch (error: any) {
-    console.error('Error creating webhook:', error);
-    return false;
+    // Log the error.
+    console.error('Error creating or updating webhook:', error);
+    // Throw an error to signal failure.
+    throw new Error(`Failed to create or update webhook: ${error.message}`);
   } finally {
+    // Release the client.
     if (client) {
       client.release();
     }
@@ -81,49 +97,59 @@ export async function createWebhook(
 }
 
 /**
- * Map an agent to a webhook
- * @param agent_id - ID of the agent
- * @param webhook_id - ID of the webhook
- * @param user_id - ID of the user
- * @returns True if successful, false otherwise
+ * Maps an agent to a specific webhook provider for a user.
+ * This creates or updates the mapping in the agent_webhook table.
+ * It ensures the corresponding webhook entry exists first by calling createWebhook.
+ * 
+ * @param {string} agent_id - The UUID of the agent to map.
+ * @param {string} webhook_provider_id - The identifier of the webhook provider.
+ * @param {string} user_id - The UUID of the user.
+ * @returns {Promise<boolean>} A promise that resolves to true if the mapping was successful.
+ * @throws {Error} Throws an error if the database operation fails or the prerequisite webhook cannot be ensured.
  */
 export async function mapAgentToWebhook(
   agent_id: string, 
-  webhook_id: string, 
+  webhook_provider_id: string, // Renamed parameter
   user_id: string
 ): Promise<boolean> {
   let client: PoolClient | null = null;
   try {
+    // Obtain a database client.
     client = await getClient();
     
-    // Ensure webhook exists
-    await createWebhook(webhook_id, user_id);
+    // Ensure the webhook entry exists before attempting to map an agent to it.
+    // This simplifies logic by guaranteeing the foreign key constraint will be met.
+    await createWebhook(webhook_provider_id, user_id); // Use updated parameter name
     
-    // Check if mapping already exists
+    // Check if a mapping already exists for this webhook provider and user.
     const existingMapping = await client.query(
-      'SELECT agent_id FROM agent_webhook WHERE webhook_id = $1 AND user_id = $2',
-      [webhook_id, user_id]
+      'SELECT agent_id FROM agent_webhook WHERE webhook_provider_id = $1 AND user_id = $2', // Updated column name
+      [webhook_provider_id, user_id]
     );
     
     if (existingMapping.rows.length > 0) {
-      // Update existing mapping
+      // If mapping exists, update the agent_id associated with it.
       await client.query(
-        'UPDATE agent_webhook SET agent_id = $1 WHERE webhook_id = $2 AND user_id = $3',
-        [agent_id, webhook_id, user_id]
+        'UPDATE agent_webhook SET agent_id = $1 WHERE webhook_provider_id = $2 AND user_id = $3', // Updated column name
+        [agent_id, webhook_provider_id, user_id]
       );
     } else {
-      // Insert new mapping
+      // If no mapping exists, insert a new one.
       await client.query(
-        'INSERT INTO agent_webhook (agent_id, webhook_id, user_id) VALUES ($1, $2, $3)',
-        [agent_id, webhook_id, user_id]
+        'INSERT INTO agent_webhook (agent_id, webhook_provider_id, user_id) VALUES ($1, $2, $3)', // Updated column name
+        [agent_id, webhook_provider_id, user_id]
       );
     }
     
+    // Return true indicating success.
     return true;
   } catch (error: any) {
+    // Log the error.
     console.error('Error mapping agent to webhook:', error);
-    return false;
+    // Throw an error to signal failure.
+    throw new Error(`Failed to map agent to webhook: ${error.message}`);
   } finally {
+    // Release the client.
     if (client) {
       client.release();
     }
@@ -131,29 +157,37 @@ export async function mapAgentToWebhook(
 }
 
 /**
- * Unmap an agent from a webhook
- * @param webhook_id - ID of the webhook
- * @param user_id - ID of the user
- * @returns True if successful, false otherwise
+ * Removes the mapping between an agent and a webhook provider for a specific user.
+ * 
+ * @param {string} webhook_provider_id - The identifier of the webhook provider.
+ * @param {string} user_id - The UUID of the user.
+ * @returns {Promise<boolean>} A promise that resolves to true if the unmapping was successful (even if no mapping existed).
+ * @throws {Error} Throws an error if the database delete operation fails.
  */
 export async function unmapAgentFromWebhook(
-  webhook_id: string, 
+  webhook_provider_id: string, // Renamed parameter
   user_id: string
 ): Promise<boolean> {
   let client: PoolClient | null = null;
   try {
+    // Obtain a database client.
     client = await getClient();
     
+    // Execute the delete operation. It's safe even if no row matches.
     await client.query(
-      'DELETE FROM agent_webhook WHERE webhook_id = $1 AND user_id = $2',
-      [webhook_id, user_id]
+      'DELETE FROM agent_webhook WHERE webhook_provider_id = $1 AND user_id = $2', // Updated column name
+      [webhook_provider_id, user_id]
     );
     
+    // Return true indicating the operation completed.
     return true;
   } catch (error: any) {
+    // Log the error.
     console.error('Error unmapping agent from webhook:', error);
-    return false;
+    // Throw an error to signal failure.
+    throw new Error(`Failed to unmap agent from webhook: ${error.message}`);
   } finally {
+    // Release the client.
     if (client) {
       client.release();
     }

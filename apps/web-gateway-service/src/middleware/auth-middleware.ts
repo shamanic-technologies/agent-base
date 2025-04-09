@@ -124,22 +124,22 @@ async function validateToken(token: string): Promise<User | undefined> {
     
     // Check if response indicates successful validation
     if (response.data?.success && response.data?.data) {
-      // Extract user ID from the response (use sub as the primary identifier, fallback to id)
-      // If both are missing, fallback to the decoded token value
-      const userId = response.data.data.sub || response.data.data.id || decodedUserId;
+      // Extract user ID strictly from the response data.id field
+      // Auth service is now responsible for ensuring this is the database UUID.
+      const userId = response.data.data.id; // Removed fallback to .sub or decodedUserId
       
       console.log(`[Auth Middleware] Extracted user ID from response: ${userId || 'NONE'}`);
-      console.log(`[Auth Middleware] Full response data:`, JSON.stringify(response.data.data));
+      console.log(`[Auth Middleware] Full response data from auth service:`, JSON.stringify(response.data.data));
       
       if (!userId) {
-        console.error('[Auth Middleware] Token validation succeeded but no user ID found in response or token');
+        console.error('[Auth Middleware] Token validation succeeded but no user ID found in response from auth service.');
         return undefined;
       }
       
       const user: User = {
-        id: userId,
-        email: response.data.data.email || decodedEmail || '',
-        name: response.data.data.name || decodedName || '',
+        id: userId, // Use the validated ID from auth service
+        email: response.data.data.email || '', // Keep fallback for optional fields
+        name: response.data.data.name || '',
         picture: response.data.data.picture
       };
       

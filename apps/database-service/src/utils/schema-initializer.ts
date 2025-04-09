@@ -19,8 +19,12 @@ const USER_CREDENTIALS_TABLE = 'user_credentials';
 // SQL definitions for table creation
 const USERS_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS "${USERS_TABLE}" (
-    id UUID PRIMARY KEY,
-    data JSONB NOT NULL,
+    user_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    provider_user_id VARCHAR(255) NOT NULL UNIQUE,
+    email VARCHAR(255),
+    display_name VARCHAR(255),
+    profile_image TEXT,
+    last_login TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
   )
@@ -87,27 +91,26 @@ const CONVERSATIONS_TABLE_SQL = `
 
 const WEBHOOK_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS "${WEBHOOK_TABLE}" (
-    webhook_id VARCHAR(50) NOT NULL,
+    webhook_provider_id VARCHAR(50) NOT NULL,
     user_id UUID NOT NULL,
     webhook_data JSONB NOT NULL DEFAULT '{}',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (webhook_id, user_id),
-    FOREIGN KEY (user_id) REFERENCES "${USERS_TABLE}" (id) ON DELETE CASCADE
+    PRIMARY KEY (webhook_provider_id, user_id),
+    FOREIGN KEY (user_id) REFERENCES "${USERS_TABLE}" (user_id) ON DELETE CASCADE
   )
 `;
 
 const AGENT_WEBHOOK_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS "${AGENT_WEBHOOK_TABLE}" (
-    agent_webhook_id SERIAL PRIMARY KEY,
     agent_id UUID NOT NULL,
-    webhook_id VARCHAR(50) NOT NULL,
+    webhook_provider_id VARCHAR(50) NOT NULL,
     user_id UUID NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (webhook_id, user_id) REFERENCES "${WEBHOOK_TABLE}" (webhook_id, user_id) ON DELETE CASCADE,
+    FOREIGN KEY (webhook_provider_id, user_id) REFERENCES "${WEBHOOK_TABLE}" (webhook_provider_id, user_id) ON DELETE CASCADE,
     FOREIGN KEY (agent_id) REFERENCES "${AGENTS_TABLE}" (agent_id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES "${USERS_TABLE}" (id) ON DELETE CASCADE,
-    UNIQUE(webhook_id, user_id)
+    FOREIGN KEY (user_id) REFERENCES "${USERS_TABLE}" (user_id) ON DELETE CASCADE,
+    PRIMARY KEY (agent_id,webhook_provider_id, user_id)
   )
 `;
 

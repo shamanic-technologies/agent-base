@@ -43,7 +43,7 @@ type CrispSubscribeResponse = CrispSubscribeSuccessResponse | CrispSubscribeErro
 // --- Utility Definition --- 
 const crispSubscribeMessageSendUtility: UtilityTool = {
   id: 'utility_crisp_subscribe_message_send',
-  description: 'Sends a message to a Crisp session using the Crisp API.',
+  description: 'Set up a Crisp webhook makes the chat visitors messages to be sent to the agent calling this tool',
   schema: {
     // No required inputs
   },

@@ -1,7 +1,7 @@
 /**
  * Webhook Routes
  * 
- * API endpoints for managing webhook integrations and mappings
+ * API endpoints for managing webhook provider configurations and their mappings to agents.
  */
 import { Router, Request, Response } from 'express';
 import { 
@@ -14,200 +14,230 @@ import {
 const router = Router();
 
 /**
- * Create or update webhook registration
- * POST /webhooks
+ * @route POST /webhooks
+ * @description Creates a new webhook configuration for a provider and user, or updates an existing one.
+ *              Expects webhook_provider_id and user_id in the request body.
+ * @param {Request} req - Express request object.
+ * @param {Response} res - Express response object.
  */
 router.post('/', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { webhook_id, user_id, webhook_data } = req.body;
+    // Extract webhook provider ID, user ID, and optional data from the request body.
+    const { webhook_provider_id, user_id, webhook_data } = req.body;
     
-    if (!webhook_id || !user_id) {
+    // Validate required parameters.
+    if (!webhook_provider_id || !user_id) {
       res.status(400).json({
         success: false,
-        error: 'webhook_id and user_id are required'
+        error: 'webhook_provider_id and user_id are required' // Updated parameter name
       });
       return;
     }
     
-    const success = await createWebhook(webhook_id, user_id, webhook_data || {});
+    // Call the service function to create or update the webhook.
+    // Errors from the service will be caught by the catch block.
+    await createWebhook(webhook_provider_id, user_id, webhook_data || {});
     
-    if (success) {
-      res.status(200).json({
-        success: true,
-        data: {
-          webhook_id,
-          user_id,
-          webhook_data: webhook_data || {}
-        }
-      });
-    } else {
-      res.status(500).json({
-        success: false,
-        error: 'Failed to create or update webhook'
-      });
-    }
+    // Send a success response.
+    res.status(200).json({
+      success: true,
+      data: {
+        webhook_provider_id, // Updated field name
+        user_id,
+        webhook_data: webhook_data || {}
+      }
+    });
+
   } catch (error) {
+    // Log the error for server-side debugging.
     console.error('Error in POST /webhooks route:', error);
+    // Send a generic 500 internal server error response.
     res.status(500).json({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: 'Failed to create or update webhook', // Generic error for client
+      // Optionally include specific error message in development/debug mode
+      details: error instanceof Error ? error.message : 'Unknown internal server error' 
     });
   }
 });
 
 /**
- * Map agent to webhook
- * POST /webhooks/map-agent
+ * @route POST /webhooks/map-agent
+ * @description Maps an agent to a specific webhook provider configuration for a user.
+ *              Expects agent_id, webhook_provider_id, and user_id in the request body.
+ * @param {Request} req - Express request object.
+ * @param {Response} res - Express response object.
  */
 router.post('/map-agent', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { agent_id, webhook_id, user_id } = req.body;
+    // Extract parameters from the request body.
+    const { agent_id, webhook_provider_id, user_id } = req.body;
     
-    if (!agent_id || !webhook_id || !user_id) {
+    // Validate required parameters.
+    if (!agent_id || !webhook_provider_id || !user_id) {
       res.status(400).json({
         success: false,
-        error: 'agent_id, webhook_id, and user_id are required'
+        error: 'agent_id, webhook_provider_id, and user_id are required' // Updated parameter name
       });
       return;
     }
     
-    // Get current agent mapped to webhook if any
-    const existingAgentId = await getAgentForWebhook(webhook_id, user_id);
+    // Check if this agent is already mapped to this webhook provider for the user.
+    const existingAgentId = await getAgentForWebhook(webhook_provider_id, user_id);
     
+    // If the agent is already mapped, return a 200 OK response indicating no change needed.
     if (existingAgentId === agent_id) {
       res.status(200).json({
         success: true,
-        message: `Agent ${agent_id} is already mapped to ${webhook_id} webhook for user ${user_id}`
+        message: `Agent ${agent_id} is already mapped to ${webhook_provider_id} webhook for user ${user_id}` // Updated parameter name
       });
       return;
     }
     
-    // Map agent to webhook (this will handle creating webhook if needed)
-    const success = await mapAgentToWebhook(agent_id, webhook_id, user_id);
+    // Call the service function to map the agent to the webhook.
+    // This service function handles ensuring the webhook exists.
+    await mapAgentToWebhook(agent_id, webhook_provider_id, user_id);
     
-    if (success) {
-      res.status(201).json({
-        success: true,
-        message: `Agent ${agent_id} mapped to ${webhook_id} webhook for user ${user_id}`,
-        data: {
-          agent_id,
-          webhook_id,
-          user_id
-        }
-      });
-    } else {
-      res.status(500).json({
-        success: false,
-        error: 'Failed to map agent to webhook'
-      });
-    }
+    // Respond with 201 Created status for a successful mapping.
+    res.status(201).json({
+      success: true,
+      message: `Agent ${agent_id} mapped to ${webhook_provider_id} webhook for user ${user_id}`, // Updated parameter name
+      data: {
+        agent_id,
+        webhook_provider_id, // Updated field name
+        user_id
+      }
+    });
+
   } catch (error) {
+    // Log the error.
     console.error('Error in POST /webhooks/map-agent route:', error);
+    // Send a generic 500 error response.
     res.status(500).json({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: 'Failed to map agent to webhook',
+      details: error instanceof Error ? error.message : 'Unknown internal server error'
     });
   }
 });
 
 /**
- * Unmap agent from webhook
- * POST /webhooks/unmap-agent
+ * @route POST /webhooks/unmap-agent
+ * @description Removes the mapping between an agent and a webhook provider for a user.
+ *              Expects webhook_provider_id and user_id in the request body. 
+ *              Optionally accepts agent_id for validation, but primarily uses webhook_provider_id and user_id to find the mapping.
+ * @param {Request} req - Express request object.
+ * @param {Response} res - Express response object.
  */
 router.post('/unmap-agent', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { agent_id, webhook_id, user_id } = req.body;
+    // Extract parameters from the request body.
+    const { agent_id, webhook_provider_id, user_id } = req.body;
     
-    if (!webhook_id || !user_id) {
+    // Validate required parameters for identifying the mapping.
+    if (!webhook_provider_id || !user_id) {
       res.status(400).json({
         success: false,
-        error: 'webhook_id and user_id are required'
+        error: 'webhook_provider_id and user_id are required' // Updated parameter name
       });
       return;
     }
     
-    // Get current agent mapped to webhook if any
-    const existingAgentId = await getAgentForWebhook(webhook_id, user_id);
+    // Get the currently mapped agent (if any) for validation.
+    const existingAgentId = await getAgentForWebhook(webhook_provider_id, user_id);
     
+    // If no agent is mapped, return a 404 Not Found response.
     if (!existingAgentId) {
       res.status(404).json({
         success: false,
-        error: `No agent is mapped to ${webhook_id} webhook for user ${user_id}`
+        error: `No agent is mapped to ${webhook_provider_id} webhook for user ${user_id}` // Updated parameter name
       });
       return;
     }
     
+    // Optional: If agent_id was provided, validate it matches the existing mapping.
+    // This prevents accidental unmapping if the client sends an incorrect agent_id.
     if (agent_id && existingAgentId !== agent_id) {
       res.status(400).json({
         success: false,
-        error: `Agent ${agent_id} is not mapped to ${webhook_id} webhook for user ${user_id}`
+        error: `Agent ${agent_id} is not the one mapped to ${webhook_provider_id} webhook for user ${user_id}. Mapped agent is ${existingAgentId}.` // Updated parameter name
       });
       return;
     }
     
-    // Unmap agent from webhook
-    const success = await unmapAgentFromWebhook(webhook_id, user_id);
+    // Call the service function to unmap the agent.
+    await unmapAgentFromWebhook(webhook_provider_id, user_id);
     
-    if (success) {
-      res.status(200).json({
-        success: true,
-        message: `Agent unmapped from ${webhook_id} webhook for user ${user_id}`
-      });
-    } else {
-      res.status(500).json({
-        success: false,
-        error: 'Failed to unmap agent from webhook'
-      });
-    }
+    // Respond with 200 OK for successful unmapping.
+    res.status(200).json({
+      success: true,
+      message: `Agent ${existingAgentId} unmapped from ${webhook_provider_id} webhook for user ${user_id}` // Updated parameter name
+    });
+
   } catch (error) {
+    // Log the error.
     console.error('Error in POST /webhooks/unmap-agent route:', error);
+    // Send a generic 500 error response.
     res.status(500).json({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: 'Failed to unmap agent from webhook',
+      details: error instanceof Error ? error.message : 'Unknown internal server error'
     });
   }
 });
 
 /**
- * Get agent for webhook
- * GET /webhooks/:webhook_id/agent
+ * @route GET /webhooks/:webhook_provider_id/agent
+ * @description Retrieves the agent ID mapped to a specific webhook provider for a user.
+ *              Expects webhook_provider_id as a route parameter and user_id as a query parameter.
+ * @param {Request} req - Express request object, containing webhook_provider_id in params and user_id in query.
+ * @param {Response} res - Express response object.
  */
-router.get('/:webhook_id/agent', async (req: Request, res: Response): Promise<void> => {
+router.get('/:webhook_provider_id/agent', async (req: Request, res: Response): Promise<void> => { // Updated route parameter
   try {
-    const { webhook_id } = req.params;
+    // Extract webhook provider ID from route parameters.
+    const { webhook_provider_id } = req.params; // Updated parameter name
+    // Extract user ID from query parameters.
     const user_id = req.query.user_id as string;
     
-    if (!webhook_id || !user_id) {
+    // Validate required parameters.
+    if (!webhook_provider_id || !user_id) {
       res.status(400).json({
         success: false,
-        error: 'webhook_id and user_id are required'
+        error: 'webhook_provider_id (in path) and user_id (in query) are required' // Updated parameter name
       });
       return;
     }
     
-    const agentId = await getAgentForWebhook(webhook_id, user_id);
+    // Call the service function to get the mapped agent ID.
+    const agentId = await getAgentForWebhook(webhook_provider_id, user_id);
     
+    // If no agent is mapped, return a 404 Not Found response.
     if (!agentId) {
       res.status(404).json({
         success: false,
-        error: `No agent mapped to ${webhook_id} webhook for user ${user_id}`
+        error: `No agent mapped to ${webhook_provider_id} webhook for user ${user_id}` // Updated parameter name
       });
       return;
     }
     
+    // Respond with 200 OK and the mapping details.
     res.status(200).json({
       success: true,
       data: {
         agent_id: agentId,
-        webhook_id,
+        webhook_provider_id, // Updated field name
         user_id
       }
     });
   } catch (error) {
-    console.error(`Error in GET /webhooks/:webhook_id/agent route:`, error);
+    // Log the error.
+    console.error(`Error in GET /webhooks/:webhook_provider_id/agent route:`, error);
+    // Send a generic 500 error response.
     res.status(500).json({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: 'Failed to get agent for webhook',
+      details: error instanceof Error ? error.message : 'Unknown internal server error'
     });
   }
 });
