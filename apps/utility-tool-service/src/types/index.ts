@@ -21,9 +21,10 @@ export interface UtilityTool {
    * @param userId ID of the user making the request
    * @param conversationId ID of the conversation context
    * @param params Input parameters for the utility
+   * @param agentId ID of the agent making the request
    * @returns Result of the utility execution
    */
-  execute: (userId: string, conversationId: string, params: any) => Promise<any>;
+  execute: (userId: string, conversationId: string, params: any, agentId?: string) => Promise<any>;
 }
 
 /**

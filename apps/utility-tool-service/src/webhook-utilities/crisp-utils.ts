@@ -54,6 +54,7 @@ export async function checkCrispWebsiteId(userId: string, secretServiceUrl: stri
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'x-user-id': userId
       },
       body: JSON.stringify({
         userId,
@@ -74,19 +75,24 @@ export async function checkCrispWebsiteId(userId: string, secretServiceUrl: stri
  * @param userId User ID to append to setup URL
  * @param secretServiceUrl Secret service URL
  * @param logPrefix Prefix for console logs
+ * @param agentId ID of the agent making the request (optional)
  * @returns Setup needed response object
  */
 export function generateSetupNeededResponse(
   userId: string,
   secretServiceUrl: string,
-  logPrefix: string
+  logPrefix: string,
+  agentId?: string
 ): SetupNeededResponse {
   // Construct the URL pointing to the secret-service Crisp configuration form page
   // Append userId
   // const utilityType = 'crisp'; // No longer needed here
-  const setupUrl = `${secretServiceUrl}/crisp?userId=${encodeURIComponent(userId)}`; // Point to /crisp
+  const setupUrl = `${secretServiceUrl}/crisp?userId=${encodeURIComponent(userId)}${agentId ? `&agentId=${encodeURIComponent(agentId)}` : ''}`;
   
   console.log(`${logPrefix} No Crisp website ID found. Client should use popup for setup at: ${setupUrl}`);
+  if (agentId) {
+    console.log(`${logPrefix} Request made by agent: ${agentId}`);
+  }
   
   // Return standardized SetupNeededResponse
   return {

@@ -9,7 +9,7 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 import axios from 'axios';
-import { UtilityError } from '../../types/index.js';
+import { UtilityError, UtilityToolCredentials } from '../../types/index.js';
 import { handleAxiosError } from '../utils/errorHandlers.js';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -27,12 +27,8 @@ const API_GATEWAY_URL = process.env.API_GATEWAY_URL;
 /**
  * Creates the get utility info tool with the given credentials
  */
-export function createGetUtilityInfoTool(credentials: { 
-  userId: string;
-  conversationId: string;
-  apiKey: string;
-}) {
-  const { userId, conversationId, apiKey } = credentials;
+export function createGetUtilityInfoTool(credentials: UtilityToolCredentials) {
+  const { userId, conversationId, apiKey, agent_id } = credentials;
   
   return tool({
     name: 'utility_get_utility_info',
@@ -60,7 +56,8 @@ export function createGetUtilityInfoTool(credentials: {
           },
           headers: {
             'Content-Type': 'application/json',
-            'x-api-key': apiKey
+            'x-api-key': apiKey,
+            'x-agent-id': agent_id
           }
         });
         

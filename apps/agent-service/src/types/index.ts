@@ -31,6 +31,17 @@ export interface UtilityError {
 }
 
 /**
+ * UtilityToolCredentials Interface
+ * Standard credentials required by all utility tools.
+ */
+export interface UtilityToolCredentials {
+  userId: string;
+  conversationId: string;
+  apiKey: string;
+  agent_id: string;
+}
+
+/**
  * Generic Service Response Interface
  * Standardized response structure for service calls.
  */
