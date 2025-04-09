@@ -34,7 +34,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       webhook_provider_id,
       user_id: userId,
       agent_id: agentId,
-      webhook_data: webhook_data || '{}'
+      webhook_data: webhook_data
     });
 
     // Validate required parameters.

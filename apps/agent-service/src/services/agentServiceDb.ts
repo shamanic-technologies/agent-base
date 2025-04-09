@@ -13,7 +13,6 @@ import {
     UpdateUserAgentResponse, // Use for update response structure
     GetUserAgentResponse // Use for get response structure
 } from '@agent-base/agents'; // Import shared types
-import { ServiceResponse } from '../types/index.js'; // Import local ServiceResponse
 import { handleAxiosError } from '../lib/utils/errorHandlers.js'; // Assuming path
 
 // Consider moving this to a shared config/constants file

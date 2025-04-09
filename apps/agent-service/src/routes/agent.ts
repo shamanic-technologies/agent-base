@@ -15,7 +15,9 @@ import {
   // CreateUserAgentResponse, 
   ListUserAgentsResponse, // Keep for formatting the final response in get-or-create
   // GetUserAgentResponse
-  AgentRecord // Keep for default agent creation typing
+  AgentRecord, // Keep for default agent creation typing
+  // Remove ServiceResponse import - Use specific response types like UserResponse etc.
+  // ServiceResponse 
 } from '@agent-base/agents';
 
 // Import service functions
@@ -28,9 +30,6 @@ import {
 
 // Import the new utility function
 import { createDefaultAgentPayload } from '../lib/utils/agentUtils.js';
-
-// Import ServiceResponse type if needed for clarity, though inference might work
-import { ServiceResponse } from '../types/index.js';
 
 const router = Router();
 // Remove DATABASE_SERVICE_URL - no longer needed here
@@ -133,6 +132,7 @@ router.get('/get-or-create-user-agents', async (req: Request, res: Response, nex
 
   if (!userId) {
     console.error('[Agent Service /get-or-create-user-agents] User ID not found in request.');
+    // Use BaseResponse format for error
     res.status(401).json({ success: false, error: 'User authentication required' });
     return;
   }
@@ -142,16 +142,19 @@ router.get('/get-or-create-user-agents', async (req: Request, res: Response, nex
   try {
     // Step 1: Try to list existing agents using the service function
     console.log(`${logPrefix} Calling listUserAgents service`);
-    const listResult: ServiceResponse<AgentRecord[]> = await listUserAgents(userId);
+    // The service function now returns ListUserAgentsResponse directly
+    const listResult = await listUserAgents(userId);
 
     // Check for successful response and if agents exist
     if (listResult.success && listResult.data && listResult.data.length > 0) {
       console.log(`${logPrefix} Found ${listResult.data.length} existing agents. Returning list.`);
+      // Return the ListUserAgentsResponse directly
       res.status(200).json(listResult);
       return;
     } else if (!listResult.success) {
        console.error(`${logPrefix} Error listing agents from service:`, listResult.error);
-       res.status(500).json({ success: false, error: listResult.error || 'Failed to list agents' });
+       // Return the error response (already in ListUserAgentsResponse format)
+       res.status(500).json(listResult);
        return;
     }
     
@@ -159,11 +162,12 @@ router.get('/get-or-create-user-agents', async (req: Request, res: Response, nex
     console.log(`${logPrefix} No existing agents found. Creating default agent via service.`);
     const defaultAgentPayload = createDefaultAgentPayload(userId);
     
-    // Call the createUserAgent service function
+    // Call the createUserAgent service function (returns CreateUserAgentResponse)
     const createResult = await createUserAgent(defaultAgentPayload);
 
     if (createResult.success && createResult.data) {
       console.log(`${logPrefix} Default agent created successfully (Agent ID: ${createResult.data.agent_id}).`);
+      // Format the response as ListUserAgentsResponse
       res.status(201).json({
         success: true,
         data: [createResult.data] // Wrap single agent in array
@@ -171,7 +175,9 @@ router.get('/get-or-create-user-agents', async (req: Request, res: Response, nex
       return;
     } else {
       console.error(`${logPrefix} Failed to create default agent via service:`, createResult.error);
-      res.status(500).json({ success: false, error: createResult.error || 'Failed to create default agent' });
+       // Return the error response from the service (already CreateUserAgentResponse format)
+       // Need to format it as ListUserAgentsResponse for consistency in this endpoint
+       res.status(500).json({ success: false, error: createResult.error || 'Failed to create default agent' });
        return;
     }
 
