@@ -13,6 +13,7 @@ import axios from 'axios';
 import { createListUtilitiesTool } from './utility/utility_list_utilities.js';
 import { createGetUtilityInfoTool } from './utility/utility_get_utility_info.js';
 import { createCallUtilityTool } from './utility/utility_call_utility.js';
+import { UtilityToolCredentials } from '../types/index.js';
 
 // Import error handlers
 import { handleToolError } from './utils/errorHandlers.js';
@@ -40,10 +41,11 @@ export async function createAgent({
   console.log(`Creating agent with model: ${modelName}, userId: ${userId}, conversationId: ${conversationId}`);
 
   // Tool credentials for all tools
-  const credentials = {
+  const credentials: UtilityToolCredentials = {
     userId,
     conversationId,
-    apiKey
+    apiKey,
+    agent_id: userId
   };
 
   // Initialize tools using tool creators

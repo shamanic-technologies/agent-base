@@ -3,7 +3,6 @@
  */
 import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { ApiLogEntry } from '../types';
 import { DatabaseService } from '../services/database';
 
 const router = Router();
@@ -26,8 +25,8 @@ router.post('/me', async (req: Request, res: Response): Promise<void> => {
     const database = initDatabase();
 
     // Validate required headers
-    const userId = req.headers['x-user-id'];
-    const apiKey = req.headers['x-api-key'];
+    const userId = (req as any).headers['x-user-id'];
+    const apiKey = (req as any).headers['x-api-key'];
 
     if (!userId) {
       throw new Error('x-user-id header is required');
@@ -37,30 +36,30 @@ router.post('/me', async (req: Request, res: Response): Promise<void> => {
     }
 
     // Extract relevant information from the raw request
-    const logEntry: ApiLogEntry = {
+    const logEntry: any = {
       id: uuidv4(),  // Generate a unique ID using UUID v4
       user_id: userId as string,
       api_key: apiKey as string,
-      endpoint: req.path,
-      method: req.method,
-      ip_address: req.ip,
-      user_agent: req.get('user-agent'),
-      request_id: req.headers['x-request-id'] as string,
-      request_body: req.body,
-      conversation_id: req.body?.conversation_id,
+      endpoint: (req as any).path,
+      method: (req as any).method,
+      ip_address: (req as any).ip,
+      user_agent: (req as any).get('user-agent'),
+      request_id: (req as any).headers['x-request-id'] as string,
+      request_body: (req as any).body,
+      conversation_id: (req as any).body?.conversation_id,
       timestamp: new Date().toISOString()
     };
 
     // Store the log entry
     const result = await database.createLog(logEntry);
 
-    res.status(201).json({
+    (res as any).status(201).json({
       success: true,
       data: result
     });
   } catch (error) {
     console.error('Error creating log:', error);
-    res.status(400).json({
+    (res as any).status(400).json({
       success: false,
       error: error instanceof Error ? error.message : 'Failed to create log entry'
     });
@@ -77,23 +76,23 @@ router.get('/me', async (req: Request, res: Response): Promise<void> => {
     const database = initDatabase();
 
     // Validate required headers
-    const userId = req.headers['x-user-id'];
+    const userId = (req as any).headers['x-user-id'];
     if (!userId) {
-      res.status(401).json({
+      (res as any).status(401).json({
         success: false,
         error: 'x-user-id header is required'
       });
       return;
     }
     
-    const { limit, offset } = req.query;
+    const { limit, offset } = (req as any).query;
     
     // Validate pagination parameters
     const limitNum = limit ? parseInt(limit as string) : 100;
     const offsetNum = offset ? parseInt(offset as string) : 0;
     
     if (isNaN(limitNum) || limitNum < 1 || limitNum > 1000) {
-      res.status(400).json({
+      (res as any).status(400).json({
         success: false,
         error: 'Invalid limit parameter. Must be between 1 and 1000.'
       });
@@ -101,7 +100,7 @@ router.get('/me', async (req: Request, res: Response): Promise<void> => {
     }
     
     if (isNaN(offsetNum) || offsetNum < 0) {
-      res.status(400).json({
+      (res as any).status(400).json({
         success: false,
         error: 'Invalid offset parameter. Must be a non-negative number.'
       });
@@ -115,13 +114,13 @@ router.get('/me', async (req: Request, res: Response): Promise<void> => {
       offsetNum
     );
     
-    res.status(200).json({
+    (res as any).status(200).json({
       success: true,
       data: result
     });
   } catch (error) {
     console.error('Error fetching logs:', error);
-    res.status(400).json({
+    (res as any).status(400).json({
       success: false,
       error: error instanceof Error ? error.message : 'Failed to fetch logs'
     });

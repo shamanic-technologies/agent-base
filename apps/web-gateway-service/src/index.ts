@@ -4,7 +4,7 @@
  * A central entry point for web applications to access all microservices.
  * Handles routing, authentication, and request forwarding to appropriate services.
  */
-import express from 'express';
+import express, { Request, Response, NextFunction, RequestHandler } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import axios, { AxiosError } from 'axios';
@@ -84,7 +84,7 @@ const apiLimiter = rateLimit({
 });
 
 // Apply rate limiting to all routes
-app.use(apiLimiter);
+app.use(apiLimiter as any);
 
 /**
  * API Key Authentication Middleware

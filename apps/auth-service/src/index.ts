@@ -36,16 +36,16 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: config.isProduction,
+      secure: process.env.NODE_ENV === 'production',
       httpOnly: true,
-      maxAge: config.session.maxAge
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
     }
-  }) as express.RequestHandler
+  }) as any // Ensure cast is 'as any'
 );
 
 // Initialize Passport - explicitly cast to RequestHandler
-app.use(passport.initialize() as express.RequestHandler);
-app.use(passport.session() as express.RequestHandler);
+app.use(passport.initialize() as any); // Ensure cast is 'as any'
+app.use(passport.session() as any); // Add 'as any' here too for consistency
 
 // Register all routes
 app.use('/', routes);

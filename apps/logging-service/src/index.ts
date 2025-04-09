@@ -13,16 +13,7 @@ import express, { Request, Response, NextFunction, RequestHandler } from 'expres
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import { createServer } from 'node:http';
-import pino from 'pino';
-import routes from './routes/index.js';
-
-// Initialize logger
-const logger = pino({
-  level: process.env.LOG_LEVEL || 'info',
-  transport: {
-    target: 'pino-pretty'
-  }
-});
+import routes from './routes/index';
 
 function validateEnv() {
   const requiredVars = [
@@ -34,12 +25,12 @@ function validateEnv() {
   const missing = requiredVars.filter(varName => !process.env[varName]);
   if (missing.length > 0) {
     const errorMsg = `Missing required environment variables: ${missing.join(', ')}`;
-    logger.error(errorMsg);
+    console.error(errorMsg);
     throw new Error(errorMsg);
   }
 
-  logger.info('All required environment variables are set');
-  logger.info(`Environment configuration:
+  console.info('All required environment variables are set');
+  console.info(`Environment configuration:
     PORT: ${process.env.PORT}
     DATABASE_SERVICE_URL: ${process.env.DATABASE_SERVICE_URL}
     PAYMENT_SERVICE_URL: ${process.env.PAYMENT_SERVICE_URL}
@@ -61,22 +52,22 @@ function startServer() {
    */
   app.use('/', ((req: Request, res: Response, next: NextFunction) => {
     // Skip authentication for health checks
-    if (req.path === '/health') {
-      return next();
+    if ((req as any).path === '/health') {
+      return (next as any)();
     }
     
-    const userId = req.headers['x-user-id'] as string;
+    const userId = (req as any).headers['x-user-id'] as string;
     
     if (!userId) {
-      logger.warn(`Auth Middleware: Missing X-USER-ID header for ${req.path}`);
-      return res.status(401).json({
+      console.warn(`Auth Middleware: Missing X-USER-ID header for ${(req as any).path}`);
+      return (res as any).status(401).json({
         success: false,
         error: 'Authentication required - X-USER-ID header must be provided'
       });
     }
     
-    logger.info(`Auth Middleware: User ${userId} authenticated for ${req.path}`);
-    next();
+    console.info(`Auth Middleware: User ${userId} authenticated for ${(req as any).path}`);
+    (next as any)();
   }) as RequestHandler);
 
   // Routes
@@ -87,14 +78,14 @@ function startServer() {
 
   // Start server
   server.listen(port, () => {
-    logger.info(`Server is running on port ${port}`);
+    console.info(`Server is running on port ${port}`);
   });
 
   // Handle shutdown
   process.on('SIGTERM', () => {
-    logger.info('SIGTERM received. Shutting down gracefully...');
+    console.info('SIGTERM received. Shutting down gracefully...');
     server.close(() => {
-      logger.info('Server closed');
+      console.info('Server closed');
       process.exit(0);
     });
   });

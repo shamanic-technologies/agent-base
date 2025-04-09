@@ -5,33 +5,19 @@
  */
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
-import { ApiLogEntry, DatabaseApiLogEntry } from '../types';
+import fetch from 'node-fetch';
+import { config } from 'dotenv';
 
 interface DateFilter {
   $gte?: string;
   $lte?: string;
 }
 
-export interface LogFilter {
-  user_id?: string;
-  api_key?: string;
-  endpoint?: string;
-  method?: string;
-  conversation_id?: string;
-  timestamp?: DateFilter;
-  [key: string]: any;
-}
-
-interface DatabaseResponse<T> {
-  success: boolean;
-  data: T;
-  error?: string;
-}
-
-interface PaginatedResponse<T> {
-  items: T[];
-  total: number;
-}
+interface ApiLogEntry { [key: string]: any }
+interface DatabaseApiLogEntry { [key: string]: any }
+interface LogFilter { [key: string]: any }
+interface DatabaseResponse<T> { success: boolean; data: T; error?: string; }
+interface PaginatedResponse<T> { items: T[]; total: number; }
 
 export class DatabaseService {
   private baseUrl: string;

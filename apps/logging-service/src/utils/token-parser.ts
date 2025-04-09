@@ -1,16 +1,9 @@
 /**
  * Token parsing utilities for Vercel AI SDK responses
  */
-import pino from 'pino';
-import { ApiLogEntry } from '../types/index.js';
 
-// Get the logger instance
-const logger = pino({
-  level: process.env.LOG_LEVEL || 'info',
-  transport: {
-    target: 'pino-pretty',
-  },
-});
+// Define ApiLogEntry inline or import from elsewhere
+interface ApiLogEntry { [key: string]: any; endpoint: string; response_body?: any } // Placeholder with necessary fields
 
 /**
  * Parse token usage from Vercel AI SDK response body
@@ -45,7 +38,7 @@ export function parseTokenUsage(responseBody: any): { inputTokens: number, outpu
             }
           } catch (error) {
             // Skip this line if we can't parse it as JSON
-            logger.debug(`[Logging Service] Failed to parse line as JSON: ${line}`);
+            console.debug(`[Logging Service] Failed to parse line as JSON: ${line}`);
             continue;
           }
         }
@@ -74,14 +67,14 @@ export function parseTokenUsage(responseBody: any): { inputTokens: number, outpu
     
     // If no tokens were found, throw an error
     if (totalInputTokens === 0 && totalOutputTokens === 0) {
-      logger.error('[Logging Service] No token usage information found in response');
+      console.error('[Logging Service] No token usage information found in response');
       throw new Error('[Logging Service] No token usage information found in response');
     }
     
-    logger.info(`[Logging Service] Parsed token usage: ${totalInputTokens} input, ${totalOutputTokens} output`);
+    console.info(`[Logging Service] Parsed token usage: ${totalInputTokens} input, ${totalOutputTokens} output`);
     return { inputTokens: totalInputTokens, outputTokens: totalOutputTokens };
   } catch (error) {
-    logger.error('[Logging Service] Error parsing token usage:', error);
+    console.error('[Logging Service] Error parsing token usage:', error);
     throw error instanceof Error 
       ? error 
       : new Error('[Logging Service] Failed to parse token usage from response');
@@ -118,7 +111,7 @@ export function calculatePrice(logEntry: ApiLogEntry): number {
       const outputPrice = outputTokens * 0.00003;
       price = inputPrice + outputPrice;
       
-      logger.info(`[Logging Service] Calculated token-based price for ${logEntry.endpoint}: $${price.toFixed(6)} (${inputTokens} input tokens, ${outputTokens} output tokens)`);
+      console.info(`[Logging Service] Calculated token-based price for ${logEntry.endpoint}: $${price.toFixed(6)} (${inputTokens} input tokens, ${outputTokens} output tokens)`);
     } else {
       // Throw an error when there is no response body
       throw new Error(`[Logging Service] Cannot calculate price for ${logEntry.endpoint}: No response body available for token counting`);
