@@ -11,6 +11,7 @@ export interface ApiKeyMetadata {
   user_id: string;
   name: string;
   key_prefix: string;
+  hashed_key: string;
   created_at: string;
   last_used: string | null;
 }
@@ -22,7 +23,17 @@ export interface CreateApiKeyRequest {
   key_id: string;
   name: string;
   key_prefix: string;
+  hashed_key: string;
 }
+
+/**
+ * Request to update an existing API key
+ */
+export interface UpdateApiKeyRequest {
+  hashed_key: string;
+  key_prefix: string;
+}
+
 
 /**
  * Standard response for API key operations
