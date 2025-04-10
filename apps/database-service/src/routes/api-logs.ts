@@ -3,7 +3,6 @@
  */
 import { Router, Request, Response } from 'express';
 import { pgPool } from '../db.js';
-import { handleDatabaseError } from '../utils/error-handler.js';
 import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();
@@ -77,7 +76,8 @@ router.get('/me', async (req: Request, res: Response): Promise<void> => {
       }
     });
   } catch (error: any) {
-    handleDatabaseError(error, res, 'api_logs');
+    console.error('Error fetching user API logs:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 
@@ -135,7 +135,8 @@ router.post('/me', async (req: Request, res: Response): Promise<void> => {
       data: result.rows[0]
     });
   } catch (error: any) {
-    handleDatabaseError(error, res, 'api_logs');
+    console.error('Error creating API log:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 

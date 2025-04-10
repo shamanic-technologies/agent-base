@@ -2,7 +2,6 @@
  * User routes
  */
 import { Router, Request, Response } from 'express';
-import { handleDatabaseError } from '../utils/error-handler.js';
 import { getUserById, getOrCreateUserByProviderUserId } from '../services/users.js';
 import { GetOrCreateUserInput } from '@agent-base/agents';
 
@@ -46,7 +45,7 @@ router.get('/users/me', async (req: Request, res: Response): Promise<void> => {
     });
   } catch (error) {
     console.error('Error fetching current user:', error);
-    handleDatabaseError(error, res, 'users');
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 
@@ -96,7 +95,7 @@ router.post('/users/get-or-create-by-provider-user-id', async (req: Request, res
     }
   } catch (error) {
     console.error('Error in get-or-create user:', error);
-    handleDatabaseError(error, res, 'users');
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 

@@ -16,6 +16,7 @@ const AGENT_WEBHOOK_TABLE = 'agent_webhook';
 const WEBHOOK_EVENTS_TABLE = 'webhook_events';
 const USERS_TABLE = 'users';
 const USER_CREDENTIALS_TABLE = 'user_credentials';
+const API_KEYS_TABLE = 'api_keys';
 
 // SQL definitions for table creation
 const USERS_TABLE_SQL = `
@@ -144,6 +145,21 @@ const WEBHOOK_EVENTS_TABLE_SQL = `
   )
 `;
 
+const API_KEYS_TABLE_SQL = `
+  CREATE TABLE IF NOT EXISTS "${API_KEYS_TABLE}" (
+    key_id UUID PRIMARY KEY,
+    user_id UUID NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    key_prefix VARCHAR(64) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    last_used TIMESTAMP WITH TIME ZONE,
+    FOREIGN KEY (user_id) REFERENCES "${USERS_TABLE}" (user_id) ON DELETE CASCADE
+  );
+
+  -- Now create the index with the correct definition
+  CREATE INDEX IF NOT EXISTS idx_api_keys_user_id ON "${API_KEYS_TABLE}"(user_id);
+`;
+
 /**
  * Ensures the users table exists
  */
@@ -229,6 +245,19 @@ async function ensureWebhookEventsTableExists(client: PoolClient): Promise<void>
 }
 
 /**
+ * Ensures the API keys table exists
+ */
+async function ensureApiKeysTableExists(client: PoolClient): Promise<void> {
+  try {
+    await client.query(API_KEYS_TABLE_SQL);
+    console.log(`Table "${API_KEYS_TABLE}" ensured.`);
+  } catch (error) {
+    console.error('Error ensuring API keys table exists:', error);
+    throw error;
+  }
+}
+
+/**
  * Initialize all database schemas
  * This function ensures all tables required by the application exist
  * Call this at server startup
@@ -247,6 +276,7 @@ export async function initializeAllSchemas(): Promise<void> {
     await ensureWebhookTablesExist(client);
     await ensureUserCredentialsTableExists(client);
     await ensureWebhookEventsTableExists(client);
+    await ensureApiKeysTableExists(client);
     
     console.log('All database schemas initialized successfully.');
   } catch (error) {
@@ -266,5 +296,6 @@ export {
   ensureConversationsTableExists,
   ensureWebhookTablesExist,
   ensureUserCredentialsTableExists,
-  ensureWebhookEventsTableExists
+  ensureWebhookEventsTableExists,
+  ensureApiKeysTableExists
 }; 
