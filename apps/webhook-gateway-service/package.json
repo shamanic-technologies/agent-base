@@ -1,5 +1,5 @@
 {
-  "name": "webhook-service",
+  "name": "webhook-gateway-service",
   "version": "1.0.0",
   "description": "A webhook service that receives and processes external webhook events with pub/sub architecture",
   "type": "module",

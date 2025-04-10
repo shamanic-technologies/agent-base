@@ -10,6 +10,6 @@ packages:
   - apps/web-gateway-service
   - apps/payment-service
   - apps/key-service
-  - apps/webhook-service
+  - apps/webhook-gateway-service
   - packages/**
   - tooling/*

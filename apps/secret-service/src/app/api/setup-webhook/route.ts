@@ -15,14 +15,14 @@ import { WebhookProvider, WebhookResponse, Webhook } from '@agent-base/agents';
  *                                   either proxied from webhook-service or an error response.
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  let webhookServiceUrl: string | undefined;
+  let webhookGatewayServiceUrl: string | undefined;
   try {
     // --- 1. Get Webhook Service URL --- 
-    webhookServiceUrl = process.env.WEBHOOK_SERVICE_URL;
-    if (!webhookServiceUrl) {
-      console.error('[SECRET SERVICE] WEBHOOK_SERVICE_URL environment variable is not set.');
+    webhookGatewayServiceUrl = process.env.WEBHOOK_GATEWAY_SERVICE_URL;
+    if (!webhookGatewayServiceUrl) {
+      console.error('[SECRET SERVICE] WEBHOOK_GATEWAY_SERVICE_URL environment variable is not set.');
       // Throw configuration error if URL is missing.
-      throw new Error('Internal server configuration error: Webhook service URL is missing.');
+      throw new Error('Internal server configuration error: Webhook gateway service URL is missing.');
     }
 
     // --- 2. Parse and Validate Request Body --- 
@@ -55,39 +55,39 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // --- 3. Call Webhook Service --- 
-    console.log(`[SECRET SERVICE] Forwarding setup request to webhook-service at ${webhookServiceUrl}/api/setup-webhook`);
+    // --- 3. Call Webhook Gateway Service --- 
+    console.log(`[SECRET SERVICE] Forwarding setup request to webhook-gateway-service at ${webhookGatewayServiceUrl}/api/setup-webhook`);
     
     // Construct webhook data using the Webhook interface
-    const webhookData: Partial<Webhook> & { agent_id: string } = {
+    const webhookData: Webhook & { agent_id: string } = {
       webhook_provider_id,
       user_id: userId,
       agent_id: agentId,
       webhook_credentials: webhook_credentials || {}
     };
 
-    const webhookServiceResponse = await fetch(`${webhookServiceUrl}/api/setup-webhook`, {
+    const webhookGatewayServiceResponse = await fetch(`${webhookGatewayServiceUrl}/api/setup-webhook`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(webhookData),
     });
 
-    // --- 4. Proxy Response from Webhook Service --- 
-    // Parse the response body from webhook-service.
-    const responseData = await webhookServiceResponse.json() as WebhookResponse;
+    // --- 4. Proxy Response from Webhook Gateway Service --- 
+    // Parse the response body from webhook-gateway-service.
+    const responseData = await webhookGatewayServiceResponse.json() as WebhookResponse;
 
-    // Check if the call to webhook-service failed.
-    if (!webhookServiceResponse.ok) {
+    // Check if the call to webhook-gateway-service failed.
+    if (!webhookGatewayServiceResponse.ok) {
       // Log the error received from the downstream service.
-      console.error(`[SECRET SERVICE] Error response received from webhook-service (${webhookServiceResponse.status}):`, responseData);
-      // Return the exact error response (body and status) from webhook-service.
-      return NextResponse.json(responseData, { status: webhookServiceResponse.status });
+      console.error(`[SECRET SERVICE] Error response received from webhook-gateway-service (${webhookGatewayServiceResponse.status}):`, responseData);
+      // Return the exact error response (body and status) from webhook-gateway-service.
+      return NextResponse.json(responseData, { status: webhookGatewayServiceResponse.status });
     }
 
     // Log the success response received from the downstream service.
-    console.log(`[SECRET SERVICE] Success response received from webhook-service (${webhookServiceResponse.status}):`, responseData);
-    // Return the exact success response (body and status) from webhook-service.
-    return NextResponse.json(responseData, { status: webhookServiceResponse.status });
+    console.log(`[SECRET SERVICE] Success response received from webhook-gateway-service (${webhookGatewayServiceResponse.status}):`, responseData);
+    // Return the exact success response (body and status) from webhook-gateway-service.
+    return NextResponse.json(responseData, { status: webhookGatewayServiceResponse.status });
 
   } catch (error: unknown) {
     // --- 5. Handle Errors in Secret Service --- 
@@ -102,12 +102,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         statusCode = 400;
         errorMessage = 'Invalid request body: Could not parse JSON.';
     } else if (error instanceof Error) {
-        if (error.message.includes('Webhook service URL is missing')) {
+        if (error.message.includes('Webhook gateway service URL is missing')) {
             statusCode = 500; // Internal config issue
             errorMessage = 'Internal server configuration error.';
         } else if (error.message.toLowerCase().includes('fetch')) { // Basic check for network error (e.g., ECONNREFUSED)
             statusCode = 503; // Service Unavailable
-            errorMessage = 'Failed to connect to internal webhook service.';
+            errorMessage = 'Failed to connect to internal webhook gateway service.';
         } else {
              errorMessage = error.message; // Use other specific error messages
         }
