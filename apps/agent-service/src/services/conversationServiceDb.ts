@@ -8,6 +8,8 @@ import {
     GetConversationsResponse,
     GetConversationResponse,
     BaseResponse,
+    CreateConversationInput,
+    CreateConversationResponse
 } from '@agent-base/agents'; // Shared types for payloads
 // @ts-ignore - Message not directly exported from 'ai' in this context
 import { Message } from 'ai';
@@ -112,6 +114,37 @@ export async function updateConversationMessagesInDb(
         // Log the formatted error instead of the raw error object
         const formattedError = handleAxiosError(error, 'Database Service (Update Convo)');
         console.error(`[Service: Database Convo] Error calling update-conversation endpoint for conversation ${conversationId}:`, formattedError);
+        return { success: false, error: formattedError.message };
+    }
+}
+
+/**
+ * Creates a new conversation in the database service.
+ * Returns CreateConversationResponse with the newly created conversation ID.
+ */
+export async function createConversation(
+    input: CreateConversationInput, 
+    userId: string
+): Promise<CreateConversationResponse> {
+    try {
+        const response = await axios.post<CreateConversationResponse>(
+            `${DATABASE_SERVICE_URL}/conversations/create-conversation`,
+            input,
+            {
+                headers: { 'x-user-id': userId }
+            }
+        );
+        
+        if (response.data.success) {
+            return response.data;
+        } else {
+            const errorMsg = (response.data as any).error || 'Failed to create conversation.';
+            console.warn(`[Service: Database Convo] Failed to create conversation for agent ${input.agent_id}: ${errorMsg}`);
+            return { success: false, error: String(errorMsg) };
+        }
+    } catch (error) {
+        const formattedError = handleAxiosError(error, 'Database Service (Create Convo)');
+        console.error(`[Service: Database Convo] Error calling create-conversation endpoint for agent ${input.agent_id}:`, formattedError);
         return { success: false, error: formattedError.message };
     }
 } 

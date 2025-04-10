@@ -5,6 +5,8 @@ import { WebhookProvider, WebhookEventPayloadCrisp, WebhookResponse, WebhookEven
 import { Request, Response } from 'express';
 import { storeWebhookEvent } from './databaseService.js';
 import axios from 'axios';
+// @ts-ignore
+import { Message } from 'ai';
 
 /**
  * Process a webhook request end-to-end
@@ -18,7 +20,7 @@ export async function processWebhookCrisp(req: Request, res: Response): Promise<
   
   // Log the incoming webhook (truncated for readability)
   console.log(`[WebhookService] Received webhook from Crisp:`, 
-    JSON.stringify(payload).substring(0, 200) + (JSON.stringify(payload).length > 200 ? '...' : ''));
+    JSON.stringify(payload, null, 2));
   
   // Process only message:send events
   if (payload.event !== 'message:send') {
@@ -48,19 +50,81 @@ export async function processWebhookCrisp(req: Request, res: Response): Promise<
     
     // Get the first user ID
     const user_id = userResponse.data.data.user_ids[0];
-    
+
     // Store the webhook event in the database
     await storeWebhookEvent(WebhookProvider.CRISP, user_id, payload);
     console.log(`[WebhookService] Stored webhook event in database`);
     
-    // Process the webhook message
-    const messageContent = processWebhookMessage(payload);
     
-    console.log(`[WebhookService] Processed message content: ${messageContent.substring(0, 100)}${messageContent.length > 100 ? '...' : ''}`);
+    // Get the agent_id associated with this user and Crisp webhook provider
+    const agentResponse = await axios.post(`${process.env.DATABASE_SERVICE_URL}/webhooks/get-agent`, {
+      user_id,
+      webhook_provider_id: WebhookProvider.CRISP
+    });
     
-    // Here you would call your agent/chat service with the message
-    // For example:
-    // await sendToAgent(payload.data.session_id, messageContent, payload.data.user);
+    if (!agentResponse.data.success) {
+      throw new Error(`Failed to get agent for user ${user_id} and webhook provider ${WebhookProvider.CRISP}: ${agentResponse.data.error}`);
+    }
+    
+    // Extract the agent_id from the response
+    const agent_id = agentResponse.data.data.agent_id;
+    console.log(`[WebhookService] Retrieved agent_id: ${agent_id} for user_id: ${user_id}`);
+    
+    // Extract session_id to use as conversation_id
+    const session_id = payload.data?.session_id;
+    if (!session_id) {
+      throw new Error('Missing session_id in Crisp webhook payload');
+    }
+    
+    // Create a new conversation in the agent service
+    console.log(`[WebhookService] Creating conversation with id: ${session_id} for agent: ${agent_id}`);
+    const conversationResponse = await axios.post(`${process.env.AGENT_SERVICE_URL}/conversation/create-conversation`, 
+      {
+        conversation_id: session_id,
+        agent_id: agent_id,
+        channel_id: WebhookProvider.CRISP
+      },
+      {
+        headers: {
+          'x-user-id': user_id,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    if (!conversationResponse.data.success) {
+      throw new Error(`Failed to create conversation: ${conversationResponse.data.error}`);
+    }
+    
+    console.log(`[WebhookService] Successfully created conversation with id: ${session_id}`);
+        
+    // Create the message to send to the agent
+    const formattedMessage = `
+    You received this payload from ${WebhookProvider.CRISP} via webhook subscription: ${JSON.stringify(payload)}.
+    To reply search for the utility whom id is 'crisp_send_message'`;
+    
+    const message: Message = {
+      id: `msgw-${Date.now()}`,
+      role: 'user',
+      content: formattedMessage,
+      createdAt: new Date()
+    }
+    // Call the agent-service run endpoint with the webhook data
+    console.log(`[WebhookService] Calling agent-service run endpoint for agent_id: ${agent_id}, conversation_id: ${session_id}`);
+    await axios.post(`${process.env.AGENT_SERVICE_URL}/run`, 
+      {
+        conversation_id: session_id,
+        message
+      },
+      {
+        headers: {
+          'x-user-id': user_id,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    console.log(`[WebhookService] Successfully called agent-service run endpoint`);
     
     // Return standardized response
     res.status(200).json({
@@ -77,29 +141,4 @@ export async function processWebhookCrisp(req: Request, res: Response): Promise<
   }
 } 
 
-/**
- * Processes a webhook message:send event
- * 
- * @param {WebhookEventPayloadCrisp} payload - Crisp webhook payload
- * @returns {string} - Extracted message content
- * @throws {Error} If the payload is invalid or not a message:send event
- */
-export function processWebhookMessage(payload: WebhookEventPayloadCrisp): string {
-  if (!payload || !payload.event) {
-    throw new Error('Invalid webhook payload: missing event field');
-  }
 
-  if (payload.event !== 'message:send') {
-    throw new Error(`Unsupported event type: ${payload.event}`);
-  }
-
-  const data = payload.data || {};
-  
-  // Extract the message content
-  const content = data.content;
-  if (content === undefined) {
-    throw new Error('Invalid message:send payload: missing content field');
-  }
-  
-  return typeof content === 'string' ? content : JSON.stringify(content);
-}
