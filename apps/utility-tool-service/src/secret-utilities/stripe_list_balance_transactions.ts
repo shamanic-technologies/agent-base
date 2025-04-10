@@ -78,7 +78,8 @@ const stripeListBalanceTransactions: UtilityTool = {
       
       // Initialize Stripe client
       const stripe = new Stripe(stripeKeys.apiSecret, {
-        apiVersion: '2025-02-24.acacia', // Use API version suggested by linter
+        // Use API version required by installed Stripe library types
+        apiVersion: '2025-03-31.basil',
       });
 
       // Prepare parameters for Stripe API

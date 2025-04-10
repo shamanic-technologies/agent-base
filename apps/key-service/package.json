@@ -12,6 +12,7 @@
     "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
   },
   "dependencies": {
+    "@agent-base/agents": "workspace:^",
     "axios": "^1.6.7",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
@@ -28,4 +29,4 @@
     "tsx": "^4.7.1",
     "typescript": "^5.4.5"
   }
-} 
+}
