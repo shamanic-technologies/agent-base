@@ -13,6 +13,7 @@ import morgan from 'morgan';
 
 // Import routes
 import setupWebhookRouter from './routes/setupWebhookRoute.js';
+import webhookRoutes from './routes/webhookRoutes.js';
 
 // Load environment variables based on NODE_ENV
 const nodeEnv = process.env.NODE_ENV || 'development';
@@ -53,6 +54,7 @@ app.get('/health', (req: express.Request, res: express.Response) => {
 
 // Register routes
 app.use('/', setupWebhookRouter);
+app.use('/', webhookRoutes);
 
 // Default 404 handler
 app.use((req: express.Request, res: express.Response) => {

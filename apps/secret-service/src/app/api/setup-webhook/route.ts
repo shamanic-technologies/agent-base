@@ -5,6 +5,7 @@
  * to the dedicated webhook-service for actual processing and database interaction.
  */
 import { NextRequest, NextResponse } from 'next/server';
+import { WebhookProvider, WebhookResponse, Webhook } from '@agent-base/agents';
 
 /**
  * Handles POST requests to set up a webhook.
@@ -27,32 +28,29 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // --- 2. Parse and Validate Request Body --- 
     const body = await request.json();
     // Extract parameters directly from the body.
-    const { webhook_provider_id, user_id: userId, agent_id: agentId, webhook_data } = body;
+    const { webhook_provider_id, user_id: userId, agent_id: agentId, webhook_credentials } = body;
 
-    // Log received parameters.
-    console.log(`[SECRET SERVICE] Setup-webhook request received:`, {
-      webhook_provider_id,
-      user_id: userId,
-      agent_id: agentId,
-      webhook_data: webhook_data
-    });
+    // Validate webhook provider
+    if (!webhook_provider_id || !Object.values(WebhookProvider).includes(webhook_provider_id as WebhookProvider)) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: `Invalid webhook_provider_id: ${webhook_provider_id}. Supported providers: ${Object.values(WebhookProvider).join(', ')}`
+        } as WebhookResponse,
+        { status: 400 }
+      );
+    }
 
     // Validate required parameters.
     if (!userId) {
       return NextResponse.json(
-        { success: false, error: 'user_id is required in the request body' },
+        { success: false, error: 'user_id is required in the request body' } as WebhookResponse,
         { status: 400 }
       );
     }
     if (!agentId) {
       return NextResponse.json(
-        { success: false, error: 'agent_id is required in the request body' },
-        { status: 400 }
-      );
-    }
-    if (!webhook_provider_id) {
-      return NextResponse.json(
-        { success: false, error: 'webhook_provider_id is required in the request body' },
+        { success: false, error: 'agent_id is required in the request body' } as WebhookResponse,
         { status: 400 }
       );
     }
@@ -60,21 +58,23 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // --- 3. Call Webhook Service --- 
     console.log(`[SECRET SERVICE] Forwarding setup request to webhook-service at ${webhookServiceUrl}/api/setup-webhook`);
     
+    // Construct webhook data using the Webhook interface
+    const webhookData: Partial<Webhook> & { agent_id: string } = {
+      webhook_provider_id,
+      user_id: userId,
+      agent_id: agentId,
+      webhook_credentials: webhook_credentials || {}
+    };
+
     const webhookServiceResponse = await fetch(`${webhookServiceUrl}/api/setup-webhook`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      // Pass required data in the body, matching webhook-service expectations.
-      body: JSON.stringify({
-        webhook_provider_id,
-        user_id: userId,
-        agent_id: agentId,
-        webhook_data: webhook_data || {} // Send empty object if null/undefined
-      }),
+      body: JSON.stringify(webhookData),
     });
 
     // --- 4. Proxy Response from Webhook Service --- 
     // Parse the response body from webhook-service.
-    const responseData = await webhookServiceResponse.json();
+    const responseData = await webhookServiceResponse.json() as WebhookResponse;
 
     // Check if the call to webhook-service failed.
     if (!webhookServiceResponse.ok) {
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         success: false,
         error: errorMessage,
         details: error instanceof Error ? error.message : 'An unknown error occurred'
-      },
+      } as WebhookResponse,
       { status: statusCode }
     );
   }

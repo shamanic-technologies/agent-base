@@ -17,6 +17,9 @@ export * from './types/conversation.js';
 // Export user-related types
 export * from './types/user.js';
 
+// Export webhook-related types
+export * from './types/webhook.js';
+
 // --- Utility Functions (kept here for now) ---
 
 import { AgentRecord, Agent } from './types/agent.js'; // Import types needed by mappers

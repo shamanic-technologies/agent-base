@@ -4,6 +4,7 @@
  */
 import { Router, Request, Response, NextFunction } from 'express';
 import { setupWebhookAndMapAgent } from '../services/databaseService.js'; // Import the service function
+import { WebhookProvider, WebhookResponse, Webhook } from '@agent-base/agents';
 
 // Create a new Express Router
 const router = Router();
@@ -20,22 +21,25 @@ const router = Router();
 router.post('/api/setup-webhook', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     // Extract required data from the request body.
-    const { webhook_provider_id, user_id, agent_id, webhook_data } = req.body;
+    const { webhook_provider_id, user_id, agent_id, webhook_credentials } = req.body;
 
     // --- Input Validation ---
-    if (!webhook_provider_id) {
-      // Send a 400 Bad Request if webhook_provider_id is missing.
-      res.status(400).json({ success: false, error: 'webhook_provider_id is required in the request body' });
+    if (!webhook_provider_id || !Object.values(WebhookProvider).includes(webhook_provider_id as WebhookProvider)) {
+      // Send a 400 Bad Request if webhook_provider_id is invalid.
+      res.status(400).json({
+        success: false, 
+        error: `Invalid webhook_provider_id: ${webhook_provider_id}. Supported providers: ${Object.values(WebhookProvider).join(', ')}`
+      } as WebhookResponse);
       return; // Stop further processing
     }
     if (!user_id) {
       // Send a 400 Bad Request if user_id is missing.
-      res.status(400).json({ success: false, error: 'user_id is required in the request body' });
+      res.status(400).json({ success: false, error: 'user_id is required in the request body' } as WebhookResponse);
       return;
     }
     if (!agent_id) {
       // Send a 400 Bad Request if agent_id is missing.
-      res.status(400).json({ success: false, error: 'agent_id is required in the request body' });
+      res.status(400).json({ success: false, error: 'agent_id is required in the request body' } as WebhookResponse);
       return;
     }
     // --- End Input Validation ---
@@ -45,8 +49,15 @@ router.post('/api/setup-webhook', async (req: Request, res: Response, next: Next
       webhook_provider_id,
       user_id,
       agent_id,
-      webhook_data: webhook_data || '{}', // Log empty object if data is null/undefined
+      webhook_credentials: webhook_credentials || {}, // Log empty object if data is null/undefined
     });
+
+    // Create webhook data from request using the Webhook interface
+    const webhookData: Webhook = {
+      webhook_provider_id,
+      user_id,
+      webhook_credentials: webhook_credentials || {}
+    };
 
     // Call the service function to perform the setup and mapping.
     // The service function handles calls to the database-service and throws errors on failure.
@@ -54,7 +65,7 @@ router.post('/api/setup-webhook', async (req: Request, res: Response, next: Next
       webhook_provider_id,
       user_id,
       agent_id,
-      webhook_data // Pass optional webhook_data (service handles default)
+      webhookData.webhook_credentials // Pass webhook credentials
     );
 
     // If the service call is successful, send a 200 OK response with the mapping details.
@@ -66,7 +77,7 @@ router.post('/api/setup-webhook', async (req: Request, res: Response, next: Next
         agent_id: mappingResult.agent_id,
         message: `Webhook for ${mappingResult.webhook_provider_id} configured and mapped to agent ${mappingResult.agent_id} successfully.`
       }
-    });
+    } as WebhookResponse);
 
   } catch (error: unknown) {
     // Log the error that occurred during processing.
