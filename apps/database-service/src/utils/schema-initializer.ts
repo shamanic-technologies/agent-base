@@ -13,6 +13,7 @@ const USER_AGENTS_TABLE = 'user_agents';
 const CONVERSATIONS_TABLE = 'conversations';
 const WEBHOOK_TABLE = 'webhook';
 const AGENT_WEBHOOK_TABLE = 'agent_webhook';
+const WEBHOOK_EVENTS_TABLE = 'webhook_events';
 const USERS_TABLE = 'users';
 const USER_CREDENTIALS_TABLE = 'user_credentials';
 
@@ -93,7 +94,7 @@ const WEBHOOK_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS "${WEBHOOK_TABLE}" (
     webhook_provider_id VARCHAR(50) NOT NULL,
     user_id UUID NOT NULL,
-    webhook_data JSONB NOT NULL DEFAULT '{}',
+    webhook_credentials JSONB NOT NULL DEFAULT '{}',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (webhook_provider_id, user_id),
@@ -125,6 +126,18 @@ const USER_CREDENTIALS_TABLE_SQL = `
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (user_id, provider, scope)
+  )
+`;
+
+const WEBHOOK_EVENTS_TABLE_SQL = `
+  CREATE TABLE IF NOT EXISTS "${WEBHOOK_EVENTS_TABLE}" (
+    webhook_provider_id VARCHAR(50) NOT NULL,
+    user_id UUID NOT NULL,
+    webhook_event_payload JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (webhook_provider_id, user_id),
+    FOREIGN KEY (user_id) REFERENCES "${USERS_TABLE}" (user_id) ON DELETE CASCADE
   )
 `;
 
@@ -200,6 +213,19 @@ async function ensureUserCredentialsTableExists(client: PoolClient): Promise<voi
 }
 
 /**
+ * Ensures the webhook events table exists
+ */
+async function ensureWebhookEventsTableExists(client: PoolClient): Promise<void> {
+  try {
+    await client.query(WEBHOOK_EVENTS_TABLE_SQL);
+    console.log(`Table "${WEBHOOK_EVENTS_TABLE}" ensured.`);
+  } catch (error) {
+    console.error('Error ensuring webhook events table exists:', error);
+    throw error;
+  }
+}
+
+/**
  * Initialize all database schemas
  * This function ensures all tables required by the application exist
  * Call this at server startup
@@ -217,6 +243,7 @@ export async function initializeAllSchemas(): Promise<void> {
     await ensureConversationsTableExists(client);
     await ensureWebhookTablesExist(client);
     await ensureUserCredentialsTableExists(client);
+    await ensureWebhookEventsTableExists(client);
     
     console.log('All database schemas initialized successfully.');
   } catch (error) {
@@ -235,5 +262,6 @@ export {
   ensureAgentsTablesExist,
   ensureConversationsTableExists,
   ensureWebhookTablesExist,
-  ensureUserCredentialsTableExists
+  ensureUserCredentialsTableExists,
+  ensureWebhookEventsTableExists
 }; 

@@ -8,6 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ExternalLink, Copy, Check, Settings, Info } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { FormTemplate } from '@/components/form/FormTemplate'; // Import the template
+import { WebhookProvider, WebhookResponse, CrispWebhook } from '@agent-base/agents';
 
 // --- Crisp Specific Config & Components ---
 const CRISP_SETTINGS_URL = 'https://app.crisp.chat/settings/website';
@@ -206,19 +207,24 @@ export default function CrispFormClient() {
             const agentId = new URLSearchParams(window.location.search).get('agentId');
             if (agentId) {
                 console.log(`Setting up webhook for agent ${agentId}`);
+                
+                // Create webhook data using the Webhook interface
+                const webhookData: CrispWebhook & { agent_id: string } = {
+                    webhook_provider_id: WebhookProvider.CRISP,
+                    user_id: userId,
+                    agent_id: agentId,
+                    webhook_credentials: {
+                        website_id: secretValue.trim()
+                    }
+                };
+                
                 const webhookResponse = await fetch('/api/setup-webhook', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        webhook_provider_id: 'crisp',
-                        user_id: userId,
-                        agent_id: agentId,
-                        webhook_data: {
-                            website_id: secretValue.trim()
-                        }
-                    }),
+                    body: JSON.stringify(webhookData),
                 });
-                const webhookResult = await webhookResponse.json();
+                
+                const webhookResult = await webhookResponse.json() as WebhookResponse;
                 if (!webhookResponse.ok || !webhookResult.success) {
                     console.warn("Webhook setup failed, but secret was stored successfully:", webhookResult.error);
                     // Don't throw error here, as we still want to consider the overall flow successful
