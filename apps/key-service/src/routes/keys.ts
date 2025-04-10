@@ -7,7 +7,7 @@ import axios from 'axios';
 import { DB_SERVICE_URL } from '../config.js';
 import { storeSecret, getSecret } from '../utils/secrets.js';
 import { generateApiKey } from '../utils/apiKeyUtils.js';
-import { ApiKeyMetadata, ApiKeyCreateResponse } from '@agent-base/agents/src/types/api-keys.js';
+import { ApiKey, ApiKeyCreateResponse } from '@agent-base/agents/src/types/api-keys.js';
 
 const router = express.Router();
 
@@ -57,7 +57,7 @@ router.post('/', async (req: express.Request, res: express.Response) => {
       throw new Error('Failed to store API key metadata');
     }
 
-    const createdMetadata = dbResponse.data.data as ApiKeyMetadata;
+    const createdMetadata = dbResponse.data.data as ApiKey;
     console.log(`Successfully stored metadata for key ${keyId}`);
 
     const responsePayload: ApiKeyCreateResponse = {
@@ -91,7 +91,7 @@ router.get('/', async (req: express.Request, res: express.Response) => {
     }
 
     console.log(`Fetching API key metadata for user: ${userId}`);
-    const response = await axios.get< DbResponse<ApiKeyMetadata[]> >(`${DB_SERVICE_URL}/api-keys`, {
+    const response = await axios.get< DbResponse<ApiKey[]> >(`${DB_SERVICE_URL}/api-keys`, {
       headers: { 'x-user-id': userId }
     });
 
@@ -132,7 +132,7 @@ router.get('/:keyId', async (req: express.Request, res: express.Response) => {
     }
 
     console.log(`Fetching API key metadata for key: ${keyId}, user: ${userId}`);
-    const response = await axios.get<DbResponse<ApiKeyMetadata>>(`${DB_SERVICE_URL}/api-keys/${keyId}`, {
+    const response = await axios.get<DbResponse<ApiKey>>(`${DB_SERVICE_URL}/api-keys/${keyId}`, {
       headers: { 'x-user-id': userId }
     });
 
@@ -225,9 +225,9 @@ router.post('/validate', async (req: express.Request, res: express.Response) => 
     const keyPrefix = apiKey.substring(0, 16);
     console.log(`Attempting validation for key prefix: ${keyPrefix}`);
 
-    let potentialKeyMetadatas: ApiKeyMetadata[] = [];
+    let potentialKeyMetadatas: ApiKey[] = [];
     try {
-        const dbResponse = await axios.get<DbResponse<ApiKeyMetadata[]>>(`${DB_SERVICE_URL}/api-keys`, {
+        const dbResponse = await axios.get<DbResponse<ApiKey[]>>(`${DB_SERVICE_URL}/api-keys`, {
             params: { key_prefix: keyPrefix } 
         });
         if (dbResponse.data?.success && dbResponse.data.data.length > 0) {
@@ -241,7 +241,7 @@ router.post('/validate', async (req: express.Request, res: express.Response) => 
          return res.status(500).json({ success: false, error: 'Key validation failed (database error).' });
     }
 
-    let validKeyMetadata: ApiKeyMetadata | null = null;
+    let validKeyMetadata: ApiKey | null = null;
     for (const metadata of potentialKeyMetadatas) {
       console.log(`Checking secret for key ID ${metadata.key_id} owned by user ${metadata.user_id}`);
       const storedApiKey = await getSecret(metadata.user_id, metadata.key_id);

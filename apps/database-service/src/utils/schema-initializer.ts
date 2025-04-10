@@ -151,6 +151,7 @@ const API_KEYS_TABLE_SQL = `
     user_id UUID NOT NULL,
     name VARCHAR(255) NOT NULL,
     key_prefix VARCHAR(64) NOT NULL,
+    hashed_key TEXT NOT NULL UNIQUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     last_used TIMESTAMP WITH TIME ZONE,
     FOREIGN KEY (user_id) REFERENCES "${USERS_TABLE}" (user_id) ON DELETE CASCADE
@@ -158,6 +159,12 @@ const API_KEYS_TABLE_SQL = `
 
   -- Now create the index with the correct definition
   CREATE INDEX IF NOT EXISTS idx_api_keys_user_id ON "${API_KEYS_TABLE}"(user_id);
+  
+  -- Create index on hashed_key for efficient lookups
+  CREATE INDEX IF NOT EXISTS idx_api_keys_hashed_key ON "${API_KEYS_TABLE}"(hashed_key);
+  
+  -- Create index on key_prefix for filtering
+  CREATE INDEX IF NOT EXISTS idx_api_keys_prefix ON "${API_KEYS_TABLE}"(key_prefix);
 `;
 
 /**

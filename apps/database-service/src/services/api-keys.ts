@@ -5,7 +5,7 @@
  */
 import { PoolClient } from 'pg';
 import { pgPool, getClient } from '../db.js';
-import { ApiKeyMetadata, CreateApiKeyRequest, ApiKeyResponse, ApiKeysListResponse } from '@agent-base/agents/src/types/api-keys.js';
+import { ApiKeyMetadata, CreateApiKeyRequest, ApiKeyResponse, ApiKeysListResponse, UpdateApiKeyRequest } from '@agent-base/agents/src/types/api-keys.js';
 
 // Table name constant
 const API_KEYS_TABLE = 'api_keys';
@@ -28,13 +28,14 @@ export async function createApiKey(keyData: CreateApiKeyRequest, userId: string)
       user_id: userId,
       name: keyData.name,
       key_prefix: keyData.key_prefix,
+      hashed_key: keyData.hashed_key,
       created_at: new Date().toISOString(),
       last_used: null,
     };
 
     // Build insert query
-    const columns = ['key_id', 'user_id', 'name', 'key_prefix', 'created_at'];
-    const values = [apiKeyData.key_id, apiKeyData.user_id, apiKeyData.name, apiKeyData.key_prefix, apiKeyData.created_at];
+    const columns = ['key_id', 'user_id', 'name', 'key_prefix', 'hashed_key', 'created_at'];
+    const values = [apiKeyData.key_id, apiKeyData.user_id, apiKeyData.name, apiKeyData.key_prefix, apiKeyData.hashed_key, apiKeyData.created_at];
     const placeholders = columns.map((_, idx) => `$${idx + 1}`).join(', ');
 
     const query = `
@@ -75,7 +76,7 @@ export async function getApiKeys(userId: string, keyPrefix?: string): Promise<Ap
     client = await getClient();
     
     let query = `
-      SELECT key_id, user_id, name, key_prefix, created_at, last_used
+      SELECT key_id, user_id, name, key_prefix, hashed_key, created_at, last_used
       FROM "${API_KEYS_TABLE}"
       WHERE user_id = $1
     `;
@@ -100,6 +101,63 @@ export async function getApiKeys(userId: string, keyPrefix?: string): Promise<Ap
     return { 
       success: false, 
       error: error.message || 'Failed to fetch API keys'
+    };
+  } finally {
+    if (client) {
+      client.release();
+    }
+  }
+}
+
+/**
+ * Updates the last_used timestamp for an API key
+ * @param hashedKey - The hashed API key to identify the record
+ * @param keyPrefix - The key prefix for additional filtering
+ * @returns A response with the updated API key metadata
+ */
+export async function updateApiKey(hashedKey: string, keyPrefix: string): Promise<ApiKeyResponse> {
+  let client: PoolClient | null = null;
+  
+  try {
+    client = await getClient();
+    
+    // Find the API key by its hashed value and prefix
+    const findQuery = `
+      SELECT * FROM "${API_KEYS_TABLE}" 
+      WHERE hashed_key = $1
+      AND key_prefix = $2
+    `;
+    
+    const findResult = await client.query<ApiKeyMetadata>(findQuery, [hashedKey, keyPrefix]);
+    
+    if (findResult.rows.length === 0) {
+      return {
+        success: false,
+        error: 'Invalid API key'
+      };
+    }
+    
+    // Update the last_used timestamp
+    const now = new Date().toISOString();
+    const updateQuery = `
+      UPDATE "${API_KEYS_TABLE}"
+      SET last_used = $1
+      WHERE hashed_key = $2
+      AND key_prefix = $3
+      RETURNING *;
+    `;
+    
+    const result = await client.query<ApiKeyMetadata>(updateQuery, [now, hashedKey, keyPrefix]);
+    
+    return {
+      success: true,
+      data: result.rows[0]
+    };
+  } catch (error: any) {
+    console.error('Error updating API key usage:', error);
+    return { 
+      success: false, 
+      error: error.message || 'Failed to update API key usage'
     };
   } finally {
     if (client) {

@@ -2,8 +2,8 @@
  * API Key routes for managing metadata (secrets stored elsewhere)
  */
 import { Router, Request, Response } from 'express';
-import { CreateApiKeyRequest, ApiKeyResponse, ApiKeysListResponse } from '@agent-base/agents/src/types/api-keys.js';
-import { createApiKey, getApiKeys } from '../services/api-keys.js';
+import { CreateApiKeyRequest, ApiKeyResponse, ApiKeysListResponse, UpdateApiKeyRequest } from '@agent-base/agents/src/types/api-keys.js';
+import { createApiKey, getApiKeys, updateApiKey } from '../services/api-keys.js';
 
 const router = Router();
 
@@ -24,11 +24,12 @@ router.post('/api-keys', async (req: Request, res: Response): Promise<void> => {
       res.status(401).json({ success: false, error: 'Authentication required (x-user-id header missing)' });
       return;
     }
-    if (!keyData.key_id || !keyData.name || !keyData.key_prefix) {
+    if (!keyData.key_id || !keyData.name || !keyData.key_prefix || !keyData.hashed_key) {
       const missing = [];
       if (!keyData.key_id) missing.push('key_id');
       if (!keyData.name) missing.push('name');
       if (!keyData.key_prefix) missing.push('key_prefix');
+      if (!keyData.hashed_key) missing.push('hashed_key');
       res.status(400).json({ success: false, error: `Required fields missing: ${missing.join(', ')}` });
       return;
     }
@@ -90,6 +91,52 @@ router.get('/api-keys', async (req: Request, res: Response): Promise<void> => {
 
   } catch (error: any) {
     console.error('Error fetching API keys:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Database operation failed'
+    });
+  }
+});
+
+/**
+ * Update API Key's last_used timestamp
+ * Called when an API key is used to authenticate a request.
+ * Identifies the key using its hashed value and prefix.
+ */
+router.put('/api-keys/update-usage', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const updateData = req.body as UpdateApiKeyRequest;
+
+    // Validate required fields
+    if (!updateData.hashed_key || !updateData.key_prefix) {
+      const missing = [];
+      if (!updateData.hashed_key) missing.push('hashed_key');
+      if (!updateData.key_prefix) missing.push('key_prefix');
+      res.status(400).json({ success: false, error: `Required fields missing: ${missing.join(', ')}` });
+      return;
+    }
+
+    console.log(`Updating API key usage timestamp for key with prefix: ${updateData.key_prefix}`);
+
+    // Call service to update API key
+    const result = await updateApiKey(updateData.hashed_key, updateData.key_prefix);
+
+    if (!result.success) {
+      if (result.error?.includes('Invalid API key')) {
+        res.status(404).json({ success: false, error: 'Invalid API key' });
+      } else {
+        res.status(500).json({ success: false, error: result.error || 'Failed to update API key usage' });
+      }
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      data: result.data
+    });
+
+  } catch (error: any) {
+    console.error('Error updating API key usage:', error);
     res.status(500).json({
       success: false,
       error: error.message || 'Database operation failed'
