@@ -278,4 +278,58 @@ router.get('/crisp/users/:website_id', async (req: Request, res: Response): Prom
   }
 });
 
+/**
+ * @route POST /webhooks/get-agent
+ * @description Gets the agent ID from the agent_webhook table for a specific user and webhook provider.
+ *              Expects user_id and webhook_provider_id in the request body.
+ * @param {Request} req - Express request object.
+ * @param {Response} res - Express response object.
+ */
+router.post('/get-agent', async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Extract parameters from the request body
+    const { user_id, webhook_provider_id } = req.body;
+    
+    // Validate required parameters
+    if (!user_id || !webhook_provider_id) {
+      res.status(400).json({
+        success: false,
+        error: 'user_id and webhook_provider_id are required'
+      } as WebhookResponse);
+      return;
+    }
+    
+    // Call the service function to get the agent ID
+    const agentId = await getAgentForWebhook(webhook_provider_id, user_id);
+    
+    // If no agent is found, return a 404 Not Found response
+    if (!agentId) {
+      res.status(404).json({
+        success: false,
+        error: `No agent found for webhook_provider_id ${webhook_provider_id} and user_id ${user_id}`
+      } as WebhookResponse);
+      return;
+    }
+    
+    // Respond with 200 OK and the agent ID
+    res.status(200).json({
+      success: true,
+      data: {
+        agent_id: agentId,
+        webhook_provider_id,
+        user_id
+      }
+    } as WebhookResponse);
+  } catch (error) {
+    // Log the error
+    console.error('Error in POST /webhooks/get-agent route:', error);
+    // Send a generic 500 error response
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get agent for webhook and user',
+      details: error instanceof Error ? error.message : 'Unknown internal server error'
+    } as WebhookResponse);
+  }
+});
+
 export default router; 

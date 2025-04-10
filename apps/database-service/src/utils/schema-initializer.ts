@@ -48,12 +48,13 @@ const AGENTS_TABLE_SQL = `
 
 const USER_AGENTS_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS "${USER_AGENTS_TABLE}" (
-    user_id VARCHAR(255) NOT NULL,
+    user_id UUID NOT NULL,
     agent_id UUID NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (user_id, agent_id),
-    FOREIGN KEY (agent_id) REFERENCES ${AGENTS_TABLE}(agent_id)
+    FOREIGN KEY (agent_id) REFERENCES ${AGENTS_TABLE}(agent_id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES "${USERS_TABLE}" (user_id) ON DELETE CASCADE
   )
 `;
 
@@ -117,7 +118,7 @@ const AGENT_WEBHOOK_TABLE_SQL = `
 
 const USER_CREDENTIALS_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS "${USER_CREDENTIALS_TABLE}" (
-    user_id VARCHAR(255) NOT NULL,
+    user_id UUID NOT NULL,
     provider VARCHAR(50) NOT NULL,
     scope TEXT NOT NULL,
     access_token TEXT NOT NULL,
@@ -125,7 +126,8 @@ const USER_CREDENTIALS_TABLE_SQL = `
     expires_at BIGINT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (user_id, provider, scope)
+    PRIMARY KEY (user_id, provider, scope),
+    FOREIGN KEY (user_id) REFERENCES "${USERS_TABLE}" (user_id) ON DELETE CASCADE
   )
 `;
 
@@ -136,8 +138,9 @@ const WEBHOOK_EVENTS_TABLE_SQL = `
     webhook_event_payload JSONB NOT NULL DEFAULT '{}',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (webhook_provider_id, user_id),
-    FOREIGN KEY (user_id) REFERENCES "${USERS_TABLE}" (user_id) ON DELETE CASCADE
+    PRIMARY KEY (webhook_provider_id, user_id, created_at),
+    FOREIGN KEY (user_id) REFERENCES "${USERS_TABLE}" (user_id) ON DELETE CASCADE,
+    FOREIGN KEY (webhook_provider_id, user_id) REFERENCES "${WEBHOOK_TABLE}" (webhook_provider_id, user_id) ON DELETE CASCADE
   )
 `;
 
