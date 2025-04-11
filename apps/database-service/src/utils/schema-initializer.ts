@@ -154,7 +154,8 @@ const API_KEYS_TABLE_SQL = `
     hashed_key TEXT NOT NULL UNIQUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     last_used TIMESTAMP WITH TIME ZONE,
-    FOREIGN KEY (user_id) REFERENCES "${USERS_TABLE}" (user_id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES "${USERS_TABLE}" (user_id) ON DELETE CASCADE,
+    UNIQUE(user_id, name)
   );
 
   -- Now create the index with the correct definition
