@@ -12,7 +12,7 @@ import {
   getCrispWebsiteId, 
   getCrispEnvironmentVariables,
   generateSetupNeededResponse
-} from './crisp-utils.js';
+} from '../clients/crisp-utils.js';
 
 // --- Request Parameters --- 
 interface CrispSubscribeMessageSendRequest {

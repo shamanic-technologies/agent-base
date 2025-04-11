@@ -23,7 +23,7 @@ import {
   StripeTransactionsResponse,
   StripeTransaction,
   StripeTransactionsSuccessResponse // Also needed for constructing success response
-} from './stripe-utils.js';
+} from '../clients/stripe-utils.js';
 
 /**
  * Available transaction types to filter by

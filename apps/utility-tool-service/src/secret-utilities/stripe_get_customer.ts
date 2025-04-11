@@ -17,7 +17,7 @@ import {
   getStripeApiKeys,
   generateSetupNeededResponse,
   formatStripeErrorResponse
-} from './stripe-utils.js';
+} from '../clients/stripe-utils.js';
 
 // --- Local Type Definitions for this Utility ---
 

@@ -19,7 +19,7 @@ import {
   formatStripeErrorResponse,
   StripeTransactionsResponse,
   StripeTransaction
-} from './stripe-utils.js';
+} from '../clients/stripe-utils.js';
 
 // Define the specific parameters for this utility
 interface StripeListRefundsParams {

@@ -20,7 +20,7 @@ import {
   StripeTransactionsRequest, 
   StripeTransactionsResponse,
   StripeTransaction
-} from './stripe-utils.js';
+} from '../clients/stripe-utils.js';
 
 // Combined response type - simplified as StripeTransactionsResponse handles the union
 // type StripeListChargesResponse = StripeTransactionsResponse | SetupNeededResponse;

@@ -5,7 +5,7 @@
  */
 
 // Import all utilities
-import './datetime/get-current.js';
+import './core/get-current.js';
 
 // Eventually add more imports here as new utilities are created:
 // import './github/read-file.js';
