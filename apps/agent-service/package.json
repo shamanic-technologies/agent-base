@@ -30,14 +30,15 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "lucide-react": "^0.487.0",
     "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
+    "@types/dotenv": "^8.2.0",
     "@types/express": "^5.0.1",
     "@types/node": "^20.14.7",
     "@types/uuid": "^10.0.0",
-    "@types/dotenv": "^8.2.0",
     "eslint": "^8.57.0",
     "tsx": "^4.7.1",
     "typescript": "^5.4.5"

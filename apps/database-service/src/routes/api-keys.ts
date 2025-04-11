@@ -2,8 +2,8 @@
  * API Key routes for managing metadata (secrets stored elsewhere)
  */
 import { Router, Request, Response } from 'express';
-import { CreateApiKeyRequest, ApiKeyResponse, ApiKeysListResponse, UpdateApiKeyRequest } from '@agent-base/agents/src/types/api-keys.js';
-import { createApiKey, getApiKeys, updateApiKey } from '../services/api-keys.js';
+import { CreateApiKeyRequest, ValidateApiKeyRequest } from '@agent-base/agents';
+import { createApiKey, getApiKeys, validateApiKey } from '../services/api-keys.js';
 
 const router = Router();
 
@@ -103,9 +103,9 @@ router.get('/api-keys', async (req: Request, res: Response): Promise<void> => {
  * Called when an API key is used to authenticate a request.
  * Identifies the key using its hashed value and prefix.
  */
-router.put('/api-keys/update-usage', async (req: Request, res: Response): Promise<void> => {
+router.post('/api-keys/validate', async (req: Request, res: Response): Promise<void> => {
   try {
-    const updateData = req.body as UpdateApiKeyRequest;
+    const updateData = req.body as ValidateApiKeyRequest;
 
     // Validate required fields
     if (!updateData.hashed_key || !updateData.key_prefix) {
@@ -116,10 +116,10 @@ router.put('/api-keys/update-usage', async (req: Request, res: Response): Promis
       return;
     }
 
-    console.log(`Updating API key usage timestamp for key with prefix: ${updateData.key_prefix}`);
+    console.log(`Validating API key with prefix: ${updateData.key_prefix}`);
 
     // Call service to update API key
-    const result = await updateApiKey(updateData.hashed_key, updateData.key_prefix);
+    const result = await validateApiKey(updateData.hashed_key, updateData.key_prefix);
 
     if (!result.success) {
       if (result.error?.includes('Invalid API key')) {
