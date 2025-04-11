@@ -31,6 +31,7 @@ import './secret-utilities/stripe_refund.js';
 import './secret-utilities/stripe_list_customers.js';
 import './secret-utilities/stripe_search_customers.js';
 import './secret-utilities/stripe_get_customer.js';
+import './secret-utilities/crisp_send_message.js';
 
 import './webhook-utilities/crisp_subscribe_message_send.js';
 

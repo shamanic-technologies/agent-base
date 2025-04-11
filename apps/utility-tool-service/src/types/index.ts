@@ -1,7 +1,12 @@
 /**
  * Type definitions for Utility Tool Service
  */
+import { z } from 'zod';
 
+export interface UtilityToolSchema {
+  zod: z.ZodType;
+  examples?: any[];
+}
 /**
  * Standard interface for all utility tools in the system
  */
@@ -10,12 +15,11 @@ export interface UtilityTool {
   id: string;
   /** Human-readable description of what the utility does */
   description: string;
-  /** Schema defining the input parameters for the utility */
-  schema: Record<string, {
-    type: string;
-    optional?: boolean;
-    description?: string;
-  }>;
+  /** 
+   * Schema defining the input parameters for the utility
+   * Using Zod schema for validation with LLM-friendly descriptions
+   */
+  schema: Record<string, UtilityToolSchema>;
   /**
    * The execution function for the utility
    * @param userId ID of the user making the request
@@ -68,12 +72,9 @@ export interface SetupNeededResponse {
 export type UtilityInfo = {
   id: string;
   description: string;
-  schema: Record<string, {
-    type: string;
-    optional?: boolean;
-    description?: string;
-  }>;
+  schema: Record<string, UtilityToolSchema>;
 };
+
 export type UtilitiesListResponse = {
   utilities: string[];
 };

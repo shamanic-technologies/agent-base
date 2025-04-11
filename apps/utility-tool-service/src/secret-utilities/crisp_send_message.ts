@@ -1,52 +1,64 @@
 /**
  * Crisp Send Message Utility
  * 
- * Sends a message to an existing conversation in Crisp Chat using the user's API keys
- * If keys are not available, provides an API endpoint for the user to submit their keys
+ * Sends a message to a Crisp conversation using the user's website ID
+ * If the website ID is not available, provides a setup URL for the user
  */
 import axios from 'axios';
+import { z } from 'zod';
 import {
   UtilityTool,
   SetupNeededResponse,
   UtilityErrorResponse
 } from '../types/index.js';
 import { registry } from '../registry/registry.js';
+import {
+  getCrispEnvironmentVariables,
+  checkCrispWebsiteId,
+  getCrispWebsiteId,
+  generateSetupNeededResponse,
+  formatCrispErrorResponse,
+  CrispErrorResponse
+} from '../clients/crisp-utils.js';
 
 // --- Local Type Definitions for this Utility ---
 
 /**
- * Type representing the message content that can be sent to Crisp
+ * Types of messages that can be sent via Crisp API
  */
-type MessageContent = string | object;
+type CrispMessageType = 'text' | 'note' | 'file' | 'animation' | 'audio' | 'picker' | 'field' | 'carousel' | 'event';
 
 /**
- * Message types supported by Crisp API
+ * Message sender types
  */
-type MessageType = 'text' | 'note' | 'file' | 'animation' | 'audio' | 'picker' | 'field' | 'carousel' | 'event';
+type CrispMessageSender = 'user' | 'operator';
 
 /**
- * Message origin values
+ * Message origin types
  */
-type MessageOrigin = 'chat' | 'email' | string; // string for 'urn:*' patterns
+type CrispMessageOrigin = 'chat' | 'email' | string; // 'urn:*' patterns are allowed
 
 /**
- * Message sender values
+ * User information for sending messages
  */
-type MessageSender = 'user' | 'operator';
+interface CrispMessageUser {
+  nickname?: string;
+  avatar?: string;
+  [key: string]: any; // Additional user properties
+}
 
 /**
- * Represents the parameters for sending a message to Crisp
+ * Request parameters for sending a message to Crisp
  */
 interface CrispSendMessageParams {
-  website_id: string;
   session_id: string;
-  type: MessageType;
-  from: MessageSender;
-  origin?: MessageOrigin;
-  content: MessageContent;
+  type: CrispMessageType;
+  from: CrispMessageSender;
+  origin?: CrispMessageOrigin;
+  content: string | object;
   mentions?: string[];
   fingerprint?: string;
-  user?: object;
+  user?: CrispMessageUser;
   references?: object;
   original?: object;
   timestamp?: number;
@@ -56,18 +68,17 @@ interface CrispSendMessageParams {
 }
 
 /**
- * Represents a successful response when sending a message to Crisp
+ * Represents a successful response when sending a Crisp message
  */
 interface CrispSendMessageSuccessResponse {
   status: 'success';
   data: {
-    message: string;
-    message_id?: string;
+    message_id: string;
   };
 }
 
 /**
- * Union type representing all possible outcomes of the Crisp send message utility
+ * Union type representing all possible outcomes of the send message utility
  */
 type CrispSendMessageResponse = 
   SetupNeededResponse | 
@@ -76,251 +87,301 @@ type CrispSendMessageResponse =
 
 // --- End Local Type Definitions ---
 
-/**
- * Environment variables needed for Crisp Chat API
- * @returns Object containing necessary service URLs
- * @throws Error if required environment variables are not set
- */
-function getCrispEnvironmentVariables(): { secretServiceUrl: string } {
-  const secretServiceUrl = process.env.SECRET_SERVICE_URL;
-  
-  if (!secretServiceUrl) {
-    throw new Error('SECRET_SERVICE_URL environment variable is not set');
-  }
-  
-  return { secretServiceUrl };
-}
+// Zod schema for the content shapes of different message types
+const textNoteContentSchema = z.string().describe("Simple string content for text/note messages");
 
-/**
- * Check if the user has Crisp API keys stored
- * @param userId User ID to check
- * @param secretServiceUrl Secret service URL
- * @returns Object with exists flag
- */
-async function checkCrispApiKeys(userId: string, secretServiceUrl: string): Promise<{ exists: boolean }> {
-  const checkResponse = await axios.post(
-    `${secretServiceUrl}/api/check-secret`,
-    {
-      userId,
-      secretType: 'crisp_api_keys'
-    }
-  );
-  
-  return { exists: checkResponse.data.exists };
-}
+const fileContentSchema = z.object({
+  name: z.string().describe("File name"),
+  url: z.string().url().describe("File URL"),
+  type: z.string().describe("File MIME type")
+}).describe("Content structure for 'file' message type");
 
-/**
- * Retrieve Crisp API keys for a user
- * @param userId User ID
- * @param secretServiceUrl Secret service URL
- * @returns Object containing the API keys if successful
- * @throws Error if retrieval fails or keys are invalid
- */
-async function getCrispApiKeys(userId: string, secretServiceUrl: string): Promise<{ identifier: string; key: string }> {
-  const getResponse = await axios.post(
-    `${secretServiceUrl}/api/get-secret`,
-    {
-      userId,
-      secretType: 'crisp_api_keys'
-    }
-  );
-  
-  if (!getResponse.data.success) {
-    throw new Error(getResponse.data.error || 'Failed to retrieve Crisp API keys');
-  }
-  
-  // Raw data retrieved from secret service
-  const retrievedKeys = getResponse.data.data;
-  
-  // Validate the structure received from secret service
-  if (!retrievedKeys || typeof retrievedKeys !== 'object') {
-    throw new Error('Invalid data structure received for Crisp keys');
-  }
-  
-  if (!retrievedKeys.identifier) {
-    throw new Error('Crisp identifier is missing in the stored secret');
-  }
-  
-  if (!retrievedKeys.key) {
-    throw new Error('Crisp key is missing in the stored secret');
-  }
-  
-  return {
-    identifier: retrievedKeys.identifier,
-    key: retrievedKeys.key
-  };
-}
+const animationContentSchema = z.object({
+  url: z.string().url().describe("Animation URL"),
+  type: z.string().describe("Animation MIME type (e.g., 'image/gif')")
+}).describe("Content structure for 'animation' message type");
 
-/**
- * Generate the response indicating that Crisp setup is needed
- * @param userId User ID for whom the setup is needed
- * @param conversationId Conversation ID for context
- * @param logPrefix Prefix for console logs
- * @returns SetupNeededResponse object
- */
-function generateCrispSetupNeededResponse(
-  userId: string, 
-  conversationId: string,
-  logPrefix: string
-): SetupNeededResponse {
-  
-  const secretServiceBaseUrl = process.env.SECRET_SERVICE_URL;
-  
-  if (!secretServiceBaseUrl) {
-    console.error(`${logPrefix} Error: SECRET_SERVICE_URL is not set. Cannot generate popup URL.`);
-    throw new Error('Configuration error: SECRET_SERVICE_URL is not set'); 
-  }
-  
-  // Point to the specific /crisp endpoint and add userId
-  const setupUrl = `${secretServiceBaseUrl}/crisp?userId=${encodeURIComponent(userId)}`; 
-  
-  console.log(`${logPrefix} Crisp keys not found, returning setup URL: ${setupUrl}`);
-  
-  return {
-    status: 'success',
-    data: {
-      needs_setup: true,
-      setup_url: setupUrl,
-      provider: "crisp",
-      message: "Crisp API keys are required.",
-      title: "Connect Crisp Account",
-      description: "Your API keys are needed to access your Crisp chat data",
-      button_text: "Connect Crisp Account"
-    }
-  };
-}
+const audioContentSchema = z.object({
+  duration: z.number().describe("Audio duration in seconds"),
+  url: z.string().url().describe("Audio file URL"),
+  type: z.string().describe("Audio MIME type (e.g., 'audio/mp3')")
+}).describe("Content structure for 'audio' message type");
 
-/**
- * Format a Crisp API error response
- * @param error Error object from caught exception
- * @returns UtilityErrorResponse object
- */
-function formatCrispErrorResponse(error: any): UtilityErrorResponse {
-  let responseError: string = "Failed to process Crisp operation";
-  let responseDetails: string | undefined = undefined;
-  
-  if (error.response) {
-    // The request was made and the server responded with a status code
-    // that falls out of the range of 2xx
-    const status = error.response.status;
-    const data = error.response.data;
-    
-    if (status === 401 || status === 403) {
-      responseError = "Authentication failed with Crisp API";
-      responseDetails = "Please check your API keys are valid and have sufficient permissions";
-    } else if (status === 404) {
-      responseError = "Resource not found on Crisp API";
-      responseDetails = data?.reason || data?.error || "The requested Crisp resource could not be found";
-    } else if (status === 429) {
-      responseError = "Too many requests to Crisp API";
-      responseDetails = "You have exceeded the rate limit for Crisp API calls";
-    } else {
-      responseError = `Crisp API error: ${status}`;
-      responseDetails = data?.reason || data?.error || data?.message || JSON.stringify(data);
-    }
-  } else if (error.request) {
-    // The request was made but no response was received
-    responseError = "No response received from Crisp API";
-    responseDetails = "Check your network connection and Crisp service status";
-  } else {
-    // Something happened in setting up the request that triggered an Error
-    responseError = "Error setting up Crisp API request";
-    responseDetails = error.message;
-  }
-  
-  return {
-    status: 'error',
-    error: responseError,
-    details: responseDetails
-  };
-}
+const pickerContentSchema = z.object({
+  id: z.string().describe("Picker identifier"),
+  text: z.string().describe("Text prompt for the picker"),
+  choices: z.array(z.object({
+    value: z.string().describe("Choice value"),
+    icon: z.string().optional().describe("Choice icon (must be an emoji character)"),
+    label: z.string().describe("Choice label"),
+    selected: z.boolean().describe("Whether choice is selected by default"),
+    action: z.object({
+      type: z.enum(['frame', 'link']).describe("Action type"),
+      target: z.string().url().describe("Action target URL")
+    }).optional().describe("Action to take when choice is clicked")
+  })).describe("Array of choice objects"),
+  required: z.boolean().optional().describe("Whether picker must be filled before continuing")
+}).describe("Content structure for 'picker' message type");
+
+const fieldContentSchema = z.object({
+  id: z.string().describe("Field identifier"),
+  text: z.string().describe("Field label text"),
+  explain: z.string().describe("Field explanatory text"),
+  value: z.string().optional().describe("Default field value"),
+  required: z.boolean().optional().describe("Whether field must be filled before continuing")
+}).describe("Content structure for 'field' message type");
+
+const carouselContentSchema = z.object({
+  text: z.string().describe("Carousel text"),
+  targets: z.array(z.object({
+    title: z.string().describe("Target title"),
+    description: z.string().describe("Target description"),
+    image: z.string().url().optional().describe("Target banner image URL"),
+    actions: z.array(z.object({
+      label: z.string().describe("Action label"),
+      url: z.string().url().describe("Action link URL")
+    })).describe("Target action buttons")
+  })).describe("Array of carousel target objects")
+}).describe("Content structure for 'carousel' message type");
+
+const eventContentSchema = z.object({
+  namespace: z.enum([
+    'state:resolved',
+    'user:blocked',
+    'reminder:scheduled',
+    'thread:started',
+    'thread:ended',
+    'participant:added',
+    'participant:removed',
+    'call:started',
+    'call:ended'
+  ]).describe("Event namespace"),
+  text: z.string().describe("Event text description")
+}).describe("Content structure for 'event' message type");
 
 /**
  * Implementation of the Crisp Send Message utility
  */
 const crispSendMessageUtility: UtilityTool = {
   id: 'crisp_send_message',
-  description: 'Sends a message to an existing conversation in Crisp Chat.',
+  description: 'Sends a message to a Crisp conversation.',
   schema: {
-    website_id: { type: 'string', description: 'The website identifier in Crisp.' },
-    session_id: { type: 'string', description: 'The conversation session identifier in Crisp.' },
-    type: { type: 'string', description: 'Message type (text, note, file, etc.).' },
-    from: { type: 'string', description: 'Message sender (user or operator).' },
-    origin: { type: 'string', optional: true, description: 'Message origin (chat, email, urn:*).' },
-    content: { type: 'any', description: 'Message content (string for text/note, object for others).' },
-    mentions: { type: 'array', optional: true, description: 'Mentioned user identifiers.' },
-    fingerprint: { type: 'string', optional: true, description: 'Unique message fingerprint to avoid duplicates.' },
-    user: { type: 'object', optional: true, description: 'Sending user information.' },
-    references: { type: 'object', optional: true, description: 'References adding more context to message.' },
-    original: { type: 'object', optional: true, description: 'Original message data.' },
-    timestamp: { type: 'number', optional: true, description: 'Timestamp at which the message was sent (milliseconds).' },
-    stealth: { type: 'boolean', optional: true, description: 'Message stealth mode (do not propagate to other party).' },
-    translated: { type: 'boolean', optional: true, description: 'Whether message was auto-translated or not.' },
-    automated: { type: 'boolean', optional: true, description: 'Whether message is automated or not (comes from a bot).' },
+    session_id: { 
+      zod: z.string().describe('The conversation session identifier.') 
+    },
+    type: { 
+      zod: z.enum(['text', 'note', 'file', 'animation', 'audio', 'picker', 'field', 'carousel', 'event'])
+            .describe('Message type. Valid values: text, note, file, animation, audio, picker, field, carousel, event.') 
+    },
+    from: { 
+      zod: z.enum(['user', 'operator'])
+            .describe('Message sender. Valid values: user, operator.') 
+    },
+    origin: { 
+      zod: z.string()
+            .describe('Message origin. Valid values: chat, email, urn:*.')
+            .optional() 
+    },
+    content: { 
+      zod: z.union([
+              textNoteContentSchema,
+              fileContentSchema,
+              animationContentSchema,
+              audioContentSchema,
+              pickerContentSchema,
+              fieldContentSchema,
+              carouselContentSchema,
+              eventContentSchema,
+              z.object({}).passthrough() // Allow other content structures
+            ])
+            .describe(`Message content. Format depends on the message type:
+              - For 'text' or 'note': Simple string value
+              - For other types: Object with specific structure based on message type (see examples)`),
+      examples: [
+        "Hello, how can I help you?", // Text message
+        { // Picker example
+          id: "option_picker",
+          text: "Choose an option:",
+          choices: [
+            {
+              value: "option1",
+              icon: "🔴",
+              label: "Option 1",
+              selected: false
+            },
+            {
+              value: "option2",
+              label: "Option 2",
+              selected: true
+            }
+          ]
+        },
+        { // File example
+          name: "document.pdf",
+          url: "https://example.com/document.pdf",
+          type: "application/pdf"
+        },
+        { // Event example
+          namespace: "state:resolved",
+          text: "Conversation marked as resolved"
+        }
+      ]
+    },
+    mentions: { 
+      zod: z.array(z.string())
+            .describe('Mentioned user identifiers. Array of strings.')
+            .optional()
+    },
+    fingerprint: { 
+      zod: z.string()
+            .describe('Unique message fingerprint to avoid duplicates when using the API as per with the real-time sockets.')
+            .optional()
+    },
+    user: { 
+      zod: z.object({
+              type: z.enum(['website', 'participant']).describe("User type").optional(),
+              nickname: z.string().describe("User nickname").optional(),
+              avatar: z.string().url().describe("User avatar URL").optional()
+            })
+            .passthrough()
+            .describe('Sending user information with properties: type, nickname, avatar.')
+            .optional(),
+      examples: [{
+        type: "website",
+        nickname: "John Doe",
+        avatar: "https://example.com/avatar.jpg"
+      }]
+    },
+    references: { 
+      zod: z.object({
+              type: z.string().describe("Reference type, usually 'link'"),
+              name: z.string().describe("Reference name"),
+              target: z.string().url().describe("Reference target URL")
+            })
+            .passthrough()
+            .describe('References adding more context to message.')
+            .optional(),
+      examples: [{
+        type: "link",
+        name: "Documentation",
+        target: "https://docs.example.com"
+      }]
+    },
+    original: { 
+      zod: z.object({
+              type: z.string().describe("Original data MIME type"),
+              content: z.string().describe("Original message data content")
+            })
+            .passthrough()
+            .describe('Original message data (available on a separate route).')
+            .optional(),
+      examples: [{
+        type: "text/html",
+        content: "<p>Original HTML content</p>"
+      }]
+    },
+    timestamp: { 
+      zod: z.number()
+            .describe('Timestamp at which the message was sent, in milliseconds (if different than current timestamp).')
+            .optional(),
+      examples: [1650000000000]
+    },
+    stealth: { 
+      zod: z.boolean()
+            .describe('Message stealth mode (do not propagate message to the other party).')
+            .optional(),
+      examples: [true, false]
+    },
+    translated: { 
+      zod: z.boolean()
+            .describe('Whether message was auto-translated or not.')
+            .optional(),
+      examples: [true, false]
+    },
+    automated: { 
+      zod: z.boolean()
+            .describe('Whether message is automated or not (comes from a bot).')
+            .optional(),
+      examples: [true, false]
+    },
   },
   
-  execute: async (userId: string, conversationId: string, params: CrispSendMessageParams): Promise<CrispSendMessageResponse> => {
+  execute: async (userId: string, conversationId: string, params: CrispSendMessageParams, agentId?: string): Promise<CrispSendMessageResponse> => {
     const logPrefix = '💬 [CRISP_SEND_MESSAGE]';
     try {
-      // Required parameters validation
-      if (!params.website_id) {
-        throw new Error('website_id is required');
-      }
+      // Validate required parameters
       if (!params.session_id) {
-        throw new Error('session_id is required');
-      }
-      if (!params.type) {
-        throw new Error('type is required');
-      }
-      if (!params.from) {
-        throw new Error('from is required');
-      }
-      if (params.content === undefined || params.content === null) {
-        throw new Error('content is required');
+        return {
+          status: 'error',
+          error: 'Missing required parameter: session_id',
+          details: 'The Crisp conversation session identifier is required'
+        };
       }
       
-      console.log(`${logPrefix} Sending message to session ${params.session_id} for website ${params.website_id} from ${params.from}`);
+      if (!params.type) {
+        return {
+          status: 'error',
+          error: 'Missing required parameter: type',
+          details: 'The message type is required'
+        };
+      }
+      
+      if (!params.from) {
+        return {
+          status: 'error',
+          error: 'Missing required parameter: from',
+          details: 'The message sender is required'
+        };
+      }
+      
+      if (params.content === undefined) {
+        return {
+          status: 'error',
+          error: 'Missing required parameter: content',
+          details: 'The message content is required'
+        };
+      }
+      
+      console.log(`${logPrefix} Sending message to session: ${params.session_id} for user: ${userId}`);
       
       // Get environment variables
       const { secretServiceUrl } = getCrispEnvironmentVariables();
       
-      // Check if the user has Crisp API keys
-      const { exists } = await checkCrispApiKeys(userId, secretServiceUrl);
+      // Check if Crisp website ID is available
+      const { exists } = await checkCrispWebsiteId(userId, secretServiceUrl);
       if (!exists) {
-        return generateCrispSetupNeededResponse(userId, conversationId, logPrefix);
+        return generateSetupNeededResponse(userId, secretServiceUrl, logPrefix, agentId);
       }
       
-      // Get Crisp API keys
-      const crispKeys = await getCrispApiKeys(userId, secretServiceUrl);
+      // Get the website ID
+      const { websiteId } = await getCrispWebsiteId(userId, secretServiceUrl);
       
-      // Prepare request payload
-      const requestPayload: any = {
+      // Prepare the request payload
+      const payload = {
         type: params.type,
         from: params.from,
-        content: params.content
+        origin: params.origin || 'chat',
+        content: params.content,
+        ...(params.mentions && { mentions: params.mentions }),
+        ...(params.fingerprint && { fingerprint: params.fingerprint }),
+        ...(params.user && { user: params.user }),
+        ...(params.references && { references: params.references }),
+        ...(params.original && { original: params.original }),
+        ...(params.timestamp && { timestamp: params.timestamp }),
+        ...(params.stealth !== undefined && { stealth: params.stealth }),
+        ...(params.translated !== undefined && { translated: params.translated }),
+        ...(params.automated !== undefined && { automated: params.automated })
       };
       
-      // Add optional fields if provided
-      if (params.origin) requestPayload.origin = params.origin;
-      if (params.mentions) requestPayload.mentions = params.mentions;
-      if (params.fingerprint) requestPayload.fingerprint = params.fingerprint;
-      if (params.user) requestPayload.user = params.user;
-      if (params.references) requestPayload.references = params.references;
-      if (params.original) requestPayload.original = params.original;
-      if (params.timestamp) requestPayload.timestamp = params.timestamp;
-      if (params.stealth !== undefined) requestPayload.stealth = params.stealth;
-      if (params.translated !== undefined) requestPayload.translated = params.translated;
-      if (params.automated !== undefined) requestPayload.automated = params.automated;
+      console.log(`${logPrefix} Calling Crisp API: POST /v1/website/${websiteId}/conversation/${params.session_id}/message`);
       
-      console.log(`${logPrefix} Calling Crisp API: POST /website/${params.website_id}/conversation/${params.session_id}/message`);
-      
-      // Call the Crisp API to send message
+      // Call the Crisp API
       const crispResponse = await axios.post(
-        `https://api.crisp.chat/v1/website/${params.website_id}/conversation/${params.session_id}/message`,
-        requestPayload,
+        `https://api.crisp.chat/v1/website/${websiteId}/conversation/${params.session_id}/message`,
+        payload,
         {
           headers: {
-            'X-Crisp-Key': `${crispKeys.identifier}:${crispKeys.key}`,
+            'X-Crisp-Tier': 'plugin',
             'Content-Type': 'application/json'
           }
         }
@@ -328,12 +389,14 @@ const crispSendMessageUtility: UtilityTool = {
       
       console.log(`${logPrefix} Crisp API response status: ${crispResponse.status}`);
       
+      // Extract message ID from response if available
+      const messageId = crispResponse.data?.data?.message_id || 'unknown';
+      
       // Construct success response
       const successResponse: CrispSendMessageSuccessResponse = {
         status: 'success',
         data: {
-          message: 'Message sent successfully',
-          message_id: crispResponse.data?.data?.message_id
+          message_id: messageId
         }
       };
       
@@ -341,7 +404,13 @@ const crispSendMessageUtility: UtilityTool = {
       
     } catch (error: any) {
       console.error(`${logPrefix} Error:`, error);
-      return formatCrispErrorResponse(error);
+      // Convert CrispErrorResponse to UtilityErrorResponse format
+      const crispError = formatCrispErrorResponse(error);
+      return {
+        status: 'error',
+        error: crispError.error,
+        details: crispError.details
+      };
     }
   }
 };
