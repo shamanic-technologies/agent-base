@@ -1,13 +1,21 @@
 /**
- * Health check route
+ * Health check routes
+ * Used for monitoring and service health status
  */
-import express from 'express';
+import { Router } from 'express';
 
-const router = express.Router();
+const router = Router();
 
-// Health check endpoint
-router.get('/health', (req: express.Request, res: express.Response) => {
-  res.status(200).json({ status: 'healthy' });
+/**
+ * Basic health check endpoint
+ * GET /health
+ */
+router.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    service: 'key-service',
+    timestamp: new Date().toISOString()
+  });
 });
 
 export default router; 

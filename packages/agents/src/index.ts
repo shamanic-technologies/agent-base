@@ -20,6 +20,15 @@ export * from './types/user.js';
 // Export webhook-related types
 export * from './types/webhook.js';
 
+// Export API key types
+export * from './types/api-keys.js';
+
+// Export secret management types
+export * from './types/secrets.js';
+
+// Export utility functions
+export * from './utils/httpClient.js';
+
 // --- Utility Functions (kept here for now) ---
 
 import { AgentRecord, Agent } from './types/agent.js'; // Import types needed by mappers

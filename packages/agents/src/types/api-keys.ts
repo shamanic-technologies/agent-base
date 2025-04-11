@@ -29,11 +29,18 @@ export interface CreateApiKeyRequest {
 /**
  * Request to update an existing API key
  */
-export interface UpdateApiKeyRequest {
+export interface ValidateApiKeyRequest {
   hashed_key: string;
   key_prefix: string;
 }
 
+/**
+ * Request to get an API key
+ */
+export interface GetApiKeyRequest {
+  userId: string;
+  keyId: string;
+}
 
 /**
  * Standard response for API key operations
@@ -41,6 +48,11 @@ export interface UpdateApiKeyRequest {
 export interface ApiKeyResponse extends BaseResponse {
   data?: ApiKeyMetadata;
 }
+
+export interface ValidateApiKeyResponse extends BaseResponse {
+    keyId: string;
+    userId: string;
+  }
 
 /**
  * Response for getting multiple API keys

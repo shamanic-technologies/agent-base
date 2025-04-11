@@ -4,5 +4,8 @@
   "version": "0.1.0",
   "files": [
     "base.json"
-  ]
+  ],
+  "dependencies": {
+    "lucide-react": "^0.487.0"
+  }
 }

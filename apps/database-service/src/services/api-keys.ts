@@ -5,7 +5,8 @@
  */
 import { PoolClient } from 'pg';
 import { pgPool, getClient } from '../db.js';
-import { ApiKeyMetadata, CreateApiKeyRequest, ApiKeyResponse, ApiKeysListResponse, UpdateApiKeyRequest } from '@agent-base/agents/src/types/api-keys.js';
+import { ApiKeyMetadata, CreateApiKeyRequest, ApiKeyResponse, ApiKeysListResponse, ValidateApiKeyRequest, ValidateApiKeyResponse } from '@agent-base/agents/src/types/api-keys.js';
+import { SuccessResponse, ErrorResponse, ServiceResponse } from '@agent-base/agents';
 
 // Table name constant
 const API_KEYS_TABLE = 'api_keys';
@@ -49,13 +50,13 @@ export async function createApiKey(keyData: CreateApiKeyRequest, userId: string)
     return {
       success: true,
       data: result.rows[0]
-    };
+    } as SuccessResponse<ApiKeyMetadata>;
   } catch (error: any) {
     console.error('Error creating API key:', error);
     return { 
       success: false, 
       error: error.message || 'Failed to create API key'
-    };
+    } as ErrorResponse;
   } finally {
     if (client) {
       client.release();
@@ -115,7 +116,7 @@ export async function getApiKeys(userId: string, keyPrefix?: string): Promise<Ap
  * @param keyPrefix - The key prefix for additional filtering
  * @returns A response with the updated API key metadata
  */
-export async function updateApiKey(hashedKey: string, keyPrefix: string): Promise<ApiKeyResponse> {
+export async function validateApiKey(hashedKey: string, keyPrefix: string): Promise<ServiceResponse<ApiKeyMetadata>> {
   let client: PoolClient | null = null;
   
   try {
@@ -134,7 +135,7 @@ export async function updateApiKey(hashedKey: string, keyPrefix: string): Promis
       return {
         success: false,
         error: 'Invalid API key'
-      };
+      } as ErrorResponse;
     }
     
     // Update the last_used timestamp
@@ -152,13 +153,13 @@ export async function updateApiKey(hashedKey: string, keyPrefix: string): Promis
     return {
       success: true,
       data: result.rows[0]
-    };
+    } as SuccessResponse<ApiKeyMetadata>;
   } catch (error: any) {
     console.error('Error updating API key usage:', error);
     return { 
       success: false, 
-      error: error.message || 'Failed to update API key usage'
-    };
+      error: error.message || 'Failed to update API key usage',
+    } as ErrorResponse;
   } finally {
     if (client) {
       client.release();

@@ -7,16 +7,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSecret } from '@/lib/google-secret-manager';
 import { GetSecretResponse } from '@agent-base/agents';
 
+/**
+ * GET handler for retrieving secrets by secretType
+ */
 export async function GET(
-  request: NextRequest
+  request: NextRequest,
+  { params }: { params: { secretType: string } }
 ) {
   try {
     const userIdFromHeader = request.headers.get('x-user-id');
-    
-    // Get secretType from URL path
-    const url = new URL(request.url);
-    const pathParts = url.pathname.split('/');
-    const secretType = pathParts[pathParts.length - 1];
+    const { secretType } = params;
     
     if (!userIdFromHeader) {
       return NextResponse.json(
