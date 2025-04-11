@@ -1,15 +1,16 @@
 /**
  * Google Search Utility
  * 
- * Performs web searches using the Google Search API and returns formatted results.
+ * Performs web searches using the Google Search API via SerpAPI and returns formatted results.
  * Useful for finding up-to-date information from the web.
  */
-import axios from 'axios';
+// Remove axios if fetch is used
+// import axios from 'axios';
+import { z } from 'zod'; // Import Zod
 import { 
   UtilityTool, 
-  // Removed GoogleSearchRequest - defined locally
-  UtilityErrorResponse 
-  // Removed GoogleSearchResponse, GoogleSearchResult, GoogleSearchSuccessResponse - defined locally
+  UtilityErrorResponse,
+  UtilityToolSchema // Import if needed
 } from '../../types/index.js'; // Corrected path relative to api-utilities/google/
 import { registry } from '../../registry/registry.js'; // Corrected path
 
@@ -29,10 +30,12 @@ export interface GoogleSearchResult {
 
 export interface GoogleSearchSuccessResponse {
   status: 'success';
-  query: string;
-  results_count: number;
-  results: GoogleSearchResult[];
-  message?: string;
+  data: { // Encapsulate results in data object
+    query: string;
+    results_count: number;
+    results: GoogleSearchResult[];
+    message?: string;
+  }
 }
 
 export type GoogleSearchResponse = 
@@ -44,113 +47,122 @@ export type GoogleSearchResponse =
 /**
  * Implementation of the Google Search utility
  */
-const googleSearch: UtilityTool = {
+const googleSearchUtility: UtilityTool = {
   id: 'utility_google_search',
-  description: 'Search the web using Google Search API to find up-to-date information',
+  description: 'Search the web using Google Search API (via SerpAPI) to find up-to-date information',
+  // Update schema to match Record<string, UtilityToolSchema>
   schema: {
-    query: {
-      type: 'string',
-      description: 'The search query to send to Google Search'
+    query: { // Parameter name
+      zod: z.string()
+            .describe('The search query to send to Google Search.'),
+      // Not optional
+      examples: ['latest AI news', 'weather in London']
     },
-    limit: {
-      type: 'number',
-      optional: true,
-      description: 'Maximum number of results to return (default: 5, max: 10)'
+    limit: { // Parameter name
+      zod: z.number().int().min(1).max(10) // SerpAPI typically returns max 10 organic results per page
+            .describe('Maximum number of results to return (default: 5, max: 10).')
+            .optional(),
+      examples: [5, 10]
     }
   },
   
   execute: async (userId: string, conversationId: string, params: GoogleSearchRequest): Promise<GoogleSearchResponse> => {
-    // Extract and validate parameters
-    const { query, limit = 5 } = params;
-
+    const logPrefix = '🔍 [GOOGLE_SEARCH]';
     try {
+      // Use raw params
+      const { query, limit = 5 } = params || {};
+
       // Validate query
       if (!query || typeof query !== 'string') {
-        const errorResponse: UtilityErrorResponse = {
-          status: 'error',
-          error: "Search query is required and must be a string"
+        return { 
+          status: 'error', 
+          error: "Search query is required and must be a string" 
         };
-        return errorResponse;
       }
       
       // Ensure limit is between 1 and 10
       const validatedLimit = Math.min(Math.max(1, limit || 5), 10);
       
-      console.log(`🔍 [GOOGLE SEARCH] Performing search for: "${query}" (limit: ${validatedLimit})`);
+      console.log(`${logPrefix} Performing search for: "${query}" (limit: ${validatedLimit})`);
       
       // Check for SerpAPI API key
       const apiKey = process.env.SERPAPI_API_KEY;
       if (!apiKey) {
-        const errorResponse: UtilityErrorResponse = {
-          status: 'error',
-          error: "SERPAPI_API_KEY is not configured in environment variables"
+        console.error(`${logPrefix} SERPAPI_API_KEY not set`);
+        return { 
+          status: 'error', 
+          error: "Service configuration error: SERPAPI_API_KEY is not set." 
         };
-        return errorResponse;
       }
       
-      // Perform the search using SerpAPI
-      const apiResponse = await fetch(`https://serpapi.com/search.json?q=${encodeURIComponent(query)}&api_key=${apiKey}`);
+      // Perform the search using SerpAPI via fetch
+      const apiUrl = `https://serpapi.com/search.json?q=${encodeURIComponent(query)}&num=${validatedLimit}&api_key=${apiKey}`;
+      const apiResponse = await fetch(apiUrl);
       
       // Handle API errors
       if (!apiResponse.ok) {
         const errorDetails = await apiResponse.text(); // Get more details if possible
-        const errorResponse: UtilityErrorResponse = {
-          status: 'error',
-          error: `Google Search request failed with status ${apiResponse.status}`,
-          details: errorDetails
+        console.error(`${logPrefix} SerpAPI error (${apiResponse.status}): ${errorDetails}`);
+        return { 
+          status: 'error', 
+          error: `Google Search failed (HTTP ${apiResponse.status})`, 
+          details: `SerpAPI error: ${errorDetails}` 
         };
-        return errorResponse;
       }
 
       // Parse the response data
       const data = await apiResponse.json();
       
+      let successResponse: GoogleSearchSuccessResponse;
+
       // Handle cases where no results are found
       if (!data.organic_results || data.organic_results.length === 0) {
-        const successResponse: GoogleSearchSuccessResponse = {
+        successResponse = {
           status: 'success',
-          query,
-          results_count: 0,
-          results: [],
-          message: "No search results found for your query."
+          data: {
+            query,
+            results_count: 0,
+            results: [],
+            message: "No search results found for your query."
+          }
         };
-        return successResponse;
+      } else {
+        // Format the search results according to the defined type
+        const results: GoogleSearchResult[] = data.organic_results
+          .slice(0, validatedLimit) // Apply limit again just in case API returns more
+          .map((result: any): GoogleSearchResult => ({ // Explicitly type the mapped result
+            title: result.title || 'No title',
+            link: result.link || 'No link',
+            snippet: result.snippet || 'No snippet available',
+            position: result.position
+          }));
+
+        // Prepare the success response
+        successResponse = {
+          status: 'success',
+          data: {
+            query,
+            results_count: results.length,
+            results
+          }
+        };
       }
-
-      // Format the search results according to the defined type
-      const results: GoogleSearchResult[] = data.organic_results
-        .slice(0, validatedLimit)
-        .map((result: any): GoogleSearchResult => ({ // Explicitly type the mapped result
-          title: result.title || 'No title',
-          link: result.link || 'No link',
-          snippet: result.snippet || 'No snippet available',
-          position: result.position
-        }));
-
-      // Prepare the success response
-      const successResponse: GoogleSearchSuccessResponse = {
-        status: 'success',
-        query,
-        results_count: results.length,
-        results
-      };
       return successResponse;
       
-    } catch (error) {
-      // Handle unexpected errors during execution
-      console.error("❌ [GOOGLE SEARCH] Unexpected error:", error);
-      const errorResponse: UtilityErrorResponse = {
-        status: 'error',
-        error: "An unexpected error occurred during the Google search",
-        details: error instanceof Error ? error.message : "Unknown error"
+    } catch (error: any) { // Catch any other unexpected errors
+      console.error(`${logPrefix} Unexpected error:`, error);
+      // Remove Zod error handling
+      return { 
+        status: 'error', 
+        error: "An unexpected error occurred during the Google search", 
+        details: error instanceof Error ? error.message : String(error)
       };
-      return errorResponse;
     }
   }
 };
 
 // Register the utility
-registry.register(googleSearch);
+registry.register(googleSearchUtility);
 
 // Export the utility
-export default googleSearch; 
+export default googleSearchUtility; 

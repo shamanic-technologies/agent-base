@@ -5,9 +5,11 @@
  * Useful for finding flight information, prices, routes, and travel options.
  */
 import axios from 'axios';
+import { z } from 'zod'; // Import Zod
 import { 
   UtilityTool,
-  UtilityErrorResponse 
+  UtilityErrorResponse,
+  UtilityToolSchema // Import if needed
 } from '../../types/index.js';
 import { registry } from '../../registry/registry.js';
 
@@ -16,7 +18,7 @@ import { registry } from '../../registry/registry.js';
 export interface GoogleFlightsRequest {
   origin: string;
   destination: string;
-  departure_date: string;
+  departure_date?: string; // Made optional to align with schema
   return_date?: string;
   adults?: number;
   children?: number;
@@ -24,7 +26,48 @@ export interface GoogleFlightsRequest {
   cabin_class?: string;
 }
 
-// Define local response types if needed, or keep existing generic return
+// Define cabin class options
+const cabinClasses = ['economy', 'premium_economy', 'business', 'first'] as const;
+type CabinClass = typeof cabinClasses[number];
+
+// Define structure for flight leg
+interface FlightLeg {
+  departure: { airport: string; code: string; time: string };
+  arrival: { airport: string; code: string; time: string };
+  duration: string;
+  stops: number;
+  layovers: { airport: string; duration: string }[];
+  airlines: string[];
+}
+
+// Define structure for a single flight result
+interface FlightResult {
+  price: number | null;
+  currency: string;
+  outbound: FlightLeg;
+  return?: FlightLeg | null;
+  carbon_emissions?: string | null;
+  total_duration?: string | null;
+}
+
+// Define success response structure
+interface GoogleFlightsSuccessResponse {
+  status: 'success';
+  data: {
+    origin: string;
+    destination: string;
+    departure_date?: string | null;
+    return_date?: string | null;
+    cabin_class: CabinClass;
+    passengers: { adults: number; children: number; infants: number };
+    results_count: number;
+    flights: FlightResult[];
+    price_range?: string | null;
+    message?: string; // Include message for no results case
+  }
+}
+
+type GoogleFlightsResponse = GoogleFlightsSuccessResponse | UtilityErrorResponse;
 
 // --- End Local Type Definitions ---
 
@@ -40,53 +83,65 @@ function formatDuration(minutes: number): string {
 /**
  * Implementation of the Google Flights utility
  */
-const googleFlights: UtilityTool = {
+const googleFlightsUtility: UtilityTool = {
   id: 'utility_google_flights',
-  description: 'Search for flights using Google Flights to find routes, prices, and travel options',
+  description: 'Search for flights using Google Flights (via SerpAPI) to find routes, prices, and travel options.',
+  // Update schema to match Record<string, UtilityToolSchema>
   schema: {
-    origin: {
-      type: 'string',
-      description: 'Origin airport code or city (e.g., "NYC", "New York", "JFK")'
+    origin: { // Parameter name
+      zod: z.string()
+            .describe('Origin airport code or city (e.g., "NYC", "New York", "JFK")'),
+      // Not optional
+      examples: ['JFK', 'London']
     },
-    destination: {
-      type: 'string',
-      description: 'Destination airport code or city (e.g., "LAX", "London", "Tokyo")'
+    destination: { // Parameter name
+      zod: z.string()
+            .describe('Destination airport code or city (e.g., "LAX", "Tokyo", "CDG")'),
+      // Not optional
+      examples: ['LAX', 'Paris']
     },
-    departure_date: {
-      type: 'string',
-      optional: true,
-      description: 'Departure date in YYYY-MM-DD format'
+    departure_date: { // Parameter name
+      zod: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format")
+            .describe('Departure date in YYYY-MM-DD format.')
+            .optional(), // Optional in schema, logic assumes it might be needed
+      examples: ['2024-12-20']
     },
-    return_date: {
-      type: 'string',
-      optional: true,
-      description: 'Return date in YYYY-MM-DD format for round trips'
+    return_date: { // Parameter name
+      zod: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format")
+            .describe('Return date in YYYY-MM-DD format for round trips.')
+            .optional(),
+      examples: ['2025-01-05']
     },
-    adults: {
-      type: 'number',
-      optional: true,
-      description: 'Number of adult passengers (default: 1)'
+    adults: { // Parameter name
+      zod: z.number().int().min(1)
+            .describe('Number of adult passengers (default: 1).')
+            .optional(),
+      examples: [1, 2]
     },
-    children: {
-      type: 'number',
-      optional: true,
-      description: 'Number of child passengers (default: 0)'
+    children: { // Parameter name
+      zod: z.number().int().min(0)
+            .describe('Number of child passengers (default: 0).')
+            .optional(),
+      examples: [0, 1]
     },
-    infants: {
-      type: 'number', 
-      optional: true,
-      description: 'Number of infant passengers (default: 0)'
+    infants: { // Parameter name
+      zod: z.number().int().min(0)
+            .describe('Number of infant passengers (default: 0).')
+            .optional(),
+      examples: [0]
     },
-    cabin_class: {
-      type: 'string',
-      optional: true,
-      description: 'Cabin class preference (economy, premium_economy, business, first)'
+    cabin_class: { // Parameter name
+      zod: z.enum(cabinClasses)
+            .describe('Cabin class preference.')
+            .optional(),
+      examples: ['economy', 'business']
     }
   },
   
-  execute: async (userId: string, conversationId: string, params: GoogleFlightsRequest): Promise<any> => {
+  execute: async (userId: string, conversationId: string, params: GoogleFlightsRequest): Promise<GoogleFlightsResponse> => {
+    const logPrefix = '✈️ [GOOGLE_FLIGHTS]';
     try {
-      // Extract and validate parameters
+      // Use raw params
       const { 
         origin, 
         destination, 
@@ -96,22 +151,24 @@ const googleFlights: UtilityTool = {
         children = 0,
         infants = 0,
         cabin_class = 'economy' 
-      } = params;
+      } = params || {};
       
+      // Basic validation
       if (!origin || typeof origin !== 'string') {
-        throw new Error("Origin is required and must be a string");
+        return { status: 'error', error: "Origin is required and must be a string" };
       }
-      
       if (!destination || typeof destination !== 'string') {
-        throw new Error("Destination is required and must be a string");
+        return { status: 'error', error: "Destination is required and must be a string" };
       }
+      // Add date format validation maybe?
       
-      console.log(`✈️ [GOOGLE FLIGHTS] Searching flights from "${origin}" to "${destination}"`);
+      console.log(`${logPrefix} Searching flights from "${origin}" to "${destination}"`);
       
       // Build the API URL
       const apiKey = process.env.SERPAPI_API_KEY;
       if (!apiKey) {
-        throw new Error("SERPAPI_API_KEY is not configured in environment variables");
+        console.error(`${logPrefix} SERPAPI_API_KEY not set`);
+        return { status: 'error', error: "Service configuration error: SERPAPI_API_KEY is not set." };
       }
       
       let apiUrl = `https://serpapi.com/search.json?engine=google_flights&api_key=${apiKey}`;
@@ -123,123 +180,115 @@ const googleFlights: UtilityTool = {
       // Add optional parameters
       if (departure_date) apiUrl += `&outbound_date=${encodeURIComponent(departure_date)}`;
       if (return_date) apiUrl += `&inbound_date=${encodeURIComponent(return_date)}`;
-      if (cabin_class && ['economy', 'premium_economy', 'business', 'first'].includes(cabin_class)) {
+      if (cabin_class && cabinClasses.includes(cabin_class as CabinClass)) { // Use defined cabin classes
         apiUrl += `&type=${encodeURIComponent(cabin_class)}`;
       }
-      if (adults && adults > 0) apiUrl += `&adults=${adults}`;
-      if (children && children > 0) apiUrl += `&children=${children}`;
-      if (infants && infants > 0) apiUrl += `&infants=${infants}`;
+      if (adults > 0) apiUrl += `&adults=${adults}`;
+      if (children > 0) apiUrl += `&children=${children}`;
+      if (infants > 0) apiUrl += `&infants=${infants}`;
       
-      // Use SerpAPI to perform the search
+      // Use fetch API
       const response = await fetch(apiUrl);
       
       if (!response.ok) {
-        throw new Error(`Google Flights search request failed with status ${response.status}`);
+        const errorText = await response.text();
+        console.error(`${logPrefix} SerpAPI error (${response.status}): ${errorText}`);
+        return {
+            status: 'error',
+            error: `Google Flights search failed (HTTP ${response.status})`,
+            details: `SerpAPI error: ${errorText}`
+        };
       }
 
       const data = await response.json();
       
       // Structure the response based on the results
-      if (!data.flight_results || !data.flight_results.best_flights || data.flight_results.best_flights.length === 0) {
-        return {
-          origin,
-          destination,
-          departure_date: departure_date || null,
-          return_date: return_date || null,
-          cabin_class: cabin_class || 'economy',
-          passengers: {
-            adults: adults || 1,
-            children: children || 0,
-            infants: infants || 0
-          },
-          results_count: 0,
-          message: "No flight results found for your query."
+      const flightResults = data.best_flights || data.other_flights || []; // Check both best and other flights
+      
+      if (flightResults.length === 0) {
+        const noResultsResponse: GoogleFlightsSuccessResponse = {
+            status: 'success',
+            data: {
+                origin,
+                destination,
+                departure_date: departure_date || null,
+                return_date: return_date || null,
+                cabin_class: cabin_class as CabinClass,
+                passengers: { adults, children, infants },
+                results_count: 0,
+                flights: [],
+                message: "No flight results found for your query."
+            }
         };
+        return noResultsResponse;
       }
 
-      // Process the best flights
-      const flights = data.flight_results.best_flights.map((flight: any) => {
-        // Process outbound leg
-        const outbound = flight.legs[0];
-        const outboundLeg = {
-          departure: {
-            airport: outbound.departure_airport.name,
-            code: outbound.departure_airport.code,
-            time: outbound.departure_time
-          },
-          arrival: {
-            airport: outbound.arrival_airport.name,
-            code: outbound.arrival_airport.code,
-            time: outbound.arrival_time
-          },
-          duration: outbound.duration_text || formatDuration(outbound.duration),
+      // Process the flights
+      const flights = flightResults.map((flight: any): FlightResult => {
+        const outbound = flight.flights[0]; // SerpAPI structure differs slightly
+        const outboundLeg: FlightLeg = {
+          departure: { airport: outbound.departure_airport.name, code: outbound.departure_airport.id, time: outbound.departure_airport.time },
+          arrival: { airport: outbound.arrival_airport.name, code: outbound.arrival_airport.id, time: outbound.arrival_airport.time },
+          duration: formatDuration(outbound.duration),
           stops: outbound.stops || 0,
-          layovers: outbound.layovers?.map((layover: any) => ({
-            airport: layover.airport,
-            duration: layover.layover_duration_text
-          })) || [],
-          airlines: outbound.airlines?.map((airline: any) => airline.name) || []
+          layovers: outbound.layovers?.map((layover: any) => ({ airport: layover.name, duration: formatDuration(layover.duration) })) || [],
+          airlines: outbound.airline ? [outbound.airline] : [] // Assuming single airline per leg in this structure
         };
         
-        // Process return leg if it exists
-        let returnLeg = null;
-        if (flight.legs.length > 1) {
-          const returnData = flight.legs[1];
+        let returnLeg: FlightLeg | null = null;
+        if (flight.flights.length > 1) {
+          const returnData = flight.flights[1];
           returnLeg = {
-            departure: {
-              airport: returnData.departure_airport.name,
-              code: returnData.departure_airport.code,
-              time: returnData.departure_time
-            },
-            arrival: {
-              airport: returnData.arrival_airport.name,
-              code: returnData.arrival_airport.code,
-              time: returnData.arrival_time
-            },
-            duration: returnData.duration_text || formatDuration(returnData.duration),
+            departure: { airport: returnData.departure_airport.name, code: returnData.departure_airport.id, time: returnData.departure_airport.time },
+            arrival: { airport: returnData.arrival_airport.name, code: returnData.arrival_airport.id, time: returnData.arrival_airport.time },
+            duration: formatDuration(returnData.duration),
             stops: returnData.stops || 0,
-            layovers: returnData.layovers?.map((layover: any) => ({
-              airport: layover.airport,
-              duration: layover.layover_duration_text
-            })) || [],
-            airlines: returnData.airlines?.map((airline: any) => airline.name) || []
+            layovers: returnData.layovers?.map((layover: any) => ({ airport: layover.name, duration: formatDuration(layover.duration) })) || [],
+            airlines: returnData.airline ? [returnData.airline] : []
           };
         }
         
         return {
-          price: flight.price?.default || flight.price?.total || null,
-          currency: flight.price?.currency || 'USD',
+          price: flight.price || null,
+          currency: data.search_parameters?.currency || 'USD',
           outbound: outboundLeg,
           return: returnLeg,
-          carbon_emissions: flight.carbon_emissions?.text || null,
-          total_duration: flight.duration_text || null
+          carbon_emissions: flight.carbon_emissions?.this_flight || null, // Adjusted path
+          total_duration: formatDuration(flight.total_duration)
         };
       });
       
-      return {
-        origin,
-        destination,
-        departure_date: departure_date || null,
-        return_date: return_date || null,
-        cabin_class: cabin_class || 'economy',
-        passengers: {
-          adults: adults || 1,
-          children: children || 0,
-          infants: infants || 0
-        },
-        results_count: flights.length,
-        flights,
-        price_range: data.flight_results?.price_insights?.overall_value_text || null
+      const successResponse: GoogleFlightsSuccessResponse = {
+        status: 'success',
+        data: {
+          origin,
+          destination,
+          departure_date: departure_date || null,
+          return_date: return_date || null,
+          cabin_class: cabin_class as CabinClass,
+          passengers: { adults, children, infants },
+          results_count: flights.length,
+          flights,
+          price_range: data.price_insights?.lowest_price ? `From ${data.price_insights.lowest_price}${data.search_parameters?.currency}` : null // Adjusted path
+        }
       };
-    } catch (error) {
-      console.error("❌ [GOOGLE FLIGHTS] Error:", error);
-      throw error;
+      return successResponse;
+
+    } catch (error: any) {
+      console.error(`${logPrefix} Error:`, error);
+      // Remove Zod error handling
+      // Return standard UtilityErrorResponse
+      return {
+        status: 'error',
+        error: 'Failed to search for Google Flights',
+        details: error instanceof Error ? error.message : String(error)
+      };
     }
   }
 };
 
 // Register the utility
-registry.register(googleFlights);
+registry.register(googleFlightsUtility);
 
 // Export the utility
-export default googleFlights; 
+export default googleFlightsUtility; 

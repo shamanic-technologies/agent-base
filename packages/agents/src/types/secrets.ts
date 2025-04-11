@@ -42,11 +42,4 @@ export interface GetSecretResponse extends BaseResponse {
   data?: {
     value: string | object;
   };
-}
-
-/**
- * Response for checking if a secret exists
- */
-export interface CheckSecretResponse extends BaseResponse {
-  exists: boolean;
 } 

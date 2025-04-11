@@ -5,10 +5,11 @@
  * Useful for finding places, businesses, and detailed location information.
  */
 import axios from 'axios';
+import { z } from 'zod'; // Import Zod
 import { 
   UtilityTool,
-  // Removed GoogleMapsRequest - defined locally
-  UtilityErrorResponse 
+  UtilityErrorResponse,
+  UtilityToolSchema // Import if needed
 } from '../../types/index.js'; // Corrected path relative to api-utilities/google/
 import { registry } from '../../registry/registry.js'; // Corrected path
 
@@ -20,51 +21,88 @@ export interface GoogleMapsRequest {
   limit?: number;
 }
 
-// Removed placeholder local response types
+// Define structure for a single place result
+interface PlaceResult {
+  name: string | null;
+  address: string | null;
+  rating?: number | null;
+  reviews_count?: number;
+  type?: string | null;
+  price_level?: string | null;
+  status?: string | null;
+  phone?: string | null;
+  website?: string | null;
+  description?: string | null;
+  coordinates?: { latitude: number; longitude: number } | null;
+}
+
+// Define success response structure
+interface GoogleMapsSuccessResponse {
+  status: 'success';
+  data: {
+    query: string;
+    location?: string | null;
+    results_count: number;
+    type: 'single_place' | 'place_list' | 'no_results';
+    result?: PlaceResult; // For single place
+    results?: PlaceResult[]; // For list of places
+    message?: string; // For no results
+  }
+}
+
+type GoogleMapsResponse = GoogleMapsSuccessResponse | UtilityErrorResponse;
 
 // --- End Local Type Definitions ---
 
 /**
  * Implementation of the Google Maps utility
  */
-const googleMaps: UtilityTool = {
+const googleMapsUtility: UtilityTool = {
   id: 'utility_google_maps',
-  description: 'Search for locations, businesses, and places using Google Maps',
+  description: 'Search for locations, businesses, and places using Google Maps (via SerpAPI).',
+  // Update schema to match Record<string, UtilityToolSchema>
   schema: {
-    query: {
-      type: 'string',
-      description: 'The search query for places/locations (e.g., "pizza", "coffee shops")'
+    query: { // Parameter name
+      zod: z.string()
+            .describe('The search query for places/locations (e.g., "pizza", "coffee shops near Eiffel Tower")'),
+      // Not optional
+      examples: ['coffee shops', 'Eiffel Tower']
     },
-    location: {
-      type: 'string',
-      optional: true,
-      description: 'Optional specific location to search in (e.g., "New York, NY")'
+    location: { // Parameter name
+      zod: z.string()
+            .describe('Optional specific location context to search within (e.g., "New York, NY", "Paris, France")')
+            .optional(),
+      examples: ['San Francisco, CA']
     },
-    limit: {
-      type: 'number',
-      optional: true,
-      description: 'Maximum number of results to return (default: 5, max: 10)'
+    limit: { // Parameter name
+      zod: z.number().int().min(1).max(20) // SerpAPI Google Maps limit is often around 20
+            .describe('Maximum number of results to return (default: 5, max: 20).')
+            .optional(),
+      examples: [5, 10]
     }
   },
   
-  execute: async (userId: string, conversationId: string, params: GoogleMapsRequest): Promise<any> => {
+  execute: async (userId: string, conversationId: string, params: GoogleMapsRequest): Promise<GoogleMapsResponse> => {
+    const logPrefix = '🗺️ [GOOGLE_MAPS]';
     try {
-      // Extract and validate parameters
-      const { query, location, limit = 5 } = params;
+      // Use raw params
+      const { query, location, limit = 5 } = params || {};
       
+      // Basic validation
       if (!query || typeof query !== 'string') {
-        throw new Error("Search query is required and must be a string");
+        return { status: 'error', error: "Search query is required and must be a string" };
       }
       
-      // Ensure limit is between 1 and 10
-      const validatedLimit = Math.min(Math.max(1, limit || 5), 10);
+      // Ensure limit is within reasonable bounds (e.g., 1-20 for SerpAPI maps)
+      const validatedLimit = Math.min(Math.max(1, limit || 5), 20);
       
-      console.log(`🗺️ [GOOGLE MAPS] Searching for "${query}"${location ? ` in ${location}` : ''} (limit: ${validatedLimit})`);
+      console.log(`${logPrefix} Searching for "${query}"${location ? ` in ${location}` : ''} (limit: ${validatedLimit})`);
       
       // Build the API URL
       const apiKey = process.env.SERPAPI_API_KEY;
       if (!apiKey) {
-        throw new Error("SERPAPI_API_KEY is not configured in environment variables");
+        console.error(`${logPrefix} SERPAPI_API_KEY not set`);
+        return { status: 'error', error: "Service configuration error: SERPAPI_API_KEY is not set." };
       }
       
       let apiUrl = `https://serpapi.com/search.json?engine=google_maps&q=${encodeURIComponent(query)}&api_key=${apiKey}`;
@@ -73,80 +111,107 @@ const googleMaps: UtilityTool = {
       if (location) {
         apiUrl += `&location=${encodeURIComponent(location)}`;
       }
+      apiUrl += `&num=${validatedLimit}`; // Add limit to API call if supported by endpoint
       
-      // Use SerpAPI to perform the search
+      // Use fetch API
       const response = await fetch(apiUrl);
       
       if (!response.ok) {
-        throw new Error(`Google Maps search request failed with status ${response.status}`);
+        const errorText = await response.text();
+        console.error(`${logPrefix} SerpAPI error (${response.status}): ${errorText}`);
+        return { 
+            status: 'error', 
+            error: `Google Maps search failed (HTTP ${response.status})`, 
+            details: `SerpAPI error: ${errorText}` 
+        };
       }
 
       const data = await response.json();
       
+      let successResponse: GoogleMapsSuccessResponse;
+
       // Structure the response based on the type of results received
       if (data.place_results) {
         // Single place detail
         const place = data.place_results;
-        return {
-          query,
-          location: location || null,
-          results_count: 1,
-          type: 'single_place',
-          result: {
-            name: place.title || null,
-            address: place.address || null,
-            rating: place.rating || null,
-            reviews_count: place.reviews || 0,
-            type: place.type || null,
-            price_level: place.price || null,
-            status: place.open_state || place.opens_date || null,
-            phone: place.phone || null,
-            website: place.website || null,
-            description: place.description || null,
-            coordinates: place.gps_coordinates || null
+        successResponse = {
+          status: 'success',
+          data: {
+            query,
+            location: location || null,
+            results_count: 1,
+            type: 'single_place',
+            result: {
+              name: place.title || null,
+              address: place.address || null,
+              rating: place.rating || null,
+              reviews_count: place.reviews || 0,
+              type: place.type || null,
+              price_level: place.price || null,
+              status: place.open_state || place.operating_hours?.current_status || null, // Check operating hours too
+              phone: place.phone || null,
+              website: place.website || null,
+              description: place.description || null,
+              coordinates: place.gps_coordinates || null
+            }
           }
         };
       } else if (data.local_results && data.local_results.length > 0) {
         // Multiple places
-        const places = data.local_results.slice(0, validatedLimit).map((place: any) => ({
+        const places = data.local_results.slice(0, validatedLimit).map((place: any): PlaceResult => ({
           name: place.title || null,
           address: place.address || null,
           rating: place.rating || null,
           reviews_count: place.reviews || 0,
           type: place.type || null,
           price_level: place.price || null,
-          status: place.open_state || place.opens_date || null,
+          status: place.open_state || place.operating_hours?.current_status || null, // Check operating hours too
           phone: place.phone || null,
           website: place.website || null,
           description: place.description || null,
           coordinates: place.gps_coordinates || null
         }));
         
-        return {
-          query,
-          location: location || null,
-          results_count: places.length,
-          type: 'place_list',
-          results: places
+        successResponse = {
+          status: 'success',
+          data: {
+            query,
+            location: location || null,
+            results_count: places.length,
+            type: 'place_list',
+            results: places
+          }
         };
       } else {
         // No results found
-        return {
-          query,
-          location: location || null,
-          results_count: 0,
-          message: "No place results found for your query."
+        successResponse = {
+          status: 'success',
+          data: {
+            query,
+            location: location || null,
+            results_count: 0,
+            type: 'no_results',
+            message: "No place results found for your query."
+          }
         };
       }
-    } catch (error) {
-      console.error("❌ [GOOGLE MAPS] Error:", error);
-      throw error;
+      return successResponse;
+
+    } catch (error: any) {
+      console.error(`${logPrefix} Error:`, error);
+      // Remove Zod error handling
+      // Return standard UtilityErrorResponse
+      return {
+        status: 'error',
+        error: 'Failed to search Google Maps',
+        details: error instanceof Error ? error.message : String(error)
+      };
     }
   }
 };
 
 // Register the utility
-registry.register(googleMaps);
+registry.register(googleMapsUtility);
 
 // Export the utility
-export default googleMaps; 
+export default googleMapsUtility; 

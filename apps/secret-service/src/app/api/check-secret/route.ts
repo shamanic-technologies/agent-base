@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if the secret exists
-    const result: CheckSecretResponse = await checkSecretExists(userId, secretType);
+    const result: CheckSecretResponse = await checkSecretExists({ userId, secretType });
 
     return NextResponse.json(result, { status: 200 });
   } catch (error) {

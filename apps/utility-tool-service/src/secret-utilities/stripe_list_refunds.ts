@@ -5,10 +5,12 @@
  * If keys are not available, provides an API endpoint for the user to submit their keys
  */
 import axios from 'axios';
+import { z } from 'zod'; // Import Zod
 import { 
   UtilityTool,
   SetupNeededResponse,
-  UtilityErrorResponse
+  UtilityErrorResponse,
+  UtilityToolSchema // Import if needed
 } from '../types/index.js';
 import { registry } from '../registry/registry.js';
 import {
@@ -37,29 +39,53 @@ interface StripeListRefundsParams {
  */
 const stripeListRefundsUtility: UtilityTool = {
   id: 'stripe_list_refunds',
-  description: 'List Stripe refunds, optionally filtered by customer or other criteria.',
+  description: 'List Stripe refunds, optionally filtered by charge ID.',
+  // Update schema to match Record<string, UtilityToolSchema>
   schema: {
-    limit: { type: 'number', optional: true, description: 'Maximum number of refunds to return (1-100)' },
-    starting_after: { type: 'string', optional: true, description: 'Cursor for pagination (refund ID)' },
-    ending_before: { type: 'string', optional: true, description: 'Cursor for pagination (refund ID)' },
-    charge_id: { type: 'string', optional: true, description: 'Only return refunds for a specific charge ID.' },
-    // Removed customer_id as Stripe refunds list doesn't filter by customer directly
+    limit: { // Parameter name
+      zod: z.number().int().positive().max(100)
+            .describe('Maximum number of refunds to return (1-100, default 10)')
+            .optional(),
+      examples: [10, 50]
+    },
+    starting_after: { // Parameter name
+      zod: z.string().startsWith('re_') // Refund IDs start with re_
+            .describe('Cursor for pagination (refund ID to start after)')
+            .optional(),
+      examples: ['re_1J23456789abcdef']
+    },
+    ending_before: { // Parameter name
+      zod: z.string().startsWith('re_') // Refund IDs start with re_
+            .describe('Cursor for pagination (refund ID to end before)')
+            .optional(),
+      examples: ['re_9K87654321fedcba']
+    },
+    charge_id: { // Parameter name
+      zod: z.string().startsWith('ch_') // Charge IDs start with ch_
+            .describe('Only return refunds for a specific charge ID')
+            .optional(), // Marked optional in schema, but required in current execute logic.
+      examples: ['ch_1J23456789abcdef']
+    }
   },
   
   execute: async (userId: string, conversationId: string, params: StripeListRefundsParams): Promise<StripeTransactionsResponse> => {
     const logPrefix = '💸 [STRIPE_LIST_REFUNDS]';
     try {
-      // Extract parameters with defaults
+      // Use raw params
       const { 
         limit = 10,
         starting_after,
         ending_before,
-        charge_id
+        charge_id // Use raw param
       } = params || {};
       
       if (!userId || !conversationId) {
         console.error(`${logPrefix} Missing userId or conversationId`);
-        return formatStripeErrorResponse({ message: 'Internal server error: Missing user or conversation context.' });
+        // Ensure formatStripeErrorResponse can handle this or return UtilityErrorResponse directly
+        return {
+            status: 'error',
+            error: 'Missing user or conversation context.'
+        };
       }
       
       // Get necessary environment variables
@@ -81,21 +107,21 @@ const stripeListRefundsUtility: UtilityTool = {
       if (starting_after) queryParams.starting_after = starting_after;
       if (ending_before) queryParams.ending_before = ending_before;
       
-      // Add charge filter if provided
+      // Add charge filter if provided - CURRENT LOGIC REQUIRES IT
       if (charge_id) {
         queryParams.charge = charge_id; // Use the correct param name for Stripe API
       } else {
-        // According to Stripe docs, listing refunds requires *either* charge OR payment_intent
-        // This utility seems designed to list refunds for a specific charge.
-        // If charge_id is not provided, we should return an error or clarify the utility's purpose.
+        // Keep the requirement based on current logic. If this should be optional, API call needs change.
         console.error(`${logPrefix} Missing required parameter: charge_id`);
-        return formatStripeErrorResponse({ message: 'Missing required parameter: charge_id is needed to list refunds.' });
+        return { 
+            status: 'error',
+            error: 'Missing required parameter: charge_id is needed to list refunds.' 
+        };
       }
       
       console.log(`${logPrefix} Calling Stripe API: GET /v1/refunds with params:`, queryParams);
       
       // Make the request to Stripe API
-      // Note: Stripe lists refunds under /v1/refunds, optionally filtered by charge
       const stripeResponse = await axios.get(
         `https://api.stripe.com/v1/refunds`, // Use the correct refunds endpoint
         {
@@ -135,6 +161,7 @@ const stripeListRefundsUtility: UtilityTool = {
       return successResponse;
     } catch (error: any) {
       console.error("❌ [STRIPE_LIST_REFUNDS] Error:", error);
+      // Remove Zod error handling
       return formatStripeErrorResponse(error);
     }
   }

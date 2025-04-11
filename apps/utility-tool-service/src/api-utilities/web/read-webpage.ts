@@ -4,7 +4,8 @@
  * Extracts content from web pages using the FireCrawl API and returns it in markdown format.
  * Useful for fetching clean, LLM-friendly content from websites.
  */
-import { UtilityTool } from '../../types/index.js';
+import { z } from 'zod'; // Import Zod
+import { UtilityTool, UtilityToolSchema, UtilityErrorResponse } from '../../types/index.js';
 import { registry } from '../../registry/registry.js';
 
 // --- Local Type Definitions ---
@@ -14,8 +15,22 @@ export interface FireCrawlExtractContentRequest {
   onlyMainContent?: boolean;
 }
 // Assuming success response is the complex object returned by FireCrawl
-// Assuming error is handled by throwing
-type ReadWebPageResponse = any; // Use specific type if known, or keep 'any'
+// Define a more specific success response type
+interface ReadWebPageSuccessResponse {
+    status: 'success';
+    data: {
+        url: string;
+        title?: string | null;
+        favicon?: string | null;
+        markdown?: string | null;
+        language?: string | null;
+        word_count?: number;
+        detected_content_type?: string | null;
+        extracted_at: string;
+    };
+}
+
+type ReadWebPageResponse = ReadWebPageSuccessResponse | UtilityErrorResponse;
 // --- End Local Definitions ---
 
 /**
@@ -23,41 +38,48 @@ type ReadWebPageResponse = any; // Use specific type if known, or keep 'any'
  */
 const readWebPage: UtilityTool = {
   id: 'utility_read_webpage',
-  description: 'Read the content of a webpage',
+  description: 'Read the content of a webpage using Firecrawl API',
+  // Update schema to match Record<string, UtilityToolSchema>
   schema: {
-    url: {
-      type: 'string',
-      description: 'The URL to fetch content from (must include http:// or https://)'
+    url: { // Parameter name
+      zod: z.string().url()
+            .describe('The URL to fetch content from (must include http:// or https://)'),
+      // Not optional
+      examples: ['https://example.com', 'http://blog.example.com/article']
     },
-    onlyMainContent: {
-      type: 'boolean',
-      optional: true,
-      description: 'Whether to extract only the main content without navigation, headers, footers, etc. (default: true)'
+    onlyMainContent: { // Parameter name
+      zod: z.boolean()
+            .describe('Whether to extract only the main content without navigation, headers, footers, etc. (default: true)')
+            .optional(),
+      examples: [true, false]
     }
   },
   
   execute: async (userId: string, conversationId: string, params: FireCrawlExtractContentRequest): Promise<ReadWebPageResponse> => {
+    const logPrefix = '🔥 [FIRECRAWL]';
     try {
-      // Extract and validate parameters
-      const { url, onlyMainContent = true } = params;
+      // Use raw params, assuming validation happens elsewhere
+      const { url, onlyMainContent = true } = params || {}; // Use raw params
       
+      // Basic validation still useful within execute if not relying on central validation
       if (!url || typeof url !== 'string') {
-        throw new Error("URL is required and must be a string");
+        return { status: 'error', error: "URL is required and must be a string" };
       }
-      
-      // Validate URL format
       if (!url.match(/^https?:\/\/.+/)) {
-        throw new Error("Invalid URL format. URL must start with http:// or https://");
+        return { status: 'error', error: "Invalid URL format. URL must start with http:// or https://" };
       }
       
-      console.log(`🔥 [FIRECRAWL] Extracting content from: "${url}" (onlyMainContent: ${onlyMainContent})`);
+      console.log(`${logPrefix} Extracting content from: "${url}" (onlyMainContent: ${onlyMainContent})`);
       
       // Use FireCrawl API to fetch content from the URL
       const apiKey = process.env.FIRECRAWL_API_KEY;
       if (!apiKey) {
-        throw new Error("FIRECRAWL_API_KEY is not configured in environment variables");
+        console.error(`${logPrefix} FIRECRAWL_API_KEY not set`);
+        return { status: 'error', error: "Service configuration error: FIRECRAWL_API_KEY is not set." };
       }
-      console.log('Firecrawl apiKey', apiKey);
+      
+      console.log('Firecrawl apiKey length:', apiKey.length); // Log length instead of key
+      
       const response = await fetch("https://api.firecrawl.dev/v1/scrape", {
         method: "POST",
         headers: {
@@ -66,42 +88,59 @@ const readWebPage: UtilityTool = {
         },
         body: JSON.stringify({
           url: url,
-          onlyMainContent: onlyMainContent,
-          formats: ["markdown"] // Removed "text" as it's invalid according to FireCrawl API
+          pageOptions: { // Use pageOptions as per Firecrawl docs
+            onlyMainContent: onlyMainContent,
+            formats: ["markdown"] // Keep if markdown is specifically needed
+          },
         })
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`FireCrawl API error (${response.status}): ${errorText}`);
+        console.error(`${logPrefix} FireCrawl API error (${response.status}): ${errorText}`);
+        return {
+            status: 'error',
+            error: `Webpage scrape failed (HTTP ${response.status})`,
+            details: errorText
+        };
       }
 
-      const data = await response.json();
+      const firecrawlData = await response.json();
       
-      if (!data.success) {
-        throw new Error(`Failed to fetch content: ${data.message || 'No error message provided'}`);
+      if (!firecrawlData || !firecrawlData.success || !firecrawlData.data) {
+        console.error(`${logPrefix} FireCrawl response indicated failure or missing data:`, firecrawlData);
+        return {
+            status: 'error',
+            error: 'Failed to extract content from webpage',
+            details: firecrawlData?.message || 'FireCrawl API did not return valid data.'
+        };
       }
 
-      // Check if the response contains content
-      if (!data.data || (!data.data.markdown && !data.data.text)) {
-        throw new Error("The URL was accessed but no content was found");
-      }
-
-      // Return the extraction results
-      return {
-        url: url,
-        title: data.data.title || null,
-        favicon: data.data.favicon || null,
-        markdown: data.data.markdown || null,
-        text: data.data.text || null,
-        language: data.data.language || null,
-        word_count: data.data.word_count || 0,
-        detected_content_type: data.data.contentType || null,
-        extracted_at: new Date().toISOString()
+      // Return the extraction results in standard format
+      const successResponse: ReadWebPageSuccessResponse = {
+        status: 'success',
+        data: {
+          url: url,
+          title: firecrawlData.data.metadata?.title || firecrawlData.data.title || null,
+          favicon: firecrawlData.data.metadata?.ogImage || firecrawlData.data.favicon || null, // Prefer ogImage if available
+          markdown: firecrawlData.data.markdown || null,
+          language: firecrawlData.data.metadata?.language || null,
+          word_count: firecrawlData.data.content?.split(' ').length || 0, // Simple word count
+          detected_content_type: firecrawlData.data.metadata?.sourceURL?.includes('.pdf') ? 'application/pdf' : 'text/html', // Basic detection
+          extracted_at: new Date().toISOString()
+        }
       };
-    } catch (error) {
-      console.error("❌ [FIRECRAWL] Error:", error);
-      throw error;
+      return successResponse;
+
+    } catch (error: any) {
+      console.error(`${logPrefix} Error:`, error);
+      // Remove Zod error handling
+      // Return standard UtilityErrorResponse
+      return {
+        status: 'error',
+        error: 'Failed to read webpage content',
+        details: error instanceof Error ? error.message : String(error)
+      };
     }
   }
 };

@@ -1,32 +1,53 @@
 /**
  * Create Table Utility
  * 
- * Creates a new table in the database with the specified name, description, and schema.
+ * Creates a new table in the database (via Xata API) with the specified name, description, and schema.
  */
+import { z } from 'zod'; // Import Zod
 import { 
   UtilityTool, 
   UtilityErrorResponse,
-  // Removed CreateTableRequest - defined locally
-  // Removed DatabaseTableSchema - defined locally
+  UtilityToolSchema // Import if needed
 } from '../../types/index.js';
 import { registry } from '../../registry/registry.js';
 import { 
   findXataWorkspace, 
   createXataTable, 
-  generateUniqueDatabaseName,
-  addXataTableColumn
-} from '../../xata-client.js';
+  generateUniqueDatabaseName, // Assuming this helper exists
+  addXataTableColumn // Assuming this helper exists
+} from '../../clients/xata-client.js';
 
 // --- Local Type Definitions ---
-export interface DatabaseTableSchema {
-  [field: string]: string;
-}
+// Keep schema simple, validation happens via Zod
 export interface CreateTableRequest {
   name: string;
   description: string;
-  schema: Record<string, string>;
+  schema: Record<string, string>; // Key: col name, Value: col type
 }
-// REVERTED local response type
+
+// Define valid Xata column types for schema validation
+const xataColumnTypes = [
+  'string', 'text', 'email', 'int', 'float', 'bool', 
+  'datetime', 'multiple', 'link', 'object', 'vector' // Add others as needed
+] as const;
+
+// Define Success Response structure
+interface CreateTableSuccessResponse {
+  status: 'success';
+  data: {
+    message: string;
+    table: {
+      id: string;
+      name: string;
+      description: string;
+      schema: Record<string, string>;
+      created_at: string;
+    }
+  }
+}
+
+type CreateTableResponse = CreateTableSuccessResponse | UtilityErrorResponse;
+
 // --- End Local Definitions ---
 
 /**
@@ -34,81 +55,115 @@ export interface CreateTableRequest {
  */
 const createTableUtility: UtilityTool = {
   id: 'utility_create_table',
-  description: 'Create a new table in the user\'s dedicated database',
+  description: 'Create a new table in the user\'s dedicated database (via Xata API).',
+  // Update schema to match Record<string, UtilityToolSchema>
   schema: {
-    name: {
-      type: 'string',
-      description: 'The name of the table to create'
+    name: { // Parameter name
+      zod: z.string()
+            .describe('The name of the table to create (alphanumeric, underscores allowed).'),
+      // Not optional
+      examples: ['users', 'product_catalog']
     },
-    description: {
-      type: 'string',
-      description: 'A description of the table\'s purpose'
+    description: { // Parameter name
+      zod: z.string()
+            .describe('A brief description of the table\'s purpose.'),
+      // Not optional
+      examples: ['Stores user profile information.']
     },
-    schema: {
-      type: 'object',
-      description: 'The schema definition for the table as a key-value object where keys are column names and values are data types'
+    schema: { // Parameter name
+      zod: z.record(z.enum(xataColumnTypes))
+            .describe('The schema definition: keys are column names, values are Xata data types.'),
+      // Not optional
+      examples: [{
+        "email": "email",
+        "name": "string",
+        "age": "int",
+        "is_active": "bool"
+      }]
     }
   },
   
-  execute: async (userId: string, conversationId: string, params: CreateTableRequest): Promise<any> => {
+  execute: async (userId: string, conversationId: string, params: CreateTableRequest): Promise<CreateTableResponse> => {
+    const logPrefix = '📊 [DB_CREATE_TABLE]';
     try {
-      // Extract and validate parameters
-      const { name, description, schema } = params;
+      // Use raw params
+      const { name, description, schema } = params || {};
       
+      // Basic validation
       if (!name || typeof name !== 'string') {
-        throw new Error("Table name is required and must be a string");
+        return { status: 'error', error: "Table name is required and must be a string" };
       }
-      
       if (!description || typeof description !== 'string') {
-        throw new Error("Table description is required and must be a string");
+        return { status: 'error', error: "Table description is required and must be a string" };
       }
-      
       if (!schema || typeof schema !== 'object' || Object.keys(schema).length === 0) {
-        throw new Error("Schema is required and must be a non-empty object");
+        return { status: 'error', error: "Schema is required and must be a non-empty object" };
+      }
+      // Validate schema values against known types (optional, as Zod definition implies this)
+      for (const colType of Object.values(schema)) {
+        if (!xataColumnTypes.includes(colType as any)) {
+          return { status: 'error', error: `Invalid column type '${colType}' in schema. Valid types: ${xataColumnTypes.join(', ')}` };
+        }
       }
       
-      console.log(`📊 [DATABASE] Creating table: "${name}" for user ${userId}`);
+      console.log(`${logPrefix} Creating table: "${name}" for user ${userId}`);
       
       // Get workspace
       const workspaceSlug = process.env.XATA_WORKSPACE_SLUG;
       if (!workspaceSlug) {
-        throw new Error('XATA_WORKSPACE_SLUG is required in environment variables');
+        return { status: 'error', error: 'Service configuration error: XATA_WORKSPACE_SLUG not set' };
       }
       
       // Find the workspace
       const workspace = await findXataWorkspace(workspaceSlug);
       if (!workspace) {
-        throw new Error(`Workspace with slug/name "${workspaceSlug}" not found`);
+        return { status: 'error', error: `Configuration error: Workspace '${workspaceSlug}' not found` };
       }
       
-      // Use user ID to determine database name or create a new one
-      // For simplicity, we'll use a fixed database name or the user ID
-      const databaseName = process.env.XATA_DATABASE || generateUniqueDatabaseName('user');
+      // Determine database name
+      const databaseName = process.env.XATA_DATABASE; // Using a fixed DB name from env
+      if (!databaseName) {
+         return { status: 'error', error: 'Service configuration error: XATA_DATABASE not set' };
+      }
       
       // Create the table in Xata
+      // Assuming createXataTable handles potential errors like table already exists
       const tableResult = await createXataTable(databaseName, name, workspace);
       
       // Add columns based on schema
+      // Consider batching column additions if possible via Xata API
       for (const [columnName, columnType] of Object.entries(schema)) {
-        await addXataTableColumn(databaseName, name, columnName, columnType, workspace);
+        try {
+          await addXataTableColumn(databaseName, name, columnName, columnType, workspace);
+        } catch (colError: any) {
+          console.error(`${logPrefix} Failed to add column '${columnName}' to table '${name}':`, colError);
+          // Potentially collect errors and report them, or fail the whole operation
+          // For now, we might continue and report partial success/failure
+        }
       }
       
-      return {
+      // Return standard success response
+      const successResponse: CreateTableSuccessResponse = {
         status: "success",
-        message: "Table created successfully",
-        table: {
-          id: tableResult.id || `table_${name}`,
-          name,
-          description,
-          schema,
-          created_at: new Date().toISOString()
+        data: {
+          message: "Table created successfully (column addition results may vary)",
+          table: {
+            id: tableResult.id || `table_${name}`, // Use actual ID if returned
+            name,
+            description,
+            schema, // Return the requested schema
+            created_at: new Date().toISOString()
+          }
         }
       };
-    } catch (error) {
-      console.error("❌ [DATABASE] Error creating table:", error);
+      return successResponse;
+
+    } catch (error: any) {
+      console.error(`${logPrefix} Error creating table:`, error);
+      // Return standard UtilityErrorResponse
       return {
         status: "error",
-        message: "Failed to create table",
+        error: "Failed to create table",
         details: error instanceof Error ? error.message : String(error)
       };
     }

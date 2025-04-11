@@ -5,11 +5,13 @@
  * Requires OAuth authentication with gmail.modify scope
  */
 import axios from 'axios';
+import { z } from 'zod';
 import { google } from 'googleapis';
 import { 
   UtilityTool,
   SetupNeededResponse,
-  UtilityErrorResponse
+  UtilityErrorResponse,
+  UtilityToolSchema // Import if needed
 } from '../types/index.js';
 import { registry } from '../registry/registry.js';
 
@@ -64,32 +66,36 @@ export type GmailReadResponse =
 const gmailReadUtility: UtilityTool = {
   id: 'utility_gmail_read',
   description: 'Read emails from Gmail using the Gmail API with proper OAuth authentication',
+  // Revert schema to Record<string, UtilityToolSchema>
   schema: {
-    query: {
-      type: 'string',
-      optional: true,
-      description: 'Search query to filter emails (same format as Gmail search)'
+    query: { // Parameter name as key
+      zod: z.string()
+            .describe('Search query to filter emails (same format as Gmail search)')
+            .optional(),
+      examples: ['from:no-reply@example.com', 'is:unread subject:Important']
     },
-    maxResults: {
-      type: 'number',
-      optional: true,
-      description: 'Maximum number of emails to return (default: 10)'
+    maxResults: { // Parameter name as key
+      zod: z.number().int().positive()
+            .describe('Maximum number of emails to return (default: 10)')
+            .optional(),
+      examples: [5, 20, 50]
     },
-    labelIds: {
-      type: 'array',
-      optional: true,
-      description: 'Array of label IDs to filter emails by (e.g., "INBOX", "UNREAD")'
+    labelIds: { // Parameter name as key
+      zod: z.array(z.string())
+            .describe('Array of label IDs to filter emails by (e.g., ["INBOX", "UNREAD"])')
+            .optional(),
+      examples: [['INBOX'], ['SENT', 'IMPORTANT'], ['UNREAD']]
     }
   },
   
   execute: async (userId: string, conversationId: string, params: GmailReadRequest): Promise<GmailReadResponse> => {
     try {
-      // Extract parameters with defaults
+      // Remove internal Zod validation, use raw params
       const { 
         query = '',
         maxResults = 10,
         labelIds = ['INBOX'],
-      } = params || {};
+      } = params || {}; // Use raw params directly
       
       console.log(`📧 [GMAIL_READ] Reading emails for user with query: ${query}`);
       
@@ -229,6 +235,7 @@ const gmailReadUtility: UtilityTool = {
         })
       );
       
+      // Return the specific GmailSuccessResponse
       const successResponse: GmailSuccessResponse = {
         status: 'success',
         count: messages.length,
@@ -239,7 +246,9 @@ const gmailReadUtility: UtilityTool = {
       
     } catch (error) {
       console.error("❌ [GMAIL_READ] Error:", error);
-      
+
+      // Remove Zod-specific error handling
+
       // Prepare UtilityErrorResponse for caught errors
       let errorResponse: UtilityErrorResponse;
       if (axios.isAxiosError(error) && error.response && error.response.status === 401) {
@@ -248,10 +257,18 @@ const gmailReadUtility: UtilityTool = {
           error: "Authentication failed. You may need to re-authenticate.",
           details: "Your session may have expired or permissions changed."
         };
-      } else {
+      } else if (axios.isAxiosError(error) && error.response) {
+        // Handle other API errors
         errorResponse = {
           status: 'error',
-          error: "Failed to read emails from Gmail",
+          error: `Gmail API error (${error.response.status}): ${error.response.data?.error?.message || 'Unknown API error'}`,
+          details: JSON.stringify(error.response.data)
+        };
+      } else {
+        // Handle non-Axios errors
+        errorResponse = {
+          status: 'error',
+          error: "Failed to read Gmail messages",
           details: error instanceof Error ? error.message : String(error)
         };
       }

@@ -5,10 +5,12 @@
  * If keys are not available, provides an API endpoint for the user to submit their keys
  */
 import axios from 'axios';
+import { z } from 'zod'; // Import Zod
 import {
   UtilityTool,
   SetupNeededResponse,
-  UtilityErrorResponse
+  UtilityErrorResponse,
+  UtilityToolSchema // Import if needed
 } from '../types/index.js';
 import { registry } from '../registry/registry.js';
 import {
@@ -23,16 +25,19 @@ import {
 
 /**
  * Represents a successful response when fetching a Stripe customer.
+ * Encapsulate data within a 'data' property for consistency.
  */
 interface StripeGetCustomerSuccessResponse {
   status: 'success';
-  customer_id: string;
-  email?: string | null;
-  name?: string | null;
-  phone?: string | null;
-  created: string;
-  currency?: string | null;
-  // Add other relevant customer fields from Stripe API
+  data: {
+    customer_id: string;
+    email?: string | null;
+    name?: string | null;
+    phone?: string | null;
+    created: string;
+    currency?: string | null;
+    // Add other relevant customer fields from Stripe API
+  }
 }
 
 /**
@@ -58,17 +63,26 @@ interface StripeGetCustomerParams {
 const stripeGetCustomerUtility: UtilityTool = {
   id: 'stripe_get_customer',
   description: 'Retrieves details for a specific Stripe customer by ID.',
+  // Update schema to match Record<string, UtilityToolSchema>
   schema: {
-    customer_id: { type: 'string', optional: false, description: 'The ID of the Stripe customer (e.g., cus_...).' }
+    customer_id: { // Parameter name as key
+      zod: z.string().startsWith('cus_').describe('The ID of the Stripe customer (must start with cus_).'),
+      // No optional flag needed, Zod schema is not optional by default
+      examples: ['cus_PqKWHRv7K3sk3h']
+    }
   },
   
   execute: async (userId: string, conversationId: string, params: StripeGetCustomerParams): Promise<StripeGetCustomerResponse> => {
     const logPrefix = '👤 [STRIPE_GET_CUSTOMER]';
     try {
-      // Validate required parameters
+      // Use raw params, assuming validation happens elsewhere
       if (!params?.customer_id) {
         console.error(`${logPrefix} Missing required parameter: customer_id`);
-        return formatStripeErrorResponse({ message: 'Missing required parameter: customer_id.' });
+        // Return standard UtilityErrorResponse
+        return {
+            status: 'error',
+            error: 'Missing required parameter: customer_id.'
+        };
       }
       
       const { customer_id } = params;
@@ -99,16 +113,18 @@ const stripeGetCustomerUtility: UtilityTool = {
       console.log(`${logPrefix} Stripe API response status: ${stripeResponse.status}`);
       const customer = stripeResponse.data;
       
-      // Construct success response
+      // Construct success response with data encapsulation
       const successResponse: StripeGetCustomerSuccessResponse = {
         status: 'success',
-        customer_id: customer.id,
-        email: customer.email,
-        name: customer.name,
-        phone: customer.phone,
-        created: new Date(customer.created * 1000).toISOString(),
-        currency: customer.currency
-        // Map other fields as needed
+        data: { // Encapsulate result in data object
+          customer_id: customer.id,
+          email: customer.email,
+          name: customer.name,
+          phone: customer.phone,
+          created: new Date(customer.created * 1000).toISOString(),
+          currency: customer.currency
+          // Map other fields as needed
+        }
       };
       
       return successResponse;
@@ -117,11 +133,13 @@ const stripeGetCustomerUtility: UtilityTool = {
       console.error("❌ [STRIPE_GET_CUSTOMER] Error:", error);
       // Specific check for 404 Customer Not Found
       if (axios.isAxiosError(error) && error.response?.status === 404) {
-        return formatStripeErrorResponse({ 
-            message: `Stripe customer with ID '${params?.customer_id}' not found.`, 
-            details: error.response?.data?.error?.message 
-        });
+        return {
+            status: 'error',
+            error: `Stripe customer with ID '${params?.customer_id}' not found.`,
+            details: error.response?.data?.error?.message
+        };
       }
+      // Use the utility function which should return UtilityErrorResponse
       return formatStripeErrorResponse(error);
     }
   }
