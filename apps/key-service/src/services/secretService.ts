@@ -55,7 +55,7 @@ export async function getSecret(userId: string, keyId: string): Promise<string |
     console.log(`Retrieving secret for user ${userId}, key ${keyId}`);
     
     const response = await axios.get<GetSecretResponse>(
-      `${SECRET_SERVICE_URL}/api/get-secret/${secretType}`,
+      `${SECRET_SERVICE_URL}/api/get-secret?secretType=${secretType}`,
       {
         headers: { 'x-user-id': userId }
       }
