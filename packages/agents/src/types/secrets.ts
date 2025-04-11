@@ -7,10 +7,17 @@ import { BaseResponse } from './common.js';
  * Request to store a secret
  */
 export interface StoreSecretRequest {
-  /** Type/identifier of the secret (e.g. 'api_key_123456') */
   secretType: string;
-  /** Value to be stored securely */
   secretValue: string | object;
+}
+
+export interface CheckSecretRequest {
+  userId: string;
+  secretType: string;
+}
+
+export interface CheckSecretResponse extends BaseResponse {
+  exists: boolean;
 }
 
 /**
@@ -18,6 +25,14 @@ export interface StoreSecretRequest {
  */
 export interface StoreSecretResponse extends BaseResponse {
   message?: string;
+}
+
+/**
+ * Request for retrieving a secret
+ */
+export interface GetSecretRequest {
+  userId: string;
+  secretType: string;
 }
 
 /**

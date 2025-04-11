@@ -5,11 +5,12 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { checkSecretExists } from '@/lib/google-secret-manager';
+import { CheckSecretRequest, CheckSecretResponse } from '@agent-base/agents';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userId, secretType } = body;
+    const { userId, secretType } : CheckSecretRequest = body;
 
     // Validate required parameters
     if (!userId) {
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if the secret exists
-    const result = await checkSecretExists(userId, secretType);
+    const result: CheckSecretResponse = await checkSecretExists(userId, secretType);
 
     return NextResponse.json(result, { status: 200 });
   } catch (error) {

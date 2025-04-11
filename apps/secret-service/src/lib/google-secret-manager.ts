@@ -4,6 +4,7 @@
  * Provides an abstraction layer for interacting with Google Secret Manager
  */
 // @ts-ignore - Ignore type checking for this import
+import { CheckSecretRequest, CheckSecretResponse, GetSecretRequest, GetSecretResponse, StoreSecretRequest, StoreSecretResponse } from '@agent-base/agents';
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 
 // Initialize the Secret Manager client
@@ -24,12 +25,10 @@ if (!projectId) {
  * @param secretValue The value to store (will be stringified)
  * @returns Success status and message
  */
-export async function storeSecret(
-  userId: string,
-  secretType: string,
-  secretValue: any
-): Promise<{ success: boolean; message?: string; error?: string }> {
+export async function storeSecret(request: StoreSecretRequest, userId: string): Promise<StoreSecretResponse> {
   try {
+    const { secretType, secretValue } = request;
+
     if (!projectId) {
       throw new Error('GOOGLE_PROJECT_ID environment variable is not set');
     }
@@ -82,13 +81,13 @@ export async function storeSecret(
     });
 
     console.log(`Created secret ${secretId} with version: ${version.name}`);
-    return { success: true, message: 'Secret created successfully' };
+    return { success: true, message: 'Secret created successfully' } as StoreSecretResponse;
   } catch (error) {
     console.error('Error storing secret:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error storing secret',
-    };
+    } as StoreSecretResponse;
   }
 }
 
@@ -99,11 +98,10 @@ export async function storeSecret(
  * @param secretType The type of secret (e.g., 'stripe_api_keys')
  * @returns Whether the secret exists
  */
-export async function checkSecretExists(
-  userId: string,
-  secretType: string
-): Promise<{ exists: boolean; error?: string }> {
+export async function checkSecretExists(request: CheckSecretRequest): Promise<CheckSecretResponse> {
   try {
+    const { userId, secretType } = request;
+
     if (!projectId) {
       throw new Error('GOOGLE_PROJECT_ID environment variable is not set');
     }
@@ -117,11 +115,11 @@ export async function checkSecretExists(
         name,
       });
 
-      return { exists: !!secret };
+      return { exists: !!secret, success: true };
     } catch (error: unknown) {
       // If the error is "NOT_FOUND", the secret doesn't exist
       if (typeof error === 'object' && error !== null && 'code' in error && (error as any).code === 5) { // 5 is the gRPC code for NOT_FOUND
-        return { exists: false };
+        return { exists: false, success: true };
       }
       throw error;
     }
@@ -129,6 +127,7 @@ export async function checkSecretExists(
     console.error('Error checking if secret exists:', error);
     return {
       exists: false,
+      success: false,
       error: error instanceof Error ? error.message : 'Unknown error checking secret',
     };
   }
@@ -141,11 +140,10 @@ export async function checkSecretExists(
  * @param secretType The type of secret (e.g., 'stripe_api_keys')
  * @returns The secret value (parsed from JSON)
  */
-export async function getSecret(
-  userId: string,
-  secretType: string
-): Promise<{ success: boolean; data?: any; error?: string }> {
+export async function getSecret(request: GetSecretRequest): Promise<GetSecretResponse> {
   try {
+    const { userId, secretType } = request;
+
     if (!projectId) {
       throw new Error('GOOGLE_PROJECT_ID environment variable is not set');
     }

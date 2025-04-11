@@ -5,7 +5,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { getSecret } from '@/lib/google-secret-manager';
-import { GetSecretResponse, ErrorResponse, ServiceResponse } from '@agent-base/agents';
+import { GetSecretResponse, ErrorResponse, GetSecretRequest } from '@agent-base/agents';
 
 /**
  * GET handler for retrieving secrets
@@ -58,7 +58,7 @@ export async function GET(
       return NextResponse.json(errorResponse, { status: 400 });
     }
 
-    const result = await getSecret(userIdFromHeader, secretType);
+    const result: GetSecretResponse = await getSecret({ userId: userIdFromHeader, secretType } as GetSecretRequest);
 
     if (!result.success) {
       console.log(`Secret not found for user_id: ${userIdFromHeader}, secretType: ${secretType}`);
@@ -72,9 +72,7 @@ export async function GET(
     console.log(`Successfully retrieved secret for user_id: ${userIdFromHeader}, secretType: ${secretType}`);
     const response: GetSecretResponse = {
       success: true,
-      data: {
-        value: result.data
-      }
+      data: result.data ? {value: result.data} : undefined
     };
 
     return NextResponse.json(response, { status: 200 });
