@@ -1,65 +1,55 @@
 /**
- * MOCK Crisp Subscribe Message Send Utility
+ * Crisp Subscribe Message Send Utility
  * 
- * Simulates sending a message via the Crisp Subscribe API.
- * NOTE: This is a mock and does not perform any real API calls.
+ * Sets up a Crisp webhook subscription to forward messages.
  */
-import { UtilityTool } from '../types/index.js';
+// Remove Zod import if not needed
+// import { z } from 'zod'; 
+import { UtilityTool, SetupNeededResponse, UtilityErrorResponse } from '../types/index.js';
 import { registry } from '../registry/registry.js';
-import { SetupNeededResponse } from '../types/index.js';
 import { 
   checkCrispWebsiteId, 
   getCrispWebsiteId, 
   getCrispEnvironmentVariables,
-  generateSetupNeededResponse
+  generateSetupNeededResponse,
+  CrispWebsiteDetails
 } from '../clients/crisp-utils.js';
 
 // --- Request Parameters --- 
-interface CrispSubscribeMessageSendRequest {
-  // No required parameters
-}
+// No parameters for this utility
 
 // --- Response Types --- 
 interface CrispSubscribeSuccessResponse {
-  success: true;
-  message: {
-    id: string;
-    status: string;
-    content: string;
-    snippet: string;
-    session_id: string;
-    created: number;
+  status: 'success'; // Standard success status
+  data: {
+    webhook_id: string;
+    message: string;
   };
 }
 
-interface CrispSubscribeErrorResponse {
-  success: false;
-  error: string;
-  details?: string;
-}
-
-type CrispSubscribeResponse = CrispSubscribeSuccessResponse | CrispSubscribeErrorResponse | SetupNeededResponse;
+// Update the combined response type
+type CrispSubscribeResponse = CrispSubscribeSuccessResponse | SetupNeededResponse | UtilityErrorResponse;
 
 // --- Utility Definition --- 
 const crispSubscribeMessageSendUtility: UtilityTool = {
   id: 'utility_crisp_subscribe_message_send',
-  description: 'Set up a Crisp webhook that makes the chat visitors messages to be sent to the agent calling this tool',
-  schema: {
-    // No required inputs
-  },
+  description: 'Sets up a Crisp webhook to forward visitor messages to the agent.',
+  schema: {}, 
   
   execute: async (
       userId: string, 
       conversationId: string, 
-      params: CrispSubscribeMessageSendRequest,
+      params: any, // Params are expected but not used
       agentId?: string
   ): Promise<CrispSubscribeResponse> => {
-    console.log(`🔔 [CRISP / crisp_subscribe_message_send] Executing for user: ${userId}, conversation: ${conversationId}`);
+    const logPrefix = '🔔 [CRISP_SUBSCRIBE]';
+    console.log(`${logPrefix} Executing for user: ${userId}, conversation: ${conversationId}`);
     if (agentId) {
-      console.log(`🔔 [CRISP / crisp_subscribe_message_send] Request made by agent: ${agentId}`);
+      console.log(`${logPrefix} Request made by agent: ${agentId}`);
     }
     
     try {
+      // No validation needed for empty schema
 
       // Get environment variables
       const { secretServiceUrl, apiGatewayUrl } = getCrispEnvironmentVariables();
@@ -69,44 +59,31 @@ const crispSubscribeMessageSendUtility: UtilityTool = {
       
       // If we don't have the website ID, return setup needed response
       if (!exists) {
-        console.log(`🔔 [CRISP] No website ID found for user ${userId}`);
-        return generateSetupNeededResponse(userId, secretServiceUrl, "[CRISP]", agentId);
+        console.log(`${logPrefix} No website ID found for user ${userId}`);
+        return generateSetupNeededResponse(userId, secretServiceUrl, logPrefix, agentId);
       }
       
       // Get the website ID
-      const crispDetails = await getCrispWebsiteId(userId, secretServiceUrl);
-
-      // --- Mock API Call --- 
-      console.log(`🔔 [CRISP] Simulating sending message to Crisp:`);
-      console.log(`  - Website ID: ${crispDetails.websiteId}`);
- 
-      // For now, we'll simulate success without making a real API call
-      // In a real implementation, we would make a fetch to the Crisp API here
-      
-      // Simulate success - Format similar to Stripe response structure
-      const messageId = `msg_${Math.random().toString(36).substring(2, 15)}`;
-      const timestamp = Math.floor(Date.now() / 1000);
+      const crispDetails: CrispWebsiteDetails = await getCrispWebsiteId(userId, secretServiceUrl);
       
       const response: CrispSubscribeSuccessResponse = {
-        success: true,
-        message: {
-          id: messageId,
-          status: 'sent',
-          content: 'Hello from Crisp utility!',
-          snippet: 'Hello from Crisp utility!',
-          session_id: 'session_123',
-          created: timestamp
+        status: 'success', 
+        data: {
+          webhook_id: crispDetails.websiteId,
+          message: `Successfully simulated webhook setup for message:send event.`
         }
-      };
+      }; 
       
       return response;
 
     } catch (error) {
-      console.error("❌ [CRISP / crisp_subscribe_message_send] Error:", error);
+      console.error(`${logPrefix} Error:`, error);
+      
+      // Handle other errors - return standard UtilityErrorResponse
       return {
-        success: false,
-        error: error instanceof Error ? error.message : 'An unknown error occurred',
-        details: 'Error occurred while sending message to Crisp'
+        status: 'error', 
+        error: 'Failed to set up Crisp webhook subscription',
+        details: error instanceof Error ? error.message : String(error)
       };
     }
   }

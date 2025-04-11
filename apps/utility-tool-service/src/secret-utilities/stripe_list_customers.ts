@@ -5,10 +5,12 @@
  * If keys are not available, provides an API endpoint for the user to submit their keys
  */
 import axios from 'axios';
+import { z } from 'zod'; // Import Zod
 import {
   UtilityTool,
   SetupNeededResponse,
-  UtilityErrorResponse
+  UtilityErrorResponse,
+  UtilityToolSchema // Import if needed
 } from '../types/index.js';
 import { registry } from '../registry/registry.js';
 import {
@@ -72,22 +74,44 @@ interface StripeListCustomersParams {
 const stripeListCustomersUtility: UtilityTool = {
   id: 'stripe_list_customers',
   description: 'Lists customers in Stripe, optionally filtered by email or other criteria.',
+  // Update schema to match Record<string, UtilityToolSchema>
   schema: {
-    limit: { type: 'number', optional: true, description: 'Maximum number of customers to return (1-100, default 10).' },
-    email: { type: 'string', optional: true, description: 'Filter customers by email address.' },
-    starting_after: { type: 'string', optional: true, description: 'Cursor for pagination (customer ID).' },
-    ending_before: { type: 'string', optional: true, description: 'Cursor for pagination (customer ID).' },
+    limit: { // Parameter name
+      zod: z.number().int().positive().max(100)
+            .describe('Maximum number of customers to return (1-100, default 10).')
+            .optional(),
+      examples: [10, 50]
+    },
+    email: { // Parameter name
+      zod: z.string().email()
+            .describe('Filter customers by email address.')
+            .optional(),
+      examples: ['customer@example.com']
+    },
+    starting_after: { // Parameter name
+      zod: z.string().startsWith('cus_')
+            .describe('Cursor for pagination (customer ID to start after).')
+            .optional(),
+      examples: ['cus_PqKWHRv7K3sk3h']
+    },
+    ending_before: { // Parameter name
+      zod: z.string().startsWith('cus_')
+            .describe('Cursor for pagination (customer ID to end before).')
+            .optional(),
+      examples: ['cus_9K87654321fedcba']
+    }
   },
   
   execute: async (userId: string, conversationId: string, params: StripeListCustomersParams): Promise<StripeListCustomersResponse> => {
     const logPrefix = '👥 [STRIPE_LIST_CUSTOMERS]';
     try {
+      // Use raw params
       const { 
         limit = 10,
         email,
         starting_after,
         ending_before 
-      } = params || {};
+      } = params || {}; // Use raw params
       
       console.log(`${logPrefix} Listing customers for user: ${userId}, Filter: ${email ? `email=${email}` : 'none'}`);
       
@@ -100,7 +124,7 @@ const stripeListCustomersUtility: UtilityTool = {
       const stripeKeys = await getStripeApiKeys(userId, secretServiceUrl);
       
       // Construct query parameters
-      const queryParams: any = { limit: Math.min(limit, 100) };
+      const queryParams: any = { limit: Math.min(limit, 100) }; // Ensure limit is within bounds
       if (email) queryParams.email = email;
       if (starting_after) queryParams.starting_after = starting_after;
       if (ending_before) queryParams.ending_before = ending_before;
@@ -145,6 +169,7 @@ const stripeListCustomersUtility: UtilityTool = {
       
     } catch (error: any) {
       console.error("❌ [STRIPE_LIST_CUSTOMERS] Error:", error);
+      // Remove Zod error handling
       return formatStripeErrorResponse(error);
     }
   }

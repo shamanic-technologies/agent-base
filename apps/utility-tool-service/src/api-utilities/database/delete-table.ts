@@ -3,21 +3,36 @@
  * 
  * Removes a table from the database
  */
+import { z } from 'zod'; // Import Zod
 import { 
   UtilityTool, 
   UtilityErrorResponse,
-  // Removed DeleteTableRequest - defined locally
+  UtilityToolSchema // Import if needed
 } from '../../types/index.js';
 import { registry } from '../../registry/registry.js';
 import {
   findXataWorkspace
-} from '../../xata-client.js';
+} from '../../clients/xata-client.js';
 
 // --- Local Type Definitions ---
+// Keep schema simple, validation happens via Zod
 export interface DeleteTableRequest {
   table: string;
   confirm?: boolean;
 }
+
+// Define Success Response structure
+interface DeleteTableSuccessResponse {
+  status: 'success';
+  data: {
+    message: string;
+    table_name: string;
+    deleted_at: string;
+  }
+}
+
+type DeleteTableResponse = DeleteTableSuccessResponse | UtilityErrorResponse;
+
 // --- End Local Definitions ---
 
 /**
@@ -26,90 +41,107 @@ export interface DeleteTableRequest {
 const deleteTableUtility: UtilityTool = {
   id: 'utility_delete_table',
   description: 'Delete a table from the user\'s database',
+  // Update schema to match Record<string, UtilityToolSchema>
   schema: {
-    table: {
-      type: 'string',
-      description: 'The name of the table to delete'
+    table: { // Parameter name
+      zod: z.string()
+            .describe('The name of the table to delete.'),
+      // Not optional
+      examples: ['orders', 'inventory']
     },
-    confirm: {
-      type: 'boolean',
-      optional: true,
-      description: 'Confirmation that you want to delete the table (default: false)'
+    confirm: { // Parameter name
+      zod: z.boolean().optional()
+            .describe('Confirmation that you want to delete the table (default: false). Required to proceed with deletion.'),
+      // Optional
+      examples: [true]
     }
   },
   
-  execute: async (userId: string, conversationId: string, params: DeleteTableRequest): Promise<any> => {
+  execute: async (userId: string, conversationId: string, params: DeleteTableRequest): Promise<DeleteTableResponse> => {
+    const logPrefix = '📊 [DB_DELETE_TABLE]';
     try {
-      // Extract and validate parameters
-      const { table, confirm = false } = params;
+      // Use raw params
+      const { table, confirm = false } = params || {};
       
+      // Basic validation
       if (!table || typeof table !== 'string') {
-        throw new Error("Table name is required and must be a string");
+        return { status: 'error', error: "Table name is required and must be a string" };
       }
       
       // Require explicit confirmation to delete the table
       if (!confirm) {
+        // Return a non-error status to indicate confirmation is needed
         return {
-          status: "warning",
-          message: "Table deletion requires confirmation",
-          details: "Please set confirm=true to confirm table deletion"
+          status: "error", // Changed to error as it prevents action
+          error: "Table deletion requires confirmation",
+          details: "Set the 'confirm' parameter to true to proceed with deletion."
         };
       }
       
-      console.log(`📊 [DATABASE] Deleting table: "${table}" for user ${userId}`);
+      console.log(`${logPrefix} Deleting table: "${table}" for user ${userId}`);
       
       // Get workspace
       const workspaceSlug = process.env.XATA_WORKSPACE_SLUG;
       if (!workspaceSlug) {
-        throw new Error('XATA_WORKSPACE_SLUG is required in environment variables');
+        return { status: 'error', error: 'Service configuration error: XATA_WORKSPACE_SLUG not set' };
       }
       
       // Find the workspace
       const workspace = await findXataWorkspace(workspaceSlug);
       if (!workspace) {
-        throw new Error(`Workspace with slug/name "${workspaceSlug}" not found`);
+        return { status: 'error', error: `Configuration error: Workspace '${workspaceSlug}' not found` };
       }
       
       // Use the database name from environment variables
       const databaseName = process.env.XATA_DATABASE;
       if (!databaseName) {
-        throw new Error('XATA_DATABASE is required in environment variables');
+        return { status: 'error', error: 'Service configuration error: XATA_DATABASE not set' };
       }
       
       // Configure Xata API access
-      const region = 'us-east-1'; // Default region
-      const branch = 'main'; // Default branch
+      const region = 'us-east-1'; // Default region - TODO: Make configurable?
+      const branch = 'main'; // Default branch - TODO: Make configurable?
       const workspaceUrl = `https://${workspace.slug}-${workspace.unique_id}.${region}.xata.sh`;
       
       // Delete the table using the Xata API
+      console.log(`${logPrefix} Sending DELETE request to: ${workspaceUrl}/db/${databaseName}:${branch}/tables/${table}`);
       const deleteTableResponse = await fetch(
         `${workspaceUrl}/db/${databaseName}:${branch}/tables/${table}`,
         {
           method: 'DELETE',
           headers: {
-            'Authorization': `Bearer ${process.env.XATA_API_KEY}`
+            'Authorization': `Bearer ${process.env.XATA_API_KEY}`,
+            'Content-Type': 'application/json'
           }
         }
       );
       
       if (!deleteTableResponse.ok) {
-        throw new Error(`Failed to delete table: ${deleteTableResponse.status} ${deleteTableResponse.statusText}`);
+        const errorBody = await deleteTableResponse.text();
+        console.error(`${logPrefix} Failed API call: ${deleteTableResponse.status} ${deleteTableResponse.statusText}`, errorBody);
+        return { 
+          status: 'error', 
+          error: `API Error: Failed to delete table '${table}'`, 
+          details: `Status: ${deleteTableResponse.status} ${deleteTableResponse.statusText}. Response: ${errorBody}`
+        };
       }
       
-      // Return successful deletion response
-      return {
+      // Return standard success response
+      const successResponse: DeleteTableSuccessResponse = {
         status: "success",
-        message: `Table "${table}" deleted successfully`,
-        details: {
+        data: {
+          message: `Table "${table}" deleted successfully`,
           table_name: table,
           deleted_at: new Date().toISOString()
         }
       };
-    } catch (error) {
-      console.error("❌ [DATABASE] Error deleting table:", error);
+      return successResponse;
+    } catch (error: any) {
+      console.error(`${logPrefix} Error deleting table:`, error);
+      // Return standard UtilityErrorResponse
       return {
         status: "error",
-        message: "Failed to delete table",
+        error: "Failed to delete table",
         details: error instanceof Error ? error.message : String(error)
       };
     }

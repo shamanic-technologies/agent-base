@@ -6,10 +6,12 @@
  * If keys are not available, provides an API endpoint for the user to submit their keys
  */
 import Stripe from 'stripe';
+import { z } from 'zod'; // Import Zod
 import { 
   UtilityTool,
   SetupNeededResponse,
-  UtilityErrorResponse
+  UtilityErrorResponse,
+  UtilityToolSchema // Import if needed
 } from '../types/index.js'; // Keep generic types
 import { registry } from '../registry/registry.js';
 import {
@@ -26,18 +28,26 @@ import {
 } from '../clients/stripe-utils.js';
 
 /**
- * Available transaction types to filter by
+ * Available transaction types to filter by (as per Stripe documentation)
  */
-type StripeTransactionType = 
-  'charge' | 
-  'refund' | 
-  'adjustment' | 
-  'application_fee' | 
-  'application_fee_refund' | 
-  'dispute' | 
-  'payment' | 
-  'payout' | 
-  'transfer';
+const stripeTransactionTypes = [
+  'charge', 
+  'refund', 
+  'adjustment', 
+  'application_fee', 
+  'application_fee_refund', 
+  'dispute', 
+  'payment', 
+  'payout', 
+  'payout_cancel', 
+  'payout_failure', 
+  'transfer', 
+  'transfer_cancel', 
+  'transfer_failure', 
+  'transfer_refund'
+] as const; // Use 'as const' for a literal type
+
+type StripeTransactionType = typeof stripeTransactionTypes[number];
 
 /**
  * Implementation of the Stripe List Balance Transactions utility
@@ -45,22 +55,43 @@ type StripeTransactionType =
 const stripeListBalanceTransactions: UtilityTool = {
   id: 'utility_stripe_list_balance_transactions',
   description: 'Lists balance transactions from Stripe',
+  // Update schema to match Record<string, UtilityToolSchema>
   schema: {
-    limit: { type: 'number', optional: true, description: 'Max number of transactions (default 10)' },
-    starting_after: { type: 'string', optional: true, description: 'Pagination cursor' },
-    ending_before: { type: 'string', optional: true, description: 'Pagination cursor' },
-    type: { type: 'string', optional: true, description: 'Filter by transaction type' },
+    limit: { // Parameter name
+      zod: z.number().int().positive().max(100)
+            .describe('Max number of transactions to return (1-100, default 10)')
+            .optional(),
+      examples: [10, 50]
+    },
+    starting_after: { // Parameter name
+      zod: z.string().startsWith('txn_')
+            .describe('Pagination cursor (transaction ID to start after)')
+            .optional(),
+      examples: ['txn_1J23456789abcdef']
+    },
+    ending_before: { // Parameter name
+      zod: z.string().startsWith('txn_')
+            .describe('Pagination cursor (transaction ID to end before)')
+            .optional(),
+      examples: ['txn_9K87654321fedcba']
+    },
+    type: { // Parameter name
+      zod: z.enum(stripeTransactionTypes)
+            .describe('Filter by transaction type')
+            .optional(),
+      examples: ['charge', 'refund', 'payout']
+    }
   },
   
   execute: async (userId: string, conversationId: string, params: StripeTransactionsRequest): Promise<StripeTransactionsResponse> => {
     const logPrefix = '💰 [STRIPE_LIST_BALANCE_TRANSACTIONS]';
     try {
-      const { limit = 10, starting_after, ending_before, type } = params;
+      // Use raw params, assuming validation happens elsewhere
+      const { limit = 10, starting_after, ending_before, type } = params || {}; // Revert to using raw params
       console.log(`${logPrefix} Listing balance transactions for user ${userId}`);
       
       // Check if keys exist
-      // Note: getStripeEnvironmentVariables is implicitly called within helpers
-      const secretServiceUrl = process.env.SECRET_SERVICE_URL; // Needed for utils
+      const secretServiceUrl = process.env.SECRET_SERVICE_URL; 
       if (!secretServiceUrl) throw new Error('SECRET_SERVICE_URL not set');
 
       const { exists } = await checkStripeApiKeys(userId, secretServiceUrl);
@@ -68,8 +99,6 @@ const stripeListBalanceTransactions: UtilityTool = {
       if (!exists) {
         // Return standard setup needed response
         const setupResponse: SetupNeededResponse = generateSetupNeededResponse(userId, conversationId, logPrefix);
-        // Need to check if generateSetupNeededResponse might throw or return error
-        // Assuming it returns SetupNeededResponse based on its signature
         return setupResponse;
       }
       
@@ -84,10 +113,10 @@ const stripeListBalanceTransactions: UtilityTool = {
 
       // Prepare parameters for Stripe API
       const listParams: Stripe.BalanceTransactionListParams = {
-        limit: Math.min(limit, 100),
+        limit: Math.min(limit, 100), // Ensure limit is within bounds
         starting_after,
         ending_before,
-        type,
+        type: type as StripeTransactionType, // Cast type if needed, validation ensures it's correct
       };
 
       // Fetch transactions
@@ -106,12 +135,13 @@ const stripeListBalanceTransactions: UtilityTool = {
         fee: tx.fee ? tx.fee / 100 : undefined
       }));
       
-      // Prepare success response with processed data
+      // Prepare success response with processed data, conforming to StripeTransactionsSuccessResponse
       const successResponse: StripeTransactionsSuccessResponse = {
         status: 'success',
         count: processedData.length,
         has_more: transactionsResponse.has_more,
-        data: processedData as unknown as StripeTransaction[], // Use processed data
+        // Ensure processedData conforms to StripeTransaction[] structure if necessary
+        data: processedData as unknown as StripeTransaction[], 
       };
       return successResponse;
       

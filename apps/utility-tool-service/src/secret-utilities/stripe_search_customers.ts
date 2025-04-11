@@ -5,10 +5,12 @@
  * If keys are not available, provides an API endpoint for the user to submit their keys
  */
 import axios from 'axios';
+import { z } from 'zod'; // Import Zod
 import {
   UtilityTool,
   SetupNeededResponse,
-  UtilityErrorResponse
+  UtilityErrorResponse,
+  UtilityToolSchema // Import if needed
 } from '../types/index.js';
 import { registry } from '../registry/registry.js';
 import {
@@ -39,10 +41,12 @@ interface StripeCustomerSummary {
  */
 interface StripeSearchCustomersSuccessResponse {
   status: 'success';
-  count: number;
-  has_more: boolean;
-  data: StripeCustomerSummary[];
-  query_used: string; // Include the query used for the search
+  data: {
+    count: number;
+    has_more: boolean;
+    data: StripeCustomerSummary[];
+    query_used: string; // Include the query used for the search
+  }
 }
 
 /**
@@ -69,37 +73,46 @@ interface StripeSearchCustomersParams {
  */
 const stripeSearchCustomersUtility: UtilityTool = {
   id: 'stripe_search_customers',
-  description: 'Searches for customers in Stripe using a query string.',
+  description: 'Searches for customers in Stripe using a query string (Stripe Query Language).',
+  // Update schema to match Record<string, UtilityToolSchema>
   schema: {
-    query: {
-      type: 'string',
-      optional: false,
-      description: `Search query using Stripe Query Language (e.g., "email:'test@example.com'").`
+    query: { // Parameter name
+      zod: z.string()
+            .describe(`Required search query using Stripe Query Language (e.g., "email:'test@example.com'" or "name:'Jane Doe' AND metadata['order_id']:'123'").`), // Not optional
+      examples: ["email:'customer@example.com'", "name:'Acme Corp'", "metadata['userId']:'u123'"]
     },
-    limit: {
-      type: 'number',
-      optional: true,
-      description: 'Maximum number of customers to return (1-100, default 10).'
+    limit: { // Parameter name
+      zod: z.number().int().positive().max(100)
+            .describe('Maximum number of customers to return (1-100, default 10).')
+            .optional(),
+      examples: [10, 50]
     },
-    page: {
-      type: 'string',
-      optional: true,
-      description: 'Pagination token for fetching next page of results.'
+    page: { // Parameter name
+      zod: z.string()
+            .describe('Pagination token for fetching the next page of results.')
+            .optional(),
+      examples: ['eyJzdGFydGluZ19hZnRlciI6ImN1c18xMjMifQ=='] // Example based on Stripe format
     }
   },
   
   execute: async (userId: string, conversationId: string, params: StripeSearchCustomersParams): Promise<StripeSearchCustomersResponse> => {
     const logPrefix = '🔍 [STRIPE_SEARCH_CUSTOMERS]';
     try {
+      // Use raw params
       const { 
         query,
         limit = 10,
         page
       } = params || {};
       
+      // Ensure required query param exists
       if (!query) {
          console.error(`${logPrefix} Missing required parameter: query`);
-         return formatStripeErrorResponse({ message: 'Missing required parameter: query.' });
+         // Return standard UtilityErrorResponse
+         return {
+            status: 'error',
+            error: 'Missing required parameter: query.'
+         };
       }
       
       console.log(`${logPrefix} Searching customers for user: ${userId}, Query: ${query}`);
@@ -115,8 +128,8 @@ const stripeSearchCustomersUtility: UtilityTool = {
       // Construct query parameters for Stripe Search API
       const queryParams: any = { 
         query: query,
-        limit: Math.min(limit, 100) 
-      };
+        limit: Math.min(limit, 100) // Ensure limit is within bounds
+      }; 
       if (page) queryParams.page = page;
       
       console.log(`${logPrefix} Calling Stripe API: GET /v1/customers/search with params:`, queryParams);
@@ -150,23 +163,30 @@ const stripeSearchCustomersUtility: UtilityTool = {
       // Construct success response
       const successResponse: StripeSearchCustomersSuccessResponse = {
         status: 'success',
-        count: customerSummaries.length,
-        has_more: stripeResponse.data.has_more,
-        query_used: stripeResponse.data.query, // Include the query from response
-        data: customerSummaries
+        data: {
+          count: customerSummaries.length,
+          has_more: stripeResponse.data.has_more,
+          query_used: stripeResponse.data.query, // Include the query from response
+          data: customerSummaries
+        }
       };
       
       return successResponse;
       
     } catch (error: any) {
       console.error("❌ [STRIPE_SEARCH_CUSTOMERS] Error:", error);
+      // Remove Zod error handling
+      
       // Handle potential query syntax errors from Stripe (often 400)
       if (axios.isAxiosError(error) && error.response?.status === 400) {
-         return formatStripeErrorResponse({ 
-            message: `Stripe query error: ${error.response?.data?.error?.message || 'Invalid query syntax.'}`, 
+         // Return standard UtilityErrorResponse
+         return {
+            status: 'error',
+            error: `Stripe query error: ${error.response?.data?.error?.message || 'Invalid query syntax.'}`, 
             details: `Query used: ${params?.query}`
-        });
+        };
       }
+      // Use the utility function which should return UtilityErrorResponse
       return formatStripeErrorResponse(error);
     }
   }

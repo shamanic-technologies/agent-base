@@ -5,10 +5,12 @@
  */
 import axios from 'axios';
 const axiosClient = axios;
+import { z } from 'zod'; // Import Zod
 import { 
   UtilityTool, 
   SetupNeededResponse,
-  UtilityErrorResponse
+  UtilityErrorResponse,
+  UtilityToolSchema // Import if needed
 } from '../types/index.js';
 import { registry } from '../registry/registry.js';
 import {
@@ -31,33 +33,37 @@ import {
 const stripeListChargesUtility: UtilityTool = {
   id: 'utility_stripe_list_charges',
   description: 'List charges (payments received) from Stripe',
+  // Update schema to match Record<string, UtilityToolSchema>
   schema: {
-    limit: {
-      type: 'number',
-      optional: true,
-      description: 'Maximum number of charges to return (default: 10)'
+    limit: { // Parameter name
+      zod: z.number().int().positive().max(100)
+            .describe('Maximum number of charges to return (1-100, default 10)')
+            .optional(),
+      examples: [10, 50]
     },
-    starting_after: {
-      type: 'string',
-      optional: true,
-      description: 'Cursor for pagination, charge ID to start after'
+    starting_after: { // Parameter name
+      zod: z.string().startsWith('ch_') // Charge IDs start with ch_
+            .describe('Pagination cursor, charge ID to start after')
+            .optional(),
+      examples: ['ch_1J23456789abcdef']
     },
-    ending_before: {
-      type: 'string',
-      optional: true,
-      description: 'Cursor for pagination, charge ID to end before'
+    ending_before: { // Parameter name
+      zod: z.string().startsWith('ch_') // Charge IDs start with ch_
+            .describe('Pagination cursor, charge ID to end before')
+            .optional(),
+      examples: ['ch_9K87654321fedcba']
     }
   },
   
   execute: async (userId: string, conversationId: string, params: StripeTransactionsRequest): Promise<StripeTransactionsResponse> => {
     const logPrefix = '💳 [STRIPE_LIST_CHARGES]';
     try {
-      // Extract parameters with defaults
+      // Use raw params, validation happens elsewhere
       const { 
         limit = 10,
         starting_after,
         ending_before
-      } = params || {};
+      } = params || {}; // Use raw params
       
       console.log(`${logPrefix} Listing charges for user: ${userId}`);
       
@@ -79,12 +85,11 @@ const stripeListChargesUtility: UtilityTool = {
       console.log(`${logPrefix} Calling Stripe API`);
       
       const queryParams = {
-        limit,
+        limit: Math.min(limit, 100), // Ensure limit is within bounds
         starting_after: starting_after || undefined,
         ending_before: ending_before || undefined
       };
       
-      // @ts-ignore - axios typing issue with version 1.8.4
       const stripeResponse = await axiosClient.get(
         'https://api.stripe.com/v1/charges',
         {
@@ -115,6 +120,7 @@ const stripeListChargesUtility: UtilityTool = {
       }));
 
       // Return success response matching StripeTransactionsSuccessResponse structure
+      // Ensure StripeTransactionsResponse is the correct type for success here
       const successResponse: StripeTransactionsResponse = {
         status: 'success',
         count: transactions.length,
@@ -124,6 +130,8 @@ const stripeListChargesUtility: UtilityTool = {
       return successResponse; // Return the correctly typed object
     } catch (error: any) {
       console.error("❌ [STRIPE_LIST_CHARGES] Error:", error);
+      // Remove Zod error handling
+      // Use the utility function which should return UtilityErrorResponse
       return formatStripeErrorResponse(error);
     }
   }

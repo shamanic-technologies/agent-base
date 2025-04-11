@@ -3,19 +3,43 @@
  * 
  * Returns information about a database table, including schema and optionally data
  */
-import { UtilityTool, UtilityErrorResponse } from '../../types/index.js';
+import { z } from 'zod'; // Import Zod
+import { 
+  UtilityTool, 
+  UtilityErrorResponse,
+  UtilityToolSchema // Import UtilityToolSchema
+} from '../../types/index.js';
 import { registry } from '../../registry/registry.js';
-import {
+import { 
   findXataWorkspace,
-  getXataClient
-} from '../../xata-client.js';
+  // getXataClient // Not used here, direct fetch calls are made
+} from '../../clients/xata-client.js'; // Corrected import path
 
 // --- Local Type Definitions ---
+// Keep request simple, validation via Zod
 export interface GetTableRequest {
   table: string;
   includeData?: boolean;
   limit?: number;
 }
+
+// Define Success Response structure
+interface GetTableSuccessResponse {
+  status: 'success';
+  data: {
+    message: string;
+    table: {
+      id: string;
+      name: string;
+      description?: string;
+      schema: Record<string, string>; // Column name -> Xata type
+      data?: Record<string, any>[] | null; // Array of records or null
+    }
+  }
+}
+
+type GetTableResponse = GetTableSuccessResponse | UtilityErrorResponse;
+
 // --- End Local Definitions ---
 
 /**
@@ -23,45 +47,59 @@ export interface GetTableRequest {
  */
 const getTableUtility: UtilityTool = {
   id: 'utility_get_table',
-  description: 'Get information about a database table, including schema and optionally data',
+  description: 'Get information about a database table, including schema and optionally data.',
+  // Update schema to use Zod
   schema: {
-    table: {
-      type: 'string',
-      description: 'The name of the table to retrieve'
+    table: { // Parameter name
+      zod: z.string().min(1)
+            .describe('The name of the table to retrieve.'),
+      // Not optional
+      examples: ['users', 'products']
     },
-    includeData: {
-      type: 'boolean',
-      optional: true,
-      description: 'Whether to include table data in the response (default: true)'
+    includeData: { // Parameter name
+      zod: z.boolean().optional().default(true)
+            .describe('Whether to include table data rows in the response (default: true).'),
+      // Optional
+      examples: [false, true]
     },
-    limit: {
-      type: 'number',
-      optional: true,
-      description: 'Maximum number of data rows to return (default: 10)'
+    limit: { // Parameter name
+      zod: z.number().int().positive().optional().default(10)
+            .describe('Maximum number of data rows to return if includeData is true (default: 10, max: 100).')
+            .refine(val => val <= 100, { message: "Limit cannot exceed 100" }),
+      // Optional
+      examples: [5, 50, 100]
     }
   },
   
-  execute: async (userId: string, conversationId: string, params: GetTableRequest): Promise<any> => {
+  execute: async (userId: string, conversationId: string, params: GetTableRequest): Promise<GetTableResponse> => {
+    const logPrefix = '📊 [DB_GET_TABLE]';
     try {
-      // Extract and validate parameters
-      const { table, includeData = true, limit = 10 } = params;
+      // Use raw params - validation primarily via Zod schema on the caller side
+      // Still good to have basic checks here
+      const { table, includeData = true, limit = 10 } = params || {}; 
       
+      // Basic validation
       if (!table || typeof table !== 'string') {
-        throw new Error("Table name is required and must be a string");
+        return { status: 'error', error: "Table name is required and must be a string" };
+      }
+      // Limit check (though Zod refine should catch this earlier)
+      if (limit > 100) {
+         return { status: 'error', error: "Limit cannot exceed 100" };
       }
       
-      console.log(`📊 [DATABASE] Getting table information for: "${table}", user: ${userId}`);
+      console.log(`${logPrefix} Getting table info for: \"${table}\", includeData: ${includeData}, limit: ${limit}, user: ${userId}`);
       
       // Get workspace
       const workspaceSlug = process.env.XATA_WORKSPACE_SLUG;
       if (!workspaceSlug) {
-        throw new Error('XATA_WORKSPACE_SLUG is required in environment variables');
+        return { status: 'error', error: 'Service configuration error: XATA_WORKSPACE_SLUG not set' };
       }
       
-      // Find the workspace
+      // Find the workspace (using helper from client)
       const workspace = await findXataWorkspace(workspaceSlug);
       if (!workspace) {
-        throw new Error(`Workspace with slug/name "${workspaceSlug}" not found`);
+        // findXataWorkspace should throw if needed, but catch null just in case
+        return { status: 'error', error: `Configuration error: Workspace \'${workspaceSlug}\' not found` };
       }
       
       // Use the database name from environment variables
@@ -135,19 +173,25 @@ const getTableUtility: UtilityTool = {
         data: data
       };
       
-      // Return table information
-      return {
+      // Return standard success response
+      const successResponse: GetTableSuccessResponse = {
         status: "success",
-        message: "Table information retrieved successfully",
-        table: tableInfo
+        data: {
+          message: "Table information retrieved successfully",
+          table: tableInfo
+        }
       };
-    } catch (error) {
-      console.error("❌ [DATABASE] Error getting table information:", error);
-      return {
+      return successResponse;
+
+    } catch (error: any) {
+      console.error(`${logPrefix} Error getting table information:`, error);
+      // Return standard UtilityErrorResponse
+      const errorResponse: UtilityErrorResponse = {
         status: "error",
-        message: "Failed to retrieve table information",
-        details: error instanceof Error ? error.message : String(error)
+        error: "Failed to retrieve table information", // Use 'error' key
+        details: error.message || String(error)
       };
+      return errorResponse;
     }
   }
 };

@@ -1,15 +1,16 @@
 /**
  * Alter Table Utility
  * 
- * Modifies existing table structures in the database
+ * Modifies existing table structures in the database (via Xata API).
  */
-import { UtilityTool, UtilityErrorResponse } from '../../types/index.js';
+import { z } from 'zod'; // Import Zod
+import { UtilityTool, UtilityErrorResponse, UtilityToolSchema } from '../../types/index.js';
 import { registry } from '../../registry/registry.js';
 import {
   findXataWorkspace,
   getXataClient,
-  addXataTableColumn
-} from '../../xata-client.js';
+  addXataTableColumn // Assuming this helper exists and works
+} from '../../clients/xata-client.js';
 
 // --- Local Type Definitions ---
 export interface AlterTableRequest {
@@ -24,6 +25,36 @@ export interface AlterTableRequest {
     newName: string;
   };
 }
+
+// Define valid Xata column types for addColumn validation
+const xataColumnTypes = [
+  'string', 'text', 'email', 'int', 'float', 'bool', 
+  'datetime', 'multiple', 'link', 'object', 'vector' // Add others as needed
+] as const;
+
+// Define Success Response structure
+interface AlterTableSuccessResponse {
+  status: 'success';
+  data: {
+    message: string;
+    table: {
+      name: string;
+      alterations: { 
+        operation: string; 
+        column_name?: string; 
+        column_type?: string; 
+        old_name?: string; 
+        new_name?: string; 
+        status: string; 
+      }[];
+      updated_schema: Record<string, string>;
+      updated_at: string;
+    }
+  }
+}
+
+type AlterTableResponse = AlterTableSuccessResponse | UtilityErrorResponse;
+
 // --- End Local Definitions ---
 
 /**
@@ -31,201 +62,205 @@ export interface AlterTableRequest {
  */
 const alterTableUtility: UtilityTool = {
   id: 'utility_alter_table',
-  description: 'Modify the structure of existing database tables',
+  description: 'Modify the structure of existing database tables (add, remove, rename columns).',
+  // Update schema to match Record<string, UtilityToolSchema>
   schema: {
-    table: {
-      type: 'string',
-      description: 'The name of the table to modify'
+    table: { // Parameter name
+      zod: z.string()
+            .describe('The name of the table to modify.'),
+      // Not optional
+      examples: ['users', 'products']
     },
-    addColumn: {
-      type: 'object',
-      optional: true,
-      description: 'Definition of a column to add to the table'
+    addColumn: { // Parameter name
+      zod: z.object({
+              name: z.string().describe('Name of the new column.'),
+              type: z.enum(xataColumnTypes).describe('Type of the new column.')
+            })
+            .describe('Definition of a column to add to the table.')
+            .optional(),
+      examples: [{ name: 'description', type: 'text' }, { name: 'isAdmin', type: 'bool' }]
     },
-    removeColumn: {
-      type: 'string',
-      optional: true,
-      description: 'Name of a column to remove from the table'
+    removeColumn: { // Parameter name
+      zod: z.string()
+            .describe('Name of a column to remove from the table.')
+            .optional(),
+      examples: ['old_status']
     },
-    renameColumn: {
-      type: 'object',
-      optional: true,
-      description: 'Definition for renaming a column in the table'
+    renameColumn: { // Parameter name
+      zod: z.object({
+              oldName: z.string().describe('Current name of the column.'),
+              newName: z.string().describe('New name for the column.')
+            })
+            .describe('Definition for renaming a column in the table.')
+            .optional(),
+      examples: [{ oldName: 'status', newName: 'current_status' }]
     }
   },
   
-  execute: async (userId: string, conversationId: string, params: AlterTableRequest): Promise<any> => {
+  execute: async (userId: string, conversationId: string, params: AlterTableRequest): Promise<AlterTableResponse> => {
+    const logPrefix = '📊 [DB_ALTER_TABLE]';
     try {
-      // Extract and validate parameters
-      const { table, addColumn, removeColumn, renameColumn } = params;
+      // Use raw params
+      const { table, addColumn, removeColumn, renameColumn } = params || {};
       
+      // Basic validation
       if (!table || typeof table !== 'string') {
-        throw new Error("Table name is required and must be a string");
+        return { status: 'error', error: "Table name is required and must be a string" };
       }
-      
-      // Ensure at least one operation is specified
       if (!addColumn && !removeColumn && !renameColumn) {
-        throw new Error("At least one table alteration operation must be specified");
+        return { status: 'error', error: "At least one table alteration operation must be specified (addColumn, removeColumn, or renameColumn)" };
+      }
+      // Further validation for specific operations if needed (e.g., addColumn requires name/type)
+      if (addColumn && (!addColumn.name || !addColumn.type)) {
+        return { status: 'error', error: "When adding a column, both name and type must be specified" };
+      }
+      if (renameColumn && (!renameColumn.oldName || !renameColumn.newName)) {
+         return { status: 'error', error: "When renaming a column, both oldName and newName must be specified" };
+      }
+      if (removeColumn && typeof removeColumn !== 'string') {
+         return { status: 'error', error: "Column name to remove must be a string" };
       }
       
-      console.log(`📊 [DATABASE] Altering table: "${table}" for user ${userId}`);
+      console.log(`${logPrefix} Altering table: "${table}" for user ${userId}`);
       
       // Get workspace
       const workspaceSlug = process.env.XATA_WORKSPACE_SLUG;
       if (!workspaceSlug) {
-        throw new Error('XATA_WORKSPACE_SLUG is required in environment variables');
+        return { status: 'error', error: 'Service configuration error: XATA_WORKSPACE_SLUG not set' };
       }
       
       // Find the workspace
       const workspace = await findXataWorkspace(workspaceSlug);
       if (!workspace) {
-        throw new Error(`Workspace with slug/name "${workspaceSlug}" not found`);
+        return { status: 'error', error: `Configuration error: Workspace '${workspaceSlug}' not found` };
       }
       
       // Use user ID to determine database name or the default database
-      const databaseName = process.env.XATA_DATABASE;
+      const databaseName = process.env.XATA_DATABASE; // TODO: Potentially make this user-specific if needed
       if (!databaseName) {
-        throw new Error('XATA_DATABASE is required in environment variables');
+         return { status: 'error', error: 'Service configuration error: XATA_DATABASE not set' };
       }
       
       // Configure Xata API access
-      const region = 'us-east-1'; // Default region
-      const branch = 'main'; // Default branch
+      const region = process.env.XATA_REGION || 'us-east-1'; // Use env var or default
+      const branch = process.env.XATA_BRANCH || 'main'; // Use env var or default
+      const xataApiKey = process.env.XATA_API_KEY;
+      if (!xataApiKey) {
+         return { status: 'error', error: 'Service configuration error: XATA_API_KEY not set' };
+      }
+
       const workspaceUrl = `https://${workspace.slug}-${workspace.unique_id}.${region}.xata.sh`;
+      const baseApiUrl = `${workspaceUrl}/db/${databaseName}:${branch}/tables/${table}`; // Base URL for table operations
       
-      const alterations = [];
-      const xataClient = getXataClient();
+      const alterations: AlterTableSuccessResponse['data']['table']['alterations'] = [];
+      const xataClient = getXataClient(); // Assuming this gets a pre-configured client or uses API key
       
       // Handle adding a column
       if (addColumn) {
-        if (!addColumn.name || !addColumn.type) {
-          throw new Error("When adding a column, both name and type must be specified");
+        console.log(`${logPrefix} Adding column: "${addColumn.name}" (${addColumn.type})`);
+        try {
+          await addXataTableColumn(
+            databaseName, 
+            table,
+            addColumn.name,
+            addColumn.type,
+            workspace // Pass necessary context
+          );
+          alterations.push({
+            operation: "add_column",
+            column_name: addColumn.name,
+            column_type: addColumn.type,
+            status: "success"
+          });
+        } catch (addError: any) {
+            console.error(`${logPrefix} Failed to add column '${addColumn.name}':`, addError);
+            alterations.push({ operation: "add_column", column_name: addColumn.name, status: `failed: ${addError.message}` });
+            // Decide whether to continue or fail fast - for now, we record failure and continue
         }
-        
-        console.log(`📊 [DATABASE] Adding column: "${addColumn.name}" (${addColumn.type})`);
-        
-        await addXataTableColumn(
-          databaseName,
-          table,
-          addColumn.name,
-          addColumn.type,
-          workspace
-        );
-        
-        alterations.push({
-          operation: "add_column",
-          column_name: addColumn.name,
-          column_type: addColumn.type,
-          status: "success"
-        });
       }
       
       // Handle removing a column
       if (removeColumn) {
-        if (typeof removeColumn !== 'string') {
-          throw new Error("Column name to remove must be a string");
-        }
-        
-        console.log(`📊 [DATABASE] Removing column: "${removeColumn}"`);
-        
-        // Use Xata API to remove the column
+        console.log(`${logPrefix} Removing column: "${removeColumn}"`);
         const removeColumnResponse = await fetch(
-          `${workspaceUrl}/db/${databaseName}:${branch}/tables/${table}/columns/${removeColumn}`,
+          `${baseApiUrl}/columns/${removeColumn}`,
           {
             method: 'DELETE',
-            headers: {
-              'Authorization': `Bearer ${process.env.XATA_API_KEY}`
-            }
+            headers: { 'Authorization': `Bearer ${xataApiKey}` }
           }
         );
-        
         if (!removeColumnResponse.ok) {
-          throw new Error(`Failed to remove column: ${removeColumnResponse.status} ${removeColumnResponse.statusText}`);
+            const errorText = await removeColumnResponse.text();
+            console.error(`${logPrefix} Failed to remove column '${removeColumn}': ${removeColumnResponse.status} ${errorText}`);
+            alterations.push({ operation: "remove_column", column_name: removeColumn, status: `failed: ${removeColumnResponse.status} ${errorText}` });
+        } else {
+            alterations.push({ operation: "remove_column", column_name: removeColumn, status: "success" });
         }
-        
-        alterations.push({
-          operation: "remove_column",
-          column_name: removeColumn,
-          status: "success"
-        });
       }
       
       // Handle renaming a column
       if (renameColumn) {
-        if (!renameColumn.oldName || !renameColumn.newName) {
-          throw new Error("When renaming a column, both oldName and newName must be specified");
-        }
-        
-        console.log(`📊 [DATABASE] Renaming column: "${renameColumn.oldName}" to "${renameColumn.newName}"`);
-        
-        // Use Xata API to rename the column
+        console.log(`${logPrefix} Renaming column: "${renameColumn.oldName}" to "${renameColumn.newName}"`);
         const renameColumnResponse = await fetch(
-          `${workspaceUrl}/db/${databaseName}:${branch}/tables/${table}/columns/${renameColumn.oldName}`,
+          `${baseApiUrl}/columns/${renameColumn.oldName}`,
           {
             method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${process.env.XATA_API_KEY}`
-            },
-            body: JSON.stringify({
-              name: renameColumn.newName
-            })
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${xataApiKey}` },
+            body: JSON.stringify({ name: renameColumn.newName })
           }
         );
-        
         if (!renameColumnResponse.ok) {
-          throw new Error(`Failed to rename column: ${renameColumnResponse.status} ${renameColumnResponse.statusText}`);
+            const errorText = await renameColumnResponse.text();
+            console.error(`${logPrefix} Failed to rename column '${renameColumn.oldName}': ${renameColumnResponse.status} ${errorText}`);
+            alterations.push({ operation: "rename_column", old_name: renameColumn.oldName, new_name: renameColumn.newName, status: `failed: ${renameColumnResponse.status} ${errorText}` });
+        } else {
+            alterations.push({ operation: "rename_column", old_name: renameColumn.oldName, new_name: renameColumn.newName, status: "success" });
         }
-        
-        alterations.push({
-          operation: "rename_column",
-          old_name: renameColumn.oldName,
-          new_name: renameColumn.newName,
-          status: "success"
-        });
       }
       
       // Get the updated schema after alterations
       const getTableResponse = await fetch(
-        `${workspaceUrl}/db/${databaseName}:${branch}/tables/${table}`,
+        `${baseApiUrl}/schema`,
         {
           method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${process.env.XATA_API_KEY}`
-          }
+          headers: { 'Authorization': `Bearer ${xataApiKey}` }
         }
       );
       
-      if (!getTableResponse.ok) {
-        throw new Error(`Failed to get updated table schema: ${getTableResponse.status} ${getTableResponse.statusText}`);
-      }
-      
-      const tableData = await getTableResponse.json();
-      const updatedSchema = {};
-      
-      // Convert Xata schema to our simplified format
-      if (tableData.columns) {
-        tableData.columns.forEach(column => {
-          updatedSchema[column.name] = column.type;
-        });
+      let updatedSchema: Record<string, string> = {};
+      if (getTableResponse.ok) {
+        const tableSchemaData = await getTableResponse.json();
+        if (tableSchemaData.columns) {
+          tableSchemaData.columns.forEach((column: {name: string, type: string}) => {
+            updatedSchema[column.name] = column.type;
+          });
+        }
+      } else {
+        console.error(`${logPrefix} Failed to get updated table schema: ${getTableResponse.status} ${await getTableResponse.text()}`);
+        // Proceed without updated schema if fetch fails
       }
       
       // Return successful response
-      return {
+      const successResponse: AlterTableSuccessResponse = {
         status: "success",
-        message: "Table altered successfully",
-        table: {
-          name: table,
-          alterations: alterations,
-          updated_schema: updatedSchema,
-          updated_at: new Date().toISOString()
+        data: {
+          message: "Table alteration process completed.",
+          table: {
+            name: table,
+            alterations: alterations,
+            updated_schema: updatedSchema,
+            updated_at: new Date().toISOString()
+          }
         }
       };
-    } catch (error) {
-      console.error("❌ [DATABASE] Error altering table:", error);
+      return successResponse;
+
+    } catch (error: any) {
+      console.error(`${logPrefix} Error altering table:`, error);
+      // Return standard UtilityErrorResponse
       return {
         status: "error",
-        message: "Failed to alter table",
+        error: "Failed to alter table",
         details: error instanceof Error ? error.message : String(error)
       };
     }

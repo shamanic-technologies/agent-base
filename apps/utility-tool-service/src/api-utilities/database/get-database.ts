@@ -4,18 +4,32 @@
  * Returns database information including name, table info (ids, name, description, schema)
  * Uses Xata to manage databases for users.
  */
-import { UtilityTool } from '../../types/index.js';
+import { z } from 'zod'; // Import Zod
+import { 
+  UtilityTool,
+  UtilityErrorResponse,
+  UtilityToolSchema // Import if needed, though schema is empty
+} from '../../types/index.js';
 import { registry } from '../../registry/registry.js';
-import { BaseClient } from '@xata.io/client';
+// Removed BaseClient import as direct client usage is moved
 import fetch from 'node-fetch';
 import { v4 as uuidv4 } from 'uuid';
+// Import necessary functions and types from xata-client
+import {
+  findXataWorkspace,
+  createXataDatabase,
+  getXataDatabaseInfo,
+  generateUniqueDatabaseName,
+  Workspace, // Import Workspace interface
+  TableInfo // Import TableInfo interface
+} from '../../clients/xata-client.js';
 
 // Database service URL from environment variable
 const DB_SERVICE_URL = process.env.DATABASE_SERVICE_URL;
 
-/**
- * Interface for a Xata workspace
- */
+// --- Local Type Definitions ---
+// Workspace interface is now imported from xata-client
+/*
 interface Workspace {
   id: string;
   name: string;
@@ -24,16 +38,17 @@ interface Workspace {
   role?: string;
   plan?: string;
 }
+*/
 
-/**
- * Interface for workspaces response
- */
+// Removed WorkspacesResponse - No longer needed locally
+/*
 interface WorkspacesResponse {
   workspaces: Workspace[];
 }
+*/
 
 /**
- * Interface for user data response
+ * Interface for user data response from the internal DB service
  */
 interface UserDataResponse {
   success: boolean;
@@ -48,76 +63,41 @@ interface UserDataResponse {
 }
 
 /**
- * Get a configured Xata client for the default database
+ * Success response structure for this utility
  */
-function getXataClient() {
-  return new BaseClient({
-    databaseURL: process.env.XATA_DATABASE_URL,
-    apiKey: process.env.XATA_API_KEY,
-    branch: process.env.XATA_BRANCH
-  });
-}
-
-/**
- * Get all available Xata workspaces
- */
-async function getXataWorkspaces(): Promise<Workspace[]> {
-  const apiKey = process.env.XATA_API_KEY;
-  
-  if (!apiKey) {
-    throw new Error('XATA_API_KEY is required in environment variables');
-  }
-  
-  const workspacesResponse = await fetch('https://api.xata.io/workspaces', {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`
-    }
-  });
-  
-  if (!workspacesResponse.ok) {
-    throw new Error(`Failed to list workspaces: ${workspacesResponse.status} ${workspacesResponse.statusText}`);
-  }
-  
-  const workspacesData = await workspacesResponse.json() as WorkspacesResponse;
-  
-  if (!workspacesData.workspaces || workspacesData.workspaces.length === 0) {
-    throw new Error('No workspaces found');
-  }
-  
-  return workspacesData.workspaces;
-}
-
-/**
- * Find a workspace by slug or name
- */
-async function findXataWorkspace(slugOrName: string): Promise<Workspace | null> {
-  try {
-    const workspaces = await getXataWorkspaces();
-    
-    const workspace = workspaces.find(ws => 
-      ws.slug === slugOrName || ws.name === slugOrName
-    );
-    
-    return workspace || null;
-  } catch (error) {
-    console.error("Error finding Xata workspace:", error);
-    return null;
+interface GetDatabaseSuccessResponse {
+  status: 'success';
+  data: {
+    database_id: string;
+    database_name: string;
+    tables: TableInfo[]; // Use TableInfo interface
   }
 }
 
-/**
- * Generate a unique database name for a user
- */
-function generateUniqueDatabaseName(prefix = 'user'): string {
-  const databaseId = uuidv4().substring(0, 8);
-  return `${prefix}-${databaseId}`;
-}
+// Type union for the utility's response
+type GetDatabaseResponse = GetDatabaseSuccessResponse | UtilityErrorResponse;
+
+// --- End Local Definitions ---
+
+// Removed Xata helper functions that are now in xata-client.ts
+// - getXataClient
+// - getXataWorkspaces
+// - findXataWorkspace
+// - generateUniqueDatabaseName
+// - createXataDatabase
+// - getXataDatabaseInfo
 
 /**
- * Check if a user has an assigned database ID in the database service
+ * Get the database ID associated with a user from the internal DB service.
+ * This function remains local as it interacts with DB_SERVICE_URL, not Xata directly.
+ * @param userId - The ID of the user.
+ * @returns The database ID string or null if not found or error occurred.
  */
 async function getUserDatabaseId(userId: string): Promise<string | null> {
+  if (!DB_SERVICE_URL) {
+    console.error('Service configuration error: DATABASE_SERVICE_URL not set');
+    return null; // Indicate configuration error
+  }
   try {
     const response = await fetch(`${DB_SERVICE_URL}/db/users/${userId}`, {
       method: 'GET',
@@ -126,49 +106,68 @@ async function getUserDatabaseId(userId: string): Promise<string | null> {
       }
     });
     
+    // If user not found (404), it's not an error, just means no DB ID yet
+    if (response.status === 404) {
+      console.log(`No database record found for user ${userId} in internal service.`);
+      return null;
+    }
+    
     if (!response.ok) {
-      console.error(`Failed to get user data: ${response.status} ${response.statusText}`);
+      // Log other errors but return null, let the caller decide if it's critical
+      console.error(`Failed to get user data from internal service: ${response.status} ${response.statusText}`);
       return null;
     }
     
     const data = await response.json() as UserDataResponse;
     
-    if (data.success && data.data && data.data.data && data.data.data.database_id) {
+    if (data.success && data.data?.data?.database_id) {
       return data.data.data.database_id;
     }
     
     return null;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error checking user database ID:", error);
-    return null;
+    return null; // Network or parsing error
   }
 }
 
 /**
- * Create a new Xata database and associate it with a user
+ * Create a new Xata database (using helper from xata-client) 
+ * AND associate it with a user via the internal DB service.
+ * This function remains local as it orchestrates both Xata and internal service calls.
+ * @param userId - The ID of the user.
+ * @returns The newly created database name (ID) or null if creation failed.
+ * @throws Error if configuration is missing or critical API calls fail.
  */
 async function createUserDatabase(userId: string): Promise<string | null> {
+  const logPrefix = '[DB_CREATE_USER_DB]';
   try {
     const workspaceSlug = process.env.XATA_WORKSPACE_SLUG;
-    
     if (!workspaceSlug) {
-      throw new Error('XATA_WORKSPACE_SLUG is required in environment variables');
+      throw new Error('Service configuration error: XATA_WORKSPACE_SLUG not set');
     }
     
+    // Use findXataWorkspace from xata-client.js
     const workspace = await findXataWorkspace(workspaceSlug);
-    
     if (!workspace) {
-      throw new Error(`Workspace with slug/name "${workspaceSlug}" not found`);
+      // findXataWorkspace throws specific errors if needed
+      throw new Error(`Configuration error: Workspace '${workspaceSlug}' not found`);
     }
     
+    // Use generateUniqueDatabaseName from xata-client.js
     const databaseName = generateUniqueDatabaseName('user');
     
-    // Create a new database in the workspace
+    // Create the new database in the Xata workspace using helper
+    console.log(`${logPrefix} Attempting to create Xata database '${databaseName}' in workspace '${workspace.id}'`);
+    // Use createXataDatabase from xata-client.js
     await createXataDatabase(workspace.id, databaseName);
-    
-    console.log(`Database ${databaseName} created successfully`);
+    console.log(`${logPrefix} Xata database ${databaseName} created successfully.`);
     
     // Update user in database service with the new database_id
+    if (!DB_SERVICE_URL) {
+      throw new Error('Service configuration error: DATABASE_SERVICE_URL not set');
+    }
+    console.log(`${logPrefix} Updating user '${userId}' in internal service with db_id: ${databaseName}`);
     const updateResponse = await fetch(`${DB_SERVICE_URL}/db/users/${userId}`, {
       method: 'PUT',
       headers: {
@@ -183,181 +182,57 @@ async function createUserDatabase(userId: string): Promise<string | null> {
     });
     
     if (!updateResponse.ok) {
-      console.error(`Failed to update user with database ID: ${updateResponse.status}`);
+      const errorText = await updateResponse.text();
+      console.error(`${logPrefix} Failed to update user record for '${userId}' with database ID '${databaseName}': ${updateResponse.status}. ${errorText}`);
+      // Decide if this is critical. For now, log and return DB name, but maybe throw?
+    } else {
+      console.log(`${logPrefix} Successfully updated user '${userId}' record.`);
     }
     
     return databaseName;
-  } catch (error) {
-    console.error("Error creating user database:", error);
-    return null;
+  } catch (error: any) {
+    console.error(`${logPrefix} Error creating user database:`, error);
+    throw new Error(`Failed to create user database: ${error.message}`);
   }
 }
 
 /**
- * Create a new Xata database in a workspace
+ * Get or create a database for a user, then return its info.
+ * This function remains local as it orchestrates the user-specific DB logic.
+ * @param userId - The ID of the user.
+ * @returns Database information object matching GetDatabaseSuccessResponse['data'].
+ * @throws Error if user ID is missing, or if DB creation/retrieval fails critically.
  */
-async function createXataDatabase(
-  workspaceId: string, 
-  databaseName: string, 
-  region = 'us-east-1'
-): Promise<any> {
-  const apiKey = process.env.XATA_API_KEY;
-  
-  if (!apiKey) {
-    throw new Error('XATA_API_KEY is required in environment variables');
-  }
-  
-  const createDatabaseResponse = await fetch(`https://api.xata.io/workspaces/${workspaceId}/dbs/${databaseName}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
-    },
-    body: JSON.stringify({
-      region: region
-    })
-  });
-  
-  if (!createDatabaseResponse.ok) {
-    const errorText = await createDatabaseResponse.text();
-    throw new Error(`Failed to create database: ${createDatabaseResponse.status} - ${errorText}`);
-  }
-  
-  return await createDatabaseResponse.json();
-}
-
-/**
- * Get information about a Xata database including tables and schemas
- */
-async function getXataDatabaseInfo(databaseId: string): Promise<Record<string, any>> {
-  try {
-    const apiKey = process.env.XATA_API_KEY;
-    if (!apiKey) {
-      throw new Error('XATA_API_KEY is required in environment variables');
-    }
-    
-    const workspaceSlug = process.env.XATA_WORKSPACE_SLUG;
-    if (!workspaceSlug) {
-      throw new Error('XATA_WORKSPACE_SLUG is required in environment variables');
-    }
-    
-    const workspace = await findXataWorkspace(workspaceSlug);
-    if (!workspace) {
-      throw new Error(`Workspace with slug/name "${workspaceSlug}" not found`);
-    }
-    
-    // Get list of tables in the database
-    const region = 'us-east-1'; // Default region
-    const branch = 'main'; // Default branch
-    const workspaceUrl = `https://${workspace.slug}-${workspace.unique_id}.${region}.xata.sh`;
-    
-    const databaseResponse = await fetch(`${workspaceUrl}/db/${databaseId}:${branch}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`
-      }
-    });
-    
-    if (!databaseResponse.ok) {
-      throw new Error(`Failed to get database: ${databaseResponse.status} ${databaseResponse.statusText}`);
-    }
-    
-    const databaseData = await databaseResponse.json() as any;
-    
-    // Get tables list 
-    const tablesResponse = await fetch(`${workspaceUrl}/db/${databaseId}:${branch}/tables`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`
-      }
-    });
-    
-    if (!tablesResponse.ok) {
-      throw new Error(`Failed to get tables: ${tablesResponse.status} ${tablesResponse.statusText}`);
-    }
-    
-    const tablesData = await tablesResponse.json() as { tables?: Array<{ id?: string; name: string; description?: string }> };
-    const tablesInfo = [];
-    
-    // Get schema for each table
-    for (const table of tablesData.tables || []) {
-      const tableResponse = await fetch(`${workspaceUrl}/db/${databaseId}:${branch}/tables/${table.name}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`
-        }
-      });
-      
-      if (!tableResponse.ok) {
-        console.warn(`Failed to get table schema for ${table.name}: ${tableResponse.status}`);
-        continue;
-      }
-      
-      const tableData = await tableResponse.json() as { columns?: Array<{ name: string; type: string }> };
-      const schema: Record<string, string> = {};
-      
-      // Convert Xata schema to our simplified format
-      if (tableData.columns) {
-        tableData.columns.forEach(column => {
-          schema[column.name] = column.type;
-        });
-      }
-      
-      tablesInfo.push({
-        id: table.id || `table_${table.name}`,
-        name: table.name,
-        description: table.description || `Table containing ${table.name} data`,
-        schema
-      });
-    }
-    
-    return {
-      database_id: databaseId,
-      database_name: databaseData.name || databaseId,
-      tables: tablesInfo
-    };
-  } catch (error) {
-    console.error("Error getting Xata database info:", error);
-    return {
-      database_id: databaseId,
-      error: "Failed to retrieve database information",
-      error_details: error instanceof Error ? error.message : String(error)
-    };
-  }
-}
-
-/**
- * Get or create a database for a user
- */
-async function getUserDatabase(userId: string): Promise<Record<string, any>> {
+async function getUserDatabase(userId: string): Promise<GetDatabaseSuccessResponse['data']> {
+  const logPrefix = '[DB_GET_USER_DB]';
   try {
     if (!userId) {
       throw new Error("User ID is required to get or create a database");
     }
     
-    // Check if user has a database ID
+    console.log(`${logPrefix} Checking for existing database ID for user: ${userId}`);
     let databaseId = await getUserDatabaseId(userId);
     
-    // If not, create a new database
     if (!databaseId) {
-      console.log(`No database found for user ${userId}, creating one...`);
+      console.log(`${logPrefix} No database ID found for user ${userId}, attempting to create one...`);
       databaseId = await createUserDatabase(userId);
       
       if (!databaseId) {
-        throw new Error("Failed to create database for user");
+        throw new Error("Failed to create and associate a database for the user.");
       }
-      
-      console.log(`Created new database ${databaseId} for user ${userId}`);
+      console.log(`${logPrefix} Created and associated new database '${databaseId}' for user ${userId}.`);
+    } else {
+       console.log(`${logPrefix} Found existing database ID '${databaseId}' for user ${userId}.`);
     }
     
-    // Get database information
-    return await getXataDatabaseInfo(databaseId);
-  } catch (error) {
-    console.error("Error getting user database:", error);
-    return {
-      error: "Failed to get database information",
-      details: error instanceof Error ? error.message : String(error)
-    };
+    console.log(`${logPrefix} Retrieving database details for ID: ${databaseId}`);
+    // Use getXataDatabaseInfo from xata-client.js (returns correct type now)
+    const dbInfo = await getXataDatabaseInfo(databaseId);
+    return dbInfo; 
+
+  } catch (error: any) {
+    console.error(`${logPrefix} Error getting or creating user database:`, error);
+    throw error; 
   }
 }
 
@@ -366,25 +241,29 @@ async function getUserDatabase(userId: string): Promise<Record<string, any>> {
  */
 const getDatabaseUtility: UtilityTool = {
   id: 'utility_get_database',
-  description: 'Get information about the user\'s dedicated database, including tables and schemas',
-  schema: {
-    // No parameters needed
-  },
+  description: 'Get information about the user\'s dedicated database, including tables and schemas. If no database exists for the user, one will be created.',
+  schema: {},
   
-  execute: async (userId: string, conversationId: string): Promise<any> => {
+  execute: async (userId: string, conversationId: string): Promise<GetDatabaseResponse> => {
+    const logPrefix = '📊 [DB_GET_DATABASE]';
     try {
-      console.log(`📊 [DATABASE] Getting database information for user ${userId}`);
-      
-      // Get or create user database and return its information
+      console.log(`${logPrefix} Getting database information for user ${userId}`);
       const databaseInfo = await getUserDatabase(userId);
       
-      return databaseInfo;
-    } catch (error) {
-      console.error("❌ [DATABASE] Error:", error);
-      return {
-        error: "Failed to get database information",
-        details: error instanceof Error ? error.message : String(error)
+      const successResponse: GetDatabaseSuccessResponse = {
+        status: 'success',
+        data: databaseInfo
       };
+      return successResponse;
+
+    } catch (error: any) {
+      console.error(`${logPrefix} Error:`, error);
+      const errorResponse: UtilityErrorResponse = {
+        status: "error",
+        error: "Failed to get database information",
+        details: error.message || String(error)
+      };
+      return errorResponse;
     }
   }
 };
@@ -393,4 +272,4 @@ const getDatabaseUtility: UtilityTool = {
 registry.register(getDatabaseUtility);
 
 // Export the utility
-export default getDatabaseUtility; 
+export default getDatabaseUtility;
