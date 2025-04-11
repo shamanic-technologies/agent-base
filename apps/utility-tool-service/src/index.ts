@@ -32,6 +32,8 @@ import './secret-utilities/stripe_list_customers.js';
 import './secret-utilities/stripe_search_customers.js';
 import './secret-utilities/stripe_get_customer.js';
 
+import './webhook-utilities/crisp_subscribe_message_send.js';
+
 // Re-export everything from the registry
 export * from './registry/index.js';
 
