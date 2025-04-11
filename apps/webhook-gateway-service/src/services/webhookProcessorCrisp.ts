@@ -8,6 +8,7 @@ import { storeWebhookEvent } from './databaseService.js';
 import axios from 'axios';
 // @ts-ignore
 import { Message } from 'ai';
+import { get } from 'http';
 
 /**
  * Process a webhook request end-to-end
@@ -34,9 +35,7 @@ export async function processWebhookCrisp(req: Request, res: Response): Promise<
     return;
   }
   
-  try {
-    // The user_id is already validated and available from req.headers['x-user-id']
-    
+  try {    
     // Store the webhook event in the database
     await storeWebhookEvent(WebhookProvider.CRISP, user_id, payload);
     console.log(`[WebhookGatewayService] Stored webhook event in database for user: ${user_id}`);
@@ -45,6 +44,12 @@ export async function processWebhookCrisp(req: Request, res: Response): Promise<
     const agentResponse = await axios.post(`${process.env.DATABASE_SERVICE_URL}/webhooks/get-agent`, {
       user_id,
       webhook_provider_id: WebhookProvider.CRISP
+    },
+    {
+      headers: {
+        'x-user-id': user_id,
+        'x-api-key': api_key
+      }
     });
     
     if (!agentResponse.data.success) {
@@ -73,7 +78,7 @@ export async function processWebhookCrisp(req: Request, res: Response): Promise<
       {
         headers: {
           'x-user-id': user_id,
-          'Content-Type': 'application/json'
+          'x-api-key': api_key
         }
       }
     );
@@ -107,7 +112,6 @@ export async function processWebhookCrisp(req: Request, res: Response): Promise<
         headers: {
           'x-user-id': user_id,
           'x-api-key': api_key,
-          'Content-Type': 'application/json'
         }
       }
     );

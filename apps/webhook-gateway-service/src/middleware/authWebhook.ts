@@ -14,13 +14,23 @@ import { WebhookEventPayloadCrisp } from '@agent-base/agents'; // Assuming this 
  * @returns {Promise<string>} A dummy API key.
  */
 async function getOrCreateWebhookApiKey(userId: string, providerId: string): Promise<string> {
-  console.warn(`[AuthMiddleware] Mocking API key retrieval for user ${userId}, provider ${providerId}`);
-  // Simulate an async operation if needed, e.g., await new Promise(resolve => setTimeout(resolve, 50));
-  // In a real scenario, call the Key Service endpoint:
-  // const response = await axios.post(`${process.env.KEY_SERVICE_URL}/keys/get-or-create`, { user_id: userId, key_name: `webhook_${providerId}` });
-  // if (!response.data.success) throw new Error('Failed to get or create API key');
-  // return response.data.data.api_key;
-  return `dummy-key-webhook-${providerId}-${userId}`; 
+    const keyName = `Webhook ${providerId}`;
+    console.log(`[WebhookGatewayService] Getting or creating API key for user: ${userId} and provider: ${providerId}`);
+    const keyResponse = await axios.get(`${process.env.KEY_SERVICE_URL}/keys/by-name?name=${encodeURIComponent(keyName)}`,
+      {
+        headers: {
+          'x-user-id': userId,
+        }
+      }
+    );
+    console.log(`[WebhookGatewayService] Key response: ${JSON.stringify(keyResponse.data)}`);
+    if (!keyResponse.data.success) {
+      throw new Error(`Failed to get or create API key for user ${userId}: ${keyResponse.data.error || 'Unknown error'}`);
+    }
+    
+    const api_key = keyResponse.data.apiKey;
+    console.log(`[WebhookGatewayService] Successfully retrieved API key for user: ${userId}`);
+    return api_key;
 }
 
 /**
@@ -55,8 +65,12 @@ export async function authWebhookMiddleware(req: Request, res: Response, next: N
 
     // Handle /webhook/:provider_id endpoint
     } else if (req.path.startsWith('/webhook/')) {
-      const providerId = req.params.provider_id;
-
+      // Extract provider ID from the URL path
+      const pathParts = req.path.split('/');
+      const providerId = pathParts.length > 2 ? pathParts[2] : undefined;
+      
+      console.log(`[AuthMiddleware] request received for provider: ${providerId}`);
+      
       // Check if the provider is supported (only 'crisp' for now)
       if (providerId !== 'crisp') {
         console.error(`[AuthMiddleware] Unsupported webhook provider: ${providerId}`);
