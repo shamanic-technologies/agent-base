@@ -36,7 +36,7 @@ import './secret-utilities/crisp_send_message.js';
 import './webhook-utilities/crisp_subscribe_message_send.js';
 
 // Re-export everything from the registry
-export * from './registry/index.js';
+export * from './registry/registry.js';
 
 /**
  * Get information about all available utilities
