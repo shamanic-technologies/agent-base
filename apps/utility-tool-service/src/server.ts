@@ -10,30 +10,11 @@ import express from 'express';
 import cors from 'cors';
 import os from 'os';
 
-// Import registry and utilities
-import { registry } from './registry/registry.js';
+// --- Ensure utilities are registered by importing index.ts --- 
+import './index.js';
 
-// Import all utilities to ensure they register themselves
-import './api-utilities/database/get-database.js';
-import './api-utilities/database/create-table.js';
-import './api-utilities/database/get-table.js';
-import './api-utilities/database/query-table.js';
-import './api-utilities/database/alter-table.js';
-import './api-utilities/database/delete-table.js';
-import './api-utilities/google/search.js';
-import './api-utilities/google/maps.js';
-import './api-utilities/google/flights.js';
-import './api-utilities/web/read-webpage.js';
-import './basic-utilities/get-current-datetime.js';
-import './oauth-utilities/gmail_read.js';
-import './secret-utilities/stripe_list_charges.js';
-import './secret-utilities/stripe_list_refunds.js';
-import './secret-utilities/stripe_list_balance_transactions.js';
-import './secret-utilities/stripe_refund.js';
-import './secret-utilities/stripe_list_customers.js';
-import './secret-utilities/stripe_search_customers.js';
-import './secret-utilities/stripe_get_customer.js';
-import './webhook-utilities/crisp_subscribe_message_send.js';
+// Import registry directly - side-effect imports below are redundant if index.ts is run
+import { registry } from './registry/registry.js'; 
 
 // Load environment variables based on NODE_ENV
 const nodeEnv = process.env.NODE_ENV || 'development';
