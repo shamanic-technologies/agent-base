@@ -26,6 +26,12 @@ export * from './types/api-keys.js';
 // Export secret management types
 export * from './types/secrets.js';
 
+// Export utility types
+export * from './types/utility.js';
+
+// Export credential types
+export * from './types/credential.js';
+
 // Export utility functions
 export * from './utils/httpClient.js';
 

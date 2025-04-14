@@ -10,7 +10,7 @@ import {
   DatabaseResponse,
   CredentialsResponse,
   GetUserCredentialsInput
-} from '@agent-base/credentials';
+} from '@agent-base/agents';
 
 const DB_SERVICE_URL = process.env.DATABASE_SERVICE_URL;
 

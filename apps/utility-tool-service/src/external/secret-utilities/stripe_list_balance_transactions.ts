@@ -12,8 +12,8 @@ import {
   SetupNeededResponse,
   UtilityErrorResponse,
   UtilityToolSchema // Import if needed
-} from '../types/index.js'; // Keep generic types
-import { registry } from '../registry/registry.js';
+} from '../../types/index.js'; // Keep generic types
+import { registry } from '../../registry/registry.js';
 import {
   getStripeEnvironmentVariables,
   checkStripeApiKeys,
@@ -25,7 +25,7 @@ import {
   StripeTransactionsResponse,
   StripeTransaction,
   StripeTransactionsSuccessResponse // Also needed for constructing success response
-} from '../clients/stripe-utils.js';
+} from '../external/oauth-utilities/clients/stripe-utils.js';
 
 /**
  * Available transaction types to filter by (as per Stripe documentation)

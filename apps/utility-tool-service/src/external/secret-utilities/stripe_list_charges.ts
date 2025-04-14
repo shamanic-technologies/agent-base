@@ -11,8 +11,8 @@ import {
   SetupNeededResponse,
   UtilityErrorResponse,
   UtilityToolSchema // Import if needed
-} from '../types/index.js';
-import { registry } from '../registry/registry.js';
+} from '../../types/index.js';
+import { registry } from '../../registry/registry.js';
 import {
   getStripeEnvironmentVariables,
   checkStripeApiKeys,
@@ -22,7 +22,7 @@ import {
   StripeTransactionsRequest, 
   StripeTransactionsResponse,
   StripeTransaction
-} from '../clients/stripe-utils.js';
+} from '../external/oauth-utilities/clients/stripe-utils.js';
 
 // Combined response type - simplified as StripeTransactionsResponse handles the union
 // type StripeListChargesResponse = StripeTransactionsResponse | SetupNeededResponse;

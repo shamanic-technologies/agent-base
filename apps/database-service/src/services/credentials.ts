@@ -12,10 +12,10 @@ import {
   GetUserCredentialsInput,
   CredentialsResponse,
   DatabaseResponse,
-  mapToDatabase,
-  mapFromDatabase,
+  mapCredentialsToDatabase,
+  mapCredentialsFromDatabase,
   DatabaseRecord
-} from '@agent-base/credentials';
+} from '@agent-base/agents';
 
 const COLLECTION_NAME = 'user_credentials';
 
@@ -30,7 +30,7 @@ export async function createOrUpdateCredentials(
         client = await getClient();
     
         // Convert input to database format
-        const dbInput = mapToDatabase(input);
+        const dbInput = mapCredentialsToDatabase(input);
 
         for (const scope of dbInput.scopes) {
             const result = await client.query(
@@ -116,7 +116,7 @@ export async function getCredentials(
     }
 
     // Convert database result to application format
-    const credentials = result.rows.map(mapFromDatabase) as Credential[];
+    const credentials = result.rows.map(mapCredentialsFromDatabase) as Credential[];
 
     return {
       success: true,

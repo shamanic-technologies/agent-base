@@ -11,15 +11,15 @@ import {
   SetupNeededResponse,
   UtilityErrorResponse,
   UtilityToolSchema // Import if needed
-} from '../types/index.js';
-import { registry } from '../registry/registry.js';
+} from '../../types/index.js';
+import { registry } from '../../registry/registry.js';
 import {
   getStripeEnvironmentVariables,
   checkStripeApiKeys,
   getStripeApiKeys,
   generateSetupNeededResponse,
   formatStripeErrorResponse
-} from '../clients/stripe-utils.js';
+} from '../external/oauth-utilities/clients/stripe-utils.js';
 
 // --- Local Type Definitions for this Utility ---
 

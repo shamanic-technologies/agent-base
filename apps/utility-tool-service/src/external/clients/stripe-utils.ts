@@ -4,7 +4,7 @@
  * Shared functions for Stripe API operations
  */
 import axios from 'axios';
-import { SetupNeededResponse, UtilityErrorResponse } from '../types/index.js';
+import { SetupNeededResponse, UtilityErrorResponse } from '../../../types/index.js';
 // import { StripeAuthNeededResponse } from '../types/index.js';
 
 // --- Relocated Stripe Type Definitions ---

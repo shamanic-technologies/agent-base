@@ -1,0 +1,161 @@
+[
+  {
+    "id": "utility_gmail_read",
+    "provider": "gmail",
+    "description": "Read emails from Gmail using the Gmail API.",
+    "schema": {
+      "query": {
+        "type": "string",
+        "required": false,
+        "description": "Search query to filter emails (same format as Gmail search).",
+        "examples": [
+          "from:no-reply@example.com",
+          "is:unread subject:Important"
+        ]
+      },
+      "maxResults": {
+        "type": "number",
+        "required": false,
+        "description": "Maximum number of emails to return (default: 10).",
+        "examples": [
+          5,
+          20
+        ]
+      },
+      "labelIds": {
+        "type": "array_string",
+        "required": false,
+        "description": "Array of label IDs to filter emails by (e.g., [\"INBOX\", \"UNREAD\"]). Default: [\"INBOX\"].",
+        "examples": [
+          [
+            "INBOX"
+          ],
+          [
+            "SENT",
+            "IMPORTANT"
+          ]
+        ]
+      }
+    },
+    "authMethod": "OAUTH",
+    "requiredSecrets": [],
+    "requiredScopes": [
+      "https://www.googleapis.com/auth/gmail.readonly"
+    ],
+    "apiDetails": {
+      "method": "GET",
+      "baseUrl": "https://gmail.googleapis.com/gmail/v1",
+      "pathTemplate": "/users/me/messages",
+      "paramMappings": {
+        "query": {
+          "query": "q",
+          "maxResults": "maxResults",
+          "labelIds": {
+            "target": "labelIds",
+            "transform": "joinComma"
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "stripe_list_customers",
+    "provider": "stripe",
+    "description": "Lists customers in Stripe, optionally filtered.",
+    "schema": {
+      "limit": {
+        "type": "number",
+        "required": false,
+        "description": "Maximum number of customers to return (1-100, default 10).",
+        "examples": [
+          10,
+          50
+        ]
+      },
+      "email": {
+        "type": "string",
+        "required": false,
+        "description": "Filter customers by email address.",
+        "examples": [
+          "customer@example.com"
+        ]
+      },
+      "starting_after": {
+        "type": "string",
+        "required": false,
+        "description": "Cursor for pagination (customer ID to start after).",
+        "examples": [
+          "cus_PqKWHRv7K3sk3h"
+        ]
+      },
+      "ending_before": {
+        "type": "string",
+        "required": false,
+        "description": "Cursor for pagination (customer ID to end before).",
+        "examples": [
+          "cus_9K87654321fedcba"
+        ]
+      }
+    },
+    "authMethod": "API_KEY",
+    "requiredSecrets": [
+      "api_secret_key"
+    ],
+    "apiKeyDetails": {
+      "secretName": "api_secret_key",
+      "scheme": "Bearer"
+    },
+    "apiDetails": {
+      "method": "GET",
+      "baseUrl": "https://api.stripe.com/v1",
+      "pathTemplate": "/customers",
+      "paramMappings": {
+        "query": {
+          "limit": "limit",
+          "email": "email",
+          "starting_after": "starting_after",
+          "ending_before": "ending_before"
+        }
+      },
+      "staticHeaders": {
+        "Stripe-Version": "2024-04-10"
+      }
+    }
+  },
+  {
+    "id": "utility_crisp_subscribe_message_send",
+    "provider": "crisp",
+    "description": "Checks prerequisites for setting up a Crisp webhook to forward visitor messages.",
+    "schema": {},
+    "authMethod": "NONE",
+    "requiredSecrets": [
+      "website_id",
+      "webhook_url_inputed"
+    ],
+    "apiDetails": null
+  },
+  {
+    "id": "utility_example_get_data",
+    "provider": "GMAIL",
+    "description": "A simple example tool.",
+    "schema": {
+      "itemId": {
+        "type": "string",
+        "required": true,
+        "description": "The ID of the item to fetch."
+      }
+    },
+    "authMethod": "NONE",
+    "requiredSecrets": [],
+    "apiDetails": {
+      "method": "GET",
+      "baseUrl": "https://jsonplaceholder.typicode.com",
+      "pathTemplate": "/todos/{itemId}",
+      "paramMappings": {
+        "path": {
+          "itemId": "itemId"
+        }
+      }
+    }
+  }
+]
