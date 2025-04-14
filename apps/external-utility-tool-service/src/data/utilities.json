@@ -5,27 +5,35 @@
     "description": "Read emails from Gmail using the Gmail API.",
     "schema": {
       "query": {
-        "type": "string",
-        "required": false,
-        "description": "Search query to filter emails (same format as Gmail search).",
+        "jsonSchema": {
+          "type": "string",
+          "description": "Search query to filter emails (same format as Gmail search)."
+        },
         "examples": [
           "from:no-reply@example.com",
           "is:unread subject:Important"
         ]
       },
       "maxResults": {
-        "type": "number",
-        "required": false,
-        "description": "Maximum number of emails to return (default: 10).",
+        "jsonSchema": {
+          "type": "number",
+          "description": "Maximum number of emails to return (default: 10).",
+          "default": 10
+        },
         "examples": [
           5,
           20
         ]
       },
       "labelIds": {
-        "type": "array_string",
-        "required": false,
-        "description": "Array of label IDs to filter emails by (e.g., [\"INBOX\", \"UNREAD\"]). Default: [\"INBOX\"].",
+        "jsonSchema": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Array of label IDs to filter emails by (e.g., [\"INBOX\", \"UNREAD\"]). Default: [\"INBOX\"].",
+          "default": ["INBOX"]
+        },
         "examples": [
           [
             "INBOX"
@@ -64,34 +72,42 @@
     "description": "Lists customers in Stripe, optionally filtered.",
     "schema": {
       "limit": {
-        "type": "number",
-        "required": false,
-        "description": "Maximum number of customers to return (1-100, default 10).",
+        "jsonSchema": {
+          "type": "number",
+          "description": "Maximum number of customers to return (1-100, default 10).",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 10
+        },
         "examples": [
           10,
           50
         ]
       },
       "email": {
-        "type": "string",
-        "required": false,
-        "description": "Filter customers by email address.",
+        "jsonSchema": {
+          "type": "string",
+          "format": "email",
+          "description": "Filter customers by email address."
+        },
         "examples": [
           "customer@example.com"
         ]
       },
       "starting_after": {
-        "type": "string",
-        "required": false,
-        "description": "Cursor for pagination (customer ID to start after).",
+        "jsonSchema": {
+          "type": "string",
+          "description": "Cursor for pagination (customer ID to start after)."
+        },
         "examples": [
           "cus_PqKWHRv7K3sk3h"
         ]
       },
       "ending_before": {
-        "type": "string",
-        "required": false,
-        "description": "Cursor for pagination (customer ID to end before).",
+        "jsonSchema": {
+          "type": "string",
+          "description": "Cursor for pagination (customer ID to end before)."
+        },
         "examples": [
           "cus_9K87654321fedcba"
         ]
@@ -136,13 +152,14 @@
   },
   {
     "id": "utility_example_get_data",
-    "provider": "GMAIL",
+    "provider": "gmail",
     "description": "A simple example tool.",
     "schema": {
       "itemId": {
-        "type": "string",
-        "required": true,
-        "description": "The ID of the item to fetch."
+        "jsonSchema": {
+          "type": "string",
+          "description": "The ID of the item to fetch."
+        }
       }
     },
     "authMethod": "NONE",

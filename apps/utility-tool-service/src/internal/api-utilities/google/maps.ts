@@ -7,11 +7,10 @@
 import axios from 'axios';
 import { z } from 'zod'; // Import Zod
 import { 
-  UtilityTool,
-  UtilityErrorResponse,
-  UtilityToolSchema // Import if needed
-} from '../../types/index.js'; // Corrected path relative to api-utilities/google/
-import { registry } from '../../registry/registry.js'; // Corrected path
+  InternalUtilityTool,
+  ErrorResponse // Import if needed
+} from '@agent-base/agents'; // Corrected path relative to api-utilities/google/
+import { registry } from '../../../registry/registry.js'; // Corrected path
 
 // --- Local Type Definitions for this Utility ---
 
@@ -50,14 +49,14 @@ interface GoogleMapsSuccessResponse {
   }
 }
 
-type GoogleMapsResponse = GoogleMapsSuccessResponse | UtilityErrorResponse;
+type GoogleMapsResponse = GoogleMapsSuccessResponse | ErrorResponse;
 
 // --- End Local Type Definitions ---
 
 /**
  * Implementation of the Google Maps utility
  */
-const googleMapsUtility: UtilityTool = {
+const googleMapsUtility: InternalUtilityTool = {
   id: 'utility_google_maps',
   description: 'Search for locations, businesses, and places using Google Maps (via SerpAPI).',
   // Update schema to match Record<string, UtilityToolSchema>
@@ -90,7 +89,7 @@ const googleMapsUtility: UtilityTool = {
       
       // Basic validation
       if (!query || typeof query !== 'string') {
-        return { status: 'error', error: "Search query is required and must be a string" };
+        return { success: false, error: "Search query is required and must be a string" } as ErrorResponse;
       }
       
       // Ensure limit is within reasonable bounds (e.g., 1-20 for SerpAPI maps)
@@ -102,7 +101,7 @@ const googleMapsUtility: UtilityTool = {
       const apiKey = process.env.SERPAPI_API_KEY;
       if (!apiKey) {
         console.error(`${logPrefix} SERPAPI_API_KEY not set`);
-        return { status: 'error', error: "Service configuration error: SERPAPI_API_KEY is not set." };
+        return { success: false, error: "Service configuration error: SERPAPI_API_KEY is not set." } as ErrorResponse;
       }
       
       let apiUrl = `https://serpapi.com/search.json?engine=google_maps&q=${encodeURIComponent(query)}&api_key=${apiKey}`;
@@ -120,10 +119,10 @@ const googleMapsUtility: UtilityTool = {
         const errorText = await response.text();
         console.error(`${logPrefix} SerpAPI error (${response.status}): ${errorText}`);
         return { 
-            status: 'error', 
+            success: false, 
             error: `Google Maps search failed (HTTP ${response.status})`, 
             details: `SerpAPI error: ${errorText}` 
-        };
+        } as ErrorResponse;
       }
 
       const data = await response.json();
@@ -202,10 +201,10 @@ const googleMapsUtility: UtilityTool = {
       // Remove Zod error handling
       // Return standard UtilityErrorResponse
       return {
-        status: 'error',
+        success: false,
         error: 'Failed to search Google Maps',
         details: error instanceof Error ? error.message : String(error)
-      };
+      } as ErrorResponse;
     }
   }
 };

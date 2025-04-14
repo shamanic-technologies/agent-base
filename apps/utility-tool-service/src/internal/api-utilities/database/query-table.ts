@@ -6,11 +6,10 @@
  */
 import { z } from 'zod'; // Import Zod
 import { 
-  UtilityTool, 
-  UtilityErrorResponse,
-  UtilityToolSchema // Import UtilityToolSchema
-} from '../../types/index.js';
-import { registry } from '../../registry/registry.js';
+  InternalUtilityTool, 
+  ErrorResponse,
+} from '@agent-base/agents';
+import { registry } from '../../../registry/registry.js';
 import {
   findXataWorkspace,
   // getXataClient // Not used here, direct fetch calls are made
@@ -72,14 +71,14 @@ type QueryTableSuccessResponse =
   | QueryDeleteSuccessResponse;
 
 // Type union for the utility's overall response
-type QueryTableResponse = QueryTableSuccessResponse | UtilityErrorResponse;
+type QueryTableResponse = QueryTableSuccessResponse | ErrorResponse;
 
 // --- End Local Definitions ---
 
 /**
  * Implementation of the Query Table utility
  */
-const queryTableUtility: UtilityTool = {
+const queryTableUtility: InternalUtilityTool = {
   id: 'utility_query_table',
   description: 'Execute SQL-like queries (SELECT, INSERT, UPDATE, DELETE) on a specific database table and return results.',
   // Update schema to use Zod
@@ -122,11 +121,11 @@ const queryTableUtility: UtilityTool = {
       
       // Basic validation
       if (!table || typeof table !== 'string') {
-        return { status: 'error', error: "Table name is required and must be a string" };
+        return { success: false, error: "Table name is required and must be a string" } as ErrorResponse;
       }
       
       if (!query || typeof query !== 'string') {
-        return { status: 'error', error: "Query is required and must be a string" };
+        return { success: false, error: "Query is required and must be a string" } as ErrorResponse;
       }
       
       console.log(`${logPrefix} Executing query on table "${table}": ${query}`);
@@ -137,19 +136,19 @@ const queryTableUtility: UtilityTool = {
       // Get workspace
       const workspaceSlug = process.env.XATA_WORKSPACE_SLUG;
       if (!workspaceSlug) {
-        return { status: 'error', error: 'Service configuration error: XATA_WORKSPACE_SLUG not set' };
+        return { success: false, error: 'Service configuration error: XATA_WORKSPACE_SLUG not set' } as ErrorResponse;
       }
       
       // Find the workspace
       const workspace = await findXataWorkspace(workspaceSlug);
       if (!workspace) {
-        return { status: 'error', error: `Configuration error: Workspace '${workspaceSlug}' not found` };
+        return { success: false, error: `Configuration error: Workspace '${workspaceSlug}' not found` } as ErrorResponse;
       }
       
       // Use the database name from environment variables
       const databaseName = process.env.XATA_DATABASE;
       if (!databaseName) {
-        return { status: 'error', error: 'Service configuration error: XATA_DATABASE not set' };
+        return { success: false, error: 'Service configuration error: XATA_DATABASE not set' } as ErrorResponse;
       }
       
       // Configure Xata API access
@@ -163,7 +162,7 @@ const queryTableUtility: UtilityTool = {
       
       // Check parse result
       if (!parsedQuery.success) {
-         return { status: 'error', error: 'Failed to parse SQL query', details: parsedQuery.error };
+         return { success: false, error: 'Failed to parse SQL query', details: parsedQuery.error } as ErrorResponse;
       }
 
       const { type, columns, values, filters, recordId } = parsedQuery; 
@@ -196,7 +195,7 @@ const queryTableUtility: UtilityTool = {
         if (!queryResponse.ok) {
           const errorText = await queryResponse.text();
           console.error(`${logPrefix} API Error (SELECT): ${queryResponse.status}`, errorText);
-          return { status: 'error', error: 'Failed to execute SELECT query', details: `Status ${queryResponse.status}: ${errorText}` };
+          return { success: false, error: 'Failed to execute SELECT query', details: `Status ${queryResponse.status}: ${errorText}` } as ErrorResponse;
         }
         
         const queryResult = await queryResponse.json();
@@ -216,7 +215,7 @@ const queryTableUtility: UtilityTool = {
       // --- Handle INSERT Query ---
       } else if (type === 'INSERT') {
         if (!values || Object.keys(values).length === 0) {
-           return { status: 'error', error: 'No values provided or parsed for INSERT query.' };
+           return { success: false, error: 'No values provided or parsed for INSERT query.' } as ErrorResponse;
         }
         console.log(`${logPrefix} Executing INSERT with values:`, values);
         
@@ -236,7 +235,7 @@ const queryTableUtility: UtilityTool = {
         if (!insertResponse.ok) {
           const errorText = await insertResponse.text();
           console.error(`${logPrefix} API Error (INSERT): ${insertResponse.status}`, errorText);
-          return { status: 'error', error: 'Failed to execute INSERT query', details: `Status ${insertResponse.status}: ${errorText}` };
+          return { success: false, error: 'Failed to execute INSERT query', details: `Status ${insertResponse.status}: ${errorText}` } as ErrorResponse;
         }
         
         const insertResult = await insertResponse.json();
@@ -255,10 +254,10 @@ const queryTableUtility: UtilityTool = {
       // --- Handle UPDATE Query (Requires Record ID) ---
       } else if (type === 'UPDATE') {
          if (!recordId) {
-            return { status: 'error', error: 'UPDATE query requires a record ID in the WHERE clause (e.g., WHERE id = :id)' };
+            return { success: false, error: 'UPDATE query requires a record ID in the WHERE clause (e.g., WHERE id = :id)' } as ErrorResponse;
          }
          if (!values || Object.keys(values).length === 0) {
-            return { status: 'error', error: 'No values provided for UPDATE query.' };
+            return { success: false, error: 'No values provided for UPDATE query.' } as ErrorResponse;
          }
          console.log(`${logPrefix} Executing UPDATE for record '${recordId}' with values:`, values);
 
@@ -279,9 +278,9 @@ const queryTableUtility: UtilityTool = {
             console.error(`${logPrefix} API Error (UPDATE): ${updateResponse.status}`, errorText);
             // Handle 404 specifically
             if (updateResponse.status === 404) {
-               return { status: 'error', error: `Record with ID '${recordId}' not found for UPDATE.` };
+               return { success: false, error: `Record with ID '${recordId}' not found for UPDATE.` } as ErrorResponse;
             }
-            return { status: 'error', error: 'Failed to execute UPDATE query', details: `Status ${updateResponse.status}: ${errorText}` };
+            return { success: false, error: 'Failed to execute UPDATE query', details: `Status ${updateResponse.status}: ${errorText}` } as ErrorResponse;
          }
 
          const successResponse: QueryUpdateSuccessResponse = {
@@ -297,7 +296,7 @@ const queryTableUtility: UtilityTool = {
       // --- Handle DELETE Query (Requires Record ID) ---
       } else if (type === 'DELETE') {
          if (!recordId) {
-            return { status: 'error', error: 'DELETE query requires a record ID in the WHERE clause (e.g., WHERE id = :id)' };
+            return { success: false, error: 'DELETE query requires a record ID in the WHERE clause (e.g., WHERE id = :id)' } as ErrorResponse;
          }
          console.log(`${logPrefix} Executing DELETE for record '${recordId}'`);
 
@@ -316,9 +315,9 @@ const queryTableUtility: UtilityTool = {
             console.error(`${logPrefix} API Error (DELETE): ${deleteResponse.status}`, errorText);
              // Handle 404 specifically
             if (deleteResponse.status === 404) {
-               return { status: 'error', error: `Record with ID '${recordId}' not found for DELETE.` };
+               return { success: false, error: `Record with ID '${recordId}' not found for DELETE.` } as ErrorResponse;
             }
-            return { status: 'error', error: 'Failed to execute DELETE query', details: `Status ${deleteResponse.status}: ${errorText}` };
+            return { success: false, error: 'Failed to execute DELETE query', details: `Status ${deleteResponse.status}: ${errorText}` } as ErrorResponse;
          }
 
          const successResponse: QueryDeleteSuccessResponse = {
@@ -333,13 +332,13 @@ const queryTableUtility: UtilityTool = {
 
       } else {
         // Should not happen if parser is exhaustive
-        return { status: 'error', error: 'Unsupported or unparsed query type.', details: `Parsed type: ${type}` };
+        return { success: false, error: 'Unsupported or unparsed query type.', details: `Parsed type: ${type}` } as ErrorResponse;
       }
 
     } catch (error: any) {
       console.error(`${logPrefix} Error executing query:`, error);
-      const errorResponse: UtilityErrorResponse = {
-        status: "error",
+      const errorResponse: ErrorResponse = {
+        success: false,
         error: "Failed to execute query",
         details: error.message || String(error)
       };

@@ -6,11 +6,11 @@
 import { format } from 'date-fns';
 import { z } from 'zod';
 import { 
-  UtilityTool,
-  UtilityErrorResponse,
-  UtilityToolSchema // Import the schema type if needed, or rely on inference
-} from '../types/index.js';
-import { registry } from '../registry/registry.js';
+  InternalUtilityTool,
+  ErrorResponse,
+  UtilityToolParamSchema // Import the schema type if needed, or rely on inference
+} from '@agent-base/agents';
+import { registry } from '../../registry/registry.js';
 
 // --- Local Type Definitions ---
 export interface DateTimeRequest {
@@ -21,7 +21,7 @@ export interface DateTimeRequest {
 /**
  * Implementation of the Current DateTime utility
  */
-const getCurrentDateTimeUtility: UtilityTool = {
+const getCurrentDateTimeUtility: InternalUtilityTool = {
   id: 'utility_get_current_datetime',
   description: 'Get current date and time in various formats',
   // Update schema to match Record<string, UtilityToolSchema>
@@ -103,8 +103,8 @@ const getCurrentDateTimeUtility: UtilityTool = {
       // Remove Zod validation error handling here
 
       // Handle other errors - return standard UtilityErrorResponse
-      const errorResponse: UtilityErrorResponse = {
-        status: 'error', 
+      const errorResponse: ErrorResponse = {
+        success: false, 
         error: "Failed to get current date and time",
         details: error instanceof Error ? error.message : String(error)
       };

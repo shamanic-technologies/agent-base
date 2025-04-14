@@ -3,62 +3,65 @@
  * 
  * Centralized registry for all utility tools
  */
-import { UtilityTool, UtilityInfo } from '../types/index.js';
+import { InternalUtilityTool, 
+  InternalUtilityInfo,
+  UtilitiesList,
+  UtilitiesListItem
+} from '@agent-base/agents';
 
 /**
  * Registry class for managing utility tools
  */
-class UtilityRegistry {
-  private utilities: Map<string, UtilityTool> = new Map();
+class InternalUtilityRegistry {
+  private utilities: Map<string, InternalUtilityTool> = new Map();
   
   /**
    * Register a utility tool
    * @param utility The utility tool to register
    */
-  register(utility: UtilityTool): void {
+  register(utility: InternalUtilityTool): void {
     this.utilities.set(utility.id, utility);
     console.log(`📦 Registered utility: ${utility.id}`);
   }
   
   /**
-   * Get a specific utility by ID
+   * Get a specific INTERNAL utility by ID
    * @param id The ID of the utility to retrieve
    * @returns The utility if found, undefined otherwise
    */
-  getUtility(id: string): UtilityTool | undefined {
+  getInternalUtility(id: string): InternalUtilityTool | undefined {
     return this.utilities.get(id);
   }
   
   /**
-   * Get all registered utilities
+   * Get all registered INTERNAL utilities
    * @returns Array of all registered utilities
    */
-  getAllUtilities(): UtilityTool[] {
+  getAllInternalUtilities(): InternalUtilityTool[] {
     return Array.from(this.utilities.values());
   }
   
   /**
-   * Get IDs of all registered utilities
+   * Get IDs of all registered INTERNAL utilities
    * @returns Array of utility IDs
    */
-  getUtilityIds(): string[] {
+  getInternalUtilityIds(): string[] {
     return Array.from(this.utilities.keys());
   }
   
   /**
-   * List all available utilities with their metadata
+   * List all available INTERNAL utilities with their metadata
    * @returns Array of utility information objects
    */
-  listUtilities(): UtilityInfo[] {
-    return this.getAllUtilities().map(utility => ({
+  listInternalUtilities(): UtilitiesList {
+    return this.getAllInternalUtilities().map(utility => ({
       id: utility.id,
       description: utility.description,
-      schema: utility.schema
-    }));
+    } as UtilitiesListItem));
   }
   
   /**
-   * Execute a utility with the given parameters
+   * Execute an INTERNAL utility with the given parameters
    * @param utilityId The ID of the utility to execute
    * @param userId The ID of the user making the request
    * @param conversationId The ID of the conversation context
@@ -66,29 +69,28 @@ class UtilityRegistry {
    * @param agentId The ID of the agent making the request
    * @returns The result of the utility execution or an error
    */
-  async execute(
+  async executeInternalUtility(
     utilityId: string,
     userId: string,
     conversationId: string,
     params: any,
     agentId?: string
   ): Promise<any> {
-    const utility = this.getUtility(utilityId);
+    const utility = this.getInternalUtility(utilityId);
     
     if (!utility) {
-      return {
-        error: `Utility with ID '${utilityId}' not found`,
-        available_utilities: this.getUtilityIds()
-      };
+      console.error(`[Registry] Attempted to execute non-existent internal utility: ${utilityId}`);
+      throw new Error(`Internal utility with ID '${utilityId}' not found in registry.`);
     }
     
     try {
-      console.log(`⚙️ Executing utility: ${utilityId}`);
+      console.log(`⚙️ Executing internal utility: ${utilityId}`);
       return await utility.execute(userId, conversationId, params, agentId);
     } catch (error) {
-      console.error(`❌ Error executing utility ${utilityId}:`, error);
+      console.error(`❌ Error executing internal utility ${utilityId}:`, error);
       return {
-        error: `Error executing utility ${utilityId}`,
+        success: false,
+        error: `Error executing internal utility ${utilityId}`,
         details: error instanceof Error ? error.message : String(error)
       };
     }
@@ -96,4 +98,4 @@ class UtilityRegistry {
 }
 
 // Singleton instance
-export const registry = new UtilityRegistry(); 
+export const registry = new InternalUtilityRegistry(); 

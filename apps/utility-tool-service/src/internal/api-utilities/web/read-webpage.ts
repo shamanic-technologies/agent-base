@@ -5,8 +5,8 @@
  * Useful for fetching clean, LLM-friendly content from websites.
  */
 import { z } from 'zod'; // Import Zod
-import { UtilityTool, UtilityToolSchema, UtilityErrorResponse } from '../../types/index.js';
-import { registry } from '../../registry/registry.js';
+import { InternalUtilityTool, ErrorResponse } from '@agent-base/agents';
+import { registry } from '../../../registry/registry.js';
 
 // --- Local Type Definitions ---
 // Moved from types/index.ts
@@ -30,13 +30,13 @@ interface ReadWebPageSuccessResponse {
     };
 }
 
-type ReadWebPageResponse = ReadWebPageSuccessResponse | UtilityErrorResponse;
+type ReadWebPageResponse = ReadWebPageSuccessResponse | ErrorResponse;
 // --- End Local Definitions ---
 
 /**
  * Implementation of the FireCrawl content extraction utility
  */
-const readWebPage: UtilityTool = {
+const readWebPage: InternalUtilityTool = {
   id: 'utility_read_webpage',
   description: 'Read the content of a webpage using Firecrawl API',
   // Update schema to match Record<string, UtilityToolSchema>
@@ -63,10 +63,10 @@ const readWebPage: UtilityTool = {
       
       // Basic validation still useful within execute if not relying on central validation
       if (!url || typeof url !== 'string') {
-        return { status: 'error', error: "URL is required and must be a string" };
+        return { success: false, error: "URL is required and must be a string" } as ErrorResponse;
       }
       if (!url.match(/^https?:\/\/.+/)) {
-        return { status: 'error', error: "Invalid URL format. URL must start with http:// or https://" };
+        return { success: false, error: "Invalid URL format. URL must start with http:// or https://" } as ErrorResponse;
       }
       
       console.log(`${logPrefix} Extracting content from: "${url}" (onlyMainContent: ${onlyMainContent})`);
@@ -75,7 +75,7 @@ const readWebPage: UtilityTool = {
       const apiKey = process.env.FIRECRAWL_API_KEY;
       if (!apiKey) {
         console.error(`${logPrefix} FIRECRAWL_API_KEY not set`);
-        return { status: 'error', error: "Service configuration error: FIRECRAWL_API_KEY is not set." };
+        return { success: false, error: "Service configuration error: FIRECRAWL_API_KEY is not set." } as ErrorResponse;
       }
       
       console.log('Firecrawl apiKey length:', apiKey.length); // Log length instead of key
@@ -99,10 +99,10 @@ const readWebPage: UtilityTool = {
         const errorText = await response.text();
         console.error(`${logPrefix} FireCrawl API error (${response.status}): ${errorText}`);
         return {
-            status: 'error',
+            success: false,
             error: `Webpage scrape failed (HTTP ${response.status})`,
             details: errorText
-        };
+        } as ErrorResponse;
       }
 
       const firecrawlData = await response.json();
@@ -110,10 +110,10 @@ const readWebPage: UtilityTool = {
       if (!firecrawlData || !firecrawlData.success || !firecrawlData.data) {
         console.error(`${logPrefix} FireCrawl response indicated failure or missing data:`, firecrawlData);
         return {
-            status: 'error',
+            success: false,
             error: 'Failed to extract content from webpage',
             details: firecrawlData?.message || 'FireCrawl API did not return valid data.'
-        };
+        } as ErrorResponse;
       }
 
       // Return the extraction results in standard format
@@ -137,10 +137,10 @@ const readWebPage: UtilityTool = {
       // Remove Zod error handling
       // Return standard UtilityErrorResponse
       return {
-        status: 'error',
+        success: false,
         error: 'Failed to read webpage content',
         details: error instanceof Error ? error.message : String(error)
-      };
+      } as ErrorResponse;
     }
   }
 };

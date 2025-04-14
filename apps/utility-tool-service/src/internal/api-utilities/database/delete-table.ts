@@ -5,11 +5,10 @@
  */
 import { z } from 'zod'; // Import Zod
 import { 
-  UtilityTool, 
-  UtilityErrorResponse,
-  UtilityToolSchema // Import if needed
-} from '../../types/index.js';
-import { registry } from '../../registry/registry.js';
+  InternalUtilityTool,
+  ErrorResponse // Import if needed
+} from '@agent-base/agents';
+import { registry } from '../../../registry/registry.js';
 import {
   findXataWorkspace
 } from '../../clients/xata-client.js';
@@ -31,14 +30,14 @@ interface DeleteTableSuccessResponse {
   }
 }
 
-type DeleteTableResponse = DeleteTableSuccessResponse | UtilityErrorResponse;
+type DeleteTableResponse = DeleteTableSuccessResponse | ErrorResponse;
 
 // --- End Local Definitions ---
 
 /**
  * Implementation of the Delete Table utility
  */
-const deleteTableUtility: UtilityTool = {
+const deleteTableUtility: InternalUtilityTool = {
   id: 'utility_delete_table',
   description: 'Delete a table from the user\'s database',
   // Update schema to match Record<string, UtilityToolSchema>
@@ -65,17 +64,17 @@ const deleteTableUtility: UtilityTool = {
       
       // Basic validation
       if (!table || typeof table !== 'string') {
-        return { status: 'error', error: "Table name is required and must be a string" };
+        return { success: false, error: "Table name is required and must be a string" } as ErrorResponse;
       }
       
       // Require explicit confirmation to delete the table
       if (!confirm) {
         // Return a non-error status to indicate confirmation is needed
         return {
-          status: "error", // Changed to error as it prevents action
+          success: false, // Changed to error as it prevents action
           error: "Table deletion requires confirmation",
           details: "Set the 'confirm' parameter to true to proceed with deletion."
-        };
+        } as ErrorResponse;
       }
       
       console.log(`${logPrefix} Deleting table: "${table}" for user ${userId}`);
@@ -83,19 +82,19 @@ const deleteTableUtility: UtilityTool = {
       // Get workspace
       const workspaceSlug = process.env.XATA_WORKSPACE_SLUG;
       if (!workspaceSlug) {
-        return { status: 'error', error: 'Service configuration error: XATA_WORKSPACE_SLUG not set' };
+        return { success: false, error: 'Service configuration error: XATA_WORKSPACE_SLUG not set' } as ErrorResponse;
       }
       
       // Find the workspace
       const workspace = await findXataWorkspace(workspaceSlug);
       if (!workspace) {
-        return { status: 'error', error: `Configuration error: Workspace '${workspaceSlug}' not found` };
+        return { success: false, error: `Configuration error: Workspace '${workspaceSlug}' not found` } as ErrorResponse;
       }
       
       // Use the database name from environment variables
       const databaseName = process.env.XATA_DATABASE;
       if (!databaseName) {
-        return { status: 'error', error: 'Service configuration error: XATA_DATABASE not set' };
+        return { success: false, error: 'Service configuration error: XATA_DATABASE not set' } as ErrorResponse;
       }
       
       // Configure Xata API access
@@ -120,10 +119,10 @@ const deleteTableUtility: UtilityTool = {
         const errorBody = await deleteTableResponse.text();
         console.error(`${logPrefix} Failed API call: ${deleteTableResponse.status} ${deleteTableResponse.statusText}`, errorBody);
         return { 
-          status: 'error', 
+          success: false, 
           error: `API Error: Failed to delete table '${table}'`, 
           details: `Status: ${deleteTableResponse.status} ${deleteTableResponse.statusText}. Response: ${errorBody}`
-        };
+        } as ErrorResponse;
       }
       
       // Return standard success response
@@ -140,10 +139,10 @@ const deleteTableUtility: UtilityTool = {
       console.error(`${logPrefix} Error deleting table:`, error);
       // Return standard UtilityErrorResponse
       return {
-        status: "error",
+        success: false,
         error: "Failed to delete table",
         details: error instanceof Error ? error.message : String(error)
-      };
+      } as ErrorResponse;
     }
   }
 };
