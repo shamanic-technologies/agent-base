@@ -9,7 +9,10 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 import axios from 'axios';
+// Use local types for agent-service specific structures
 import { UtilityError, UtilityToolCredentials } from '../../types/index.js';
+// Import shared types from agents package
+import { ServiceResponse, UtilitiesList } from '@agent-base/agents';
 import { handleAxiosError } from '../utils/errorHandlers.js';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -39,33 +42,48 @@ export function createListUtilitiesTool(credentials: UtilityToolCredentials) {
         console.log(`[Utility Tool] Listing utilities`);
         console.log(`[Utility Tool] API key: ${apiKey}`);
         
-        const response = await axios.get(`${API_GATEWAY_URL}/utility-tool/get-list`, {
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': apiKey,
-            'x-agent-id': agent_id
+        // Define the expected structure for the nested data
+        type ListResponseData = {
+            count: number;
+            utilities: UtilitiesList;
+        };
+
+        const response = await axios.get<ServiceResponse<ListResponseData>>(
+          `${API_GATEWAY_URL}/utility-tool/get-list`, {
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': apiKey,
+              'x-agent-id': agent_id
+            }
           }
-        });
+        );
         
-        if (response.data && response.data.utilities && Array.isArray(response.data.utilities)) {
-          const formattedUtilities = response.data.utilities.map((util: any) => ({
-            id: util.id,
-            name: util.name || util.id,
-            description: util.description,
-            category: util.category || 'general'
-          }));
+        if (response.data && response.data.success && response.data.data && Array.isArray(response.data.data.utilities)) {
+            console.log(`[Utility Tool] List utilities successful. Count: ${response.data.data.count}`);
+            // Map to only ID and Description
+            const formattedUtilities = response.data.data.utilities.map((util: any) => ({
+                id: util.id,
+                description: util.description,
+            }));
           
-          return formattedUtilities;
+            return formattedUtilities;
+        } else {
+            // Handle failure case from utility service
+            const errorMessage = response.data?.error || 'Failed to list utilities.';
+            const errorDetails = response.data?.details;
+            console.error(`[Utility Tool] Utility service failed to list utilities: ${errorMessage}`, errorDetails);
+            return {
+                error: true,
+                message: errorMessage,
+                details: errorDetails,
+                status: 'error',
+                code: 'LIST_FAILED' // Add default error code
+            } as UtilityError;
         }
-        
-        return {
-          error: true,
-          message: 'Invalid response from API Gateway',
-          status: 'error',
-          code: 'INVALID_RESPONSE'
-        } as UtilityError;
+
       } catch (error) {
         console.error('[Utility Tool] Error listing utilities:', error);
+        // handleAxiosError should format the error correctly
         return handleAxiosError(error, `${API_GATEWAY_URL}/utility-tool/get-list`);
       }
     }
