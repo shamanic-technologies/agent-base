@@ -2,8 +2,6 @@
  * Types related to Utility.
  */
 import { ErrorResponse, ServiceResponse, SuccessResponse } from './common.js';
-import { OAuthRequest } from './credential.js';
-import { StoreActionConfirmationRequest, StoreSecretRequest } from './secrets.js';
 
 // --- Enums and Core Records ---
 

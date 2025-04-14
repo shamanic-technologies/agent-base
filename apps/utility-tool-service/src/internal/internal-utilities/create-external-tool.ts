@@ -6,15 +6,13 @@
  */
 import { 
   InternalUtilityTool,
-  ErrorResponse,
   ExternalUtilityTool, // Type for the tool configuration object
   JsonSchema,
   ServiceResponse,
   ExternalUtilityInfo,
-  // Import necessary enums for schema definition
   UtilityProvider,
   AuthMethod,
-  UtilitySecret,
+  UtilityInputSecret,
   ApiKeyAuthScheme,
   HttpMethod 
 } from '@agent-base/agents';
@@ -91,7 +89,7 @@ const createExternalToolUtility: InternalUtilityTool = {
             description: 'REQUIRED (can be empty array). List of secrets that need to be configured for this tool (e.g., API keys, webhook confirmations). These correspond to values managed by the secret service.',
             items: { 
               type: 'string',
-              enum: Object.values(UtilitySecret) // Use enum values
+              enum: Object.values(UtilityInputSecret) // Use enum values
             },
             default: []
           },
@@ -108,7 +106,7 @@ const createExternalToolUtility: InternalUtilityTool = {
               secretName: { 
                 type: 'string', 
                 description: 'REQUIRED if apiKeyDetails is provided. The name of the secret (from requiredSecrets) that holds the API key value.',
-                enum: Object.values(UtilitySecret)
+                enum: Object.values(UtilityInputSecret)
               },
               scheme: { 
                 type: 'string', 
