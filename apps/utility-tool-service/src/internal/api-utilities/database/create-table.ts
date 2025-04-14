@@ -5,11 +5,10 @@
  */
 import { z } from 'zod'; // Import Zod
 import { 
-  UtilityTool, 
-  UtilityErrorResponse,
-  UtilityToolSchema // Import if needed
-} from '../../types/index.js';
-import { registry } from '../../registry/registry.js';
+    InternalUtilityTool, 
+    ErrorResponse // Import if needed
+} from '@agent-base/agents';
+import { registry } from '../../../registry/registry.js';
 import { 
   findXataWorkspace, 
   createXataTable, 
@@ -46,14 +45,14 @@ interface CreateTableSuccessResponse {
   }
 }
 
-type CreateTableResponse = CreateTableSuccessResponse | UtilityErrorResponse;
+type CreateTableResponse = CreateTableSuccessResponse | ErrorResponse;
 
 // --- End Local Definitions ---
 
 /**
  * Implementation of the Create Table utility
  */
-const createTableUtility: UtilityTool = {
+const createTableUtility: InternalUtilityTool = {
   id: 'utility_create_table',
   description: 'Create a new table in the user\'s dedicated database (via Xata API).',
   // Update schema to match Record<string, UtilityToolSchema>
@@ -91,18 +90,18 @@ const createTableUtility: UtilityTool = {
       
       // Basic validation
       if (!name || typeof name !== 'string') {
-        return { status: 'error', error: "Table name is required and must be a string" };
+        return { success: false, error: "Table name is required and must be a string" } as ErrorResponse;
       }
       if (!description || typeof description !== 'string') {
-        return { status: 'error', error: "Table description is required and must be a string" };
+        return { success: false, error: "Table description is required and must be a string" } as ErrorResponse;
       }
       if (!schema || typeof schema !== 'object' || Object.keys(schema).length === 0) {
-        return { status: 'error', error: "Schema is required and must be a non-empty object" };
+        return { success: false, error: "Schema is required and must be a non-empty object" } as ErrorResponse;
       }
       // Validate schema values against known types (optional, as Zod definition implies this)
       for (const colType of Object.values(schema)) {
         if (!xataColumnTypes.includes(colType as any)) {
-          return { status: 'error', error: `Invalid column type '${colType}' in schema. Valid types: ${xataColumnTypes.join(', ')}` };
+          return { success: false, error: `Invalid column type '${colType}' in schema. Valid types: ${xataColumnTypes.join(', ')}` } as ErrorResponse;
         }
       }
       
@@ -111,19 +110,19 @@ const createTableUtility: UtilityTool = {
       // Get workspace
       const workspaceSlug = process.env.XATA_WORKSPACE_SLUG;
       if (!workspaceSlug) {
-        return { status: 'error', error: 'Service configuration error: XATA_WORKSPACE_SLUG not set' };
+        return { success: false, error: 'Service configuration error: XATA_WORKSPACE_SLUG not set' } as ErrorResponse;
       }
       
       // Find the workspace
       const workspace = await findXataWorkspace(workspaceSlug);
       if (!workspace) {
-        return { status: 'error', error: `Configuration error: Workspace '${workspaceSlug}' not found` };
+        return { success: false, error: `Configuration error: Workspace '${workspaceSlug}' not found` } as ErrorResponse;
       }
       
       // Determine database name
       const databaseName = process.env.XATA_DATABASE; // Using a fixed DB name from env
       if (!databaseName) {
-         return { status: 'error', error: 'Service configuration error: XATA_DATABASE not set' };
+         return { success: false, error: 'Service configuration error: XATA_DATABASE not set' } as ErrorResponse;
       }
       
       // Create the table in Xata
@@ -162,10 +161,10 @@ const createTableUtility: UtilityTool = {
       console.error(`${logPrefix} Error creating table:`, error);
       // Return standard UtilityErrorResponse
       return {
-        status: "error",
+        success: false,
         error: "Failed to create table",
         details: error instanceof Error ? error.message : String(error)
-      };
+      } as ErrorResponse;
     }
   }
 };

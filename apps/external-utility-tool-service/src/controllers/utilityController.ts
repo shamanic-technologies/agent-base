@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import * as utilityService from '../services/utilityService';
-import { ExternalUtilityConfig } from '@agent-base/agents'; // Assuming types are here
+import { ExternalUtilityInfo, ExternalUtilityTool, AuthMethod, ApiKeyAuthScheme } from '@agent-base/agents'; // Assuming types are here
 
 // Controller to list available utility tools
 export const listTools = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -30,14 +30,77 @@ export const getToolInfo = async (req: Request, res: Response, next: NextFunctio
 // Controller to create a new tool configuration
 export const createTool = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-        const newConfig: ExternalUtilityConfig = req.body;
-        // Basic validation placeholder - Add more robust validation later
-        if (!newConfig || !newConfig.id || !newConfig.provider || !newConfig.description || !newConfig.schema || !newConfig.authMethod) {
-             res.status(400).json({ success: false, error: 'Invalid tool configuration provided.' });
-             return;
+        const newConfig: ExternalUtilityTool = req.body;
+        const validationErrors: string[] = [];
+
+        // --- Start Enhanced Validation ---
+
+        // 1. Basic presence checks
+        if (!newConfig) validationErrors.push('Request body is empty.');
+        else {
+            if (!newConfig.id) validationErrors.push('Missing required field: id');
+            if (!newConfig.provider) validationErrors.push('Missing required field: provider');
+            if (!newConfig.description) validationErrors.push('Missing required field: description');
+            if (!newConfig.schema) validationErrors.push('Missing required field: schema');
+            if (!newConfig.authMethod) validationErrors.push('Missing required field: authMethod');
+            // requiredSecrets can be empty, but must exist
+            if (!Array.isArray(newConfig.requiredSecrets)) validationErrors.push('Missing or invalid field: requiredSecrets (must be an array)');
+
+            // 2. Schema structure validation
+            if (newConfig.schema) {
+                if (typeof newConfig.schema !== 'object' || Array.isArray(newConfig.schema) || Object.keys(newConfig.schema).length === 0) {
+                    validationErrors.push('Field schema must be a non-empty object.');
+                } else {
+                    for (const key in newConfig.schema) {
+                        if (typeof newConfig.schema[key] !== 'object' || !newConfig.schema[key].zod) {
+                             validationErrors.push(`Invalid schema definition for key '${key}': must be an object with a 'zod' property.`);
+                        }
+                        // Further validation of the zod object itself is complex here, skipped for now.
+                    }
+                }
+            }
+
+            // 3. AuthMethod specific validation
+            if (newConfig.authMethod === AuthMethod.OAUTH) {
+                if (!Array.isArray(newConfig.requiredScopes) || newConfig.requiredScopes.length === 0) {
+                    validationErrors.push('OAuth requires a non-empty requiredScopes array.');
+                }
+            } else if (newConfig.authMethod === AuthMethod.API_KEY) {
+                if (!newConfig.apiKeyDetails) {
+                    validationErrors.push('API_KEY authMethod requires apiKeyDetails object.');
+                } else {
+                    if (!newConfig.apiKeyDetails.secretName) validationErrors.push('apiKeyDetails requires secretName.');
+                    if (!newConfig.apiKeyDetails.scheme) validationErrors.push('apiKeyDetails requires scheme.');
+                    if (newConfig.apiKeyDetails.scheme === ApiKeyAuthScheme.HEADER && !newConfig.apiKeyDetails.headerName) {
+                        validationErrors.push('apiKeyDetails with scheme HEADER requires headerName.');
+                    }
+                }
+            } // No specific checks for AuthMethod.NONE
+
+            // 4. apiDetails validation (if present)
+            if (newConfig.apiDetails) {
+                if (!newConfig.apiDetails.method) validationErrors.push('apiDetails requires method.');
+                if (!newConfig.apiDetails.baseUrl) validationErrors.push('apiDetails requires baseUrl.');
+                if (!newConfig.apiDetails.pathTemplate) validationErrors.push('apiDetails requires pathTemplate.');
+                // Deeper validation of paramMappings could be added if needed
+            }
         }
+
+        // --- End Enhanced Validation ---
+
+        if (validationErrors.length > 0) {
+            res.status(400).json({ 
+                success: false, 
+                error: 'Invalid tool configuration provided.',
+                details: validationErrors
+            });
+            return;
+        }
+
+        // If validation passes, proceed to add the tool
         const createdTool = await utilityService.addNewTool(newConfig);
         res.status(201).json({ success: true, data: createdTool });
+
     } catch (error) {
         // Handle potential duplicate ID error from service
         if (error instanceof Error && error.message.includes('already exists')) {

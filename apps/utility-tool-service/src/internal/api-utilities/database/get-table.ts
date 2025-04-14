@@ -5,11 +5,10 @@
  */
 import { z } from 'zod'; // Import Zod
 import { 
-  UtilityTool, 
-  UtilityErrorResponse,
-  UtilityToolSchema // Import UtilityToolSchema
-} from '../../types/index.js';
-import { registry } from '../../registry/registry.js';
+  InternalUtilityTool, 
+  ErrorResponse,
+} from '@agent-base/agents';
+import { registry } from '../../../registry/registry.js';
 import { 
   findXataWorkspace,
   // getXataClient // Not used here, direct fetch calls are made
@@ -38,14 +37,14 @@ interface GetTableSuccessResponse {
   }
 }
 
-type GetTableResponse = GetTableSuccessResponse | UtilityErrorResponse;
+type GetTableResponse = GetTableSuccessResponse | ErrorResponse;
 
 // --- End Local Definitions ---
 
 /**
  * Implementation of the Get Table utility
  */
-const getTableUtility: UtilityTool = {
+const getTableUtility: InternalUtilityTool = {
   id: 'utility_get_table',
   description: 'Get information about a database table, including schema and optionally data.',
   // Update schema to use Zod
@@ -80,11 +79,11 @@ const getTableUtility: UtilityTool = {
       
       // Basic validation
       if (!table || typeof table !== 'string') {
-        return { status: 'error', error: "Table name is required and must be a string" };
+        return { success: false, error: "Table name is required and must be a string" } as ErrorResponse;
       }
       // Limit check (though Zod refine should catch this earlier)
       if (limit > 100) {
-         return { status: 'error', error: "Limit cannot exceed 100" };
+         return { success: false, error: "Limit cannot exceed 100" } as ErrorResponse;
       }
       
       console.log(`${logPrefix} Getting table info for: \"${table}\", includeData: ${includeData}, limit: ${limit}, user: ${userId}`);
@@ -92,14 +91,14 @@ const getTableUtility: UtilityTool = {
       // Get workspace
       const workspaceSlug = process.env.XATA_WORKSPACE_SLUG;
       if (!workspaceSlug) {
-        return { status: 'error', error: 'Service configuration error: XATA_WORKSPACE_SLUG not set' };
+        return { success: false, error: 'Service configuration error: XATA_WORKSPACE_SLUG not set' } as ErrorResponse;
       }
       
       // Find the workspace (using helper from client)
       const workspace = await findXataWorkspace(workspaceSlug);
       if (!workspace) {
         // findXataWorkspace should throw if needed, but catch null just in case
-        return { status: 'error', error: `Configuration error: Workspace \'${workspaceSlug}\' not found` };
+        return { success: false, error: `Configuration error: Workspace \'${workspaceSlug}\' not found` } as ErrorResponse;
       }
       
       // Use the database name from environment variables
@@ -186,8 +185,8 @@ const getTableUtility: UtilityTool = {
     } catch (error: any) {
       console.error(`${logPrefix} Error getting table information:`, error);
       // Return standard UtilityErrorResponse
-      const errorResponse: UtilityErrorResponse = {
-        status: "error",
+      const errorResponse: ErrorResponse = {
+        success: false,
         error: "Failed to retrieve table information", // Use 'error' key
         details: error.message || String(error)
       };

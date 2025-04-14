@@ -4,8 +4,8 @@
  * Modifies existing table structures in the database (via Xata API).
  */
 import { z } from 'zod'; // Import Zod
-import { UtilityTool, UtilityErrorResponse, UtilityToolSchema } from '../../types/index.js';
-import { registry } from '../../registry/registry.js';
+import { InternalUtilityTool, ErrorResponse } from '@agent-base/agents';
+import { registry } from '../../../registry/registry.js';
 import {
   findXataWorkspace,
   getXataClient,
@@ -53,14 +53,14 @@ interface AlterTableSuccessResponse {
   }
 }
 
-type AlterTableResponse = AlterTableSuccessResponse | UtilityErrorResponse;
+type AlterTableResponse = AlterTableSuccessResponse | ErrorResponse;
 
 // --- End Local Definitions ---
 
 /**
  * Implementation of the Alter Table utility
  */
-const alterTableUtility: UtilityTool = {
+const alterTableUtility: InternalUtilityTool = {
   id: 'utility_alter_table',
   description: 'Modify the structure of existing database tables (add, remove, rename columns).',
   // Update schema to match Record<string, UtilityToolSchema>
@@ -105,20 +105,20 @@ const alterTableUtility: UtilityTool = {
       
       // Basic validation
       if (!table || typeof table !== 'string') {
-        return { status: 'error', error: "Table name is required and must be a string" };
+        return { success: false, error: "Table name is required and must be a string" } as ErrorResponse;
       }
       if (!addColumn && !removeColumn && !renameColumn) {
-        return { status: 'error', error: "At least one table alteration operation must be specified (addColumn, removeColumn, or renameColumn)" };
+        return { success: false, error: "At least one table alteration operation must be specified (addColumn, removeColumn, or renameColumn)" } as ErrorResponse;
       }
       // Further validation for specific operations if needed (e.g., addColumn requires name/type)
       if (addColumn && (!addColumn.name || !addColumn.type)) {
-        return { status: 'error', error: "When adding a column, both name and type must be specified" };
+        return { success: false, error: "When adding a column, both name and type must be specified" } as ErrorResponse;
       }
       if (renameColumn && (!renameColumn.oldName || !renameColumn.newName)) {
-         return { status: 'error', error: "When renaming a column, both oldName and newName must be specified" };
+         return { success: false, error: "When renaming a column, both oldName and newName must be specified" } as ErrorResponse;
       }
       if (removeColumn && typeof removeColumn !== 'string') {
-         return { status: 'error', error: "Column name to remove must be a string" };
+         return { success: false, error: "Column name to remove must be a string" } as ErrorResponse;
       }
       
       console.log(`${logPrefix} Altering table: "${table}" for user ${userId}`);
@@ -126,19 +126,19 @@ const alterTableUtility: UtilityTool = {
       // Get workspace
       const workspaceSlug = process.env.XATA_WORKSPACE_SLUG;
       if (!workspaceSlug) {
-        return { status: 'error', error: 'Service configuration error: XATA_WORKSPACE_SLUG not set' };
+        return { success: false, error: 'Service configuration error: XATA_WORKSPACE_SLUG not set' } as ErrorResponse;
       }
       
       // Find the workspace
       const workspace = await findXataWorkspace(workspaceSlug);
       if (!workspace) {
-        return { status: 'error', error: `Configuration error: Workspace '${workspaceSlug}' not found` };
+        return { success: false, error: `Configuration error: Workspace '${workspaceSlug}' not found` } as ErrorResponse;
       }
       
       // Use user ID to determine database name or the default database
       const databaseName = process.env.XATA_DATABASE; // TODO: Potentially make this user-specific if needed
       if (!databaseName) {
-         return { status: 'error', error: 'Service configuration error: XATA_DATABASE not set' };
+         return { success: false, error: 'Service configuration error: XATA_DATABASE not set' } as ErrorResponse;
       }
       
       // Configure Xata API access
@@ -146,7 +146,7 @@ const alterTableUtility: UtilityTool = {
       const branch = process.env.XATA_BRANCH || 'main'; // Use env var or default
       const xataApiKey = process.env.XATA_API_KEY;
       if (!xataApiKey) {
-         return { status: 'error', error: 'Service configuration error: XATA_API_KEY not set' };
+         return { success: false, error: 'Service configuration error: XATA_API_KEY not set' } as ErrorResponse;
       }
 
       const workspaceUrl = `https://${workspace.slug}-${workspace.unique_id}.${region}.xata.sh`;
@@ -259,10 +259,10 @@ const alterTableUtility: UtilityTool = {
       console.error(`${logPrefix} Error altering table:`, error);
       // Return standard UtilityErrorResponse
       return {
-        status: "error",
+        success: false,
         error: "Failed to alter table",
         details: error instanceof Error ? error.message : String(error)
-      };
+      } as ErrorResponse;
     }
   }
 };

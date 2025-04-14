@@ -6,11 +6,10 @@
  */
 import { z } from 'zod'; // Import Zod
 import { 
-  UtilityTool,
-  UtilityErrorResponse,
-  UtilityToolSchema // Import if needed, though schema is empty
-} from '../../types/index.js';
-import { registry } from '../../registry/registry.js';
+  InternalUtilityTool,
+  ErrorResponse,
+} from '@agent-base/agents';
+import { registry } from '../../../registry/registry.js';
 // Removed BaseClient import as direct client usage is moved
 import fetch from 'node-fetch';
 import { v4 as uuidv4 } from 'uuid';
@@ -75,7 +74,7 @@ interface GetDatabaseSuccessResponse {
 }
 
 // Type union for the utility's response
-type GetDatabaseResponse = GetDatabaseSuccessResponse | UtilityErrorResponse;
+type GetDatabaseResponse = GetDatabaseSuccessResponse | ErrorResponse;
 
 // --- End Local Definitions ---
 
@@ -239,7 +238,7 @@ async function getUserDatabase(userId: string): Promise<GetDatabaseSuccessRespon
 /**
  * Implementation of the Get Database utility
  */
-const getDatabaseUtility: UtilityTool = {
+const getDatabaseUtility: InternalUtilityTool = {
   id: 'utility_get_database',
   description: 'Get information about the user\'s dedicated database, including tables and schemas. If no database exists for the user, one will be created.',
   schema: {},
@@ -258,8 +257,8 @@ const getDatabaseUtility: UtilityTool = {
 
     } catch (error: any) {
       console.error(`${logPrefix} Error:`, error);
-      const errorResponse: UtilityErrorResponse = {
-        status: "error",
+      const errorResponse: ErrorResponse = {
+        success: false,
         error: "Failed to get database information",
         details: error.message || String(error)
       };

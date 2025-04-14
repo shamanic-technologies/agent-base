@@ -7,11 +7,10 @@
 import axios from 'axios';
 import { z } from 'zod'; // Import Zod
 import { 
-  UtilityTool,
-  UtilityErrorResponse,
-  UtilityToolSchema // Import if needed
-} from '../../types/index.js';
-import { registry } from '../../registry/registry.js';
+  InternalUtilityTool,
+  ErrorResponse
+} from '@agent-base/agents';  
+import { registry } from '../../../registry/registry.js';
 
 // --- Local Type Definitions for this Utility ---
 
@@ -67,7 +66,7 @@ interface GoogleFlightsSuccessResponse {
   }
 }
 
-type GoogleFlightsResponse = GoogleFlightsSuccessResponse | UtilityErrorResponse;
+type GoogleFlightsResponse = GoogleFlightsSuccessResponse | ErrorResponse;
 
 // --- End Local Type Definitions ---
 
@@ -83,7 +82,7 @@ function formatDuration(minutes: number): string {
 /**
  * Implementation of the Google Flights utility
  */
-const googleFlightsUtility: UtilityTool = {
+const googleFlightsUtility: InternalUtilityTool = {
   id: 'utility_google_flights',
   description: 'Search for flights using Google Flights (via SerpAPI) to find routes, prices, and travel options.',
   // Update schema to match Record<string, UtilityToolSchema>
@@ -155,10 +154,10 @@ const googleFlightsUtility: UtilityTool = {
       
       // Basic validation
       if (!origin || typeof origin !== 'string') {
-        return { status: 'error', error: "Origin is required and must be a string" };
+        return { success: false, error: "Origin is required and must be a string" } as ErrorResponse;
       }
       if (!destination || typeof destination !== 'string') {
-        return { status: 'error', error: "Destination is required and must be a string" };
+        return { success: false, error: "Destination is required and must be a string" } as ErrorResponse;
       }
       // Add date format validation maybe?
       
@@ -168,7 +167,7 @@ const googleFlightsUtility: UtilityTool = {
       const apiKey = process.env.SERPAPI_API_KEY;
       if (!apiKey) {
         console.error(`${logPrefix} SERPAPI_API_KEY not set`);
-        return { status: 'error', error: "Service configuration error: SERPAPI_API_KEY is not set." };
+          return { success: false, error: "Service configuration error: SERPAPI_API_KEY is not set." } as ErrorResponse;
       }
       
       let apiUrl = `https://serpapi.com/search.json?engine=google_flights&api_key=${apiKey}`;
@@ -194,10 +193,10 @@ const googleFlightsUtility: UtilityTool = {
         const errorText = await response.text();
         console.error(`${logPrefix} SerpAPI error (${response.status}): ${errorText}`);
         return {
-            status: 'error',
+            success: false,
             error: `Google Flights search failed (HTTP ${response.status})`,
             details: `SerpAPI error: ${errorText}`
-        };
+        } as ErrorResponse;
       }
 
       const data = await response.json();
@@ -279,10 +278,10 @@ const googleFlightsUtility: UtilityTool = {
       // Remove Zod error handling
       // Return standard UtilityErrorResponse
       return {
-        status: 'error',
+        success: false,
         error: 'Failed to search for Google Flights',
         details: error instanceof Error ? error.message : String(error)
-      };
+      } as ErrorResponse;
     }
   }
 };

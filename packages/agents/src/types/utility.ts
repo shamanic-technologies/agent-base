@@ -1,8 +1,9 @@
 /**
  * Types related to Utility.
  */
-import { BaseResponse, ErrorResponse } from './common.js';
-
+import { BaseResponse, ErrorResponse, ServiceResponse, SuccessResponse } from './common.js';
+// Remove Zod import as it's no longer used for schema definition here
+// import { z } from 'zod'; 
 // --- Enums and Core Records ---
 
 export enum UtilityProvider {
@@ -51,37 +52,65 @@ export enum ApiKeyAuthScheme {
     HEADER = 'Header'           // Custom Header: <headerName>: <key>
 }
 
-/**
- * Schema definition for a single parameter within ExternalUtilityConfig
- */
-export interface ExternalUtilityParamSchema {
-    /** Simplified type indicator for basic validation and UI hints */
-    type: 'string' | 'number' | 'boolean' | 'array_string' | 'object';
+// /**
+//  * Schema definition for a single parameter within ExternalUtilityConfig
+//  */
+// export interface UtilityParamSchema {
+//     /** Simplified type indicator for basic validation and UI hints */
+//     type: 'string' | 'number' | 'boolean' | 'array_string' | 'object';
 
-    /** Is the parameter required? */
-    required: boolean;
+//     /** Is the parameter required? */
+//     required: boolean;
 
-    /** Human-readable description for LLM/UI */
-    description: string;
+//     /** Human-readable description for LLM/UI */
+//     description: string;
+//     examples?: any[];
+// }
+
+// Update UtilityToolParamSchema to represent a JSON Schema object
+// Using a basic type for now, can be refined with more specific JSON Schema types if needed
+export type JsonSchema = Record<string, any> & { 
+    type?: string | string[];
+    properties?: Record<string, JsonSchema>;
+    items?: JsonSchema | JsonSchema[];
+    required?: string[];
+    description?: string;
     examples?: any[];
+    // Add other common JSON Schema keywords as needed
+};
+
+export interface UtilityToolParamSchema {
+    // Replace zod with jsonSchema
+    jsonSchema: JsonSchema;
+    examples?: any[]; // Keep examples separate for clarity if desired
+}
+
+/**
+   * Standard interface for all utility tools in the system
+   */
+export interface InternalUtilityTool {
+    id: string;   /** Unique identifier for the utility */
+    description: string;  /** Human-readable description of what the utility does */
+    schema: Record<string, UtilityToolParamSchema>; // Schema defining the input parameters for the utility
+    /**
+     * The execution function for the utility
+     * @param userId ID of the user making the request
+     * @param conversationId ID of the conversation context
+     * @param params Input parameters for the utility
+     * @param agentId ID of the agent making the request
+     * @returns Result of the utility execution
+     */
+    execute: (userId: string, conversationId: string, params: any, agentId?: string) => Promise<any>;
 }
 
 /**
  * Configuration structure for an external utility tool.
  * Drives the generic execution engine.
  */
-export interface ExternalUtilityConfig {
-    /** Unique identifier (e.g., 'utility_gmail_read') */
-    id: string;
+export interface ExternalUtilityTool extends InternalUtilityTool{
 
     /** The provider enum (e.g., UtilityProvider.GMAIL) */
     provider: UtilityProvider;
-
-    /** Human-readable description for LLM and UI */
-    description: string;
-
-    /** Schema defining input parameters */
-    schema: Record<string, ExternalUtilityParamSchema>;
 
     /** Authentication method required */
     authMethod: AuthMethod;
@@ -134,36 +163,123 @@ export interface SetupNeededData {
     required_action_confirmations?: UtilitySecret[];
 }
 
-export interface SetupNeededResponse extends BaseResponse {
-    success: true; // Still considered 'success' from the service perspective
-    data: SetupNeededData;
-    error?: never;
-}
-
-
-/**
- * Standardized error response for utility execution failures.
- */
-export interface UtilityErrorResponse extends ErrorResponse {
-    // Inherits success: false, error: string from ErrorResponse
-    // Can add utility-specific error fields if needed later
-}
-
-/**
- * Generic success response for utility execution
- */
-export interface UtilitySuccessResponse<T = any> extends BaseResponse {
-    success: true;
-    data: T; // The actual result from the external API or process
-    error?: never;
-}
-
 /**
  * Represents any possible valid response from executing an external utility
  */
 export type ExternalUtilityExecutionResponse =
-    SetupNeededResponse |
-    UtilitySuccessResponse |
-    UtilityErrorResponse;
+    SuccessResponse<SetupNeededData> |
+    ErrorResponse |
+    SuccessResponse<any>;
+
+
+
   
+  
+//   export interface ExternalUtilityTool extends UtilityTool {
+//     provider: UtilityProvider;
+//     requiredSecrets: UtilitySecret[];
+//     requiredOauth: boolean;
+//   }
+  
+  
+  /**
+   * Core request structure
+   */
+export interface UtilityRequest {
+    operation?: string;
+    input?: any;
+    conversation_id: string;
+    redirect_url?: string;
+}
+  
+  /**
+   * Standardized auth needed response for all providers
+   */
+//   export interface SetupNeededResponse {
+//     status: 'success';
+//     data: {
+//       needs_setup: true;
+//       setup_url: string;
+//       provider: string;
+//       message: string;
+//       title: string;
+//       description: string;
+//       button_text: string;
+//     }
+//   }
+  
+  /**
+   * UtilityInfo, UtilitiesListResponse, UtilityInfoResponse
+   */
+  export interface InternalUtilityInfo {
+    id: string;
+    description: string;
+    schema: Record<string, UtilityToolParamSchema>;
+  };
+
+  export type InternalUtilityInfoResponse = ServiceResponse<InternalUtilityInfo>;
+
+  // Update ExternalUtilityInfo to use the new schema type definition
+  export interface ExternalUtilityInfo extends InternalUtilityInfo {
+    provider: UtilityProvider;
+    authMethod: AuthMethod;
+    requiredSecrets: UtilitySecret[];
+    requiredScopes?: string[];
+    apiKeyDetails?: {
+        secretName: UtilitySecret; // Which secret holds the key
+        scheme: ApiKeyAuthScheme;
+        headerName?: string;      // Required only if scheme is HEADER
+    };
+    apiDetails?: {
+        method: HttpMethod;
+        baseUrl: string;           // Base URL (e.g., 'https://api.stripe.com/v1')
+        pathTemplate: string;      // Path with {placeholders} (e.g., '/customers/{customerId}')
+    };
+    // Re-declare schema here to ensure the override uses the updated UtilityToolParamSchema
+    schema: Record<string, UtilityToolParamSchema>; 
+  };
+
+export type ExternalUtilityInfoResponse = ServiceResponse<ExternalUtilityInfo>;
+
+
+export type UtilityInfoResponse = InternalUtilityInfoResponse | ExternalUtilityInfoResponse;
+export type UtilityInfo = InternalUtilityInfo | ExternalUtilityInfo;
+
+export type UtilitiesListItem = {
+    id: string;
+    description: string;
+}
+
+export type UtilitiesList =  UtilitiesListItem[];
+
+export type UtilitiesListResponse = ServiceResponse<UtilitiesList>;
+
+//   export type UtilityInfoResponse = UtilityInfo | {
+//     error: string;
+//   };
+  
+
+// export interface SetupNeededResponse extends SuccessResponse<SetupNeededData> {
+//     success: true; // Still considered 'success' from the service perspective
+//     data: SetupNeededData;
+//     error?: never;
+// }
+
+
+// /**
+//  * Standardized error response for utility execution failures.
+//  */
+// export interface UtilityErrorResponse extends ErrorResponse {
+//     // Inherits success: false, error: string from ErrorResponse
+//     // Can add utility-specific error fields if needed later
+// }
+// /**
+//  * Generic success response for utility execution
+//  */
+// export interface UtilitySuccessResponse<T = any> extends SuccessResponse<T> {
+//     success: true;
+//     data: T; // The actual result from the external API or process
+//     error?: never;
+// }
+
 

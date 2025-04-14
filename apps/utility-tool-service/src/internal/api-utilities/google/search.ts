@@ -8,11 +8,10 @@
 // import axios from 'axios';
 import { z } from 'zod'; // Import Zod
 import { 
-  UtilityTool, 
-  UtilityErrorResponse,
-  UtilityToolSchema // Import if needed
-} from '../../types/index.js'; // Corrected path relative to api-utilities/google/
-import { registry } from '../../registry/registry.js'; // Corrected path
+  InternalUtilityTool, 
+  ErrorResponse // Import if needed
+} from '@agent-base/agents'; // Corrected path relative to api-utilities/google/
+import { registry } from '../../../registry/registry.js'; // Corrected path
 
 // --- Local Type Definitions for this Utility ---
 
@@ -40,14 +39,14 @@ export interface GoogleSearchSuccessResponse {
 
 export type GoogleSearchResponse = 
   GoogleSearchSuccessResponse | 
-  UtilityErrorResponse;
+  ErrorResponse;
 
 // --- End Local Type Definitions ---
 
 /**
  * Implementation of the Google Search utility
  */
-const googleSearchUtility: UtilityTool = {
+const googleSearchUtility: InternalUtilityTool = {
   id: 'utility_google_search',
   description: 'Search the web using Google Search API (via SerpAPI) to find up-to-date information',
   // Update schema to match Record<string, UtilityToolSchema>
@@ -75,9 +74,9 @@ const googleSearchUtility: UtilityTool = {
       // Validate query
       if (!query || typeof query !== 'string') {
         return { 
-          status: 'error', 
+          success: false, 
           error: "Search query is required and must be a string" 
-        };
+        } as ErrorResponse;
       }
       
       // Ensure limit is between 1 and 10
@@ -90,9 +89,9 @@ const googleSearchUtility: UtilityTool = {
       if (!apiKey) {
         console.error(`${logPrefix} SERPAPI_API_KEY not set`);
         return { 
-          status: 'error', 
+          success: false, 
           error: "Service configuration error: SERPAPI_API_KEY is not set." 
-        };
+        } as ErrorResponse;
       }
       
       // Perform the search using SerpAPI via fetch
@@ -104,10 +103,10 @@ const googleSearchUtility: UtilityTool = {
         const errorDetails = await apiResponse.text(); // Get more details if possible
         console.error(`${logPrefix} SerpAPI error (${apiResponse.status}): ${errorDetails}`);
         return { 
-          status: 'error', 
+          success: false, 
           error: `Google Search failed (HTTP ${apiResponse.status})`, 
           details: `SerpAPI error: ${errorDetails}` 
-        };
+        } as ErrorResponse;
       }
 
       // Parse the response data
@@ -153,10 +152,10 @@ const googleSearchUtility: UtilityTool = {
       console.error(`${logPrefix} Unexpected error:`, error);
       // Remove Zod error handling
       return { 
-        status: 'error', 
+        success: false, 
         error: "An unexpected error occurred during the Google search", 
         details: error instanceof Error ? error.message : String(error)
-      };
+      } as ErrorResponse;
     }
   }
 };
