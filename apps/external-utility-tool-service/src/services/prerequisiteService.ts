@@ -3,7 +3,9 @@ import {
     UtilitySecret,
     AuthMethod,
     SuccessResponse,
-    SetupNeededData
+    SetupNeededData,
+    UtilityActionConfirmation,
+    UtilityInputSecret
 } from '@agent-base/agents';
 
 // Import client functions
@@ -31,8 +33,8 @@ export const checkPrerequisites = async (
     let oauthAuthorized = true;
     let fetchedApiKey: string | null = null;
     let fetchedOauthToken: string | null = null;
-    let requiredSecretInputs: UtilitySecret[] = [];
-    let requiredActionConfirmations: UtilitySecret[] = [];
+    let requiredSecretInputs: UtilityInputSecret[] = [];
+    let requiredActionConfirmations: UtilityActionConfirmation[] = [];
 
     // --- Check Secrets and Actions --- 
     if (config.requiredSecrets && config.requiredSecrets.length > 0) {
@@ -40,9 +42,9 @@ export const checkPrerequisites = async (
             const secretsData = await fetchSecrets(userId, config.provider, config.requiredSecrets, logPrefix);
             for (const secretKey of config.requiredSecrets) {
                 const value = secretsData?.[secretKey];
-                if (!value || (secretKey === UtilitySecret.WEBHOOK_URL_INPUTED && value !== 'true')) {
+                if (!value || (secretKey === UtilityActionConfirmation.WEBHOOK_URL_INPUTED && value !== 'true')) {
                     allSecretsAvailable = false;
-                    if (secretKey === UtilitySecret.WEBHOOK_URL_INPUTED) {
+                    if (secretKey === UtilityActionConfirmation.WEBHOOK_URL_INPUTED) {
                         requiredActionConfirmations.push(secretKey);
                     } else {
                         requiredSecretInputs.push(secretKey);
@@ -83,13 +85,13 @@ export const checkPrerequisites = async (
                     success: true,
                     data: {
                         needs_setup: true,
-                        setup_url: authUrl,
                         provider: config.provider,
                         message: `Authentication required for ${config.provider}.`, 
                         title: `Connect ${config.provider}`, 
                         description: config.description,
                         required_secret_inputs: [], 
-                        required_action_confirmations: [] 
+                        required_action_confirmations: [],
+                        required_oauth: authUrl
                     }
                 };
                 return { prerequisitesMet: false, setupNeededResponse: setupResponse }; 

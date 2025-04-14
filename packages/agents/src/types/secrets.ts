@@ -11,6 +11,11 @@ export interface StoreSecretRequest {
   secretValue: string | object;
 }
 
+export interface StoreActionConfirmationRequest extends StoreSecretRequest {
+  secretType: string;
+  secretValue: 'true' | 'false';
+}
+
 export interface CheckSecretRequest {
   userId: string;
   secretType: string;
