@@ -42,8 +42,8 @@ export const validateInputParameters = (
             combinedSchema.required = config.schema.required;
         } else if (requiredFields.length > 0) { // Otherwise, use the collected required fields
             combinedSchema.required = requiredFields;
-        } else { // Default: make all defined properties required if nothing else specified
-             combinedSchema.required = Object.keys(config.schema);
+        } else { // Default: make all defined properties OPTIONAL if nothing else specified
+             combinedSchema.required = []; // Empty array means no fields are required by default
         }
 
         // Handle case where there is no schema defined
