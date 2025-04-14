@@ -7,23 +7,23 @@
       "query": {
         "jsonSchema": {
           "type": "string",
-          "description": "Search query to filter emails (same format as Gmail search)."
-        },
-        "examples": [
-          "from:no-reply@example.com",
-          "is:unread subject:Important"
-        ]
+          "description": "Search query to filter emails (same format as Gmail search).",
+          "examples": [
+            "from:no-reply@example.com",
+            "is:unread subject:Important"
+          ]
+        }
       },
       "maxResults": {
         "jsonSchema": {
           "type": "number",
           "description": "Maximum number of emails to return (default: 10).",
-          "default": 10
-        },
-        "examples": [
-          5,
-          20
-        ]
+          "default": 10,
+          "examples": [
+            5,
+            20
+          ]
+        }
       },
       "labelIds": {
         "jsonSchema": {
@@ -34,17 +34,17 @@
           "description": "Array of label IDs to filter emails by (e.g., [\"INBOX\", \"UNREAD\"]). Default: [\"INBOX\"].",
           "default": [
             "INBOX"
-          ]
-        },
-        "examples": [
-          [
-            "INBOX"
           ],
-          [
-            "SENT",
-            "IMPORTANT"
+          "examples": [
+            [
+              "INBOX"
+            ],
+            [
+              "SENT",
+              "IMPORTANT"
+            ]
           ]
-        ]
+        }
       }
     },
     "authMethod": "OAUTH",
@@ -79,40 +79,40 @@
           "description": "Maximum number of customers to return (1-100, default 10).",
           "minimum": 1,
           "maximum": 100,
-          "default": 10
-        },
-        "examples": [
-          10,
-          50
-        ]
+          "default": 10,
+          "examples": [
+            10,
+            50
+          ]
+        }
       },
       "email": {
         "jsonSchema": {
           "type": "string",
           "format": "email",
-          "description": "Filter customers by email address."
-        },
-        "examples": [
-          "customer@example.com"
-        ]
+          "description": "Filter customers by email address.",
+          "examples": [
+            "customer@example.com"
+          ]
+        }
       },
       "starting_after": {
         "jsonSchema": {
           "type": "string",
-          "description": "Cursor for pagination (customer ID to start after)."
-        },
-        "examples": [
-          "cus_PqKWHRv7K3sk3h"
-        ]
+          "description": "Cursor for pagination (customer ID to start after).",
+          "examples": [
+            "cus_PqKWHRv7K3sk3h"
+          ]
+        }
       },
       "ending_before": {
         "jsonSchema": {
           "type": "string",
-          "description": "Cursor for pagination (customer ID to end before)."
-        },
-        "examples": [
-          "cus_9K87654321fedcba"
-        ]
+          "description": "Cursor for pagination (customer ID to end before).",
+          "examples": [
+            "cus_9K87654321fedcba"
+          ]
+        }
       }
     },
     "authMethod": "API_KEY",

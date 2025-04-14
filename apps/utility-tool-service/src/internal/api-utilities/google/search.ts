@@ -6,10 +6,10 @@
  */
 // Remove axios if fetch is used
 // import axios from 'axios';
-import { z } from 'zod'; // Import Zod
 import { 
   InternalUtilityTool, 
-  ErrorResponse // Import if needed
+  ErrorResponse,
+  JsonSchema
 } from '@agent-base/agents'; // Corrected path relative to api-utilities/google/
 import { registry } from '../../../registry/registry.js'; // Corrected path
 
@@ -49,19 +49,22 @@ export type GoogleSearchResponse =
 const googleSearchUtility: InternalUtilityTool = {
   id: 'utility_google_search',
   description: 'Search the web using Google Search API (via SerpAPI) to find up-to-date information',
-  // Update schema to match Record<string, UtilityToolSchema>
   schema: {
-    query: { // Parameter name
-      zod: z.string()
-            .describe('The search query to send to Google Search.'),
-      // Not optional
-      examples: ['latest AI news', 'weather in London']
+    query: { 
+      jsonSchema: {
+        type: 'string',
+        description: 'The search query to send to Google Search.',
+        examples: ['latest AI news', 'weather in London']
+      } satisfies JsonSchema,
     },
-    limit: { // Parameter name
-      zod: z.number().int().min(1).max(10) // SerpAPI typically returns max 10 organic results per page
-            .describe('Maximum number of results to return (default: 5, max: 10).')
-            .optional(),
-      examples: [5, 10]
+    limit: { 
+      jsonSchema: {
+        type: 'integer', // Zod .number().int()
+        description: 'Maximum number of results to return (default: 5, max: 10).',
+        minimum: 1,
+        maximum: 10,
+        examples: [5, 10]
+      } satisfies JsonSchema,
     }
   },
   
