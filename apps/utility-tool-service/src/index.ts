@@ -22,6 +22,9 @@ import './internal/api-utilities/web/read-webpage.js';
 
 import './internal/basic-utilities/get-current-datetime.js';
 
+// Import internal utility for managing external tools
+import './internal/internal-utilities/create-external-tool.js';
+
 // Import utility tools
 // import './oauth-utilities/gmail_read.js';
 // import './external/secret-utilities/stripe_list_charges.js';

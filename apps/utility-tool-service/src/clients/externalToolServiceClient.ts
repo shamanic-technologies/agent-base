@@ -4,7 +4,8 @@ import {
     ExternalUtilityInfoResponse,
     ExternalUtilityInfo,
     UtilitiesListResponse,
-    UtilitiesList
+    UtilitiesList,
+    ExternalUtilityTool
 } from '@agent-base/agents';
 
 // // Type for the list response from EUTS GET /api/tools
@@ -86,4 +87,29 @@ export const executeExternalTool = async (
     // We return the ServiceResponse directly. 
     // The controller should handle interpreting if it's a success, error, or setupNeeded response from EUTS.
     return response;
+};
+
+/**
+ * Creates a new tool configuration in the External Utility Tool Service.
+ * 
+ * @param toolConfig The configuration object for the new tool.
+ * @returns ServiceResponse reflecting the creation result from the external service.
+ */
+export const createExternalTool = async (
+    toolConfig: ExternalUtilityTool
+): Promise<ServiceResponse<ExternalUtilityInfo>> => {
+    const externalToolServiceUrl = process.env.EXTERNAL_UTILITY_TOOL_SERVICE_URL;
+    if (!externalToolServiceUrl) {
+        console.error('Configuration Error: EXTERNAL_UTILITY_TOOL_SERVICE_URL is not set.'); 
+        return { success: false, error: 'External Utility Tool Service URL is not configured.' };
+    }
+
+    // Make POST request to the external service's create endpoint
+    return makeServiceRequest<ExternalUtilityInfo>(
+        externalToolServiceUrl,
+        'POST',
+        `/api/tools`, // The create endpoint path
+        undefined, // No user ID header needed here
+        toolConfig // Pass the tool configuration as the body
+    );
 }; 
