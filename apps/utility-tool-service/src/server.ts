@@ -109,7 +109,7 @@ app.get('/get-list', async (req, res) => {
     const internalTools: UtilitiesList = registry.listInternalUtilities(); // Returns { id, description, schema: Record<string, UtilityToolSchema> }
     
     // Get external tools - MODIFY LATER TO INCLUDE SCHEMA
-    let externalTools: UtilitiesList; // Expect { id, description, schema: Record<string, ExternalUtilityParamSchema> }
+    let externalTools: UtilitiesList = []; 
     const externalResponse: UtilitiesListResponse = await listExternalTools();
     if (externalResponse.success) {
         // Assume externalTools response will include schema after we modify client/EUTS
