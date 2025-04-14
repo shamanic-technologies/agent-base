@@ -3,10 +3,11 @@
  * 
  * Removes a table from the database
  */
-import { z } from 'zod'; // Import Zod
+// import { z } from 'zod'; // Import Zod
 import { 
   InternalUtilityTool,
-  ErrorResponse // Import if needed
+  ErrorResponse,
+  JsonSchema
 } from '@agent-base/agents';
 import { registry } from '../../../registry/registry.js';
 import {
@@ -40,19 +41,20 @@ type DeleteTableResponse = DeleteTableSuccessResponse | ErrorResponse;
 const deleteTableUtility: InternalUtilityTool = {
   id: 'utility_delete_table',
   description: 'Delete a table from the user\'s database',
-  // Update schema to match Record<string, UtilityToolSchema>
   schema: {
-    table: { // Parameter name
-      zod: z.string()
-            .describe('The name of the table to delete.'),
-      // Not optional
-      examples: ['orders', 'inventory']
+    table: { 
+      jsonSchema: {
+        type: 'string',
+        description: 'The name of the table to delete.',
+        examples: ['orders', 'inventory']
+      } satisfies JsonSchema,
     },
-    confirm: { // Parameter name
-      zod: z.boolean().optional()
-            .describe('Confirmation that you want to delete the table (default: false). Required to proceed with deletion.'),
-      // Optional
-      examples: [true]
+    confirm: { 
+      jsonSchema: {
+        type: 'boolean',
+        description: 'Confirmation that you want to delete the table (default: false). Required to proceed with deletion.',
+        examples: [true]
+      } satisfies JsonSchema,
     }
   },
   

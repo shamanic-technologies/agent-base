@@ -4,10 +4,10 @@
  * Executes SQL-like queries on database tables and returns results.
  * Supports basic SELECT, INSERT, UPDATE, and DELETE operations.
  */
-import { z } from 'zod'; // Import Zod
 import { 
   InternalUtilityTool, 
   ErrorResponse,
+  JsonSchema
 } from '@agent-base/agents';
 import { registry } from '../../../registry/registry.js';
 import {
@@ -81,35 +81,40 @@ type QueryTableResponse = QueryTableSuccessResponse | ErrorResponse;
 const queryTableUtility: InternalUtilityTool = {
   id: 'utility_query_table',
   description: 'Execute SQL-like queries (SELECT, INSERT, UPDATE, DELETE) on a specific database table and return results.',
-  // Update schema to use Zod
   schema: {
-    table: { // Parameter name
-      zod: z.string().min(1)
-            .describe('The name of the table to query.'),
-      // Not optional
-      examples: ['users', 'orders']
+    table: { 
+      jsonSchema: {
+        type: 'string',
+        description: 'The name of the table to query.',
+        minLength: 1,
+        examples: ['users', 'orders']
+      } satisfies JsonSchema,
     },
-    query: { // Parameter name
-      zod: z.string().min(1)
-            .describe('The SQL-like query (SELECT, INSERT, UPDATE, DELETE). Use :param syntax for parameters.'),
-      // Not optional
-      examples: [
-        'SELECT id, name WHERE email = :email',
-        'INSERT INTO products (name, price) VALUES (:name, :price)',
-        'UPDATE users SET name = :newName WHERE id = :userId',
-        'DELETE FROM logs WHERE timestamp < :cutoff'
-      ]
+    query: { 
+      jsonSchema: {
+        type: 'string',
+        description: 'The SQL-like query (SELECT, INSERT, UPDATE, DELETE). Use :param syntax for parameters.',
+        minLength: 1,
+        examples: [
+          'SELECT id, name WHERE email = :email',
+          'INSERT INTO products (name, price) VALUES (:name, :price)',
+          'UPDATE users SET name = :newName WHERE id = :userId',
+          'DELETE FROM logs WHERE timestamp < :cutoff'
+        ]
+      } satisfies JsonSchema,
     },
-    params: { // Parameter name
-      zod: z.record(z.any()).optional()
-            .describe('Optional key-value pairs for parameters used in the query (e.g., { email: \'test@example.com\' }).'),
-      // Optional
-      examples: [{
-        "email": "jane.doe@example.com",
-        "category": "electronics",
-        "userId": "user_123",
-        "newName": "Jane Smith"
-      }]
+    params: { 
+      jsonSchema: {
+        type: 'object',
+        description: 'Optional key-value pairs for parameters used in the query (e.g., { email: \'test@example.com\' }).',
+        additionalProperties: true,
+        examples: [{
+          "email": "jane.doe@example.com",
+          "category": "electronics",
+          "userId": "user_123",
+          "newName": "Jane Smith"
+        }]
+      } satisfies JsonSchema,
     }
   },
   

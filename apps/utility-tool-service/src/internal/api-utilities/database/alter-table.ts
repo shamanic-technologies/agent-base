@@ -3,8 +3,11 @@
  * 
  * Modifies existing table structures in the database (via Xata API).
  */
-import { z } from 'zod'; // Import Zod
-import { InternalUtilityTool, ErrorResponse } from '@agent-base/agents';
+import { 
+  InternalUtilityTool, 
+  ErrorResponse,
+  JsonSchema
+} from '@agent-base/agents';
 import { registry } from '../../../registry/registry.js';
 import {
   findXataWorkspace,
@@ -63,37 +66,44 @@ type AlterTableResponse = AlterTableSuccessResponse | ErrorResponse;
 const alterTableUtility: InternalUtilityTool = {
   id: 'utility_alter_table',
   description: 'Modify the structure of existing database tables (add, remove, rename columns).',
-  // Update schema to match Record<string, UtilityToolSchema>
   schema: {
-    table: { // Parameter name
-      zod: z.string()
-            .describe('The name of the table to modify.'),
-      // Not optional
-      examples: ['users', 'products']
+    table: { 
+      jsonSchema: {
+        type: 'string',
+        description: 'The name of the table to modify.',
+        examples: ['users', 'products']
+      } satisfies JsonSchema,
     },
-    addColumn: { // Parameter name
-      zod: z.object({
-              name: z.string().describe('Name of the new column.'),
-              type: z.enum(xataColumnTypes).describe('Type of the new column.')
-            })
-            .describe('Definition of a column to add to the table.')
-            .optional(),
-      examples: [{ name: 'description', type: 'text' }, { name: 'isAdmin', type: 'bool' }]
+    addColumn: { 
+      jsonSchema: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Name of the new column.' },
+          type: { type: 'string', description: 'Type of the new column.', enum: xataColumnTypes }
+        },
+        required: ['name', 'type'],
+        description: 'Definition of a column to add to the table.',
+        examples: [{ name: 'description', type: 'text' }, { name: 'isAdmin', type: 'bool' }]
+      } satisfies JsonSchema,
     },
-    removeColumn: { // Parameter name
-      zod: z.string()
-            .describe('Name of a column to remove from the table.')
-            .optional(),
-      examples: ['old_status']
+    removeColumn: { 
+      jsonSchema: {
+        type: 'string',
+        description: 'Name of a column to remove from the table.',
+        examples: ['old_status']
+      } satisfies JsonSchema,
     },
-    renameColumn: { // Parameter name
-      zod: z.object({
-              oldName: z.string().describe('Current name of the column.'),
-              newName: z.string().describe('New name for the column.')
-            })
-            .describe('Definition for renaming a column in the table.')
-            .optional(),
-      examples: [{ oldName: 'status', newName: 'current_status' }]
+    renameColumn: { 
+      jsonSchema: {
+        type: 'object',
+        properties: {
+          oldName: { type: 'string', description: 'Current name of the column.' },
+          newName: { type: 'string', description: 'New name for the column.' }
+        },
+        required: ['oldName', 'newName'],
+        description: 'Definition for renaming a column in the table.',
+        examples: [{ oldName: 'status', newName: 'current_status' }]
+      } satisfies JsonSchema,
     }
   },
   

@@ -4,8 +4,12 @@
  * Extracts content from web pages using the FireCrawl API and returns it in markdown format.
  * Useful for fetching clean, LLM-friendly content from websites.
  */
-import { z } from 'zod'; // Import Zod
-import { InternalUtilityTool, ErrorResponse } from '@agent-base/agents';
+// import { z } from 'zod'; // Import Zod
+import { 
+  InternalUtilityTool, 
+  ErrorResponse,
+  JsonSchema
+} from '@agent-base/agents';
 import { registry } from '../../../registry/registry.js';
 
 // --- Local Type Definitions ---
@@ -39,19 +43,24 @@ type ReadWebPageResponse = ReadWebPageSuccessResponse | ErrorResponse;
 const readWebPage: InternalUtilityTool = {
   id: 'utility_read_webpage',
   description: 'Read the content of a webpage using Firecrawl API',
-  // Update schema to match Record<string, UtilityToolSchema>
   schema: {
-    url: { // Parameter name
-      zod: z.string().url()
-            .describe('The URL to fetch content from (must include http:// or https://)'),
-      // Not optional
-      examples: ['https://example.com', 'http://blog.example.com/article']
+    url: { 
+      jsonSchema: {
+        type: 'string',
+        description: 'The URL to fetch content from (must include http:// or https://)',
+        format: 'uri', // JSON Schema format for URL
+        examples: ['https://example.com', 'http://blog.example.com/article'] // Move examples inside
+      } satisfies JsonSchema,
+      // examples: ['https://example.com', 'http://blog.example.com/article'] // Remove from here
     },
-    onlyMainContent: { // Parameter name
-      zod: z.boolean()
-            .describe('Whether to extract only the main content without navigation, headers, footers, etc. (default: true)')
-            .optional(),
-      examples: [true, false]
+    onlyMainContent: { 
+      jsonSchema: {
+        type: 'boolean',
+        description: 'Whether to extract only the main content without navigation, headers, footers, etc. (default: true)',
+        default: true,
+        examples: [true, false] // Move examples inside
+      } satisfies JsonSchema,
+      // examples: [true, false] // Remove from here
     }
   },
   

@@ -79,19 +79,13 @@ export type JsonSchema = Record<string, any> & {
     // Add other common JSON Schema keywords as needed
 };
 
-export interface UtilityToolParamSchema {
-    // Replace zod with jsonSchema
-    jsonSchema: JsonSchema;
-    examples?: any[]; // Keep examples separate for clarity if desired
-}
-
 /**
    * Standard interface for all utility tools in the system
    */
 export interface InternalUtilityTool {
     id: string;   /** Unique identifier for the utility */
     description: string;  /** Human-readable description of what the utility does */
-    schema: Record<string, UtilityToolParamSchema>; // Schema defining the input parameters for the utility
+    schema: Record<string, JsonSchema>; // Schema defining the input parameters for the utility
     /**
      * The execution function for the utility
      * @param userId ID of the user making the request
@@ -214,7 +208,7 @@ export interface UtilityRequest {
   export interface InternalUtilityInfo {
     id: string;
     description: string;
-    schema: Record<string, UtilityToolParamSchema>;
+    schema: Record<string, JsonSchema>;
   };
 
   export type InternalUtilityInfoResponse = ServiceResponse<InternalUtilityInfo>;
@@ -236,7 +230,7 @@ export interface UtilityRequest {
         pathTemplate: string;      // Path with {placeholders} (e.g., '/customers/{customerId}')
     };
     // Re-declare schema here to ensure the override uses the updated UtilityToolParamSchema
-    schema: Record<string, UtilityToolParamSchema>; 
+    schema: Record<string, JsonSchema>; 
   };
 
 export type ExternalUtilityInfoResponse = ServiceResponse<ExternalUtilityInfo>;

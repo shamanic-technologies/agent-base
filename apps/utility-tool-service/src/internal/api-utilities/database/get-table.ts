@@ -3,10 +3,11 @@
  * 
  * Returns information about a database table, including schema and optionally data
  */
-import { z } from 'zod'; // Import Zod
+// import { z } from 'zod'; // Remove Zod import
 import { 
   InternalUtilityTool, 
   ErrorResponse,
+  JsonSchema
 } from '@agent-base/agents';
 import { registry } from '../../../registry/registry.js';
 import { 
@@ -47,26 +48,32 @@ type GetTableResponse = GetTableSuccessResponse | ErrorResponse;
 const getTableUtility: InternalUtilityTool = {
   id: 'utility_get_table',
   description: 'Get information about a database table, including schema and optionally data.',
-  // Update schema to use Zod
   schema: {
-    table: { // Parameter name
-      zod: z.string().min(1)
-            .describe('The name of the table to retrieve.'),
-      // Not optional
-      examples: ['users', 'products']
+    table: { 
+      jsonSchema: {
+        type: 'string',
+        description: 'The name of the table to retrieve.',
+        minLength: 1, // Zod .min(1)
+        examples: ['users', 'products'] // Move examples inside
+      } satisfies JsonSchema,
     },
-    includeData: { // Parameter name
-      zod: z.boolean().optional().default(true)
-            .describe('Whether to include table data rows in the response (default: true).'),
-      // Optional
-      examples: [false, true]
+    includeData: { 
+      jsonSchema: {
+        type: 'boolean',
+        description: 'Whether to include table data rows in the response (default: true).',
+        default: true, // JSON Schema default
+        examples: [false, true] // Move examples inside
+      } satisfies JsonSchema,
     },
-    limit: { // Parameter name
-      zod: z.number().int().positive().optional().default(10)
-            .describe('Maximum number of data rows to return if includeData is true (default: 10, max: 100).')
-            .refine(val => val <= 100, { message: "Limit cannot exceed 100" }),
-      // Optional
-      examples: [5, 50, 100]
+    limit: { 
+      jsonSchema: {
+        type: 'integer', // Zod .number().int()
+        description: 'Maximum number of data rows to return if includeData is true (default: 10, max: 100).',
+        default: 10, // JSON Schema default
+        minimum: 1, // Zod .positive() implies minimum 1
+        maximum: 100, // Zod .refine() check
+        examples: [5, 50, 100] // Move examples inside
+      } satisfies JsonSchema,
     }
   },
   

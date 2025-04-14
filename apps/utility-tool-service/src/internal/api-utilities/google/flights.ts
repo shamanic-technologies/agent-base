@@ -5,10 +5,10 @@
  * Useful for finding flight information, prices, routes, and travel options.
  */
 import axios from 'axios';
-import { z } from 'zod'; // Import Zod
 import { 
   InternalUtilityTool,
-  ErrorResponse
+  ErrorResponse,
+  JsonSchema
 } from '@agent-base/agents';  
 import { registry } from '../../../registry/registry.js';
 
@@ -85,55 +85,68 @@ function formatDuration(minutes: number): string {
 const googleFlightsUtility: InternalUtilityTool = {
   id: 'utility_google_flights',
   description: 'Search for flights using Google Flights (via SerpAPI) to find routes, prices, and travel options.',
-  // Update schema to match Record<string, UtilityToolSchema>
   schema: {
-    origin: { // Parameter name
-      zod: z.string()
-            .describe('Origin airport code or city (e.g., "NYC", "New York", "JFK")'),
-      // Not optional
-      examples: ['JFK', 'London']
+    origin: { 
+      jsonSchema: {
+        type: 'string',
+        description: 'Origin airport code or city (e.g., "NYC", "New York", "JFK")',
+        examples: ['JFK', 'London']
+      } satisfies JsonSchema,
     },
-    destination: { // Parameter name
-      zod: z.string()
-            .describe('Destination airport code or city (e.g., "LAX", "Tokyo", "CDG")'),
-      // Not optional
-      examples: ['LAX', 'Paris']
+    destination: { 
+      jsonSchema: {
+        type: 'string',
+        description: 'Destination airport code or city (e.g., "LAX", "Tokyo", "CDG")',
+        examples: ['LAX', 'Paris']
+      } satisfies JsonSchema,
     },
-    departure_date: { // Parameter name
-      zod: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format")
-            .describe('Departure date in YYYY-MM-DD format.')
-            .optional(), // Optional in schema, logic assumes it might be needed
-      examples: ['2024-12-20']
+    departure_date: { 
+      jsonSchema: {
+        type: 'string',
+        description: 'Departure date in YYYY-MM-DD format.',
+        pattern: '^\\d{4}-\\d{2}-\\d{2}$',
+        examples: ['2024-12-20']
+      } satisfies JsonSchema,
     },
-    return_date: { // Parameter name
-      zod: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format")
-            .describe('Return date in YYYY-MM-DD format for round trips.')
-            .optional(),
-      examples: ['2025-01-05']
+    return_date: { 
+      jsonSchema: {
+        type: 'string',
+        description: 'Return date in YYYY-MM-DD format for round trips.',
+        pattern: '^\\d{4}-\\d{2}-\\d{2}$',
+        examples: ['2025-01-05']
+      } satisfies JsonSchema,
     },
-    adults: { // Parameter name
-      zod: z.number().int().min(1)
-            .describe('Number of adult passengers (default: 1).')
-            .optional(),
-      examples: [1, 2]
+    adults: { 
+      jsonSchema: {
+        type: 'integer',
+        description: 'Number of adult passengers (default: 1).',
+        minimum: 1,
+        examples: [1, 2]
+      } satisfies JsonSchema,
     },
-    children: { // Parameter name
-      zod: z.number().int().min(0)
-            .describe('Number of child passengers (default: 0).')
-            .optional(),
-      examples: [0, 1]
+    children: { 
+      jsonSchema: {
+        type: 'integer',
+        description: 'Number of child passengers (default: 0).',
+        minimum: 0,
+        examples: [0, 1]
+      } satisfies JsonSchema,
     },
-    infants: { // Parameter name
-      zod: z.number().int().min(0)
-            .describe('Number of infant passengers (default: 0).')
-            .optional(),
-      examples: [0]
+    infants: { 
+      jsonSchema: {
+        type: 'integer',
+        description: 'Number of infant passengers (default: 0).',
+        minimum: 0,
+        examples: [0]
+      } satisfies JsonSchema,
     },
-    cabin_class: { // Parameter name
-      zod: z.enum(cabinClasses)
-            .describe('Cabin class preference.')
-            .optional(),
-      examples: ['economy', 'business']
+    cabin_class: { 
+      jsonSchema: {
+        type: 'string',
+        description: 'Cabin class preference.',
+        enum: cabinClasses,
+        examples: ['economy', 'business']
+      } satisfies JsonSchema,
     }
   },
   

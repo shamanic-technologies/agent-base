@@ -4,11 +4,10 @@
  * Returns the current date and time in various formats
  */
 import { format } from 'date-fns';
-import { z } from 'zod';
 import { 
   InternalUtilityTool,
   ErrorResponse,
-  UtilityToolParamSchema // Import the schema type if needed, or rely on inference
+  JsonSchema // Import necessary types
 } from '@agent-base/agents';
 import { registry } from '../../registry/registry.js';
 
@@ -24,13 +23,14 @@ export interface DateTimeRequest {
 const getCurrentDateTimeUtility: InternalUtilityTool = {
   id: 'utility_get_current_datetime',
   description: 'Get current date and time in various formats',
-  // Update schema to match Record<string, UtilityToolSchema>
   schema: {
-    format: { // Parameter name as key
-      zod: z.string()
-            .describe('Optional date format. Can be ISO, UTC, Locale, Date, Time, Unix/Timestamp, or a custom format string like YYYY-MM-DD HH:mm:ss')
-            .optional(),
-      examples: ['ISO', 'UTC', 'YYYY-MM-DD', 'HH:mm'] // Optional examples
+    format: { 
+      jsonSchema: {
+        type: 'string',
+        description: 'Optional date format. Can be ISO, UTC, Locale, Date, Time, Unix/Timestamp, or a custom format string like YYYY-MM-DD HH:mm:ss',
+        default: 'ISO', // Add default here if desired
+        examples: ['ISO', 'UTC', 'YYYY-MM-DD', 'HH:mm'] // Move examples inside
+      } satisfies JsonSchema,
     }
   },
   
