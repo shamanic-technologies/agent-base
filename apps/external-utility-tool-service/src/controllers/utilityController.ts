@@ -52,8 +52,8 @@ export const createTool = async (req: Request, res: Response, next: NextFunction
                     validationErrors.push('Field schema must be a non-empty object.');
                 } else {
                     for (const key in newConfig.schema) {
-                        if (typeof newConfig.schema[key] !== 'object' || !newConfig.schema[key].zod) {
-                             validationErrors.push(`Invalid schema definition for key '${key}': must be an object with a 'zod' property.`);
+                        if (typeof newConfig.schema[key] !== 'object' || !newConfig.schema[key].jsonSchema) {
+                             validationErrors.push(`Invalid schema definition for key '${key}': must be an object with a 'jsonSchema' property.`);
                         }
                         // Further validation of the zod object itself is complex here, skipped for now.
                     }

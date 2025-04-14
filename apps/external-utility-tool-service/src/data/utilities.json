@@ -32,7 +32,9 @@
             "type": "string"
           },
           "description": "Array of label IDs to filter emails by (e.g., [\"INBOX\", \"UNREAD\"]). Default: [\"INBOX\"].",
-          "default": ["INBOX"]
+          "default": [
+            "INBOX"
+          ]
         },
         "examples": [
           [
@@ -174,5 +176,21 @@
         }
       }
     }
+  },
+  {
+    "id": "test_tool_creation",
+    "provider": "stripe",
+    "description": "A test tool created via API.",
+    "schema": {
+      "optionalParam": {
+        "jsonSchema": {
+          "type": "string",
+          "description": "An optional parameter."
+        }
+      }
+    },
+    "authMethod": "NONE",
+    "requiredSecrets": [],
+    "apiDetails": null
   }
 ]
