@@ -1,9 +1,10 @@
 /**
  * Types related to Utility.
  */
-import { BaseResponse, ErrorResponse, ServiceResponse, SuccessResponse } from './common.js';
-// Remove Zod import as it's no longer used for schema definition here
-// import { z } from 'zod'; 
+import { ErrorResponse, ServiceResponse, SuccessResponse } from './common.js';
+import { OAuthRequest } from './credential.js';
+import { StoreActionConfirmationRequest, StoreSecretRequest } from './secrets.js';
+
 // --- Enums and Core Records ---
 
 export enum UtilityProvider {
@@ -14,13 +15,18 @@ export enum UtilityProvider {
     SLACK = 'slack',
 }
 
-export enum UtilitySecret {
+export enum UtilityActionConfirmation {
+    WEBHOOK_URL_INPUTED = 'webhook_url_inputed', // Represents user confirmation of an action
+}
+
+export enum UtilityInputSecret {
     WEBSITE_ID = 'website_id',
     API_SECRET_KEY = 'api_secret_key',
     API_PUBLISHABLE_KEY = 'api_publishable_key',
     API_IDENTIFIER = 'api_identifier',
-    WEBHOOK_URL_INPUTED = 'webhook_url_inputed', // Represents user confirmation of an action
 }
+
+export type UtilitySecret = UtilityInputSecret | UtilityActionConfirmation;
 
 /**
  * Standard HTTP methods
@@ -51,21 +57,6 @@ export enum ApiKeyAuthScheme {
     BASIC_PASS = 'BasicPass',   // Basic Auth: username=, password=<key>
     HEADER = 'Header'           // Custom Header: <headerName>: <key>
 }
-
-// /**
-//  * Schema definition for a single parameter within ExternalUtilityConfig
-//  */
-// export interface UtilityParamSchema {
-//     /** Simplified type indicator for basic validation and UI hints */
-//     type: 'string' | 'number' | 'boolean' | 'array_string' | 'object';
-
-//     /** Is the parameter required? */
-//     required: boolean;
-
-//     /** Human-readable description for LLM/UI */
-//     description: string;
-//     examples?: any[];
-// }
 
 // Update UtilityToolParamSchema to represent a JSON Schema object
 // Using a basic type for now, can be refined with more specific JSON Schema types if needed
@@ -102,21 +93,12 @@ export interface InternalUtilityTool {
  * Drives the generic execution engine.
  */
 export interface ExternalUtilityTool extends InternalUtilityTool{
-
-    /** The provider enum (e.g., UtilityProvider.GMAIL) */
-    provider: UtilityProvider;
-
-    /** Authentication method required */
-    authMethod: AuthMethod;
-
-    /** Secrets required from secret-service (includes action confirmations like WEBHOOK_URL_INPUTED) */
-    requiredSecrets: UtilitySecret[];
-
-    /** OAuth scopes required (only if authMethod is OAUTH) */
-    requiredScopes?: string[];
-
-    /** Details on how to use the API key (only if authMethod is API_KEY) */
-    apiKeyDetails?: {
+    provider: UtilityProvider;     /** The provider enum (e.g., UtilityProvider.GMAIL) */
+    authMethod: AuthMethod;    /** Authentication method required */
+    requiredSecrets: UtilitySecret[];     /** Secrets required from secret-service (includes action confirmations like WEBHOOK_URL_INPUTED) */
+    requiredScopes?: string[];     /** OAuth scopes required (only if authMethod is OAUTH) */
+    
+    apiKeyDetails?: {     /** Details on how to use the API key (only if authMethod is API_KEY) */
         secretName: UtilitySecret; // Which secret holds the key
         scheme: ApiKeyAuthScheme;
         headerName?: string;      // Required only if scheme is HEADER
@@ -143,18 +125,14 @@ export interface ExternalUtilityTool extends InternalUtilityTool{
  */
 export interface SetupNeededData {
     needs_setup: true;
-    setup_url?: string; // For OAuth flow initiation
     provider: string;
     message: string; // General message
     title: string; // Title for UI prompt
     description: string; // Description for UI prompt
     button_text?: string; // Suggested main action button text
-
-    /** List of secret keys requiring user text input */
-    required_secret_inputs?: UtilitySecret[];
-
-    /** List of secrets representing actions that require user confirmation */
-    required_action_confirmations?: UtilitySecret[];
+    required_secret_inputs?: UtilityInputSecret[];     /** List of secret keys requiring user text input */
+    required_action_confirmations?: UtilityActionConfirmation[];    /** List of secrets representing actions that require user confirmation */
+    required_oauth?: string; // For OAuth flow initiation
 }
 
 /**
@@ -165,16 +143,6 @@ export type ExternalUtilityExecutionResponse =
     ErrorResponse |
     SuccessResponse<any>;
 
-
-
-  
-  
-//   export interface ExternalUtilityTool extends UtilityTool {
-//     provider: UtilityProvider;
-//     requiredSecrets: UtilitySecret[];
-//     requiredOauth: boolean;
-//   }
-  
   
   /**
    * Core request structure
@@ -185,23 +153,7 @@ export interface UtilityRequest {
     conversation_id: string;
     redirect_url?: string;
 }
-  
-  /**
-   * Standardized auth needed response for all providers
-   */
-//   export interface SetupNeededResponse {
-//     status: 'success';
-//     data: {
-//       needs_setup: true;
-//       setup_url: string;
-//       provider: string;
-//       message: string;
-//       title: string;
-//       description: string;
-//       button_text: string;
-//     }
-//   }
-  
+
   /**
    * UtilityInfo, UtilitiesListResponse, UtilityInfoResponse
    */
@@ -247,33 +199,4 @@ export type UtilitiesListItem = {
 export type UtilitiesList =  UtilitiesListItem[];
 
 export type UtilitiesListResponse = ServiceResponse<UtilitiesList>;
-
-//   export type UtilityInfoResponse = UtilityInfo | {
-//     error: string;
-//   };
-  
-
-// export interface SetupNeededResponse extends SuccessResponse<SetupNeededData> {
-//     success: true; // Still considered 'success' from the service perspective
-//     data: SetupNeededData;
-//     error?: never;
-// }
-
-
-// /**
-//  * Standardized error response for utility execution failures.
-//  */
-// export interface UtilityErrorResponse extends ErrorResponse {
-//     // Inherits success: false, error: string from ErrorResponse
-//     // Can add utility-specific error fields if needed later
-// }
-// /**
-//  * Generic success response for utility execution
-//  */
-// export interface UtilitySuccessResponse<T = any> extends SuccessResponse<T> {
-//     success: true;
-//     data: T; // The actual result from the external API or process
-//     error?: never;
-// }
-
 

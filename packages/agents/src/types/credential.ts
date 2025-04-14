@@ -24,6 +24,8 @@ export enum CredentialProvider {
     createdAt: Date;
     updatedAt: Date;
   }
+
+
   /**
   * Input for creating new credentials
   */
