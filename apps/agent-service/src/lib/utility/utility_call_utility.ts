@@ -9,7 +9,10 @@
 import { tool } from 'ai';
 import { z } from "zod";
 import axios from 'axios';
+// Use local types for agent-service specific structures
 import { UtilityError, UtilityToolCredentials } from '../../types/index.js';
+// Import shared types from agents package
+import { ServiceResponse } from '@agent-base/agents'; 
 import { handleAxiosError } from '../utils/errorHandlers.js';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -50,7 +53,7 @@ export function createCallUtilityTool(credentials: UtilityToolCredentials) {
           } as UtilityError;
         }
         
-        const response = await axios.post(
+        const response = await axios.post<ServiceResponse<any>>(
           `${API_GATEWAY_URL}/utility-tool/call-tool/${utility_id}`, 
           {
             input: parameters || {},
@@ -66,18 +69,27 @@ export function createCallUtilityTool(credentials: UtilityToolCredentials) {
           }
         );
         
-        if (response.data) {
-          return response.data;
+        if (response.data && response.data.success) {
+            // Return the nested data, which is the actual result of the utility execution
+            console.log(`[Utility Tool] Call to ${utility_id} successful.`);
+            return response.data.data;
+        } else {
+            // Handle failure case reported by the utility service
+            const errorMessage = response.data?.error || 'Utility execution failed.';
+            const errorDetails = response.data?.details;
+            console.error(`[Utility Tool] Utility service reported failure for ${utility_id}: ${errorMessage}`, errorDetails);
+            return {
+                error: true,
+                message: errorMessage,
+                details: errorDetails,
+                status: 'error',
+                code: 'EXECUTION_FAILED'
+            } as UtilityError;
         }
         
-        return {
-          error: true,
-          message: 'Invalid response from API Gateway',
-          status: 'error',
-          code: 'INVALID_RESPONSE'
-        } as UtilityError;
       } catch (error) {
         console.error(`[Utility Tool] Error calling utility ${utility_id}:`, error);
+        // handleAxiosError should format the error correctly
         return handleAxiosError(error, `${API_GATEWAY_URL}/utility-tool/call-tool/${utility_id}`);
       }
     }
