@@ -335,5 +335,127 @@
         "Content-Type": "application/x-www-form-urlencoded"
       }
     }
+  },
+  {
+    "id": "stripe_list_charges",
+    "provider": "stripe",
+    "description": "Lists charges (payments received) from Stripe",
+    "schema": {
+      "limit": {
+        "jsonSchema": {
+          "type": "number",
+          "description": "Maximum number of charges to return (1-100, default 10)",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 100,
+          "examples": [
+            10,
+            50
+          ]
+        }
+      },
+      "starting_after": {
+        "jsonSchema": {
+          "type": "string",
+          "description": "Cursor for pagination (charge ID to start after)",
+          "examples": [
+            "ch_1234567890abcdef"
+          ]
+        }
+      },
+      "ending_before": {
+        "jsonSchema": {
+          "type": "string",
+          "description": "Cursor for pagination (charge ID to end before)",
+          "examples": [
+            "ch_1234567890abcdef"
+          ]
+        }
+      }
+    },
+    "authMethod": "API_KEY",
+    "requiredSecrets": [
+      "api_secret_key"
+    ],
+    "apiKeyDetails": {
+      "secretName": "api_secret_key",
+      "scheme": "Bearer"
+    },
+    "apiDetails": {
+      "method": "GET",
+      "baseUrl": "https://api.stripe.com/v1",
+      "pathTemplate": "/charges",
+      "paramMappings": {
+        "query": {
+          "limit": "limit",
+          "starting_after": "starting_after",
+          "ending_before": "ending_before"
+        }
+      },
+      "staticHeaders": {
+        "Stripe-Version": "2024-04-10"
+      }
+    }
+  },
+  {
+    "id": "stripe_list_balance_transactions",
+    "provider": "stripe",
+    "description": "Lists balance transactions from Stripe",
+    "schema": {
+      "limit": {
+        "jsonSchema": {
+          "type": "number",
+          "description": "Maximum number of transactions to return (1-100, default 10)",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 100,
+          "examples": [
+            10,
+            50
+          ]
+        }
+      },
+      "starting_after": {
+        "jsonSchema": {
+          "type": "string",
+          "description": "Cursor for pagination (transaction ID to start after)",
+          "examples": [
+            "txn_1234567890abcdef"
+          ]
+        }
+      },
+      "ending_before": {
+        "jsonSchema": {
+          "type": "string",
+          "description": "Cursor for pagination (transaction ID to end before)",
+          "examples": [
+            "txn_1234567890abcdef"
+          ]
+        }
+      }
+    },
+    "authMethod": "API_KEY",
+    "requiredSecrets": [
+      "api_secret_key"
+    ],
+    "apiKeyDetails": {
+      "secretName": "api_secret_key",
+      "scheme": "Bearer"
+    },
+    "apiDetails": {
+      "method": "GET",
+      "baseUrl": "https://api.stripe.com/v1",
+      "pathTemplate": "/balance/history",
+      "paramMappings": {
+        "query": {
+          "limit": "limit",
+          "starting_after": "starting_after",
+          "ending_before": "ending_before"
+        }
+      },
+      "staticHeaders": {
+        "Stripe-Version": "2024-04-10"
+      }
+    }
   }
 ]

@@ -34,7 +34,9 @@ interface CreateExternalToolParams {
  */
 const createExternalToolUtility: InternalUtilityTool = {
   id: 'utility_create_external_tool',
-  description: 'Registers a new external tool configuration by forwarding it to the external tool service.',
+  description: `Create a new external tool, that you can execute on the go, from any API Documentation you have.
+  Authentication and setup will be prompted automatically to the user after you build the tool, once you will call it.
+  Once the tool is created, call get_utility_info on it to retrieve the parameters to call the tool.`,
   // Define the schema for the input parameters of this utility
   schema: {
     tool_configuration: { 
