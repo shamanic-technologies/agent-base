@@ -7,8 +7,6 @@ import {
     UtilitiesList
 } from '@agent-base/agents';
 
-const externalToolServiceUrl = process.env.EXTERNAL_UTILITY_TOOL_SERVICE_URL;
-
 // // Type for the list response from EUTS GET /api/tools
 // type ExternalToolListInfo = { id: string; description: string };
 
@@ -22,7 +20,9 @@ const externalToolServiceUrl = process.env.EXTERNAL_UTILITY_TOOL_SERVICE_URL;
  * @returns ServiceResponse containing an array of tool infos.
  */
 export const listExternalTools = async (): Promise<UtilitiesListResponse> => {
+    const externalToolServiceUrl = process.env.EXTERNAL_UTILITY_TOOL_SERVICE_URL;
     if (!externalToolServiceUrl) {
+        console.error('Configuration Error: EXTERNAL_UTILITY_TOOL_SERVICE_URL is not set.');
         return { success: false, error: 'External Utility Tool Service URL is not configured.' };
     }
     return makeServiceRequest<UtilitiesList>(
@@ -39,7 +39,9 @@ export const listExternalTools = async (): Promise<UtilitiesListResponse> => {
  * @returns ServiceResponse containing the tool details.
  */
 export const getExternalToolInfo = async (toolId: string): Promise<ServiceResponse<ExternalUtilityInfo>> => {
+    const externalToolServiceUrl = process.env.EXTERNAL_UTILITY_TOOL_SERVICE_URL;
     if (!externalToolServiceUrl) {
+        console.error('Configuration Error: EXTERNAL_UTILITY_TOOL_SERVICE_URL is not set.');
         return { success: false, error: 'External Utility Tool Service URL is not configured.' };
     }
     return makeServiceRequest<ExternalUtilityInfo>(
@@ -65,7 +67,9 @@ export const executeExternalTool = async (
     toolId: string, 
     payload: { userId: string; conversationId: string; params: any; agentId?: string }
 ): Promise<ServiceResponse<any>> => { // Use 'any' for data as it can be diverse
+    const externalToolServiceUrl = process.env.EXTERNAL_UTILITY_TOOL_SERVICE_URL;
     if (!externalToolServiceUrl) {
+        console.error('Configuration Error: EXTERNAL_UTILITY_TOOL_SERVICE_URL is not set.');
         return { success: false, error: 'External Utility Tool Service URL is not configured.' };
     }
     
