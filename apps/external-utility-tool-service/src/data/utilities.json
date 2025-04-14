@@ -192,5 +192,148 @@
     "authMethod": "NONE",
     "requiredSecrets": [],
     "apiDetails": null
+  },
+  {
+    "id": "my_test_proxy_tool",
+    "provider": "slack",
+    "description": "A test tool created via proxy.",
+    "authMethod": "API_KEY",
+    "requiredSecrets": [
+      "api_secret_key"
+    ],
+    "apiKeyDetails": {
+      "secretName": "api_secret_key",
+      "scheme": "Bearer"
+    },
+    "schema": {
+      "channel_id": {
+        "jsonSchema": {
+          "type": "string",
+          "description": "The ID of the Slack channel.",
+          "examples": [
+            "C123456789"
+          ]
+        }
+      },
+      "message_text": {
+        "jsonSchema": {
+          "type": "string",
+          "description": "The message content to send.",
+          "examples": [
+            "Hello from the test tool!"
+          ]
+        }
+      }
+    },
+    "apiDetails": {
+      "method": "POST",
+      "baseUrl": "https://slack.com/api",
+      "pathTemplate": "/chat.postMessage",
+      "paramMappings": {
+        "body": {
+          "channel_id": "channel",
+          "message_text": "text"
+        }
+      },
+      "staticHeaders": {
+        "Content-Type": "application/json; charset=utf-8"
+      }
+    }
+  },
+  {
+    "id": "stripe_create_customer_direct_4",
+    "provider": "stripe",
+    "description": "Creates a new customer in Stripe (direct retry 4).",
+    "schema": {
+      "email": {
+        "jsonSchema": {
+          "type": "string",
+          "description": "Customer's email address.",
+          "format": "email",
+          "examples": [
+            "jenny.direct4@example.com"
+          ]
+        }
+      },
+      "name": {
+        "jsonSchema": {
+          "type": "string",
+          "description": "Customer's full name.",
+          "examples": [
+            "Jenny Direct 4"
+          ]
+        }
+      }
+    },
+    "authMethod": "API_KEY",
+    "requiredSecrets": [
+      "api_secret_key"
+    ],
+    "apiKeyDetails": {
+      "secretName": "api_secret_key",
+      "scheme": "Bearer"
+    },
+    "apiDetails": {
+      "method": "POST",
+      "baseUrl": "https://api.stripe.com/v1",
+      "pathTemplate": "/customers",
+      "paramMappings": {
+        "body": {
+          "email": "email",
+          "name": "name"
+        }
+      },
+      "staticHeaders": {
+        "Content-Type": "application/x-www-form-urlencoded"
+      }
+    }
+  },
+  {
+    "id": "stripe_create_customer_via_util_5",
+    "provider": "stripe",
+    "description": "Creates a new customer in Stripe (via utility final retry).",
+    "schema": {
+      "email": {
+        "jsonSchema": {
+          "type": "string",
+          "description": "Customer's email address.",
+          "format": "email",
+          "examples": [
+            "jenny.util5@example.com"
+          ]
+        }
+      },
+      "name": {
+        "jsonSchema": {
+          "type": "string",
+          "description": "Customer's full name.",
+          "examples": [
+            "Jenny Util 5"
+          ]
+        }
+      }
+    },
+    "authMethod": "API_KEY",
+    "requiredSecrets": [
+      "api_secret_key"
+    ],
+    "apiKeyDetails": {
+      "secretName": "api_secret_key",
+      "scheme": "Bearer"
+    },
+    "apiDetails": {
+      "method": "POST",
+      "baseUrl": "https://api.stripe.com/v1",
+      "pathTemplate": "/customers",
+      "paramMappings": {
+        "body": {
+          "email": "email",
+          "name": "name"
+        }
+      },
+      "staticHeaders": {
+        "Content-Type": "application/x-www-form-urlencoded"
+      }
+    }
   }
 ]
