@@ -5,7 +5,18 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { getCredentials, Credential } from '@/lib/database';
-import { CredentialProvider } from '@agent-base/credentials';
+import { CredentialProvider, ServiceResponse } from '@agent-base/agents';
+
+interface CheckAuthSuccessData {
+    hasAuth: true;
+    credentials: Credential[];
+}
+interface CheckAuthNeededData {
+    hasAuth: false;
+    authUrl: string;
+}
+type CheckAuthResultData = CheckAuthSuccessData | CheckAuthNeededData;
+
 /**
  * Checks if the user has authorized the required scopes for a tool
  * If not, returns an auth URL for the frontend to redirect to
@@ -36,11 +47,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const hasAuth = await checkUserAuth(userId, provider, requiredScopes);
 
     if (hasAuth.valid) {
-      // We have valid credentials with the required scopes
-      return NextResponse.json({
-        hasAuth: true,
-        credentials: hasAuth.credentials
-      });
+      // Construct success response correctly
+      const responseData: ServiceResponse<CheckAuthSuccessData> = {
+        success: true,
+        data: {
+          hasAuth: true,
+          credentials: hasAuth.credentials!
+        }
+      };
+      return NextResponse.json(responseData);
     } else {
       // We need to authenticate with these scopes
       // Generate a URL to the sign-in page with the required scopes
@@ -49,16 +64,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       
       const authUrl = `${process.env.BASE_URL}/auth/signin?callbackUrl=${callbackUrl}&scopes=${scopeString}`;
       
-      return NextResponse.json({
-        hasAuth: false,
-        authUrl
-      });
+      // Construct needs-auth response correctly
+      const responseData: ServiceResponse<CheckAuthNeededData> = {
+        success: true, // Still a successful check, just needs setup
+        data: {
+          hasAuth: false,
+          authUrl
+        }
+      };
+      return NextResponse.json(responseData);
     }
   } catch (error) {
     console.error('Error in check-auth:', error);
-    return NextResponse.json({ 
+    // Construct error response correctly
+    const errorResponse: ServiceResponse<never> = { 
+      success: false,
       error: "Internal server error" 
-    }, { status: 500 });
+    };
+    return NextResponse.json(errorResponse, { status: 500 });
   }
 }
 

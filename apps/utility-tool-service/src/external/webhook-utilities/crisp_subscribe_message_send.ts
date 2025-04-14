@@ -5,15 +5,15 @@
  */
 // Remove Zod import if not needed
 // import { z } from 'zod'; 
-import { UtilityTool, SetupNeededResponse, UtilityErrorResponse } from '../types/index.js';
-import { registry } from '../registry/registry.js';
+import { UtilityTool, SetupNeededResponse, UtilityErrorResponse } from '../../types/index.js';
+import { registry } from '../../registry/registry.js';
 import { 
   checkCrispWebsiteId, 
   getCrispWebsiteId, 
   getCrispEnvironmentVariables,
   generateSetupNeededResponse,
   CrispWebsiteDetails
-} from '../clients/crisp-utils.js';
+} from '../external/oauth-utilities/clients/crisp-utils.js';
 
 // --- Request Parameters --- 
 // No parameters for this utility

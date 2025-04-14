@@ -11,6 +11,7 @@
 | **api-gateway-service** | API gateway that routes requests to appropriate services | 3002 |
 | **web-gateway-service** | Web gateway that routes requests to appropriate services | 3030 |
 | **utility-tool-service** | Utility functions for application features | 3050 |
+| **external-utility-tool-service** | External utility functions for application features | 3090 |
 | **tool-auth-service** | OAuth authentication for tools used by AI agents | 3060 |
 | **secret-service** | Secure storage and retrieval of API keys and secrets | 3070 |
 | **logging-service** | API call logging, token usage tracking and billing integration | 3900 |

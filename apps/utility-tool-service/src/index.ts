@@ -24,16 +24,16 @@ import './basic-utilities/get-current-datetime.js';
 
 // Import utility tools
 import './oauth-utilities/gmail_read.js';
-import './secret-utilities/stripe_list_charges.js';
-import './secret-utilities/stripe_list_refunds.js';
-import './secret-utilities/stripe_list_balance_transactions.js';
-import './secret-utilities/stripe_refund.js';
-import './secret-utilities/stripe_list_customers.js';
-import './secret-utilities/stripe_search_customers.js';
-import './secret-utilities/stripe_get_customer.js';
-import './secret-utilities/crisp_send_message.js';
+import './external/secret-utilities/stripe_list_charges.js';
+import './external/secret-utilities/stripe_list_refunds.js';
+import './external/secret-utilities/stripe_list_balance_transactions.js';
+import './external/secret-utilities/stripe_refund.js';
+import './external/secret-utilities/stripe_list_customers.js';
+import './external/secret-utilities/stripe_search_customers.js';
+import './external/secret-utilities/stripe_get_customer.js';
+import './external/secret-utilities/crisp_send_message.js';
 
-import './webhook-utilities/crisp_subscribe_message_send.js';
+import './external/webhook-utilities/crisp_subscribe_message_send.js';
 
 // Re-export everything from the registry
 export * from './registry/registry.js';

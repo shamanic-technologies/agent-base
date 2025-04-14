@@ -10,8 +10,8 @@ import {
   UtilityTool,
   SetupNeededResponse,
   UtilityErrorResponse
-} from '../types/index.js';
-import { registry } from '../registry/registry.js';
+} from '../../types/index.js';
+import { registry } from '../../registry/registry.js';
 import {
   getCrispEnvironmentVariables,
   checkCrispWebsiteId,
@@ -19,7 +19,7 @@ import {
   generateSetupNeededResponse,
   formatCrispErrorResponse,
   CrispErrorResponse
-} from '../clients/crisp-utils.js';
+} from '../external/oauth-utilities/clients/crisp-utils.js';
 
 // --- Local Type Definitions for this Utility ---
 

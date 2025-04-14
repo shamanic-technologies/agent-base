@@ -5,6 +5,7 @@ packages:
   - apps/database-service
   - apps/tool-auth-service
   - apps/utility-tool-service
+  - apps/external-utility-tool-service
   - apps/api-gateway-service
   - apps/auth-service
   - apps/web-gateway-service

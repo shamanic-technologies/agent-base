@@ -44,9 +44,10 @@ export async function makeServiceRequest<T>(
   } catch (error) {
     console.error('Service request error:', error);
     if (axios.isAxiosError(error)) {
+      const specificError = error.response?.data?.error;
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to communicate with service'
+        error: specificError || `Service communication error (Status: ${error.response?.status || 'unknown'})`
       };
     }
     return { 

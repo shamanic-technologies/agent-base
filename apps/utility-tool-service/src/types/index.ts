@@ -2,6 +2,7 @@
  * Type definitions for Utility Tool Service
  */
 import { z } from 'zod';
+import { UtilityProvider, UtilitySecret, UtilityAction } from '@agent-base/agents';
 
 export interface UtilityToolSchema {
   zod: z.ZodType;
@@ -11,15 +12,9 @@ export interface UtilityToolSchema {
  * Standard interface for all utility tools in the system
  */
 export interface UtilityTool {
-  /** Unique identifier for the utility */
-  id: string;
-  /** Human-readable description of what the utility does */
-  description: string;
-  /** 
-   * Schema defining the input parameters for the utility
-   * Using Zod schema for validation with LLM-friendly descriptions
-   */
-  schema: Record<string, UtilityToolSchema>;
+  id: string;   /** Unique identifier for the utility */
+  description: string;  /** Human-readable description of what the utility does */
+  schema: Record<string, UtilityToolSchema>; // Schema defining the input parameters for the utility
   /**
    * The execution function for the utility
    * @param userId ID of the user making the request
@@ -31,14 +26,13 @@ export interface UtilityTool {
   execute: (userId: string, conversationId: string, params: any, agentId?: string) => Promise<any>;
 }
 
-/**
- * Standardized error response structure for all utility tools
- */
-export interface UtilityErrorResponse {
-  status: 'error';
-  error: string;
-  details?: string;
+
+export interface ExternalUtilityTool extends UtilityTool {
+  provider: UtilityProvider;
+  requiredSecrets: UtilitySecret[];
+  requiredOauth: boolean;
 }
+
 
 /**
  * Core request structure

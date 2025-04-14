@@ -4,7 +4,7 @@
  * Shared functions for Crisp API operations
  */
 import axios from 'axios';
-import { SetupNeededResponse } from '../types/index.js';
+import { SetupNeededResponse } from '../../../types/index.js';
 
 /**
  * Crisp website details structure

@@ -5,7 +5,7 @@
  */
 import express, { RequestHandler } from 'express';
 import { createOrUpdateCredentials, getCredentials } from '../services/credentials.js';
-import { CreateOrUpdateCredentialsInput, GetUserCredentialsInput } from '@agent-base/credentials';
+import { CreateOrUpdateCredentialsInput, GetUserCredentialsInput } from '@agent-base/agents';
 
 const router = express.Router();
 
