@@ -11,8 +11,7 @@
   },
   "dependencies": {
     "ai": "^4.3.2",
-    "axios": "^1.8.4",
-    "lucide-react": "^0.487.0"
+    "axios": "^1.8.4"
   },
   "devDependencies": {
     "typescript": "^5.0.4"

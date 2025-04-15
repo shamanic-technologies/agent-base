@@ -38,4 +38,4 @@ export * from './utils/httpClient.js';
 // --- Utility Functions (kept here for now) ---
 
 import { AgentRecord, Agent } from './types/agent.js'; // Import types needed by mappers
-import { UserRecord, User } from './types/user.js';
+import { PlatformUserRecord, PlatformUser } from './types/user.js';

@@ -7,11 +7,12 @@ import { PoolClient } from 'pg';
 import { v4 as uuidv4 } from 'uuid';
 import { getClient } from '../db.js';
 import {
-  UserRecord,
-  UserResponse,
-  GetOrCreateUserResponse,
-  GetOrCreateUserInput,
-  BaseResponse
+  PlatformUserRecord,
+  PlatformUser,
+  GetOrCreatePlatformUserInput,
+  BaseResponse,
+  ServiceResponse,
+  mapPlatformUserFromDatabase
 } from '@agent-base/types';
 
 // Table name constant
@@ -22,7 +23,7 @@ const USERS_TABLE = 'users';
  * @param userId - The internal user_id to look up
  * @returns A response with user data if found
  */
-export async function getUserById(userId: string): Promise<UserResponse> {
+export async function getUserById(userId: string): Promise<ServiceResponse<PlatformUser>> {
   let client: PoolClient | null = null;
   
   try {
@@ -46,7 +47,7 @@ export async function getUserById(userId: string): Promise<UserResponse> {
     
     return {
       success: true,
-      data: result.rows[0] as UserRecord
+      data: mapPlatformUserFromDatabase(result.rows[0])
     };
   } catch (error: any) {
     console.error('Error fetching user by user ID:', error);
@@ -67,7 +68,7 @@ export async function getUserById(userId: string): Promise<UserResponse> {
  * @param providerUserId - The provider user ID to look up
  * @returns A response with user data if found
  */
-async function getUserByProviderUserId(providerUserId: string): Promise<UserResponse> {
+async function getUserByProviderUserId(providerUserId: string): Promise<ServiceResponse<PlatformUser>> {
   let client: PoolClient | null = null;
   
   try {
@@ -91,7 +92,7 @@ async function getUserByProviderUserId(providerUserId: string): Promise<UserResp
     
     return {
       success: true,
-      data: result.rows[0] as UserRecord
+      data: mapPlatformUserFromDatabase(result.rows[0])
     };
   } catch (error: any) {
     console.error('Error fetching user by provider user ID:', error);
@@ -111,7 +112,7 @@ async function getUserByProviderUserId(providerUserId: string): Promise<UserResp
  * @param userData - User data including provider_user_id
  * @returns A response with the user data and whether it was created or updated
  */
-export async function getOrCreateUserByProviderUserId(userData: GetOrCreateUserInput): Promise<GetOrCreateUserResponse> {
+export async function getOrCreateUserByProviderUserId(userData: GetOrCreatePlatformUserInput): Promise<ServiceResponse<PlatformUser>> {
   let client: PoolClient | null = null;
   
   try {
@@ -148,15 +149,14 @@ export async function getOrCreateUserByProviderUserId(userData: GetOrCreateUserI
         userData.email || null,
         userData.display_name || null,
         userData.profile_image || null,
-        existingUser.user_id
+        existingUser.id
       ];
       
       const updateResult = await client.query(updateQuery, updateValues);
       
       return {
         success: true,
-        data: updateResult.rows[0] as UserRecord,
-        updated: true
+        data: mapPlatformUserFromDatabase(updateResult.rows[0]),
       };
     } else {
       // User doesn't exist, create it
@@ -191,8 +191,7 @@ export async function getOrCreateUserByProviderUserId(userData: GetOrCreateUserI
       
       return {
         success: true,
-        data: createResult.rows[0] as UserRecord,
-        created: true
+        data: mapPlatformUserFromDatabase(createResult.rows[0]),
       };
     }
   } catch (error: any) {
