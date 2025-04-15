@@ -5,8 +5,8 @@
  */
 import { PoolClient } from 'pg';
 import { pgPool, getClient } from '../db.js';
-import { ApiKeyMetadata, CreateApiKeyRequest, ApiKeyResponse, ApiKeysListResponse, ValidateApiKeyRequest, ValidateApiKeyResponse } from '@agent-base/agents/src/types/api-keys.js';
-import { SuccessResponse, ErrorResponse, ServiceResponse } from '@agent-base/agents';
+import { ApiKeyMetadata, CreateApiKeyRequest, ApiKeyResponse, ApiKeysListResponse, ValidateApiKeyRequest, ValidateApiKeyResponse } from '@agent-base/types/src/types/api-keys.js';
+import { SuccessResponse, ErrorResponse, ServiceResponse } from '@agent-base/types';
 
 // Table name constant
 const API_KEYS_TABLE = 'api_keys';

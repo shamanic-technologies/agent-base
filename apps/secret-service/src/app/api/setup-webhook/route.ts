@@ -5,7 +5,7 @@
  * to the dedicated webhook-service for actual processing and database interaction.
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { WebhookProvider, WebhookResponse, Webhook } from '@agent-base/agents';
+import { WebhookProvider, WebhookResponse, Webhook } from '@agent-base/types';
 
 /**
  * Handles POST requests to set up a webhook.

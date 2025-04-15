@@ -1,7 +1,7 @@
 [
   {
     "id": "utility_gmail_read",
-    "provider": "gmail",
+    "utilityProvider": "gmail",
     "description": "Read emails from Gmail using the Gmail API.",
     "schema": {
       "query": {
@@ -70,7 +70,7 @@
   },
   {
     "id": "stripe_list_customers",
-    "provider": "stripe",
+    "utilityProvider": "stripe",
     "description": "Lists customers in Stripe, optionally filtered.",
     "schema": {
       "limit": {
@@ -142,7 +142,7 @@
   },
   {
     "id": "utility_crisp_subscribe_message_send",
-    "provider": "crisp",
+    "utilityProvider": "crisp",
     "description": "Checks prerequisites for setting up a Crisp webhook to forward visitor messages.",
     "schema": {},
     "authMethod": "NONE",
@@ -154,7 +154,7 @@
   },
   {
     "id": "utility_example_get_data",
-    "provider": "gmail",
+    "utilityProvider": "gmail",
     "description": "A simple example tool.",
     "schema": {
       "itemId": {
@@ -179,7 +179,7 @@
   },
   {
     "id": "test_tool_creation",
-    "provider": "stripe",
+    "utilityProvider": "stripe",
     "description": "A test tool created via API.",
     "schema": {
       "optionalParam": {
@@ -195,7 +195,7 @@
   },
   {
     "id": "my_test_proxy_tool",
-    "provider": "slack",
+    "utilityProvider": "slack",
     "description": "A test tool created via proxy.",
     "authMethod": "API_KEY",
     "requiredSecrets": [
@@ -242,7 +242,7 @@
   },
   {
     "id": "stripe_create_customer_direct_4",
-    "provider": "stripe",
+    "utilityProvider": "stripe",
     "description": "Creates a new customer in Stripe (direct retry 4).",
     "schema": {
       "email": {
@@ -290,7 +290,7 @@
   },
   {
     "id": "stripe_create_customer_via_util_5",
-    "provider": "stripe",
+    "utilityProvider": "stripe",
     "description": "Creates a new customer in Stripe (via utility final retry).",
     "schema": {
       "email": {
@@ -338,7 +338,7 @@
   },
   {
     "id": "stripe_list_charges",
-    "provider": "stripe",
+    "utilityProvider": "stripe",
     "description": "Lists charges (payments received) from Stripe",
     "schema": {
       "limit": {
@@ -399,7 +399,7 @@
   },
   {
     "id": "stripe_list_balance_transactions",
-    "provider": "stripe",
+    "utilityProvider": "stripe",
     "description": "Lists balance transactions from Stripe",
     "schema": {
       "limit": {
@@ -460,7 +460,7 @@
   },
   {
     "id": "utility_gmail_send",
-    "provider": "gmail",
+    "utilityProvider": "gmail",
     "description": "Sends an email using the Gmail API.",
     "schema": {
       "to": {

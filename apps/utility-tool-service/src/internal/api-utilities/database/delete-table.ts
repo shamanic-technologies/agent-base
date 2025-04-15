@@ -8,7 +8,7 @@ import {
   InternalUtilityTool,
   ErrorResponse,
   JsonSchema
-} from '@agent-base/agents';
+} from '@agent-base/types';
 import { registry } from '../../../registry/registry.js';
 import {
   findXataWorkspace

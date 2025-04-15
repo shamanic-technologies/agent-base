@@ -16,7 +16,7 @@
     "db:cleanup": "tsc && node dist/cleanup-script.js"
   },
   "dependencies": {
-    "@agent-base/agents": "workspace:^",
+    "@agent-base/types": "workspace:^",
     "@types/uuid": "^10.0.0",
     "ai": "4.3.2",
     "cors": "^2.8.5",

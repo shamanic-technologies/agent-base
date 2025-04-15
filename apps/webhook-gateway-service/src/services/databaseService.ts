@@ -2,7 +2,7 @@
  * Service for interacting with the Database Service API.
  * Provides functions to call database-service endpoints for webhook management.
  */
-import { WebhookEvent, WebhookResponse, WebhookAgentMapping, Webhook, WebhookEventPayload, WebhookProvider } from '@agent-base/agents';
+import { WebhookEvent, WebhookResponse, WebhookAgentMapping, Webhook, WebhookEventPayload, WebhookProvider } from '@agent-base/types';
 
 /**
  * Stores a webhook event in the database.

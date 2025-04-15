@@ -12,7 +12,7 @@ import {
   GetOrCreateUserResponse,
   GetOrCreateUserInput,
   BaseResponse
-} from '@agent-base/agents';
+} from '@agent-base/types';
 
 // Table name constant
 const USERS_TABLE = 'users';

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import * as utilityService from '../services/utilityService';
-import { ExternalUtilityInfo, ExternalUtilityTool, AuthMethod, ApiKeyAuthScheme } from '@agent-base/agents'; // Assuming types are here
+import { ExternalUtilityInfo, ExternalUtilityTool, AuthMethod, ApiKeyAuthScheme } from '@agent-base/types'; // Assuming types are here
 
 // Controller to list available utility tools
 export const listTools = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -39,7 +39,7 @@ export const createTool = async (req: Request, res: Response, next: NextFunction
         if (!newConfig) validationErrors.push('Request body is empty.');
         else {
             if (!newConfig.id) validationErrors.push('Missing required field: id');
-            if (!newConfig.provider) validationErrors.push('Missing required field: provider');
+            if (!newConfig.utilityProvider) validationErrors.push('Missing required field: utilityProvider');
             if (!newConfig.description) validationErrors.push('Missing required field: description');
             if (!newConfig.schema) validationErrors.push('Missing required field: schema');
             if (!newConfig.authMethod) validationErrors.push('Missing required field: authMethod');

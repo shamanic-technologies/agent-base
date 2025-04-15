@@ -14,7 +14,7 @@ import {
     GetConversationsFromAgentInput,
     BaseResponse,
     UpdateConversationInput,
-} from '@agent-base/agents';
+} from '@agent-base/types';
 import {
     createConversation,
     getConversation,

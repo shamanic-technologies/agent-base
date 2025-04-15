@@ -12,7 +12,7 @@
     "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
   },
   "dependencies": {
-    "@agent-base/agents": "workspace:^",
+    "@agent-base/types": "workspace:^",
     "axios": "^1.8.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",

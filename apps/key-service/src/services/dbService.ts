@@ -11,7 +11,7 @@ import {
   ValidateApiKeyResponse,
   ErrorResponse,
   ServiceResponse,
-} from '@agent-base/agents';
+} from '@agent-base/types';
 import { v4 as uuidv4 } from 'uuid';
 import { generateApiKey, getKeyPrefix, hashApiKey, isValidKeyFormat } from '../utils/apiKeyUtils.js';
 import { storeSecret, getSecret } from './secretService.js';

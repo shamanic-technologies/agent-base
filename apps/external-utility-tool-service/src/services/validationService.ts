@@ -1,7 +1,7 @@
 import Ajv, { ErrorObject } from 'ajv';
 // Use require for ajv-formats
 const addFormats = require('ajv-formats'); 
-import { ExternalUtilityTool, ErrorResponse } from '@agent-base/agents';
+import { ExternalUtilityTool, ErrorResponse } from '@agent-base/types';
 
 // Initialize AJV
 const ajv = new Ajv({ allErrors: true });

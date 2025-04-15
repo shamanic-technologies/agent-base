@@ -8,7 +8,7 @@ import {
     AgentRecord, 
     mapUserFromDatabase, 
     User
-} from '@agent-base/agents';
+} from '@agent-base/types';
 // AI SDK imports
 import { anthropic } from '@ai-sdk/anthropic';
 import { streamText } from 'ai';

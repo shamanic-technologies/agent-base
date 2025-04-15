@@ -4,7 +4,7 @@
  * Contains constants and functions to construct system prompts.
  */
 
-import { User, AgentRecord } from '@agent-base/agents';
+import { User, AgentRecord } from '@agent-base/types';
 
 /**
  * Default system prompt prefix for the AI agent.

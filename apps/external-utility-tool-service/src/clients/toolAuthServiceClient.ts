@@ -1,7 +1,7 @@
-import { makeServiceRequest } from '@agent-base/agents';
+import { makeServiceRequest, OAuthProvider } from '@agent-base/types';
 // Import types directly from their definition files if not exported at root
-import { UtilityProvider, ServiceResponse } from '@agent-base/agents';
-import { Credential } from '@agent-base/agents';
+import { UtilityProvider, ServiceResponse } from '@agent-base/types';
+import { OAuth, CheckAuthInput } from '@agent-base/types';
 
 // const toolAuthServiceUrl = process.env.TOOL_AUTH_SERVICE_URL; // REMOVE: Read dynamically
 
@@ -23,7 +23,7 @@ interface CheckAuthResponse {
 // Define the expected success data structure when auth is present
 interface CheckAuthSuccessData {
     hasAuth: true;
-    credentials: Credential[];
+    credentials: OAuth[];
 }
 
 // Define the expected success data structure when auth is needed
@@ -46,13 +46,9 @@ export type CheckAuthResultData = CheckAuthSuccessData | CheckAuthNeededData;
  * @returns A promise resolving to the ServiceResponse containing CheckAuthResultData on success.
  * @throws Throws an error if the service call fails critically.
  */
-export const checkAuth = async (
-    userId: string, 
-    provider: UtilityProvider, 
-    requiredScopes: string[],
-    logPrefix: string = '[ToolAuthClient]'
-): Promise<ServiceResponse<CheckAuthResultData>> => {
-    
+export const checkAuth = async ( input: CheckAuthInput): Promise<ServiceResponse<CheckAuthResultData>> => {
+    const logPrefix: string = '[ToolAuthClient]';
+    const { userId, oauthProvider, requiredScopes } = input;
     const toolAuthServiceUrl = process.env.TOOL_AUTH_SERVICE_URL;
     if (!toolAuthServiceUrl) {
         console.error(`${logPrefix} TOOL_AUTH_SERVICE_URL not set.`);
@@ -60,13 +56,8 @@ export const checkAuth = async (
         return { success: false, error: 'Tool Auth Service URL is not configured.' };
     }
 
-    console.log(`${logPrefix} Checking auth scopes: ${requiredScopes.join(', ')} for provider ${provider} via ${toolAuthServiceUrl}`);
+    console.log(`${logPrefix} Checking auth scopes: ${requiredScopes.join(', ')} for provider ${oauthProvider} via ${toolAuthServiceUrl}`);
 
-    const requestBody = {
-        userId,
-        provider,
-        requiredScopes
-    };
 
     // Use the shared HTTP client utility
     // Note: We pass undefined for userId header as makeServiceRequest adds it if needed,
@@ -76,7 +67,7 @@ export const checkAuth = async (
         'POST',
         '/api/check-auth',
         undefined, // Let makeServiceRequest handle x-user-id if needed, though not used by this endpoint
-        requestBody
+        input
     );
 
     if (response.success) {

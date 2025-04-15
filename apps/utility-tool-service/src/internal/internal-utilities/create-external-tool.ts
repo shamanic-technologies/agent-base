@@ -15,7 +15,7 @@ import {
   UtilityInputSecret,
   ApiKeyAuthScheme,
   HttpMethod 
-} from '@agent-base/agents';
+} from '@agent-base/types';
 import { registry } from '../../registry/registry.js';
 import { createExternalTool } from '../../clients/externalToolServiceClient.js'; // Import the client function
 

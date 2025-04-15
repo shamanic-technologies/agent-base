@@ -8,7 +8,7 @@ import {
   InternalUtilityTool,
   ErrorResponse,
   JsonSchema // Import necessary types
-} from '@agent-base/agents';
+} from '@agent-base/types';
 import { registry } from '../../registry/registry.js';
 
 // --- Local Type Definitions ---

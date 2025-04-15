@@ -4,7 +4,7 @@
  * Provides an abstraction layer for interacting with Google Secret Manager
  */
 // @ts-ignore - Ignore type checking for this import
-import { CheckSecretRequest, CheckSecretResponse, GetSecretRequest, GetSecretResponse, StoreSecretRequest, StoreSecretResponse } from '@agent-base/agents';
+import { CheckSecretRequest, CheckSecretResponse, GetSecretRequest, GetSecretResponse, StoreSecretRequest, StoreSecretResponse } from '@agent-base/types';
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 
 // Initialize the Secret Manager client

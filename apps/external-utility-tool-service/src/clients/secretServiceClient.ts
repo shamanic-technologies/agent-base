@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { UtilityProvider, UtilitySecret, GetSecretResponse } from '@agent-base/agents';
+import { UtilityProvider, UtilitySecret, GetSecretResponse } from '@agent-base/types';
 
 /**
  * Fetches specified secrets for a user and provider from the Secret Service.

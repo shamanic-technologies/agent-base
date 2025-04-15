@@ -15,7 +15,7 @@ import {
   BaseResponse, 
   WebhookEventPayload,
   WebhookResponse
-} from '@agent-base/agents';
+} from '@agent-base/types';
 
 const router = Router();
 

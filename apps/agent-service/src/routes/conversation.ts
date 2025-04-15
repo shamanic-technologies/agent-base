@@ -11,7 +11,7 @@ import {
     CreateConversationResponse,
     CreateConversationInput,
     BaseResponse
-} from '@agent-base/agents';
+} from '@agent-base/types';
 // Import the new service function
 import { getOrCreateConversationsFromAgent, createConversation } from '../services/index.js'; // Updated import
 

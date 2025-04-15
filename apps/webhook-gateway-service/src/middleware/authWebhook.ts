@@ -3,7 +3,7 @@
  */
 import { Request, Response, NextFunction } from 'express';
 import axios from 'axios';
-import { WebhookEventPayloadCrisp } from '@agent-base/agents'; // Assuming this type exists and includes nested data structure
+import { WebhookEventPayloadCrisp } from '@agent-base/types'; // Assuming this type exists and includes nested data structure
 
 // Mock function - Replace with actual Key Service call later
 /**

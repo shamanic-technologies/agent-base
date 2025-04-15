@@ -2,7 +2,7 @@
  * API Key routes for managing metadata (secrets stored elsewhere)
  */
 import { Router, Request, Response } from 'express';
-import { CreateApiKeyRequest, ValidateApiKeyRequest } from '@agent-base/agents';
+import { CreateApiKeyRequest, ValidateApiKeyRequest } from '@agent-base/types';
 import { createApiKey, getApiKeys, validateApiKey } from '../services/api-keys.js';
 
 const router = Router();

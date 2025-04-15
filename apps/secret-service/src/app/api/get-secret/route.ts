@@ -5,7 +5,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { getSecret } from '@/lib/google-secret-manager';
-import { GetSecretResponse, ErrorResponse, GetSecretRequest } from '@agent-base/agents';
+import { GetSecretResponse, ErrorResponse, GetSecretRequest } from '@agent-base/types';
 
 /**
  * GET handler for retrieving secrets

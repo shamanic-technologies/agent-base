@@ -12,7 +12,7 @@ import axios from 'axios';
 // Use local types for agent-service specific structures
 import { UtilityError, UtilityToolCredentials } from '../../types/index.js';
 // Import shared types from agents package
-import { ServiceResponse } from '@agent-base/agents'; 
+import { ServiceResponse } from '@agent-base/types'; 
 import { handleAxiosError } from '../utils/errorHandlers.js';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -72,7 +72,7 @@ export function createCallUtilityTool(credentials: UtilityToolCredentials) {
         if (response.data && response.data.success) {
             // Return the nested data, which is the actual result of the utility execution
             console.log(`[Utility Tool] Call to ${utility_id} successful.`);
-            return response.data.data;
+            return response.data;
         } else {
             // Handle failure case reported by the utility service
             const errorMessage = response.data?.error || 'Utility execution failed.';

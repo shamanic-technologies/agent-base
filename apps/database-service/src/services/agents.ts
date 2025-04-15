@@ -17,7 +17,7 @@ import {
   GetUserAgentInput,
   GetUserAgentResponse,
   BaseResponse
-} from '@agent-base/agents';
+} from '@agent-base/types';
 
 const AGENTS_TABLE = 'agents';
 const USER_AGENTS_TABLE = 'user_agents';

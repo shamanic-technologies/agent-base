@@ -3,7 +3,7 @@
  */
 import { Router, Request, Response, NextFunction } from 'express';
 import { processWebhookCrisp } from '../services/webhookProcessorCrisp.js';
-import { WebhookProvider, WebhookResponse, BaseResponse } from '@agent-base/agents';
+import { WebhookProvider, WebhookResponse, BaseResponse } from '@agent-base/types';
 
 // Create a new Express Router
 const router = Router();

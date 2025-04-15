@@ -4,7 +4,7 @@
  */
 import axios from 'axios';
 import { SECRET_SERVICE_URL } from '../config.js';
-import { StoreSecretRequest, StoreSecretResponse, GetSecretResponse } from '@agent-base/agents';
+import { StoreSecretRequest, StoreSecretResponse, GetSecretResponse } from '@agent-base/types';
 
 /**
  * Store a secret value in the secret service

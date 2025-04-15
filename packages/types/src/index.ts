@@ -1,5 +1,5 @@
 /**
- * @agent-base/agents Package
+ * @agent-base/types Package
  * 
  * Exports all shared types and potentially utility functions 
  * for the agent-base system.
@@ -30,7 +30,7 @@ export * from './types/secrets.js';
 export * from './types/utility.js';
 
 // Export credential types
-export * from './types/credential.js';
+export * from './types/oauth.js';
 
 // Export utility functions
 export * from './utils/httpClient.js';

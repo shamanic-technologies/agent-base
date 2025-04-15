@@ -2,7 +2,7 @@
 //  * Route handler for creating API keys
 //  */
 // import { Router } from 'express';
-// import { ApiKeyCreateResponse } from '@agent-base/agents';
+// import { ApiKeyCreateResponse } from '@agent-base/types';
 // import * as dbService from '../services/dbService.js';
 
 // const router = Router();

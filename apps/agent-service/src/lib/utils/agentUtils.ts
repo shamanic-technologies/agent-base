@@ -4,7 +4,7 @@
  * Utility functions related to agent data and operations within the agent-service.
  */
 
-import { CreateUserAgentInput, Gender } from "@agent-base/agents";
+import { CreateUserAgentInput, Gender } from "@agent-base/types";
 import { ModelName } from "../../types/agent-config.js";
 
 /**
@@ -20,7 +20,7 @@ export function createDefaultAgentPayload(userId: string): CreateUserAgentInput 
         agent_first_name: 'Alex',
         agent_last_name: 'Sinnek',
         agent_profile_picture: 'AS', 
-        agent_gender: 'man', // Ensure 'other' is valid in your @agent-base/agents Gender definition
+        agent_gender: 'man', // Ensure 'other' is valid in your @agent-base/types Gender definition
         agent_model_id: ModelName.CLAUDE_3_7_SONNET_20250219, // Ensure this is a valid model ID
         agent_memory: `{
             objective: 'to be completed',

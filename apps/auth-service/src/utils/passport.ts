@@ -8,15 +8,7 @@ import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
 import jwt from 'jsonwebtoken';
 import { config } from '../config/env';
-
-// User profile type
-export interface UserProfile {
-  id: string;
-  email: string;
-  name: string;
-  picture?: string;
-  provider: string;
-}
+import { OAuthProvider, ProviderUser, JWTPayload } from '@agent-base/types';
 
 // Setup JWT strategy for protected routes
 passport.use(
@@ -46,15 +38,15 @@ passport.use(
     },
     (accessToken, refreshToken, profile, done) => {
       // Create user profile from Google data
-      const user: UserProfile = {
+      const providerUser: ProviderUser = {
         id: profile.id,
         email: profile.emails?.[0]?.value || '',
         name: profile.displayName || '',
         picture: profile.photos?.[0]?.value,
-        provider: 'google',
+        provider: OAuthProvider.GOOGLE,
       };
       
-      return done(null, user);
+      return done(null, providerUser);
     }
   ) as unknown) as passport.Strategy
 );
@@ -72,21 +64,23 @@ passport.deserializeUser((obj: Express.User, done) => {
 /**
  * Generate a JWT token for the user
  */
-export const generateToken = (userData: UserProfile): string => {
-  // @ts-ignore - Ignoring TypeScript errors for JWT sign
+export const generateToken = (userData: JWTPayload): string => {
+  // Use 'any' cast on options as temporary workaround for linter error
   return jwt.sign(userData, config.jwt.secret, {
     expiresIn: config.jwt.expiresIn
-  });
+  } as any);
 };
 
 /**
  * Verify a JWT token
  */
-export const verifyToken = (token: string): UserProfile | null => {
+export const verifyToken = (token: string): JWTPayload | null => {
   try {
-    // @ts-ignore - Ignoring TypeScript errors for JWT verify
-    return jwt.verify(token, config.jwt.secret) as UserProfile;
+    // Decode and verify the token, asserting the payload matches UserProfile
+    return jwt.verify(token, config.jwt.secret) as JWTPayload;
   } catch (error) {
+    // If verification fails (invalid token, expired, etc.), return null
+    console.warn('[Auth Service] Token verification failed:', error instanceof Error ? error.message : String(error));
     return null;
   }
 };
