@@ -7,63 +7,70 @@ import { AsyncRequestHandler } from '../utils/types';
 import { config } from '../config/env';
 import { verifyToken, generateToken } from '../utils/passport';
 import passport from '../utils/passport';
+import { PlatformUser, ServiceResponse, JWTPayload } from '@agent-base/types';
+import { getUserFromDatabase } from '../utils/database';
 
 /**
  * Validate the user's token
- * Only uses Authorization Bearer header
+ * Reads token from httpOnly cookie
  */
 export const validateTokenHandler: AsyncRequestHandler = async (req, res) => {
-  // Extract token from Authorization header
-  const authHeader = req.headers.authorization;
-  
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    console.log('[Auth Service] No valid Authorization header found');
-    return res.status(401).json({
-      success: false,
-      error: 'No valid Authorization header found'
-    });
-  }
-  
-  const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+  // Extract token from the httpOnly cookie
+  const token = req.cookies['auth-token'];
   
   if (!token) {
-    console.log('[Auth Service] No token provided for validation');
+    console.log('[Auth Service] No auth-token cookie found for validation');
     return res.status(401).json({
       success: false,
-      error: 'No token provided'
+      error: 'No token provided' // Keep error message generic
     });
   }
   
-  console.log('[Auth Service] Token validation attempt with token length:', token.length);
+  console.log('[Auth Service] Token validation attempt via cookie, token length:', token.length);
   
   // Validate token using passport jwt strategy
-  passport.authenticate('jwt', { session: false }, (err, user, info) => {
-    if (err) {
-      console.error('[Auth Service] Error in JWT validation:', err);
-      return res.status(500).json({
-        success: false,
-        error: 'Server error'
-      });
-    }
-    
-    if (!user) {
+  // Note: Passport's jwt strategy defaults to Authorization header.
+  // We manually verify here for simplicity and consistency with /refresh.
+  const userData = verifyToken(token);
+
+  if (!userData) {
+    // verifyToken already logs the specific reason (e.g., expired)
+    console.log('[Auth Service] Token validation failed (likely expired or invalid)');
+    return res.status(401).json({
+      success: false,
+      error: 'Not authenticated' // Generic error
+    });
+  }
+
+  // Token is valid, userData contains { userId }
+  // Now fetch the full user profile from the database
+  try {
+    const dbResponse: ServiceResponse<PlatformUser> = await getUserFromDatabase(userData.userId);
+
+    if (!dbResponse.success || !dbResponse.data) {
+      console.error(`[Auth Service] Valid token for userId ${userData.userId}, but user not found in DB.`);
+      // This case is unusual - token valid but user doesn't exist?
+      // Respond with 401 as the user effectively cannot be fully authenticated.
       return res.status(401).json({
         success: false,
-        error: 'Not authenticated'
+        error: 'User associated with token not found'
       });
     }
-    
-    // User is authenticated
+
+    // User is fully authenticated and data retrieved
+    console.log(`[Auth Service] User ${userData.userId} validated successfully.`);
     return res.json({
       success: true,
-      data: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        picture: user.picture
-      }
+      data: dbResponse.data // Return the full PlatformUser object
     });
-  })(req, res);
+
+  } catch (dbError: any) {
+    console.error(`[Auth Service] Error fetching user data from DB for userId ${userData.userId}:`, dbError);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve user data'
+    });
+  }
 };
 
 /**

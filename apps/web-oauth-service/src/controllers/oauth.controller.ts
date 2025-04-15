@@ -6,9 +6,9 @@
 import { AsyncRequestHandler } from '../utils/types';
 import { config } from '../config/env';
 import { generateToken } from '../utils/passport';
-import { saveUserToDatabase } from '../utils/database';
+import { getOrCreateUserToDatabase } from '../utils/database';
 import { cookieSettings } from '../config/env';
-import { ProviderUser, PlatformUser, ServiceResponse, PlatformJWTPayload } from '@agent-base/types';
+import { ProviderUser, PlatformUser, ServiceResponse, JWTPayload } from '@agent-base/types';
 
 /**
  * Handle successful authentication
@@ -29,7 +29,7 @@ export const authSuccessHandler: AsyncRequestHandler = async (req, res) => {
     let platformUser: PlatformUser; // Use 'any' for now, define a proper type later
     try {
       // saveUserToDatabase should return the full user record from the DB
-      const dbResponse: ServiceResponse<PlatformUser> = await saveUserToDatabase(userFromProvider);
+      const dbResponse: ServiceResponse<PlatformUser> = await getOrCreateUserToDatabase(userFromProvider);
       if (!dbResponse.success || !dbResponse.data) { // Check for the DB UUID 'id'
          console.error('[Auth Service] Failed to get valid user record with DB UUID from database service.');
          return res.redirect(`${config.clientAppUrl}?error=database_error&details=no_db_uuid`);
@@ -45,12 +45,12 @@ export const authSuccessHandler: AsyncRequestHandler = async (req, res) => {
 
     // --- Prepare payload for JWT using Database User Record --- 
     // Construct payload matching UserProfile interface for generateToken
-    const tokenPayload: PlatformJWTPayload = {
-      platformUserId: platformUser.id, // Use database UUID for the 'id' field
+    const tokenPayload: JWTPayload = {
+      userId: platformUser.id, // Use database UUID for the 'id' field
     };
     console.log('[Auth Service] Payload for JWT generation:', tokenPayload);
 
-    if (!tokenPayload.platformUserId) { // Check the 'id' field now
+    if (!tokenPayload.userId) { // Check the 'id' field now
         console.error('[Auth Service] CRITICAL: Missing database UUID (id) before generating token.');
         return res.redirect(`${config.clientAppUrl}?error=internal_error&details=missing_db_uuid`);
     }
@@ -59,21 +59,15 @@ export const authSuccessHandler: AsyncRequestHandler = async (req, res) => {
     const token : string = generateToken(tokenPayload); // Pass UserProfile object with DB UUID as id
     console.log('[Auth Service] Auth Success Handler - Generated JWT token (truncated):', token.substring(0, 15) + '...');
     
-    // Create custom cookie options based on cookieSettings
-    const cookieOptions = {
-      ...cookieSettings,
-      // For localhost dev testing, ensure sameSite is lax and domain is set to allow sharing
-      sameSite: 'lax' as const,
-      secure: false // Disable secure flag for local testing
-    };
-    
+    // Use cookie settings directly from config/env
+    // These settings correctly handle secure and sameSite based on environment
     console.log('[Auth Service] Auth Success Handler - Setting cookie with options:', {
-      ...cookieOptions,
+      ...cookieSettings,
       tokenLength: token.length
     });
     
     // Set the auth token cookie
-    res.cookie('auth-token', token, cookieOptions);
+    res.cookie('auth-token', token, cookieSettings); // Use cookieSettings directly
     
     // Log all response headers for debugging
     console.log('[Auth Service] Auth Success Handler - Response headers set:', res.getHeaders());

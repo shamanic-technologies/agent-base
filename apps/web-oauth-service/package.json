@@ -1,5 +1,5 @@
 {
-  "name": "@helloworld/auth-service",
+  "name": "@agent-base/web-oauth-service",
   "version": "1.0.0",
   "private": true,
   "scripts": {
