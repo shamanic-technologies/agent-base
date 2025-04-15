@@ -6,9 +6,9 @@
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import { config } from '../config/env';
-import { OAuthProvider, ProviderUser, PlatformJWTPayload } from '@agent-base/types';
+import { OAuthProvider, ProviderUser, JWTPayload } from '@agent-base/types';
 
 // Setup JWT strategy for protected routes
 passport.use(
@@ -19,7 +19,7 @@ passport.use(
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       secretOrKey: config.jwt.secret,
     },
-    (jwtPayload, done) => {
+    (jwtPayload: JWTPayload, done) => {
       // If the token is valid, the user will be available in req.user
       return done(null, jwtPayload);
     }
@@ -64,8 +64,8 @@ passport.deserializeUser((obj: Express.User, done) => {
 /**
  * Generate a JWT token for the user
  */
-export const generateToken = (userData: PlatformJWTPayload): string => {
-  // Use 'any' cast on options as temporary workaround for linter error
+export const generateToken = (userData: JWTPayload): string => {
+  // Revert to 'as any' due to persistent type error with expiresIn
   return jwt.sign(userData, config.jwt.secret, {
     expiresIn: config.jwt.expiresIn
   } as any);
@@ -74,10 +74,10 @@ export const generateToken = (userData: PlatformJWTPayload): string => {
 /**
  * Verify a JWT token
  */
-export const verifyToken = (token: string): PlatformJWTPayload | null => {
+export const verifyToken = (token: string): JWTPayload | null => {
   try {
-    // Decode and verify the token, asserting the payload matches UserProfile
-    return jwt.verify(token, config.jwt.secret) as PlatformJWTPayload;
+    // Decode and verify the token, asserting the payload matches JWTPayload
+    return jwt.verify(token, config.jwt.secret) as JWTPayload;
   } catch (error) {
     // If verification fails (invalid token, expired, etc.), return null
     console.warn('[Auth Service] Token verification failed:', error instanceof Error ? error.message : String(error));
