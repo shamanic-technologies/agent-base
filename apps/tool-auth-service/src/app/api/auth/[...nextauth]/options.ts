@@ -2,7 +2,7 @@ import GoogleProvider from "next-auth/providers/google";
 import type { NextAuthOptions } from "next-auth";
 import type { JWT } from "next-auth/jwt";
 import { createOrUpdateCredentials } from "@/lib/database";
-import { CreateOrUpdateCredentialsInput, OAuthProvider, JWTPayload } from "@agent-base/types";
+import { CreateOrUpdateCredentialsInput, OAuthProvider, PlatformJWTPayload } from "@agent-base/types";
 
 // Extend the Session type for the client
 declare module "next-auth" {

@@ -4,7 +4,7 @@
  * Contains constants and functions to construct system prompts.
  */
 
-import { User, AgentRecord } from '@agent-base/types';
+import { ClientUser, AgentRecord } from '@agent-base/types';
 
 /**
  * Default system prompt prefix for the AI agent.
@@ -32,12 +32,12 @@ Update your memory as often as you get more information about your purpose.
  * agent memory, and user profile information.
  * 
  * @param {AgentRecord} agent - The agent record containing memory and potentially other details.
- * @param {User} userProfile - The fetched user profile data.
+ * @param {ClientUser} userProfile - The fetched user profile data.
  * @returns {string} The fully constructed system prompt.
  */
 export function buildSystemPrompt(
     agent: AgentRecord,
-    userProfile: User
+    userProfile: ClientUser
 ): string {
     console.log('[Prompt Builder] User Profile:', JSON.stringify(userProfile, null, 2));
     let prompt = purpose_prompt;
@@ -59,10 +59,6 @@ export function buildSystemPrompt(
     // Append user profile information if available
     prompt += `
     ### User Profile Information
-    Name: ${userProfile.displayName}
-    Email: ${userProfile.email}
-    Picture: ${userProfile.profileImage || 'Not provided'}
-    Last Login: ${userProfile.lastLogin}
     Created At: ${userProfile.createdAt}
     Updated At: ${userProfile.updatedAt}
     `;

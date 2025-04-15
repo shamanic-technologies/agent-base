@@ -6,8 +6,8 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import {
     AgentRecord, 
-    mapUserFromDatabase, 
-    User
+    ClientUser,
+    PlatformUser
 } from '@agent-base/types';
 // AI SDK imports
 import { anthropic } from '@ai-sdk/anthropic';
@@ -50,18 +50,18 @@ const runRouter = Router(); // Use a specific router for this file
 runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
   const handleAgentRun = async () => {
     let agent: AgentRecord | null = null; // Initialize as null
-    let userProfile: User | null = null; // Initialize as null
+    let clientUser: ClientUser | null = null; // Initialize as null
     let currentMessage: Message;
     let conversation_id: string;
-    let userId: string;
+    let platformUser: PlatformUser;
 
     try {
       // --- Extraction & Validation --- 
       ({ message: currentMessage, conversation_id } = req.body);
-      userId = (req as any).user?.id as string;
+      platformUser = (req as any).user?.id as string;
       const apiKey = req.headers['x-api-key'] as string;
 
-      if (!userId) {
+      if (!platformUser) {
         res.status(401).json({ success: false, error: 'User authentication required (Missing x-user-id)' });
         return;
       }
@@ -76,7 +76,7 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       // --- End Extraction & Validation ---
       
       // --- Get Agent Details --- 
-      const agentResponse = await getAgentFromConversation(conversation_id, userId);
+      const agentResponse = await getAgentFromConversation(conversation_id, platformUser);
       if (!agentResponse.success || !agentResponse.data) {
           console.error(`[Agent Service /run] Failed to get agent for conversation ${conversation_id}:`, agentResponse.error);
           // Decide appropriate error response - potentially 404 or 500
@@ -89,7 +89,7 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
 
       // --- Initialize Tools (Requires Agent to be fetched first) ---
       const toolCredentials: UtilityToolCredentials = {
-        userId, 
+        userId: platformUser, 
         conversationId: conversation_id, 
         apiKey, 
         agent_id: agent.agent_id
@@ -102,20 +102,20 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       // --- End Initialize Tools ---
       
       // --- Get User Profile --- 
-      const profileResponse= await getUserById(userId); // Call the service
+      const profileResponse= await getUserById(platformUser); // Call the service
       if (profileResponse.success && profileResponse.data) {
-          userProfile = mapUserFromDatabase(profileResponse.data);
-          console.log(`[Agent Service /run] Fetched user profile for user: ${userId}`);
-          console.log(`[Agent Service /run] User profile: ${JSON.stringify(userProfile)}`);
+          clientUser = mapUserFromDatabase(profileResponse.data);
+          console.log(`[Agent Service /run] Fetched user profile for user: ${platformUser}`);
+          console.log(`[Agent Service /run] User profile: ${JSON.stringify(clientUser)}`);
       } else {
           // Log warning but continue - profile is optional context
-          console.warn(`[Agent Service /run] Could not fetch profile for user ${userId}:`, profileResponse.error);
+          console.warn(`[Agent Service /run] Could not fetch profile for user ${platformUser}:`, profileResponse.error);
       }
       // --- End Get User Profile --- 
 
       // --- Get Conversation & History --- 
       let historyMessages: Message[] = [];
-      const conversationResponse = await getConversationById(conversation_id, userId);
+      const conversationResponse = await getConversationById(conversation_id, platformUser);
       // Now check the success field of the ServiceResponse
       if (conversationResponse.success && conversationResponse.data?.messages) {
           historyMessages = conversationResponse.data.messages;
@@ -134,7 +134,7 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       // --- End Combine Messages --- 
 
       // --- Construct System Prompt --- 
-      const systemPrompt = buildSystemPrompt(agent, userProfile); // Pass the whole agent object
+      const systemPrompt = buildSystemPrompt(agent, clientUser); // Pass the whole agent object
       console.log(`[Agent Service /run] Constructed System Prompt length: ${systemPrompt.length}`); // Log length for debugging
       console.log(`[Agent Service /run] System Prompt: ${systemPrompt}`); // Log the prompt for debugging
       // --- End Construct System Prompt --- 
@@ -167,7 +167,7 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
                 
                 // Save the complete, updated message list back to the database service
                 // Use the refactored service function
-                const saveResult = await updateConversationMessagesInDb(conversation_id, finalMessages, userId);
+                const saveResult = await updateConversationMessagesInDb(conversation_id, finalMessages, platformUser);
                 
                 if (!saveResult.success) {
                     // Log the error returned from the service function

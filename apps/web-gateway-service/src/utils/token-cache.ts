@@ -4,13 +4,13 @@
  * Provides caching functionality for JWT tokens to reduce load on auth service
  * and improve response times for token validation
  */
-import { User } from '../types';
+import { PlatformUser } from '@agent-base/types';
 
 // Cache TTL in milliseconds (5 minutes)
 const TOKEN_CACHE_TTL = 5 * 60 * 1000;
 
 interface CachedToken {
-  user: User;
+  platformUser: PlatformUser;
   expires: number;
 }
 
@@ -23,7 +23,7 @@ class TokenCache {
    * @param token JWT token
    * @returns User object if found and valid, undefined otherwise
    */
-  get(token: string): User | undefined {
+  get(token: string): PlatformUser | undefined {
     const cached = this.cache.get(token);
     
     // Return undefined if not in cache or expired
@@ -35,7 +35,7 @@ class TokenCache {
       return undefined;
     }
     
-    return cached.user;
+    return cached.platformUser;
   }
   
   /**
@@ -43,9 +43,9 @@ class TokenCache {
    * @param token JWT token
    * @param user User information
    */
-  set(token: string, user: User): void {
+  set(token: string, platformUser: PlatformUser): void {
     this.cache.set(token, {
-      user,
+      platformUser,
       expires: Date.now() + TOKEN_CACHE_TTL
     });
   }

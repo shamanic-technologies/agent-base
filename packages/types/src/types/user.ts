@@ -1,14 +1,14 @@
 /**
  * Types related to Users.
  */
-import { BaseResponse } from './common.js';
+import { BaseResponse, ServiceResponse } from './common.js';
 import { OAuthProvider } from './oauth.js';
 
 
 /**
  * User record from the database
  */
-export interface UserRecord {
+export interface PlatformUserRecord {
   user_id: string;
   provider_user_id: string;
   email: string;
@@ -20,12 +20,17 @@ export interface UserRecord {
   updated_at: string;
 }
 
+export interface ClientUserRecord {
+  id: string;
+  created_at: string;
+  updated_at: string;
+}
 
 /**
  * Simplified application-level User interface with camelCase properties
  */
-export interface User {
-  userId: string;
+export interface PlatformUser {
+  id: string;
   email: string;
   displayName: string;
   profileImage?: string;
@@ -36,20 +41,16 @@ export interface User {
   updatedAt: Date;
 } 
 
-
-
-
-/**
- * User response interface for API endpoints
- */
-export interface UserResponse extends BaseResponse {
-  data?: UserRecord;
+export interface ClientUser {
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 /**
  * Input for getting or creating a user
  */
-export interface GetOrCreateUserInput {
+export interface GetOrCreatePlatformUserInput {
   provider_user_id: string;
   email?: string;
   display_name?: string;
@@ -57,34 +58,22 @@ export interface GetOrCreateUserInput {
 }
 
 /**
- * Response for get or create user endpoint
- */
-export interface GetOrCreateUserResponse extends UserResponse {
-  created?: boolean;
-  updated?: boolean;
-}
-
-
-/**
  * Maps a snake_case user database record to camelCase user object
  * @param record The user record from the database
- * @param oauthProvider The OAuth provider associated with this user
  * @returns A camelCase user object
  */
-export function mapUserFromDatabase(record: UserRecord, oauthProvider: OAuthProvider): User {
+export function mapPlatformUserFromDatabase(record: PlatformUserRecord): PlatformUser {
     if (!record) {
       throw new Error('Invalid user record provided to mapUserFromDatabase');
     }
-    if (!oauthProvider) {
-        throw new Error('Missing oauthProvider in mapUserFromDatabase');
-    }
+
     return {
-      userId: record.user_id,
+      id: record.user_id,
       providerUserId: record.provider_user_id,
       email: record.email,
       displayName: record.display_name,
       profileImage: record.profile_image,
-      oauthProvider: oauthProvider,
+      oauthProvider: record.oauth_provider,
       lastLogin: new Date(record.last_login),
       createdAt: new Date(record.created_at),
       updatedAt: new Date(record.updated_at)
@@ -94,12 +83,12 @@ export function mapUserFromDatabase(record: UserRecord, oauthProvider: OAuthProv
   /**
    * Maps a camelCase user object to snake_case database fields
    */
-  export function mapUserToDatabase(user: Partial<User>): Partial<UserRecord> {
+  export function mapPlatformUserToDatabase(user: PlatformUser): Partial<PlatformUserRecord> {
     if (!user) {
       throw new Error('Invalid user provided to mapUserToDatabase');
     }
-    const record: Partial<UserRecord> = {};
-    if (user.userId !== undefined) record.user_id = user.userId;
+    const record: Partial<PlatformUserRecord> = {};
+    if (user.id !== undefined) record.user_id = user.id;
     if (user.providerUserId !== undefined) record.provider_user_id = user.providerUserId;
     if (user.email !== undefined) record.email = user.email;
     if (user.displayName !== undefined) record.display_name = user.displayName;

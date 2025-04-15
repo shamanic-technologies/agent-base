@@ -3,7 +3,7 @@
  */
 import { Router, Request, Response } from 'express';
 import { getUserById, getOrCreateUserByProviderUserId } from '../services/users.js';
-import { GetOrCreateUserInput } from '@agent-base/types';
+import { GetOrCreatePlatformUserInput } from '@agent-base/types';
 
 const router = Router();
 
@@ -56,7 +56,7 @@ router.get('/users/me', async (req: Request, res: Response): Promise<void> => {
  */
 router.post('/users/get-or-create-by-provider-user-id', async (req: Request, res: Response): Promise<void> => {
   try {
-    const userData = req.body as GetOrCreateUserInput;
+    const userData = req.body as GetOrCreatePlatformUserInput;
     
     if (!userData || !userData.provider_user_id) {
       res.status(400).json({
@@ -80,19 +80,10 @@ router.post('/users/get-or-create-by-provider-user-id', async (req: Request, res
     }
     
     // Return the appropriate status based on whether the user was created or updated
-    if (result.created) {
-      res.status(201).json({
-        success: true,
-        data: result.data,
-        created: true
-      });
-    } else {
-      res.status(200).json({
-        success: true,
-        data: result.data,
-        updated: true
-      });
-    }
+    res.status(201).json({
+      success: true,
+      data: result.data,
+    });
   } catch (error) {
     console.error('Error in get-or-create user:', error);
     res.status(500).json({ success: false, error: 'Internal server error' });

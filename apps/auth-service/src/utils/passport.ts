@@ -8,7 +8,7 @@ import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
 import jwt from 'jsonwebtoken';
 import { config } from '../config/env';
-import { OAuthProvider, ProviderUser, JWTPayload } from '@agent-base/types';
+import { OAuthProvider, ProviderUser, PlatformJWTPayload } from '@agent-base/types';
 
 // Setup JWT strategy for protected routes
 passport.use(
@@ -64,7 +64,7 @@ passport.deserializeUser((obj: Express.User, done) => {
 /**
  * Generate a JWT token for the user
  */
-export const generateToken = (userData: JWTPayload): string => {
+export const generateToken = (userData: PlatformJWTPayload): string => {
   // Use 'any' cast on options as temporary workaround for linter error
   return jwt.sign(userData, config.jwt.secret, {
     expiresIn: config.jwt.expiresIn
@@ -74,10 +74,10 @@ export const generateToken = (userData: JWTPayload): string => {
 /**
  * Verify a JWT token
  */
-export const verifyToken = (token: string): JWTPayload | null => {
+export const verifyToken = (token: string): PlatformJWTPayload | null => {
   try {
     // Decode and verify the token, asserting the payload matches UserProfile
-    return jwt.verify(token, config.jwt.secret) as JWTPayload;
+    return jwt.verify(token, config.jwt.secret) as PlatformJWTPayload;
   } catch (error) {
     // If verification fails (invalid token, expired, etc.), return null
     console.warn('[Auth Service] Token verification failed:', error instanceof Error ? error.message : String(error));

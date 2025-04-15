@@ -4,17 +4,16 @@
  * A central entry point for web applications to access all microservices.
  * Handles routing, authentication, and request forwarding to appropriate services.
  */
-import express, { Request, Response, NextFunction, RequestHandler } from 'express';
+import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import axios, { AxiosError } from 'axios';
 import cookieParser from 'cookie-parser';
 import { rateLimit } from 'express-rate-limit';
 import path from 'path';
 import fs from 'fs';
 import { authMiddleware } from './middleware/auth-middleware';
 import { tokenCache } from './utils/token-cache';
-import { User } from './types';
+import { forwardRequest } from './utils/forward-request';
 
 // Load environment variables based on NODE_ENV
 const NODE_ENV = process.env.NODE_ENV || 'development';
@@ -36,9 +35,6 @@ if (NODE_ENV === 'development') {
 const requiredEnvVars = [
   'PORT',
   'AUTH_SERVICE_URL',
-  'DB_SERVICE_URL',
-  'MODEL_SERVICE_URL',
-  'API_GATEWAY_SERVICE_URL',
   'KEYS_SERVICE_URL',
   'PAYMENT_SERVICE_URL',
   'LOGGING_SERVICE_URL',
@@ -56,15 +52,12 @@ const PORT = process.env.PORT;
 
 // Service URLs with non-null assertion to handle TypeScript
 const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL!;
-const DB_SERVICE_URL = process.env.DB_SERVICE_URL!;
-const MODEL_SERVICE_URL = process.env.MODEL_SERVICE_URL!;
-const API_GATEWAY_SERVICE_URL = process.env.API_GATEWAY_SERVICE_URL!;
 const KEYS_SERVICE_URL = process.env.KEYS_SERVICE_URL!;
 const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL!;
 const LOGGING_SERVICE_URL = process.env.LOGGING_SERVICE_URL!;
 
 // API key for gateway access
-const API_KEY = process.env.WEB_GATEWAY_API_KEY!;
+const WEB_GATEWAY_API_KEY = process.env.WEB_GATEWAY_API_KEY!;
 
 // Middleware
 app.use(cors({
@@ -119,9 +112,9 @@ app.use((req, res, next) => {
   }
   
   // For all other endpoints, require API key
-  const apiKey = req.headers['x-api-key'] as string;
-  if (API_KEY && (!apiKey || apiKey !== API_KEY)) {
-    console.warn(`Unauthorized gateway access attempt from ${req.ip}`);
+  const webGatewayAPIKey = req.headers['x-web-gateway-api-key'] as string;
+  if (webGatewayAPIKey !== WEB_GATEWAY_API_KEY) {
+    console.warn(`Unauthorized gateway access attempt using key: ${webGatewayAPIKey ? webGatewayAPIKey.substring(0, 5) + '...' : 'None'} from ${req.ip}`);
     return res.status(403).json({
       success: false,
       error: 'Unauthorized access to gateway'
@@ -137,130 +130,6 @@ app.use(authMiddleware);
 
 console.log('[Web Gateway] Auth middleware applied');
 
-/**
- * Helper function to forward requests to microservices
- */
-async function forwardRequest(targetUrl: string, req: express.Request, res: express.Response) {
-  const requestUrl = `${targetUrl}${req.url}`;
-  
-  // Log basic request information
-  console.log(`[Web Gateway] Forwarding request to ${new URL(targetUrl).hostname} - ${req.method} ${req.url}`);
-  
-  try {
-    const axiosConfig = {
-      method: req.method,
-      url: requestUrl,
-      data: req.method !== 'GET' ? req.body : undefined,
-      headers: {
-        ...(req.headers || {}), // Fix: Provide default empty object if headers are undefined
-        host: new URL(targetUrl).host
-      },
-      // Forward cookies for authentication
-      withCredentials: true,
-      // Never follow redirects, always pass them through to the client
-      maxRedirects: 0,
-    };
-    
-    // Log for debugging issues with headers
-    if (process.env.DEBUG_HEADERS === 'true') {
-      console.log(`[Web Gateway] Request headers:`, 
-                  Object.keys(axiosConfig.headers).map(key => 
-                    `${key}: ${key === 'authorization' ? 'Bearer ***' : 
-                    (key === 'x-user-id' ? (axiosConfig.headers as Record<string, any>)[key] : '***')}`));
-    }
-    
-    const response = await axios(axiosConfig);
-    
-    // Forward the response status, headers, and data
-    res.status(response.status);
-    
-    // Forward all headers from the response, with special handling for cookies
-    Object.entries(response.headers).forEach(([key, value]) => {
-      if (value) {
-        // For set-cookie headers, ensure they are properly preserved
-        if (key.toLowerCase() === 'set-cookie') {
-          console.log(`[Web Gateway] Found Set-Cookie header: ${typeof value}`, 
-                      Array.isArray(value) ? `Array with ${value.length} items` : 'Single value');
-          
-          if (Array.isArray(value)) {
-            value.forEach((cookie, i) => {
-              console.log(`[Web Gateway] Setting cookie[${i}]:`, cookie.substring(0, 30) + '...');
-              res.append('Set-Cookie', cookie);
-            });
-          } else {
-            console.log(`[Web Gateway] Setting cookie:`, value.substring(0, 30) + '...');
-            res.append('Set-Cookie', value);
-          }
-        } else {
-          res.setHeader(key, value);
-        }
-      }
-    });
-    
-    // For redirect responses (like OAuth redirects), just send the response without a body
-    if (response.status >= 300 && response.status < 400) {
-      console.log(`[Web Gateway] Forwarding ${response.status} redirect to: ${response.headers.location}`);
-      console.log(`[Web Gateway] Response headers:`, Object.fromEntries(Object.entries(res.getHeaders())));
-      return res.end();
-    }
-    
-    return res.send(response.data);
-  } catch (error) {
-    console.error(`[Web Gateway] Error forwarding request to ${targetUrl}${req.url}:`, error);
-    
-    const axiosError = error as AxiosError;
-    
-    if (axiosError.response) {
-      // Forward the error status and response from the microservice
-      
-      // Preserve any redirect status and headers
-      if (axiosError.response.status >= 300 && axiosError.response.status < 400) {
-        res.status(axiosError.response.status);
-        console.log(`[Web Gateway] Handling error redirect (${axiosError.response.status}) to: ${axiosError.response.headers.location}`);
-        
-        // Copy all headers from the response
-        Object.entries(axiosError.response.headers).forEach(([key, value]) => {
-          if (value) {
-            // Special handling for Set-Cookie headers
-            if (key.toLowerCase() === 'set-cookie') {
-              console.log(`[Web Gateway] Found Set-Cookie header: ${typeof value}`, 
-                         Array.isArray(value) ? `Array with ${value.length} items` : 'Single value');
-              
-              if (Array.isArray(value)) {
-                value.forEach((cookie, i) => {
-                  console.log(`[Web Gateway] Setting cookie[${i}]:`, cookie.substring(0, 30) + '...');
-                  res.append('Set-Cookie', cookie);
-                });
-              } else {
-                console.log(`[Web Gateway] Setting cookie:`, typeof value === 'string' ? value.substring(0, 30) + '...' : value);
-                res.append('Set-Cookie', value);
-              }
-            } else {
-              res.setHeader(key, value);
-            }
-          }
-        });
-        
-        console.log(`[Web Gateway] Response headers after processing:`, Object.fromEntries(Object.entries(res.getHeaders())));
-        return res.end();
-      }
-      
-      return res.status(axiosError.response.status).send(axiosError.response.data);
-    } else if (axiosError.request) {
-      // The request was made but no response was received
-      return res.status(502).json({
-        success: false,
-        error: `[Web Gateway] Could not connect to ${new URL(targetUrl).hostname}`
-      });
-    } else {
-      // Something happened in setting up the request
-      return res.status(500).json({
-        success: false,
-        error: '[Web Gateway] Internal error'
-      });
-    }
-  }
-}
 
 /**
  * Health check endpoint
@@ -270,20 +139,16 @@ app.get('/health', (req, res) => {
     status: 'healthy',
     services: {
       auth: AUTH_SERVICE_URL,
-      database: DB_SERVICE_URL,
-      model: MODEL_SERVICE_URL,
-      api_gateway: API_GATEWAY_SERVICE_URL,
       keys: KEYS_SERVICE_URL,
-      payment: PAYMENT_SERVICE_URL
+      payment: PAYMENT_SERVICE_URL,
+      logging: LOGGING_SERVICE_URL
     }
   });
 });
 
-// Create routers for service endpoints
+// Create routers for allowed service endpoints
 const authRouter = express.Router();
-const databaseRouter = express.Router();
 const keysRouter = express.Router();
-const generateRouter = express.Router();
 const paymentRouter = express.Router();
 const oauthRouter = express.Router();
 const loggingRouter = express.Router();
@@ -302,85 +167,17 @@ authRouter.all('*', (req, res) => {
     }
   }
 
-  // Log headers for debugging, especially for /auth/validate endpoint
-  if (req.url === '/validate') {
-    console.log(`[Web Gateway] Forwarding to auth/validate with method ${req.method} and headers:`, 
-      req.headers ? Object.keys(req.headers).map(key => `${key}: ${key.toLowerCase() === 'authorization' ? 'Bearer ***' : '***'}`) : 'No headers');
-    
-    if (req.headers && req.headers.authorization) {
-      console.log(`[Web Gateway] Authorization header is present and starts with:`, 
-        req.headers.authorization.substring(0, 10) + '...');
-    } else {
-      console.log(`[Web Gateway] No Authorization header found in request to auth service`);
-    }
-    
-    // For /validate endpoint, ensure we're using POST regardless of incoming method
-    if (req.method !== 'POST') {
-      console.log(`[Web Gateway] Converting ${req.method} request to POST for auth/validate`);
-      req.method = 'POST';
-    }
-  }
-  
-  // When a request comes to /auth/validate, inside this handler req.url is just '/validate'
-  // We need to add back the '/auth' prefix for the auth service to recognize the route
-  const modifiedReq = Object.assign({}, req, {
-    url: `/auth${req.url}`,
-    // Ensure headers exists to prevent null reference errors
-    headers: req.headers || {}
-  });
-
-  return forwardRequest(AUTH_SERVICE_URL, modifiedReq, res);
+  return forwardRequest(AUTH_SERVICE_URL, req, res);
 });
 
-// OAuth route handler
+// OAuth route handler (for Auth Service)
 oauthRouter.all('*', (req, res) => {
-  // When a request comes to /oauth/google, inside this handler req.url is just '/google'
-  // We need to add back the '/oauth' prefix for the auth service to recognize the route
-  const modifiedReq = Object.assign({}, req, {
-    url: `/oauth${req.url}`
-  });
-  
-  return forwardRequest(AUTH_SERVICE_URL, modifiedReq, res);
-});
-
-// Database service route handler
-databaseRouter.all('*', (req, res) => {
-  // Log headers for debugging when accessing /db/users/me
-  if (req.url.includes('/db/users/me')) {
-    console.log(`[Web Gateway] Database request to /db/users/me`);
-    console.log(`[Web Gateway] Request headers user info:`, 
-      req.user ? `User ID: ${(req.user as User).id}` : 'No user object',
-      req.headers['x-user-id'] ? `x-user-id: ${req.headers['x-user-id']}` : 'No x-user-id header'
-    );
-  }
-  return forwardRequest(DB_SERVICE_URL, req, res);
+  return forwardRequest(AUTH_SERVICE_URL, req, res);
 });
 
 // Keys service route handler
-keysRouter.all('*', (req, res) => {
-  // Add monitoring for debugging API key issues
-  if (req.method === 'POST') {
-    console.log(`[Web Gateway] Processing ${req.method} request to keys service: ${req.url}`);
-    
-    // Log auth and user information for debugging
-    const hasAuth = !!req.headers.authorization;
-    const hasUserObject = !!req.user;
-    const hasUserIdHeader = !!req.headers['x-user-id'];
-    
-    console.log(`[Web Gateway] Keys request auth status: Auth=${hasAuth}, User Object=${hasUserObject}, x-user-id=${hasUserIdHeader}`);
-  
-    // Only log in detail if there's an issue
-    if (!hasUserIdHeader) {
-      console.log(`[Web Gateway] WARNING: Keys service request is missing x-user-id header`);
-    }
-  }
-  
+keysRouter.all('*', (req, res) => {  
   return forwardRequest(KEYS_SERVICE_URL, req, res);
-});
-
-// Model service route handler (via proxy)
-generateRouter.all('*', (req, res) => {
-  return forwardRequest(API_GATEWAY_SERVICE_URL, req, res);
 });
 
 // Payment service route handler
@@ -393,12 +190,10 @@ loggingRouter.all('*', (req, res) => {
   return forwardRequest(LOGGING_SERVICE_URL, req, res);
 });
 
-// Mount the routers
+// Mount the allowed routers
 app.use('/auth', authRouter);
 app.use('/oauth', oauthRouter);
-app.use('/database', databaseRouter);
 app.use('/keys', keysRouter);
-app.use('/generate', generateRouter);
 app.use('/payment', paymentRouter);
 app.use('/logging', loggingRouter);
 
@@ -417,8 +212,7 @@ app.listen(PORT, () => {
   console.log(`🚪 Web Gateway Service running on port ${PORT}`);
   console.log('Connected to services:');
   console.log(`🔐 Auth Service: ${AUTH_SERVICE_URL}`);
-  console.log(`💾 Database Service: ${DB_SERVICE_URL}`);
   console.log(`🔑 Keys Service: ${KEYS_SERVICE_URL}`);
-  console.log(`🔄 Model Service (via API Gateway): ${API_GATEWAY_SERVICE_URL}`);
   console.log(`💳 Payment Service: ${PAYMENT_SERVICE_URL}`);
+  console.log(`📝 Logging Service: ${LOGGING_SERVICE_URL}`);
 }); 

@@ -5,7 +5,7 @@
  */
 import axios from 'axios';
 import { config } from '../config/env';
-import { GetOrCreateUserInput, GetOrCreateUserResponse, UserRecord, mapUserFromDatabase, User, ServiceResponse, ProviderUser } from '@agent-base/types';
+import { GetOrCreatePlatformUserInput, PlatformUserRecord, mapPlatformUserFromDatabase, PlatformUser, ServiceResponse, ProviderUser } from '@agent-base/types';
 
 const dbServiceUrl = config.databaseServiceUrl;
 
@@ -15,12 +15,12 @@ const dbServiceUrl = config.databaseServiceUrl;
  * @param user User information to save
  * @returns Promise resolving to the saved user data
  */
-export async function saveUserToDatabase(user: ProviderUser): Promise<ServiceResponse<User>> {
+export async function saveUserToDatabase(user: ProviderUser): Promise<ServiceResponse<PlatformUser>> {
   try {
     console.log(`Saving user data to database service via get-or-create endpoint`);
     
     // Format user data according to the GetOrCreateUserInput interface
-    const userData: GetOrCreateUserInput = {
+    const userData: GetOrCreatePlatformUserInput = {
       provider_user_id: user.id,
       email: user.email,
       display_name: user.name,
@@ -28,7 +28,7 @@ export async function saveUserToDatabase(user: ProviderUser): Promise<ServiceRes
     };
     
     // Use the correct endpoint to handle the save/update logic efficiently
-    const response = await axios.post<GetOrCreateUserResponse>(
+    const response = await axios.post<ServiceResponse<PlatformUser>>(
       `${dbServiceUrl}/users/get-or-create-by-provider-user-id`, 
       userData
     );
@@ -41,28 +41,23 @@ export async function saveUserToDatabase(user: ProviderUser): Promise<ServiceRes
       };
     }
     
-    // Log appropriate message based on whether user was created or updated
-    if (response.data.created) {
-      console.log(`Successfully created user with provider ID ${user.id} in database`);
-    } else {
-      console.log(`Successfully updated user with provider ID ${user.id} in database`);
-    }
-    
-    // Map the database record back to a UserProfile
-    const dbUser = response.data.data as UserRecord;
-    if (!dbUser) {
-      console.error('No user data returned from database service');
+    if (!!response.data?.data) {
+      // Map the database record back to a UserProfile
+      const dbUser = response.data.data as PlatformUser;
+      if (!dbUser) {
+        console.error('No user data returned from database service');
+        return {
+          success: false,
+          error: 'No user data returned from database service'
+        };
+      }
+      
       return {
-        success: false,
-        error: 'No user data returned from database service'
+        success: true,
+        data: dbUser
       };
     }
-    
-    return {
-      success: true,
-      data: mapUserFromDatabase(dbUser)
-    };
-  } catch (error: any) {
+    } catch (error: any) {
     console.error('Error saving user in database:', error.message || error);
     return {
       success: false,
