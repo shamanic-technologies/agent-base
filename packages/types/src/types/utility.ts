@@ -2,6 +2,7 @@
  * Types related to Utility.
  */
 import { ErrorResponse, ServiceResponse, SuccessResponse } from './common.js';
+import { OAuthProvider } from './oauth.js';
 
 // --- Enums and Core Records ---
 
@@ -91,7 +92,7 @@ export interface InternalUtilityTool {
  * Drives the generic execution engine.
  */
 export interface ExternalUtilityTool extends InternalUtilityTool{
-    provider: UtilityProvider;     /** The provider enum (e.g., UtilityProvider.GMAIL) */
+    utilityProvider: UtilityProvider;     /** The provider enum (e.g., UtilityProvider.GMAIL) */
     authMethod: AuthMethod;    /** Authentication method required */
     requiredSecrets: UtilitySecret[];     /** Secrets required from secret-service (includes action confirmations like WEBHOOK_URL_INPUTED) */
     requiredScopes?: string[];     /** OAuth scopes required (only if authMethod is OAUTH) */
@@ -123,7 +124,8 @@ export interface ExternalUtilityTool extends InternalUtilityTool{
  */
 export interface SetupNeededData {
     needs_setup: true;
-    provider: string;
+    utility_provider: UtilityProvider;
+    oauth_provider?: OAuthProvider;
     message: string; // General message
     title: string; // Title for UI prompt
     description: string; // Description for UI prompt
@@ -165,7 +167,7 @@ export interface UtilityRequest {
 
   // Update ExternalUtilityInfo to use the new schema type definition
   export interface ExternalUtilityInfo extends InternalUtilityInfo {
-    provider: UtilityProvider;
+    utilityProvider: UtilityProvider;
     authMethod: AuthMethod;
     requiredSecrets: UtilitySecret[];
     requiredScopes?: string[];
@@ -198,3 +200,14 @@ export type UtilitiesList =  UtilitiesListItem[];
 
 export type UtilitiesListResponse = ServiceResponse<UtilitiesList>;
 
+/**
+ * Maps a UtilityProvider to an OAuthProvider
+ */
+export function mapUtilityProviderToOAuthProvider(utilityProvider: UtilityProvider): OAuthProvider {
+switch (utilityProvider) {
+    case UtilityProvider.GMAIL:
+        return OAuthProvider.GOOGLE;
+    default:
+        throw new Error(`Unsupported utility provider: ${utilityProvider}`);
+}
+};

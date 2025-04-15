@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { ExternalUtilityTool, UtilitiesList } from '@agent-base/agents';
+import { ExternalUtilityTool, UtilitiesList } from '@agent-base/types';
 
 // Path to the mock database file
 const UTILITIES_DB_PATH = path.join(__dirname, '../data/utilities.json');

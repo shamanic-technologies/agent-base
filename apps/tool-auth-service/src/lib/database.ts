@@ -3,73 +3,58 @@
  * 
  * Handles all interactions with the database service
  */
-import axios from 'axios';
-import { 
-  Credential, 
+import {
+  OAuth, 
   CreateOrUpdateCredentialsInput, 
   DatabaseResponse,
   CredentialsResponse,
   GetUserCredentialsInput
-} from '@agent-base/agents';
+} from '@agent-base/types';
+// Import the shared HTTP client utility
+import { makeServiceRequest } from '@agent-base/types';
 
 const DB_SERVICE_URL = process.env.DATABASE_SERVICE_URL;
 
 // Re-export the types for convenience
-export type { Credential, CreateOrUpdateCredentialsInput, DatabaseResponse };
+export type { OAuth, CreateOrUpdateCredentialsInput, DatabaseResponse };
 
 /**
- * Create new user credentials
+ * Create or update user credentials using the shared HTTP client utility.
  */
 export async function createOrUpdateCredentials(
   input: CreateOrUpdateCredentialsInput
 ): Promise<DatabaseResponse> {
-  try {
-    const response = await axios.post(`${DB_SERVICE_URL}/credentials`, input);
-    return response.data;
-  } catch (error) {
-    console.error('Error creating credentials:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    };
+  if (!DB_SERVICE_URL) {
+    console.error('DATABASE_SERVICE_URL is not defined.');
+    return { success: false, error: 'Database service URL not configured.' };
   }
+  // Use makeServiceRequest for POST request
+  return makeServiceRequest<void>(
+    DB_SERVICE_URL,
+    'POST',
+    '/credentials',
+    undefined, // No specific userId needed in header for this endpoint
+    input // Send input as the request body (data)
+  );
 }
 
 /**
- * Get user credentials by user ID
+ * Get user credentials by user ID using the shared HTTP client utility.
  */
 export async function getCredentials(
   input: GetUserCredentialsInput
-): Promise<CredentialsResponse<Credential[]>> {
-  try {
-    const response = await axios.get(`${DB_SERVICE_URL}/credentials`, {
-      data: input
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Error getting credentials:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    };
+): Promise<CredentialsResponse<OAuth[]>> {
+  if (!DB_SERVICE_URL) {
+    console.error('DATABASE_SERVICE_URL is not defined.');
+    return { success: false, error: 'Database service URL not configured.' };
   }
+  // Use makeServiceRequest for GET request, sending input as query parameters
+  return makeServiceRequest<OAuth[]>(
+    DB_SERVICE_URL,
+    'GET',
+    '/credentials',
+    undefined, // No specific userId needed in header for this endpoint
+    undefined, // No request body (data)
+    input // Send input as query parameters (params)
+  );
 }
-
-// /**
-//  * Update user credentials
-//  */
-// export async function updateCredentials(
-//   userId: string,
-//   input: UpdateCredentialsInput
-// ): Promise<DatabaseResponse<Credentials>> {
-//   try {
-//     const response = await axios.patch(`${DB_SERVICE_URL}/credentials/${userId}`, input);
-//     return response.data;
-//   } catch (error) {
-//     console.error('Error updating credentials:', error);
-//     return {
-//       success: false,
-//       error: error instanceof Error ? error.message : 'Unknown error occurred'
-//     };
-//   }
-// } 

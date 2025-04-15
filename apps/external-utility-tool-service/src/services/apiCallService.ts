@@ -5,7 +5,7 @@ import {
     AuthMethod, 
     ApiKeyAuthScheme, 
     HttpMethod // Assuming HttpMethod might be needed if method is validated
-} from '@agent-base/agents';
+} from '@agent-base/types';
 
 /**
  * Makes the actual API call based on the tool configuration.

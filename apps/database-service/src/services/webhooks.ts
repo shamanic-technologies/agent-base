@@ -5,7 +5,7 @@
  */
 import { PoolClient } from 'pg';
 import { getClient } from '../db.js';
-import { BaseResponse, WebhookEventPayload, WebhookAgentMapping } from '@agent-base/agents';
+import { BaseResponse, WebhookEventPayload, WebhookAgentMapping } from '@agent-base/types';
 
 /**
  * Retrieves the agent ID mapped to a specific webhook provider for a given user.

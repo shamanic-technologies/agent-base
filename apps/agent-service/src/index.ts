@@ -15,7 +15,7 @@ import { fileURLToPath } from 'url'; // Import needed for __dirname in ES Module
 
 // Import routes configuration
 import { configureRoutes } from './routes/index.js';
-import { User } from '@agent-base/agents'; // Import from shared package
+import { User } from '@agent-base/types'; // Import from shared package
 
 // Load environment variables based on NODE_ENV
 const nodeEnv = process.env.NODE_ENV || 'development';

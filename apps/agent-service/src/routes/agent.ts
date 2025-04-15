@@ -18,7 +18,7 @@ import {
   AgentRecord, // Keep for default agent creation typing
   // Remove ServiceResponse import - Use specific response types like UserResponse etc.
   // ServiceResponse 
-} from '@agent-base/agents';
+} from '@agent-base/types';
 
 // Import service functions
 import {

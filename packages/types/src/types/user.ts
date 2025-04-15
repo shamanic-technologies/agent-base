@@ -2,6 +2,8 @@
  * Types related to Users.
  */
 import { BaseResponse } from './common.js';
+import { OAuthProvider } from './oauth.js';
+
 
 /**
  * User record from the database
@@ -12,10 +14,30 @@ export interface UserRecord {
   email: string;
   display_name: string;
   profile_image?: string;
+  oauth_provider: OAuthProvider;
   last_login: string;
   created_at: string;
   updated_at: string;
 }
+
+
+/**
+ * Simplified application-level User interface with camelCase properties
+ */
+export interface User {
+  userId: string;
+  email: string;
+  displayName: string;
+  profileImage?: string;
+  oauthProvider: OAuthProvider;
+  providerUserId: string;
+  lastLogin: Date;
+  createdAt: Date;
+  updatedAt: Date;
+} 
+
+
+
 
 /**
  * User response interface for API endpoints
@@ -42,27 +64,19 @@ export interface GetOrCreateUserResponse extends UserResponse {
   updated?: boolean;
 }
 
-/**
- * Simplified application-level User interface with camelCase properties
- */
-export interface User {
-  userId: string;
-  providerUserId: string;
-  email: string;
-  displayName: string;
-  profileImage?: string;
-  lastLogin: Date;
-  createdAt: Date;
-  updatedAt: Date;
-} 
-
 
 /**
  * Maps a snake_case user database record to camelCase user object
+ * @param record The user record from the database
+ * @param oauthProvider The OAuth provider associated with this user
+ * @returns A camelCase user object
  */
-export function mapUserFromDatabase(record: UserRecord): User {
+export function mapUserFromDatabase(record: UserRecord, oauthProvider: OAuthProvider): User {
     if (!record) {
       throw new Error('Invalid user record provided to mapUserFromDatabase');
+    }
+    if (!oauthProvider) {
+        throw new Error('Missing oauthProvider in mapUserFromDatabase');
     }
     return {
       userId: record.user_id,
@@ -70,6 +84,7 @@ export function mapUserFromDatabase(record: UserRecord): User {
       email: record.email,
       displayName: record.display_name,
       profileImage: record.profile_image,
+      oauthProvider: oauthProvider,
       lastLogin: new Date(record.last_login),
       createdAt: new Date(record.created_at),
       updatedAt: new Date(record.updated_at)
@@ -92,4 +107,6 @@ export function mapUserFromDatabase(record: UserRecord): User {
     // lastLogin, createdAt and updatedAt are usually handled by the database
     return record;
   }
+  
+
   

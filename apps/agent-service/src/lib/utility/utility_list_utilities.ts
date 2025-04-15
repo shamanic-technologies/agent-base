@@ -12,7 +12,7 @@ import axios from 'axios';
 // Use local types for agent-service specific structures
 import { UtilityError, UtilityToolCredentials } from '../../types/index.js';
 // Import shared types from agents package
-import { ServiceResponse, UtilitiesList } from '@agent-base/agents';
+import { ServiceResponse, UtilitiesList } from '@agent-base/types';
 import { handleAxiosError } from '../utils/errorHandlers.js';
 import dotenv from 'dotenv';
 import path from 'path';

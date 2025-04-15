@@ -4,7 +4,7 @@
  */
 import { Router, Request, Response, NextFunction } from 'express';
 import { setupWebhookAndMapAgent } from '../services/databaseService.js'; // Import the service function
-import { WebhookProvider, WebhookResponse, Webhook } from '@agent-base/agents';
+import { WebhookProvider, WebhookResponse, Webhook } from '@agent-base/types';
 
 // Create a new Express Router
 const router = Router();

@@ -1,4 +1,4 @@
-import { makeServiceRequest } from '@agent-base/agents/src/utils/httpClient.js';
+import { makeServiceRequest } from '@agent-base/types/src/utils/httpClient.js';
 import { 
     ServiceResponse, 
     ExternalUtilityInfoResponse,
@@ -6,7 +6,7 @@ import {
     UtilitiesListResponse,
     UtilitiesList,
     ExternalUtilityTool
-} from '@agent-base/agents';
+} from '@agent-base/types';
 
 // // Type for the list response from EUTS GET /api/tools
 // type ExternalToolListInfo = { id: string; description: string };

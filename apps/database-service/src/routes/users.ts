@@ -3,7 +3,7 @@
  */
 import { Router, Request, Response } from 'express';
 import { getUserById, getOrCreateUserByProviderUserId } from '../services/users.js';
-import { GetOrCreateUserInput } from '@agent-base/agents';
+import { GetOrCreateUserInput } from '@agent-base/types';
 
 const router = Router();
 

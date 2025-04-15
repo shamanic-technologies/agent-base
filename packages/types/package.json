@@ -1,5 +1,5 @@
 {
-  "name": "@agent-base/agents",
+  "name": "@agent-base/types",
   "version": "0.1.0",
   "description": "Shared agent types and utilities",
   "type": "module",
@@ -16,6 +16,5 @@
   },
   "devDependencies": {
     "typescript": "^5.0.4"
-  },
-  "private": true
+  }
 }

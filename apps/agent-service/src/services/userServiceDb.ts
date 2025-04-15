@@ -4,7 +4,7 @@
  * Functions for interacting with user-related endpoints in the database-service.
  */
 import axios from 'axios';
-import { UserRecord, UserResponse, GetOrCreateUserInput, GetOrCreateUserResponse, User } from '@agent-base/agents';
+import { UserRecord, UserResponse, GetOrCreateUserInput, GetOrCreateUserResponse, User } from '@agent-base/types';
 import { handleAxiosError } from '../lib/utils/errorHandlers.js';
 
 // Ensure the URL points to the correct database service port (e.g., 3006)

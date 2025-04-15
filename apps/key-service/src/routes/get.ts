@@ -3,7 +3,7 @@
  * Retrieves the API key from the secret service for a specific user and key id
  */
 import { Router } from 'express';
-import { BaseResponse, ServiceResponse } from '@agent-base/agents';
+import { BaseResponse, ServiceResponse } from '@agent-base/types';
 import { getSecret } from '../services/secretService.js';
 import { getUserApiKeys, createApiKey } from '../services/dbService.js';
 

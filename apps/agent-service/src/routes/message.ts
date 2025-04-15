@@ -11,7 +11,7 @@ import {
     GetConversationResponse, // Needed for getConversationById
     GetConversationsResponse, // Needed for getOrCreateConversationsFromAgent
     ConversationRecord // Keep for type safety
-} from '@agent-base/agents';
+} from '@agent-base/types';
 // Import the database service functions
 import { 
     getConversationById, 

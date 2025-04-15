@@ -8,7 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ExternalLink, Copy, Check, Settings, Info } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { FormTemplate } from '@/components/form/FormTemplate'; // Import the template
-import { WebhookProvider, WebhookResponse, CrispWebhook } from '@agent-base/agents';
+import { WebhookProvider, WebhookResponse, CrispWebhook } from '@agent-base/types';
 
 // --- Crisp Specific Config & Components ---
 const CRISP_SETTINGS_URL = 'https://app.crisp.chat/settings/website';

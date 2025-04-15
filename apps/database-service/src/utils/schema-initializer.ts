@@ -120,14 +120,14 @@ const AGENT_WEBHOOK_TABLE_SQL = `
 const USER_CREDENTIALS_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS "${USER_CREDENTIALS_TABLE}" (
     user_id UUID NOT NULL,
-    provider VARCHAR(50) NOT NULL,
+    oauth_provider VARCHAR(50) NOT NULL,
     scope TEXT NOT NULL,
     access_token TEXT NOT NULL,
     refresh_token TEXT NOT NULL,
     expires_at BIGINT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (user_id, provider, scope),
+    PRIMARY KEY (user_id, oauth_provider, scope),
     FOREIGN KEY (user_id) REFERENCES "${USERS_TABLE}" (user_id) ON DELETE CASCADE
   )
 `;

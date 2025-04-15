@@ -7,7 +7,7 @@ import {
   ConversationRecord,
   BaseResponse,
   GetConversationResponse,
-} from '@agent-base/agents';
+} from '@agent-base/types';
 import { getClient } from '../db.js';
 import { Message } from 'ai';
 

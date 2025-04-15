@@ -21,8 +21,8 @@ import {
 } from './clients/externalToolServiceClient.js';
 
 // Import shared response types for consistency
-import { ServiceResponse, UtilitiesList, UtilitiesListResponse } from '@agent-base/agents';
-import { UtilityInfo  } from '@agent-base/agents';
+import { ServiceResponse, UtilitiesList, UtilitiesListResponse } from '@agent-base/types';
+import { UtilityInfo  } from '@agent-base/types';
 
 // // Define UtilityInfo locally for list/detail responses
 // interface UtilityInfo {

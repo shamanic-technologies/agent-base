@@ -3,7 +3,7 @@
  */
 
 // Import shared User type for Express Request augmentation
-import { User } from '@agent-base/agents';
+import { User } from '@agent-base/types';
 
 /**
  * UtilityError Interface

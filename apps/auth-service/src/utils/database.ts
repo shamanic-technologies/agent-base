@@ -4,9 +4,8 @@
  * Utilities for communicating with the database service.
  */
 import axios from 'axios';
-import { UserProfile } from './passport';
 import { config } from '../config/env';
-import { GetOrCreateUserInput, GetOrCreateUserResponse, UserRecord } from '@agent-base/agents';
+import { GetOrCreateUserInput, GetOrCreateUserResponse, UserRecord, mapUserFromDatabase, User, ServiceResponse, ProviderUser } from '@agent-base/types';
 
 const dbServiceUrl = config.databaseServiceUrl;
 
@@ -16,7 +15,7 @@ const dbServiceUrl = config.databaseServiceUrl;
  * @param user User information to save
  * @returns Promise resolving to the saved user data
  */
-export async function saveUserToDatabase(user: UserProfile): Promise<UserProfile | null> {
+export async function saveUserToDatabase(user: ProviderUser): Promise<ServiceResponse<User>> {
   try {
     console.log(`Saving user data to database service via get-or-create endpoint`);
     
@@ -36,7 +35,10 @@ export async function saveUserToDatabase(user: UserProfile): Promise<UserProfile
     
     if (!response.data?.success) {
       console.error('Error saving user in database:', response.data?.error);
-      return null;
+      return {
+        success: false,
+        error: response.data?.error
+      };
     }
     
     // Log appropriate message based on whether user was created or updated
@@ -50,18 +52,21 @@ export async function saveUserToDatabase(user: UserProfile): Promise<UserProfile
     const dbUser = response.data.data as UserRecord;
     if (!dbUser) {
       console.error('No user data returned from database service');
-      return null;
+      return {
+        success: false,
+        error: 'No user data returned from database service'
+      };
     }
     
     return {
-      id: dbUser.user_id,         // Use the database user_id as the main ID
-      email: dbUser.email,
-      name: dbUser.display_name,
-      picture: dbUser.profile_image,
-      provider: user.provider     // Keep the original provider since it might not be in the response
+      success: true,
+      data: mapUserFromDatabase(dbUser)
     };
   } catch (error: any) {
     console.error('Error saving user in database:', error.message || error);
-    throw error;
+    return {
+      success: false,
+      error: error.message || error
+    };
   }
 } 

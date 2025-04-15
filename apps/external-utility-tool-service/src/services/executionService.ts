@@ -3,7 +3,7 @@ import {
     ExternalUtilityExecutionResponse,
     SuccessResponse,
     ErrorResponse,
-} from '@agent-base/agents';
+} from '@agent-base/types';
 import axios from 'axios';
 
 // Import functions from the new services

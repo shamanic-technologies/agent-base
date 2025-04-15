@@ -7,7 +7,7 @@ import { InternalUtilityTool,
   InternalUtilityInfo,
   UtilitiesList,
   UtilitiesListItem
-} from '@agent-base/agents';
+} from '@agent-base/types';
 
 /**
  * Registry class for managing utility tools

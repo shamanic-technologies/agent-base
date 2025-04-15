@@ -16,7 +16,7 @@ import {
     SuccessResponse,
     ErrorResponse,
     // SetupNeededData // No longer needed directly here
-} from '@agent-base/agents';
+} from '@agent-base/types';
 // Import database service functions
 import { readUtilities, writeUtilities } from './databaseService';
 // Remove client imports (handled by executionService)

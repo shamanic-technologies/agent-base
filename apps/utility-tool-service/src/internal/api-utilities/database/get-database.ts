@@ -8,7 +8,7 @@ import { z } from 'zod'; // Import Zod
 import { 
   InternalUtilityTool,
   ErrorResponse,
-} from '@agent-base/agents';
+} from '@agent-base/types';
 import { registry } from '../../../registry/registry.js';
 // Removed BaseClient import as direct client usage is moved
 import fetch from 'node-fetch';

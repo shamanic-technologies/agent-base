@@ -12,7 +12,7 @@ import {
     CreateUserAgentResponse, // Use for create response structure
     UpdateUserAgentResponse, // Use for update response structure
     GetUserAgentResponse // Use for get response structure
-} from '@agent-base/agents'; // Import shared types
+} from '@agent-base/types'; // Import shared types
 import { handleAxiosError } from '../lib/utils/errorHandlers.js'; // Assuming path
 
 // Consider moving this to a shared config/constants file

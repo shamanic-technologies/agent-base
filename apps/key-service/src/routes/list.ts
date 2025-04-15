@@ -3,8 +3,8 @@
  */
 import { Router } from 'express';
 import * as dbService from '../services/dbService.js';
-import { ErrorResponse, SuccessResponse } from '@agent-base/agents';
-import { ApiKeyMetadata } from '@agent-base/agents';
+import { ErrorResponse, SuccessResponse } from '@agent-base/types';
+import { ApiKeyMetadata } from '@agent-base/types';
 
 const router = Router();
 

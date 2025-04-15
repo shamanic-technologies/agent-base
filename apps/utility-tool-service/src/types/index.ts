@@ -2,7 +2,7 @@
  * Type definitions for Utility Tool Service
  */
 import { z } from 'zod';
-import { UtilityProvider, UtilitySecret } from '@agent-base/agents';
+import { UtilityProvider, UtilitySecret } from '@agent-base/types';
 
 // export interface UtilityToolSchema {
 //   zod: z.ZodType;

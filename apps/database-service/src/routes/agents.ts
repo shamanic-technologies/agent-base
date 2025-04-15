@@ -14,7 +14,7 @@ import {
   AgentRecord, // Keep other needed types
   CreateUserAgentResponse, // <-- Add import for the renamed response type
   ListUserAgentsResponse // <-- Add import for the new response type
-} from '@agent-base/agents';
+} from '@agent-base/types';
 
 const router = express.Router();
 

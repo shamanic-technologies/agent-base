@@ -5,7 +5,7 @@
  */
 import { AsyncRequestHandler } from '../utils/types';
 import { config } from '../config/env';
-import { verifyToken, generateToken, UserProfile } from '../utils/passport';
+import { verifyToken, generateToken } from '../utils/passport';
 import passport from '../utils/passport';
 
 /**

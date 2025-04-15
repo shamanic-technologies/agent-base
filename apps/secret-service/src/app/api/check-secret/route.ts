@@ -5,7 +5,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { checkSecretExists } from '@/lib/google-secret-manager';
-import { CheckSecretRequest, CheckSecretResponse } from '@agent-base/agents';
+import { CheckSecretRequest, CheckSecretResponse } from '@agent-base/types';
 
 export async function POST(request: NextRequest) {
   try {

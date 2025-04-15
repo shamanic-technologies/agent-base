@@ -2,7 +2,7 @@
  * Handler for webhook message:send events from Crisp provider.
  * Assumes authentication and user identification have been handled by middleware.
  */
-import { WebhookProvider, WebhookEventPayloadCrisp, WebhookResponse, WebhookEventPayload } from '@agent-base/agents';
+import { WebhookProvider, WebhookEventPayloadCrisp, WebhookResponse, WebhookEventPayload } from '@agent-base/types';
 import { Request, Response } from 'express';
 import { storeWebhookEvent } from './databaseService.js';
 import axios from 'axios';

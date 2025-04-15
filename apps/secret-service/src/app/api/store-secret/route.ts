@@ -5,7 +5,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { storeSecret } from '@/lib/google-secret-manager';
-import { StoreSecretRequest, StoreSecretResponse } from '@agent-base/agents';
+import { StoreSecretRequest, StoreSecretResponse } from '@agent-base/types';
 
 export async function POST(request: NextRequest) {
   try {

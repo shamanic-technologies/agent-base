@@ -5,8 +5,9 @@ import {
     SuccessResponse,
     SetupNeededData,
     UtilityActionConfirmation,
-    UtilityInputSecret
-} from '@agent-base/agents';
+    UtilityInputSecret,
+    mapUtilityProviderToOAuthProvider
+} from '@agent-base/types';
 
 // Import client functions
 import { fetchSecrets } from '../clients/secretServiceClient';
@@ -39,7 +40,7 @@ export const checkPrerequisites = async (
     // --- Check Secrets and Actions --- 
     if (config.requiredSecrets && config.requiredSecrets.length > 0) {
         try {
-            const secretsData = await fetchSecrets(userId, config.provider, config.requiredSecrets, logPrefix);
+            const secretsData = await fetchSecrets(userId, config.utilityProvider, config.requiredSecrets, logPrefix);
             for (const secretKey of config.requiredSecrets) {
                 const value = secretsData?.[secretKey];
                 if (!value || (secretKey === UtilityActionConfirmation.WEBHOOK_URL_INPUTED && value !== 'true')) {
@@ -62,12 +63,13 @@ export const checkPrerequisites = async (
 
     // --- Check OAuth --- 
     if (config.authMethod === AuthMethod.OAUTH) {
+        const oauthProvider = mapUtilityProviderToOAuthProvider(config.utilityProvider);
         if (!config.requiredScopes || config.requiredScopes.length === 0) {
              console.error(`${logPrefix} OAuth tool requires requiredScopes.`);
              throw new Error(`Configuration error: OAuth tool '${config.id}' must define requiredScopes.`);
         }
         try {
-            const authResponse = await checkAuth(userId, config.provider, config.requiredScopes, logPrefix);
+            const authResponse = await checkAuth({ userId, oauthProvider, requiredScopes: config.requiredScopes });
             if (!authResponse.success) {
                 console.error(`${logPrefix} Auth check client call failed: ${authResponse.error}`);
                 throw new Error(`Tool Auth Service communication failed: ${authResponse.error}`);
@@ -85,9 +87,10 @@ export const checkPrerequisites = async (
                     success: true,
                     data: {
                         needs_setup: true,
-                        provider: config.provider,
-                        message: `Authentication required for ${config.provider}.`, 
-                        title: `Connect ${config.provider}`, 
+                        utility_provider: config.utilityProvider,
+                        oauth_provider: oauthProvider,
+                        message: `Authentication required for ${config.utilityProvider}.`, 
+                        title: `Connect ${config.utilityProvider}`, 
                         description: config.description,
                         required_secret_inputs: [], 
                         required_action_confirmations: [],
@@ -115,9 +118,9 @@ export const checkPrerequisites = async (
             success: true,
             data: {
                 needs_setup: true,
-                provider: config.provider,
-                message: `Configuration required for ${config.provider}. Please provide the following details or confirm actions.`, 
-                title: `Configure ${config.provider}`, 
+                utility_provider: config.utilityProvider,
+                message: `Configuration required for ${config.utilityProvider}. Please provide the following details or confirm actions.`, 
+                title: `Configure ${config.utilityProvider}`, 
                 description: config.description,
                 required_secret_inputs: requiredSecretInputs,
                 required_action_confirmations: requiredActionConfirmations

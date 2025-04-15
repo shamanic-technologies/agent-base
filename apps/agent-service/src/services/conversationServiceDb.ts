@@ -10,7 +10,7 @@ import {
     BaseResponse,
     CreateConversationInput,
     CreateConversationResponse
-} from '@agent-base/agents'; // Shared types for payloads
+} from '@agent-base/types'; // Shared types for payloads
 // @ts-ignore - Message not directly exported from 'ai' in this context
 import { Message } from 'ai';
 import { handleAxiosError } from '../lib/utils/errorHandlers.js'; // Assuming path
