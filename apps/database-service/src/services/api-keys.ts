@@ -5,11 +5,16 @@
  */
 import { PoolClient } from 'pg';
 import { pgPool, getClient } from '../db.js';
-import { ApiKeyMetadata, CreateApiKeyRequest, ApiKeyResponse, ApiKeysListResponse, ValidateApiKeyRequest, ValidateApiKeyResponse } from '@agent-base/types/src/types/api-keys.js';
-import { SuccessResponse, ErrorResponse, ServiceResponse } from '@agent-base/types';
+import { ApiKeyRecord,
+  CreateApiKeyRequest,
+  ApiKey, 
+  SuccessResponse, 
+  ErrorResponse, 
+  ServiceResponse, 
+  mapAPIKeyFromDatabase } from '@agent-base/types';
 
 // Table name constant
-const API_KEYS_TABLE = 'api_keys';
+const PLATFORM_USER_API_KEY_TABLE = 'platform_user_api_keys';
 
 /**
  * Creates API key metadata in the database
@@ -17,40 +22,41 @@ const API_KEYS_TABLE = 'api_keys';
  * @param userId - The user ID who owns the key
  * @returns A response with the created API key metadata
  */
-export async function createApiKey(keyData: CreateApiKeyRequest, userId: string): Promise<ApiKeyResponse> {
+export async function createApiKey(keyData: CreateApiKeyRequest, userId: string):
+Promise<ServiceResponse<ApiKey>> {
   let client: PoolClient | null = null;
   
   try {
     client = await getClient();
     
     // Prepare data for insertion
-    const apiKeyData: ApiKeyMetadata = {
-      key_id: keyData.key_id,
-      user_id: userId,
+    const apiKeyData: ApiKeyRecord = {
+      key_id: keyData.keyId,
+      platform_user_id: userId,
       name: keyData.name,
-      key_prefix: keyData.key_prefix,
-      hashed_key: keyData.hashed_key,
+      key_prefix: keyData.keyPrefix,
+      hashed_key: keyData.hashedKey,
       created_at: new Date().toISOString(),
       last_used: null,
     };
 
     // Build insert query
-    const columns = ['key_id', 'user_id', 'name', 'key_prefix', 'hashed_key', 'created_at'];
-    const values = [apiKeyData.key_id, apiKeyData.user_id, apiKeyData.name, apiKeyData.key_prefix, apiKeyData.hashed_key, apiKeyData.created_at];
+    const columns = ['key_id', 'platform_user_id', 'name', 'key_prefix', 'hashed_key', 'created_at'];
+    const values = [apiKeyData.key_id, apiKeyData.platform_user_id, apiKeyData.name, apiKeyData.key_prefix, apiKeyData.hashed_key, apiKeyData.created_at];
     const placeholders = columns.map((_, idx) => `$${idx + 1}`).join(', ');
 
     const query = `
-      INSERT INTO "${API_KEYS_TABLE}" (${columns.map(c => `"${c}"`).join(', ')})
+      INSERT INTO "${PLATFORM_USER_API_KEY_TABLE}" (${columns.map(c => `"${c}"`).join(', ')})
       VALUES (${placeholders})
       RETURNING *;
     `;
 
-    const result = await client.query<ApiKeyMetadata>(query, values);
+    const result = await client.query<ApiKeyRecord>(query, values);
 
     return {
       success: true,
-      data: result.rows[0]
-    } as SuccessResponse<ApiKeyMetadata>;
+      data: mapAPIKeyFromDatabase(result.rows[0])
+    } as SuccessResponse<ApiKey>;
   } catch (error: any) {
     console.error('Error creating API key:', error);
     return { 
@@ -70,7 +76,7 @@ export async function createApiKey(keyData: CreateApiKeyRequest, userId: string)
  * @param keyPrefix - Optional key prefix to filter by
  * @returns A response with an array of API key metadata
  */
-export async function getApiKeys(userId: string, keyPrefix?: string): Promise<ApiKeysListResponse> {
+export async function getApiKeys(userId: string, keyPrefix?: string): Promise<ServiceResponse<ApiKey[]>> {
   let client: PoolClient | null = null;
   
   try {
@@ -78,7 +84,7 @@ export async function getApiKeys(userId: string, keyPrefix?: string): Promise<Ap
     
     let query = `
       SELECT key_id, user_id, name, key_prefix, hashed_key, created_at, last_used
-      FROM "${API_KEYS_TABLE}"
+      FROM "${PLATFORM_USER_API_KEY_TABLE}"
       WHERE user_id = $1
     `;
     const queryParams: any[] = [userId];
@@ -91,11 +97,11 @@ export async function getApiKeys(userId: string, keyPrefix?: string): Promise<Ap
 
     query += ` ORDER BY created_at DESC;`;
 
-    const result = await client.query<ApiKeyMetadata>(query, queryParams);
+    const result = await client.query<ApiKeyRecord>(query, queryParams);
 
     return {
       success: true,
-      data: result.rows
+      data: result.rows.map(mapAPIKeyFromDatabase)
     };
   } catch (error: any) {
     console.error('Error fetching API keys:', error);
@@ -116,7 +122,7 @@ export async function getApiKeys(userId: string, keyPrefix?: string): Promise<Ap
  * @param keyPrefix - The key prefix for additional filtering
  * @returns A response with the updated API key metadata
  */
-export async function validateApiKey(hashedKey: string, keyPrefix: string): Promise<ServiceResponse<ApiKeyMetadata>> {
+export async function validateApiKey(hashedKey: string, keyPrefix: string): Promise<ServiceResponse<ApiKey>> {
   let client: PoolClient | null = null;
   
   try {
@@ -124,12 +130,12 @@ export async function validateApiKey(hashedKey: string, keyPrefix: string): Prom
     
     // Find the API key by its hashed value and prefix
     const findQuery = `
-      SELECT * FROM "${API_KEYS_TABLE}" 
+      SELECT * FROM "${PLATFORM_USER_API_KEY_TABLE}" 
       WHERE hashed_key = $1
       AND key_prefix = $2
     `;
     
-    const findResult = await client.query<ApiKeyMetadata>(findQuery, [hashedKey, keyPrefix]);
+    const findResult = await client.query<ApiKeyRecord>(findQuery, [hashedKey, keyPrefix]);
     
     if (findResult.rows.length === 0) {
       return {
@@ -141,19 +147,19 @@ export async function validateApiKey(hashedKey: string, keyPrefix: string): Prom
     // Update the last_used timestamp
     const now = new Date().toISOString();
     const updateQuery = `
-      UPDATE "${API_KEYS_TABLE}"
+      UPDATE "${PLATFORM_USER_API_KEY_TABLE}"
       SET last_used = $1
       WHERE hashed_key = $2
       AND key_prefix = $3
       RETURNING *;
     `;
     
-    const result = await client.query<ApiKeyMetadata>(updateQuery, [now, hashedKey, keyPrefix]);
+    const result = await client.query<ApiKeyRecord>(updateQuery, [now, hashedKey, keyPrefix]);
     
     return {
       success: true,
-      data: result.rows[0]
-    } as SuccessResponse<ApiKeyMetadata>;
+      data: mapAPIKeyFromDatabase(result.rows[0])
+    } as SuccessResponse<ApiKey>;
   } catch (error: any) {
     console.error('Error updating API key usage:', error);
     return { 
