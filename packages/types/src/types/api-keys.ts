@@ -62,7 +62,6 @@ export interface ValidateApiKeyResponse extends BaseResponse {
   keyId: string;
 }
 
-
 /**
  * Maps a snake_case database record to camelCase agent object
  */

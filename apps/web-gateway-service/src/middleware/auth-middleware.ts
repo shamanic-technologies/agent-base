@@ -8,7 +8,6 @@ import { Request, Response, NextFunction } from 'express';
 // Assuming types are exported from the shared package
 import { PlatformUser, ServiceResponse, OAuthProvider } from '@agent-base/types'; 
 // Assuming httpClient is exported from the shared package
-import { makeServiceRequest } from '@agent-base/types'; 
 import { tokenCache } from '../utils/token-cache'; 
 import dotenv from 'dotenv';
 import axios, { AxiosError } from 'axios'; // Re-add axios import with AxiosError type

@@ -21,17 +21,6 @@ export interface CheckSecretRequest {
   secretType: string;
 }
 
-export interface CheckSecretResponse extends BaseResponse {
-  exists: boolean;
-}
-
-/**
- * Response from storing a secret
- */
-export interface StoreSecretResponse extends BaseResponse {
-  message?: string;
-}
-
 /**
  * Request for retrieving a secret
  */
@@ -40,11 +29,10 @@ export interface GetSecretRequest {
   secretType: string;
 }
 
-/**
- * Response for retrieving a secret
- */
-export interface GetSecretResponse extends BaseResponse {
-  data?: {
-    value: string | object;
-  };
+export interface SecretExists {
+  exists: boolean;
+}
+
+export interface SecretValue {
+  value: string | object;
 } 

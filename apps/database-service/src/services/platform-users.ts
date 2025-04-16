@@ -139,7 +139,7 @@ export async function getOrCreatePlatformUserByProviderUserId(userData: GetOrCre
           profile_image = COALESCE($3, profile_image),
           last_login = NOW(),
           updated_at = NOW()
-        WHERE user_id = $4
+        WHERE id = $4
         RETURNING *
       `;
       

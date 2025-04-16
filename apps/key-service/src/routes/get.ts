@@ -3,24 +3,10 @@
  * Retrieves the API key from the secret service for a specific user and key id
  */
 import { Router } from 'express';
-import { BaseResponse, ServiceResponse } from '@agent-base/types';
-import { getSecret } from '../services/secretService.js';
 import { getUserApiKeys, createApiKey } from '../services/dbService.js';
+import { getSecret } from '@agent-base/api-client';
+import { GetSecretRequest } from '@agent-base/types';
 
-/**
- * Simple response for API key retrieval
- */
-interface ApiKeySecretResponse extends BaseResponse {
-  apiKey?: string;
-}
-
-/**
- * Response for API key with metadata retrieval
- */
-interface ApiKeyWithMetadataResponse extends BaseResponse {
-  data?: any;
-  apiKey?: string;
-}
 
 const router = Router();
 
@@ -44,12 +30,12 @@ const router = Router();
 router.get('/by-name', async (req, res) => {
   try {
     const keyName = req.query.name as string;
-    const userId = req.headers['x-user-id'] as string;
+    const platformUserId = req.headers['x-platform-user-id'] as string;
 
-    if (!userId) {
+    if (!platformUserId) {
       return res.status(401).json({
         success: false,
-        error: 'User authentication required'
+        error: 'User authentication required: x-platform-user-id header missing'
       });
     }
 
@@ -61,10 +47,10 @@ router.get('/by-name', async (req, res) => {
     }
 
     // Get all user keys and filter by name
-    console.log(`Finding key with name "${keyName}" for user ${userId}`);
-    const userKeys = await getUserApiKeys(userId);
+    console.log(`Finding key with name "${keyName}" for user ${platformUserId}`);
+    const userKeys = await getUserApiKeys(platformUserId);
     
-    if (!userKeys) {
+    if (!userKeys.success) {
       return res.status(500).json({
         success: false,
         error: 'Failed to retrieve user keys'
@@ -72,46 +58,38 @@ router.get('/by-name', async (req, res) => {
     }
     
     // Find the key with the matching name
-    const keyMetadata = userKeys.find(key => key.name === keyName);
+    const key = userKeys.data.find(key => key.name === keyName);
     
     // If key exists, return it
-    if (keyMetadata) {
-      console.log(`Found existing key "${keyName}" with ID ${keyMetadata.key_id}`);
+    if (key) {
+      console.log(`Found existing key "${keyName}" with ID ${key.keyId}`);
       
       // Get the full API key from the secret service
-      console.log(`Retrieving API key secret for key ${keyMetadata.key_id}`);
-      const apiKey = await getSecret(userId, keyMetadata.key_id);
+      console.log(`Retrieving API key secret for key ${key.keyId}`);
+      const getSecretRequest: GetSecretRequest = {
+        userId: platformUserId,
+        secretType: `api_key_${key.keyId}`
+      };
+      const apiKeyResponse = await getSecret(platformUserId, getSecretRequest);
       
-      if (!apiKey) {
-        return res.status(404).json({
-          success: false,
-          error: 'Key secret not found'
-        });
+      if (!apiKeyResponse.success) {
+          return res.status(404).json(apiKeyResponse);
       }
       
       // Return just the secret value
-      return res.status(200).json({
-        success: true,
-        apiKey
-      } as ApiKeySecretResponse);
+      return res.status(200).json(apiKeyResponse);
     }
     
     // If key doesn't exist, create a new one
     console.log(`No key found with name "${keyName}", creating new key`);
-    const newKeyResult = await createApiKey(keyName, userId);
+    const newKeyResponse = await createApiKey(keyName, platformUserId);
     
-    if (!newKeyResult) {
-      return res.status(500).json({
-        success: false, 
-        error: 'Failed to create API key'
-      });
+    if (!newKeyResponse.success) {
+      return res.status(500).json(newKeyResponse);
     }
     
     // Return the newly created key with 201 Created status
-    return res.status(201).json({
-      success: true,
-      apiKey: newKeyResult.apiKey
-    } as ApiKeySecretResponse);
+    return res.status(201).json(newKeyResponse);
     
   } catch (error) {
     console.error('Error retrieving or creating API key by name:', error);
@@ -142,9 +120,9 @@ router.get('/by-name', async (req, res) => {
 router.get('/:keyId', async (req, res) => {
   try {
     const keyId = req.params.keyId;
-    const userId = req.headers['x-user-id'] as string;
+    const platformUserId = req.headers['x-platform-user-id'] as string;
 
-    if (!userId) {
+    if (!platformUserId) {
       return res.status(401).json({
         success: false,
         error: 'User authentication required'
@@ -160,20 +138,18 @@ router.get('/:keyId', async (req, res) => {
     
     // Get the API key from the secret service
     console.log(`Retrieving API key secret for key ${keyId}`);
-    const apiKey = await getSecret(userId, keyId);
+    const getSecretRequest: GetSecretRequest = {
+      userId: platformUserId,
+      secretType: `api_key_${keyId}`
+    };
+    const apiKeyResponse = await getSecret(platformUserId, getSecretRequest);
     
-    if (!apiKey) {
-      return res.status(404).json({
-        success: false,
-        error: 'Key not found'
-      });
+    if (!apiKeyResponse.success) {
+      return res.status(404).json(apiKeyResponse);
     }
     
     // Return the secret value
-    return res.status(200).json({
-      success: true,
-      apiKey
-    } as ApiKeySecretResponse);
+    return res.status(200).json(apiKeyResponse);
     
   } catch (error) {
     console.error('Error retrieving API key:', error);

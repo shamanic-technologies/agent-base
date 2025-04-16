@@ -14,3 +14,6 @@ export * from './database-clients/webhook-client';
 // Export functions from web OAuth service client files
 export * from './web-oauth-clients/auth-client';
 export * from './utils/service-client';
+
+// Export Secret Service client functions
+export * from './secret-clients/secret-client.js';
