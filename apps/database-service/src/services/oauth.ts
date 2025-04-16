@@ -7,20 +7,16 @@ import { PoolClient } from 'pg';
 import { v4 as uuidv4 } from 'uuid';
 import { getClient } from '../db.js';
 import { 
-  CreateOrUpdateCredentialsInput, 
-  GetUserCredentialsInput,
-  CredentialsResponse,
-  DatabaseResponse,
-  mapCredentialsToDatabase,
-  mapCredentialsFromDatabase,
-  DatabaseRecord,
   OAuth,
   ServiceResponse,
-  CreateOrUpdateCredentialsInputItem
+  CreateOrUpdateOAuthInput,
+  CreateOrUpdateOAuthInputItem,
+  mapOAuthToDatabase,
+  mapOAuthFromDatabase,
+  GetUserOAuthInput,
+  OAuthRecord
 } from '@agent-base/types';
-
-const COLLECTION_NAME = 'user_credentials';
-
+import { CLIENT_USER_OAUTH_TABLE } from '../utils/schema-initializer.js';
 /**
  * Create or update user credentials in the database.
  * Handles individual scopes by either updating an existing record for that scope
@@ -28,11 +24,11 @@ const COLLECTION_NAME = 'user_credentials';
  * @param input - The credentials data to create or update.
  * @returns A DatabaseResponse indicating success or failure.
  */
-export async function createOrUpdateCredentials(
-  input: CreateOrUpdateCredentialsInput
-): Promise<DatabaseResponse> {
+export async function createOrUpdateOAuth(
+  input: CreateOrUpdateOAuthInput
+): Promise<ServiceResponse<string>> {
     let client: PoolClient | null = null;
-    const { userId, oauthProvider, accessToken, refreshToken, expiresAt, scopes } = input;
+    const { userId: clientUserId, oauthProvider, accessToken, refreshToken, expiresAt, scopes } = input;
     try {
         client = await getClient();
         // --- Start Fix ---
@@ -51,15 +47,13 @@ export async function createOrUpdateCredentials(
         for (const scope of scopes) {
                   // Convert input to database format (snake_case)
             // The mapper correctly uses oauthProvider
-            const inputItem = { userId, oauthProvider, accessToken, refreshToken, expiresAt, scope } as CreateOrUpdateCredentialsInputItem;
-            const dbInputItem = mapCredentialsToDatabase(inputItem);
             // Check if a record exists for this user, provider, and scope
             const selectResult = await client.query(
                 // Use correct column name `oauth_provider`
-                `SELECT 1 FROM "${COLLECTION_NAME}" WHERE user_id = $1 AND oauth_provider = $2 AND scope = $3`,
+                `SELECT 1 FROM "${CLIENT_USER_OAUTH_TABLE}" WHERE client_user_id = $1 AND oauth_provider = $2 AND scope = $3`,
                 [
-                    dbInputItem.user_id,
-                    dbInputItem.oauth_provider, // Use correct mapped property
+                    clientUserId,
+                    oauthProvider, // Use correct mapped property
                     scope
                 ]
             );
@@ -68,15 +62,15 @@ export async function createOrUpdateCredentials(
                 // --- Record exists, UPDATE it ---
                 await client.query(
                     // Use correct column name `oauth_provider`
-                    `UPDATE "${COLLECTION_NAME}" 
+                    `UPDATE "${CLIENT_USER_OAUTH_TABLE}" 
                     SET access_token = $1, refresh_token = $2, expires_at = $3, updated_at = CURRENT_TIMESTAMP
-                    WHERE user_id = $4 AND oauth_provider = $5 AND scope = $6`,
+                    WHERE client_user_id = $4 AND oauth_provider = $5 AND scope = $6`,
                     [
-                        dbInputItem.access_token,
-                        dbInputItem.refresh_token,
-                        dbInputItem.expires_at,
-                        dbInputItem.user_id,
-                        dbInputItem.oauth_provider, // Use correct mapped property
+                        accessToken,
+                        refreshToken,
+                        expiresAt,
+                        clientUserId,
+                        oauthProvider, // Use correct mapped property
                         scope
                     ]
                 );
@@ -84,16 +78,16 @@ export async function createOrUpdateCredentials(
                 // --- Record does not exist, INSERT it ---
                 await client.query(
                     // Use correct column name `oauth_provider`
-                    `INSERT INTO "${COLLECTION_NAME}" 
-                    (user_id, oauth_provider, scope, access_token, refresh_token, expires_at)
+                    `INSERT INTO "${CLIENT_USER_OAUTH_TABLE}" 
+                    (client_user_id, oauth_provider, scope, access_token, refresh_token, expires_at)
                     VALUES ($1, $2, $3, $4, $5, $6)`,
                     [
-                        dbInputItem.user_id,
-                        dbInputItem.oauth_provider, // Use correct mapped property
+                        clientUserId,
+                        oauthProvider, // Use correct mapped property
                         scope,
-                        dbInputItem.access_token,
-                        dbInputItem.refresh_token,
-                        dbInputItem.expires_at
+                        accessToken,
+                        refreshToken,
+                        expiresAt
                     ]
                 );
             }
@@ -102,6 +96,7 @@ export async function createOrUpdateCredentials(
         // If all scopes processed without error
         return {
             success: true,
+            data: 'Successfully created/updated OAuth credentials'
         };
 
     } catch (error) {
@@ -122,7 +117,7 @@ export async function createOrUpdateCredentials(
  * @returns A ServiceResponse containing an array of matching OAuth credentials or an error.
  */
 export async function getCredentials(
-  input: GetUserCredentialsInput
+  input: GetUserOAuthInput
 ): Promise<ServiceResponse<OAuth[]>> {
   let client: PoolClient | null = null;
   try {
@@ -142,8 +137,8 @@ export async function getCredentials(
     // Query for credentials matching the user, provider, and any of the required scopes
     const result = await client.query(
       // Use correct column name `oauth_provider`
-      `SELECT * FROM "${COLLECTION_NAME}" 
-       WHERE user_id = $1 AND oauth_provider = $2 AND scope IN (${placeholders}) 
+      `SELECT * FROM "${CLIENT_USER_OAUTH_TABLE}" 
+       WHERE client_user_id = $1 AND oauth_provider = $2 AND scope IN (${placeholders}) 
        ORDER BY updated_at DESC`, // Optional: order by update time
       [input.userId, input.oauthProvider, ...input.requiredScopes]
     );
@@ -159,11 +154,11 @@ export async function getCredentials(
 
     // Convert database result (snake_case) to application format (camelCase)
     // The mapper already handles snake_case to camelCase conversion correctly
-    const credentials = result.rows.map(row => mapCredentialsFromDatabase(row as any)) as OAuth[]; // Use 'any' temporarily if DatabaseRecord type mismatches slightly
+    const oauth_credentials: OAuth[] = result.rows.map(row => mapOAuthFromDatabase(row as OAuthRecord)); // Use 'any' temporarily if DatabaseRecord type mismatches slightly
 
     return {
       success: true,
-      data: credentials
+      data: oauth_credentials
     };
   } catch (error) {
     console.error('Error getting credentials:', error);

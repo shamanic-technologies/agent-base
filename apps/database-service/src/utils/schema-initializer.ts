@@ -8,16 +8,16 @@ import { PoolClient } from 'pg';
 import { getClient } from '../db.js';
 
 // Table name constants
-const AGENTS_TABLE = 'agents';
-const CLIENT_USER_AGENTS_TABLE = 'client_user_agents';
-const CONVERSATIONS_TABLE = 'conversations';
-const WEBHOOK_TABLE = 'webhook';
-const AGENT_WEBHOOK_TABLE = 'agent_webhook';
-const WEBHOOK_EVENTS_TABLE = 'webhook_events';
-const PLATFORM_USERS_TABLE = 'platform_users';
-const CLIENT_USERS_TABLE = 'client_users';
-const CLIENT_USER_OAUTH_TABLE = 'client_user_oauth';
-const PLATFORM_USER_API_KEY_TABLE = 'platform_user_api_keys';
+export const AGENTS_TABLE = 'agents';
+export const CLIENT_USER_AGENTS_TABLE = 'client_user_agents';
+export const CONVERSATIONS_TABLE = 'conversations';
+export const WEBHOOK_TABLE = 'webhook';
+export const AGENT_WEBHOOK_TABLE = 'agent_webhook';
+export const WEBHOOK_EVENTS_TABLE = 'webhook_events';
+export const PLATFORM_USERS_TABLE = 'platform_users';
+export const CLIENT_USERS_TABLE = 'client_users';
+export const CLIENT_USER_OAUTH_TABLE = 'client_user_oauth';
+export const PLATFORM_USER_API_KEY_TABLE = 'platform_user_api_keys';
 
 // SQL definitions for table creation
 const PLATFORM_USERS_TABLE_SQL = `
