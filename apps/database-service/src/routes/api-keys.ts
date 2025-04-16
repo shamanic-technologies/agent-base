@@ -12,7 +12,7 @@ const router = Router();
  * Stores the non-sensitive information about an API key.
  * Expects key details in the body and userId from header.
  */
-router.post('/api-keys', async (req: Request, res: Response): Promise<void> => {
+router.post('/', async (req: Request, res: Response): Promise<void> => {
   try {
     // Extract required metadata from body
     const keyData = req.body as CreateApiKeyRequest;
@@ -64,7 +64,7 @@ router.post('/api-keys', async (req: Request, res: Response): Promise<void> => {
  * Retrieves a list of non-sensitive key information owned by the user.
  * Uses x-user-id header for filtering.
  */
-router.get('/api-keys', async (req: Request, res: Response): Promise<void> => {
+router.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
     const platformUserId = req.headers['x-platform-user-id'] as string;
 
@@ -97,7 +97,7 @@ router.get('/api-keys', async (req: Request, res: Response): Promise<void> => {
  * Called when an API key is used to authenticate a request.
  * Identifies the key using its hashed value and prefix.
  */
-router.post('/api-keys/validate', async (req: Request, res: Response): Promise<void> => {
+router.post('/validate', async (req: Request, res: Response): Promise<void> => {
   try {
     const validateInput = req.body as ValidateApiKeyRequest;
 

@@ -14,16 +14,14 @@ import {
   ServiceResponse,
   mapPlatformUserFromDatabase
 } from '@agent-base/types';
-
-// Table name constant
-const USERS_TABLE = 'users';
+import { PLATFORM_USERS_TABLE } from '../utils/schema-initializer.js';
 
 /**
  * Gets user data by internal user_id
  * @param userId - The internal user_id to look up
  * @returns A response with user data if found
  */
-export async function getUserById(userId: string): Promise<ServiceResponse<PlatformUser>> {
+export async function getPlatformUserById(userId: string): Promise<ServiceResponse<PlatformUser>> {
   let client: PoolClient | null = null;
   
   try {
@@ -31,8 +29,8 @@ export async function getUserById(userId: string): Promise<ServiceResponse<Platf
     
     // Query the users table for the record with matching user_id
     const query = `
-      SELECT * FROM "${USERS_TABLE}" 
-      WHERE user_id = $1 
+      SELECT * FROM "${PLATFORM_USERS_TABLE}" 
+      WHERE id = $1 
       LIMIT 1
     `;
     
@@ -68,7 +66,7 @@ export async function getUserById(userId: string): Promise<ServiceResponse<Platf
  * @param providerUserId - The provider user ID to look up
  * @returns A response with user data if found
  */
-async function getUserByProviderUserId(providerUserId: string): Promise<ServiceResponse<PlatformUser>> {
+async function getPlatformUserByProviderUserId(providerUserId: string): Promise<ServiceResponse<PlatformUser>> {
   let client: PoolClient | null = null;
   
   try {
@@ -76,7 +74,7 @@ async function getUserByProviderUserId(providerUserId: string): Promise<ServiceR
     
     // Query the users table for the record with matching provider user ID
     const query = `
-      SELECT * FROM "${USERS_TABLE}" 
+      SELECT * FROM "${PLATFORM_USERS_TABLE}" 
       WHERE provider_user_id = $1 
       LIMIT 1
     `;
@@ -112,29 +110,29 @@ async function getUserByProviderUserId(providerUserId: string): Promise<ServiceR
  * @param userData - User data including provider_user_id
  * @returns A response with the user data and whether it was created or updated
  */
-export async function getOrCreateUserByProviderUserId(userData: GetOrCreatePlatformUserInput): Promise<ServiceResponse<PlatformUser>> {
+export async function getOrCreatePlatformUserByProviderUserId(userData: GetOrCreatePlatformUserInput): Promise<ServiceResponse<PlatformUser>> {
   let client: PoolClient | null = null;
   
   try {
     client = await getClient();
     
-    if (!userData.provider_user_id) {
+    if (!userData.providerUserId) {
       return {
         success: false,
-        error: 'Missing required field: provider_user_id'
+        error: 'Missing required field: providerUserId'
       };
     }
     
     // First check if user exists
-    const findResult = await getUserByProviderUserId(userData.provider_user_id);
+    const getResponse: ServiceResponse<PlatformUser> = await getPlatformUserByProviderUserId(userData.providerUserId);
     
-    if (findResult.success && findResult.data) {
+    if (getResponse.success && getResponse.data) {
       // User exists, update it
       client = await getClient();
-      const existingUser = findResult.data;
+      const existingUser = getResponse.data;
       
       const updateQuery = `
-        UPDATE "${USERS_TABLE}"
+        UPDATE "${PLATFORM_USERS_TABLE}"
         SET 
           email = COALESCE($1, email),
           display_name = COALESCE($2, display_name),
@@ -147,8 +145,8 @@ export async function getOrCreateUserByProviderUserId(userData: GetOrCreatePlatf
       
       const updateValues = [
         userData.email || null,
-        userData.display_name || null,
-        userData.profile_image || null,
+        userData.displayName || null,
+        userData.profileImage || null,
         existingUser.id
       ];
       
@@ -162,8 +160,8 @@ export async function getOrCreateUserByProviderUserId(userData: GetOrCreatePlatf
       // User doesn't exist, create it
       client = await getClient();
       const createQuery = `
-        INSERT INTO "${USERS_TABLE}" (
-          user_id,
+        INSERT INTO "${PLATFORM_USERS_TABLE}" (
+          id,
           provider_user_id,
           email,
           display_name,
@@ -181,10 +179,10 @@ export async function getOrCreateUserByProviderUserId(userData: GetOrCreatePlatf
       
       const createValues = [
         userId,
-        userData.provider_user_id,
+        userData.providerUserId,
         userData.email || null,
-        userData.display_name || null,
-        userData.profile_image || null
+        userData.displayName || null,
+        userData.profileImage || null
       ];
       
       const createResult = await client.query(createQuery, createValues);
@@ -195,7 +193,7 @@ export async function getOrCreateUserByProviderUserId(userData: GetOrCreatePlatf
       };
     }
   } catch (error: any) {
-    console.error('Error in getOrCreateUserByProviderUserId:', error);
+    console.error('Error in getOrCreatePlatformUserByProviderUserId:', error);
     return { 
       success: false, 
       error: error.message || 'Failed to get or create user'

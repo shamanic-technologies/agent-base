@@ -9,7 +9,7 @@ import { OAuthProvider } from './oauth.js';
  * User record from the database
  */
 export interface PlatformUserRecord {
-  user_id: string;
+  id: string;
   provider_user_id: string;
   email: string;
   display_name: string;
@@ -51,10 +51,10 @@ export interface ClientUser {
  * Input for getting or creating a user
  */
 export interface GetOrCreatePlatformUserInput {
-  provider_user_id: string;
+  providerUserId: string;
   email?: string;
-  display_name?: string;
-  profile_image?: string;
+  displayName?: string;
+  profileImage?: string;
 }
 
 /**
@@ -68,7 +68,7 @@ export function mapPlatformUserFromDatabase(record: PlatformUserRecord): Platfor
     }
 
     return {
-      id: record.user_id,
+      id: record.id,
       providerUserId: record.provider_user_id,
       email: record.email,
       displayName: record.display_name,
@@ -88,7 +88,7 @@ export function mapPlatformUserFromDatabase(record: PlatformUserRecord): Platfor
       throw new Error('Invalid user provided to mapUserToDatabase');
     }
     const record: Partial<PlatformUserRecord> = {};
-    if (user.id !== undefined) record.user_id = user.id;
+    if (user.id !== undefined) record.id = user.id;
     if (user.providerUserId !== undefined) record.provider_user_id = user.providerUserId;
     if (user.email !== undefined) record.email = user.email;
     if (user.displayName !== undefined) record.display_name = user.displayName;
