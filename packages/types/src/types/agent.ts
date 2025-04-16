@@ -29,54 +29,54 @@ export interface UserAgentRecord {
 // --- Agent Input Fields & Inputs ---
 
 export interface CreateAgentInput {
-  first_name: string;
-  last_name: string;
-  profile_picture: string;
+  firstName: string;
+  lastName: string;
+  profilePicture: string;
   gender: Gender;
-  model_id: string;
+  modelId: string;
   memory: string;
-  job_title: string;
+  jobTitle: string;
 }
 
 export interface CreateUserAgentInput extends CreateAgentInput {
-  user_id: string;
+  userId: string;
 }
 
 export interface LinkAgentToUserInput {
-  user_id: string;
-  agent_id: string;
+  userId: string;
+  agentId: string;
 }
 
 export interface UpdateAgentInput {
   id: string; 
-  first_name?: string;
-  last_name?: string;
-  profile_picture?: string;
+  firstName?: string;
+  lastName?: string;
+  profilePicture?: string;
   gender?: Gender;
-  model_id?: string;
+  modelId?: string;
   memory?: string;
-  job_title?: string;
+  jobTitle?: string;
 }
 
 export interface UpdateUserAgentInput {
-  user_id: string;
-  agent_id: string; 
-  agent_first_name?: string;
-  agent_last_name?: string;
-  agent_profile_picture?: string;
-  agent_gender?: Gender;
-  agent_model_id?: string;
-  agent_memory?: string;
-  agent_job_title?: string;
+  userId: string;
+  agentId: string; 
+  agentFirstName?: string;
+  agentLastName?: string;
+  agentProfilePicture?: string;
+  agentGender?: Gender;
+  agentModelId?: string;
+  agentMemory?: string;
+  agentJobTitle?: string;
 }
 
 export interface ListUserAgentsInput {
-  user_id: string;
+  userId: string;
 }
 
 export interface GetUserAgentInput {
-  user_id: string;
-  agent_id: string;
+  userId: string;
+  agentId: string;
 }
 
 // --- Simplified Application-Level Interface ---

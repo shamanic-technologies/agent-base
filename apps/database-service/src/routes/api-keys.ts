@@ -15,29 +15,29 @@ const router = Router();
 router.post('/', async (req: Request, res: Response): Promise<void> => {
   try {
     // Extract required metadata from body
-    const keyData = req.body as CreateApiKeyRequest;
+    const { keyId, name, keyPrefix, hashedKey } : CreateApiKeyRequest = req.body;
     // Get userId strictly from header
-    const userId = req.headers['x-user-id'] as string;
+    const platformUserId = req.headers['x-platform-user-id'] as string;
 
     // Validate required fields
-    if (!userId) {
+    if (!platformUserId) {
       res.status(401).json({ success: false, error: 'Authentication required (x-user-id header missing)' });
       return;
     }
-    if (!keyData.keyId || !keyData.name || !keyData.keyPrefix || !keyData.hashedKey) {
+    if (!keyId || !name || !keyPrefix || !hashedKey) {
       const missing = [];
-      if (!keyData.keyId) missing.push('keyId');
-      if (!keyData.name) missing.push('name');
-      if (!keyData.keyPrefix) missing.push('keyPrefix');
-      if (!keyData.hashedKey) missing.push('hashedKey');
+      if (!keyId) missing.push('keyId');
+      if (!name) missing.push('name');
+      if (!keyPrefix) missing.push('keyPrefix');
+      if (!hashedKey) missing.push('hashedKey');
       res.status(400).json({ success: false, error: `Required fields missing: ${missing.join(', ')}` });
       return;
     }
 
-    console.log(`Creating API key metadata for user: ${userId}, keyId: ${keyData.keyId}`);
+    console.log(`Creating API key metadata for user: ${platformUserId}, keyId: ${keyId}`);
 
     // Call service to create API key
-    const createResponse = await createApiKey(keyData, userId);
+    const createResponse = await createApiKey({ keyId, name, keyPrefix, hashedKey }, platformUserId);
 
     if (!createResponse.success) {
       if (createResponse.error?.includes('already exists')) {
@@ -99,21 +99,21 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
  */
 router.post('/validate', async (req: Request, res: Response): Promise<void> => {
   try {
-    const validateInput = req.body as ValidateApiKeyRequest;
+    const { hashedKey, keyPrefix } : ValidateApiKeyRequest = req.body;
 
     // Validate required fields
-    if (!validateInput.hashedKey || !validateInput.keyPrefix) {
+    if (!hashedKey || !keyPrefix) {
       const missing = [];
-      if (!validateInput.hashedKey) missing.push('hashedKey');
-      if (!validateInput.keyPrefix) missing.push('keyPrefix');
+      if (!hashedKey) missing.push('hashedKey');
+      if (!keyPrefix) missing.push('keyPrefix');
       res.status(400).json({ success: false, error: `Required fields missing: ${missing.join(', ')}` });
       return;
     }
 
-    console.log(`Validating API key with prefix: ${validateInput.keyPrefix}`);
+    console.log(`Validating API key with prefix: ${keyPrefix}`);
 
     // Call service to update API key
-    const validateResponse = await validateApiKey(validateInput.hashedKey, validateInput.keyPrefix);
+    const validateResponse = await validateApiKey({ hashedKey, keyPrefix });
 
     if (!validateResponse.success) {
       if (validateResponse.error?.includes('Invalid API key')) {

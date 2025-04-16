@@ -5,10 +5,10 @@ import { Request, Response } from 'express';
 import axios, { AxiosError } from 'axios';
 
 export async function forwardRequest(targetUrl: string, req: Request, res: Response) {
-    const requestUrl = `${targetUrl}${req.url}`;
+    const requestUrl = `${targetUrl}${req.originalUrl}`;
     
     // Log basic request information
-    console.log(`[Web Gateway] Forwarding request to ${new URL(targetUrl).hostname} - ${req.method} ${req.url}`);
+    console.log(`[Web Gateway] Forwarding request to ${new URL(targetUrl).hostname} - ${req.method} ${req.originalUrl}`);
     
     try {
       const axiosConfig = {
@@ -70,7 +70,7 @@ export async function forwardRequest(targetUrl: string, req: Request, res: Respo
       
       return res.send(response.data);
     } catch (error) {
-      console.error(`[Web Gateway] Error forwarding request to ${targetUrl}${req.url}:`, error);
+      console.error(`[Web Gateway] Error forwarding request to ${targetUrl}${req.originalUrl}:`, error);
       
       const axiosError = error as AxiosError;
       

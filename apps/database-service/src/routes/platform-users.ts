@@ -31,7 +31,7 @@ router.get('/me', async (req: Request, res: Response): Promise<void> => {
     const getResponse = await getPlatformUserById(platformUserId);
     
     if (!getResponse.success) {
-      res.status(404).json(getResponse);
+      res.status(400).json(getResponse);
       return;
     }
     

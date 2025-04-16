@@ -12,6 +12,7 @@ import { makeServiceRequest } from '@agent-base/types';
 import { tokenCache } from '../utils/token-cache'; 
 import dotenv from 'dotenv';
 import axios, { AxiosError } from 'axios'; // Re-add axios import with AxiosError type
+import { validateAuthToken } from '@agent-base/api-client'; // Import the new client function
 // Removed fs and path as manual env loading is removed
 
 // Load environment variables at the start (ideally done in index.ts)
@@ -71,73 +72,39 @@ function extractPlatformUserToken(authHeader: string | undefined): string | unde
 // Removed decodeToken function as it's redundant
 
 /**
- * Validates the platformUser token by calling the Authentication Service.
+ * Validates the platformUser token by calling the Authentication Service via the API client.
  * Uses an in-memory cache to avoid repeated validation calls for the same token.
  * 
  * @param {string} platformUserToken - The JWT token to validate.
- * @returns {Promise<PlatformUser | undefined>} A promise resolving to the PlatformUser object if valid, otherwise undefined.
+ * @returns {Promise<ServiceResponse<PlatformUser>>} A promise resolving to the ServiceResponse containing PlatformUser or an error.
  */
 async function validatePlatformUserToken(platformUserToken: string): Promise<ServiceResponse<PlatformUser>> {
-  try {
-    // Check cache first
-    const cachedUser = tokenCache.get(platformUserToken);
-    if (cachedUser) {
-      console.log(`[Auth Middleware] Using cached validation for platformUser token.`);
-      return {
-        success: true,
-        data: cachedUser as PlatformUser // Assume cache stores PlatformUser objects
-      }
-    }
-    
-    console.log(`[Auth Middleware] Validating platformUser token with auth service at ${authServiceUrl}`);
-    
-    // Use axios directly for the validation call
-    const response = await axios.post<ServiceResponse<PlatformUser>>(
-      `${authServiceUrl}/auth/validate`,
-      {}, // Empty request body
-      {
-        headers: {
-          'Authorization': `Bearer ${platformUserToken}`,
-          'Content-Type': 'application/json'
-        },
-        timeout: 5000 // Example: 5 second timeout
-      }
-    );
-
-    console.log('[Auth Middleware] Token validation response received:', JSON.stringify(response.data));
-    
-    // Check if the auth service confirmed success and returned the expected data structure
-    if (response.data.success && response.data.data) {
-      const platformUser: PlatformUser = response.data.data;
-
-      tokenCache.set(platformUserToken, platformUser);
-      console.log(`[Auth Middleware] PlatformUser token validated successfully for user ID ${platformUser.id}. Caching result.`);
-      return {
-        success: true,
-        data: platformUser
-      };
-    } else {
-      console.log(`[Auth Middleware] PlatformUser token validation failed: ${response.data.error || 'Auth service did not return success or valid data.'}`);
-      return {
-        success: false,
-        error: response.data.error || 'Auth service did not return success or valid data.'
-      };
-    }
-  } catch (error) {
-     // Check if it's an Axios error before accessing response/message
-     if (axios.isAxiosError(error)) {
-       console.error(`[Auth Middleware] Axios error during token validation: ${error.message}`, error.response?.data);
-    } else if (error instanceof Error) { // Check if it's a generic Error
-       console.error('[Auth Middleware] Non-Axios error during platformUser token validation:', error.message);
-    } else {
-       // Handle other types of errors (e.g., string exceptions)
-       console.error('[Auth Middleware] Unknown error during platformUser token validation:', error);
-    }
+  // Check cache first
+  const cachedUser = tokenCache.get(platformUserToken);
+  if (cachedUser) {
+    console.log(`[Auth Middleware] Using cached validation for platformUser token.`);
     return {
-      success: false,
-      error: 'Auth service did not return success or valid data.'
+      success: true,
+      data: cachedUser as PlatformUser 
     };
   }
+  
+  console.log(`[Auth Middleware] Validating platformUser token via api-client`);
+  
+  // Call the API client function, passing the token
+  const response = await validateAuthToken(platformUserToken);
+
+  console.log('[Auth Middleware] Token validation response received:', JSON.stringify(response));
+  
+  // If validation was successful and we got user data, cache it
+  if (response.success && response.data) {
+    tokenCache.set(platformUserToken, response.data);
+    console.log(`[Auth Middleware] PlatformUser token validated successfully for user ID ${response.data.id}. Caching result.`);
+  } else {
+    console.log(`[Auth Middleware] PlatformUser token validation failed: ${response.error || 'Unknown reason.'}`);
+  }
+
+  return response; // Return the ServiceResponse directly
 }
 
 /**
@@ -170,15 +137,17 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
   }
   
   try {
-    // Validate the extracted token
+    // Validate the extracted token using the refactored function
     console.log(`[Auth Middleware] Attempting to validate token for path: ${req.path}`);
     const platformUserResponse = await validatePlatformUserToken(token);
     
-    // If the token is valid and user information is retrieved
+    // Check the ServiceResponse from the client function
     if (platformUserResponse.success && platformUserResponse.data) {
       const platformUser = platformUserResponse.data;
       console.log(`[Auth Middleware] Authentication successful for user ${platformUser.id}. Path: ${req.path}`);
 
+      // Attach user to request object (ensure Request interface is extended if needed)
+      // @ts-ignore - Dynamically adding property to Request
       req.platformUser = platformUser; 
       
       // Add user information as headers for downstream services
@@ -187,9 +156,9 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
       // Proceed to the next middleware or route handler
       next();
     } else {
-      // If token validation fails (token is invalid, expired, or revoked)
-      console.log(`[Auth Middleware] Invalid platformUser token for path: ${req.path}`);
-      res.status(401).json({ success: false, error: 'Authentication failed: Invalid or expired platformUser token.' });
+      // If token validation fails
+      console.log(`[Auth Middleware] Invalid platformUser token for path: ${req.path}. Reason: ${platformUserResponse.error}`);
+      res.status(401).json({ success: false, error: platformUserResponse.error || 'Authentication failed: Invalid or expired platformUser token.' });
       return; // Stop processing
     }
   } catch (error) {
