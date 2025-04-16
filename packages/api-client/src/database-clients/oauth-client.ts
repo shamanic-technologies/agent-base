@@ -2,13 +2,12 @@
  * Typed API client functions for interacting with the Database Service OAuth Endpoints.
  */
 import { 
-  makeServiceRequest,
   ServiceResponse,
   OAuth, // Use camelCase type for client consistency
   CreateOrUpdateOAuthInput,
   GetUserOAuthInput
 } from '@agent-base/types';
-
+import { makeAuthenticatedServiceRequest } from '../utils/service-client';
 // Use the same base URL as defined elsewhere or manage centrally
 const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL || 'http://localhost:3006'; // Ensure consistency
 
@@ -37,7 +36,7 @@ export const createOrUpdateOAuthCredentials = async (
     throw new Error('[api-client:createOrUpdateOAuthCredentials] Input data is missing required fields.');
   }
   const endpoint = '/oauth/';
-  return makeServiceRequest<OAuth>(
+  return makeAuthenticatedServiceRequest<OAuth>(
     DATABASE_SERVICE_URL,
     'POST',
     endpoint,
@@ -66,7 +65,7 @@ export const getOAuthCredentials = async (
     throw new Error('[api-client:getOAuthCredentials] Query parameters must include userId, oauthProvider, and requiredScopes.');
   }
   const endpoint = '/oauth/';
-  return makeServiceRequest<OAuth>(
+  return makeAuthenticatedServiceRequest<OAuth>(
     DATABASE_SERVICE_URL,
     'GET',
     endpoint,

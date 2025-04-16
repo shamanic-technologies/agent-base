@@ -2,7 +2,6 @@
  * Typed API client functions for interacting with the Database Service Conversation Endpoints.
  */
 import { 
-  makeServiceRequest,
   ServiceResponse,
   Conversation, // Use camelCase type for client consistency
   CreateConversationInput,
@@ -10,8 +9,7 @@ import {
   GetConversationsFromAgentInput,
   ConversationId
 } from '@agent-base/types';
-import { Message } from 'ai'; // Need Message type for UpdateConversationInput
-
+import { makeAuthenticatedServiceRequest } from '../utils/service-client';
 // Use the same base URL as defined elsewhere or manage centrally
 const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL || 'http://localhost:3006'; // Ensure consistency
 
@@ -39,7 +37,7 @@ export const createConversation = async (
     throw new Error('[api-client:createConversation] Input data must include conversationId, agentId, and channelId.');
   }
   const endpoint = '/conversations/create-conversation';
-  return makeServiceRequest<Conversation>(
+  return makeAuthenticatedServiceRequest<Conversation>(
     DATABASE_SERVICE_URL,
     'POST',
     endpoint,
@@ -68,7 +66,7 @@ export const getConversationsFromAgent = async (
     throw new Error('[api-client:getConversationsFromAgent] Query parameters must include agentId.');
   }
   const endpoint = '/conversations/get-conversations-from-agent';
-  return makeServiceRequest<Conversation[]>(
+  return makeAuthenticatedServiceRequest<Conversation[]>(
     DATABASE_SERVICE_URL,
     'GET',
     endpoint,
@@ -100,7 +98,7 @@ export const getOrCreateConversationsFromAgent = async (
     throw new Error('[api-client:getOrCreateConversationsFromAgent] Query parameters must include agentId.');
   }
   const endpoint = '/conversations/get-or-create-conversations-from-agent';
-  return makeServiceRequest<Conversation[] | Conversation>(
+  return makeAuthenticatedServiceRequest<Conversation[] | Conversation>(
     DATABASE_SERVICE_URL,
     'GET',
     endpoint,
@@ -131,7 +129,7 @@ export const getConversation = async (
   }
   // Construct endpoint with path parameter
   const endpoint = `/conversations/get-conversation/${params.conversationId}`;
-  return makeServiceRequest<Conversation>(
+  return makeAuthenticatedServiceRequest<Conversation>(
     DATABASE_SERVICE_URL,
     'GET',
     endpoint,
@@ -160,7 +158,7 @@ export const updateConversation = async (
     throw new Error('[api-client:updateConversation] Input data must include conversationId and messages.');
   }
   const endpoint = '/conversations/update-conversation';
-  return makeServiceRequest<Conversation>(
+  return makeAuthenticatedServiceRequest<Conversation>(
     DATABASE_SERVICE_URL,
     'POST',
     endpoint,
