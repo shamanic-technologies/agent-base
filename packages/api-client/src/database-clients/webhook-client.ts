@@ -2,7 +2,6 @@
  * Typed API client functions for interacting with the Database Service Webhook Endpoints.
  */
 import { 
-  makeServiceRequest,
   ServiceResponse,
   Webhook, // Use camelCase type
   WebhookEvent,
@@ -13,7 +12,7 @@ import {
   GetWebhookAgentRequest,
   GetCrispUsersParams
 } from '@agent-base/types';
-
+import { makeAuthenticatedServiceRequest } from '../utils/service-client';
 // Use the same base URL as defined elsewhere or manage centrally
 const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL || 'http://localhost:3006'; // Ensure consistency
 
@@ -41,7 +40,7 @@ export const createOrUpdateWebhookConfig = async (
     throw new Error('[api-client:createOrUpdateWebhookConfig] Input data must include webhookProviderId and clientUserId.');
   }
   const endpoint = '/webhooks/';
-  return makeServiceRequest<Webhook>(
+  return makeAuthenticatedServiceRequest<Webhook>(
     DATABASE_SERVICE_URL,
     'POST',
     endpoint,
@@ -70,7 +69,7 @@ export const mapAgentToWebhook = async (
     throw new Error('[api-client:mapAgentToWebhook] Input data must include agentId, webhookProviderId, and clientUserId.');
   }
   const endpoint = '/webhooks/map-agent';
-  return makeServiceRequest<MapAgentToWebhookRequest>(
+  return makeAuthenticatedServiceRequest<MapAgentToWebhookRequest>(
     DATABASE_SERVICE_URL,
     'POST',
     endpoint,
@@ -101,7 +100,7 @@ export const getWebhookAgentMapping = async (
   const endpoint = `/webhooks/${params.webhookProviderId}/agent`;
   // Pass clientUserId as query parameter
   const queryParams = { clientUserId: params.clientUserId }; 
-  return makeServiceRequest<string>(
+  return makeAuthenticatedServiceRequest<string>(
     DATABASE_SERVICE_URL,
     'GET',
     endpoint,
@@ -131,7 +130,7 @@ export const createWebhookEvent = async (
     throw new Error('[api-client:createWebhookEvent] Input data must include webhookProviderId, clientUserId, and webhookEventPayload.');
   }
   const endpoint = '/webhooks/events';
-  return makeServiceRequest<WebhookEvent>(
+  return makeAuthenticatedServiceRequest<WebhookEvent>(
     DATABASE_SERVICE_URL,
     'POST',
     endpoint,
@@ -160,7 +159,7 @@ export const getCrispWebsiteUserIds = async (
     throw new Error('[api-client:getCrispWebsiteUserIds] Parameters must include websiteId.');
   }
   const endpoint = `/webhooks/crisp/users/${params.websiteId}`;
-  return makeServiceRequest<CrispUsersResponse>(
+  return makeAuthenticatedServiceRequest<CrispUsersResponse>(
     DATABASE_SERVICE_URL,
     'GET',
     endpoint,

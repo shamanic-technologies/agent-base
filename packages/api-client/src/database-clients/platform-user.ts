@@ -4,15 +4,12 @@
  * Typed API client functions for interacting with the Database Service.
  */
 import { 
-    makeServiceRequest, 
     ServiceResponse,
     PlatformUser,             // Import the PlatformUser type
     GetOrCreatePlatformUserInput, // Import the input type
 
   } from '@agent-base/types';
-  // TODO: Import specific request/response types from @agent-base/types 
-  //       once they are defined (e.g., GetUserParams, CreateUserData, User, etc.)
-  
+  import { makeAnonymousServiceRequest, makeAuthenticatedServiceRequest } from '../utils/service-client';    
   /**
    * Base URL for the Database Service.
    * It's recommended to load this from environment variables.
@@ -43,7 +40,7 @@ import {
       throw new Error('[api-client:getCurrentPlatformUser] platformUserId is required.');
     }
     const endpoint = '/platform-users/me'; 
-    return makeServiceRequest<PlatformUser>(
+    return makeAuthenticatedServiceRequest<PlatformUser>(
       DATABASE_SERVICE_URL,
       'GET',
       endpoint,
@@ -63,22 +60,17 @@ import {
    */
   export const getOrCreatePlatformUser = async (
     data: GetOrCreatePlatformUserInput,
-    platformUserId: string // Although endpoint doesn't use it directly, httpClient needs it for header
   ): Promise<ServiceResponse<PlatformUser>> => {
-    if (!platformUserId) {
-      // Throw error immediately if platformUserId is missing for the header
-      throw new Error('[api-client:getOrCreatePlatformUser] platformUserId is required for request header.');
-    }
+
     if (!data || !data.providerUserId) {
        // Basic validation matching the endpoint's requirement
        throw new Error('[api-client:getOrCreatePlatformUser] Input data must include providerUserId.');
     }
     const endpoint = '/platform-users/get-or-create-by-provider-user-id'; 
-    return makeServiceRequest<PlatformUser>(
+    return makeAnonymousServiceRequest<PlatformUser>(
       DATABASE_SERVICE_URL,
       'POST',
       endpoint,
-      platformUserId,
       data // Pass data as request body
     );
   };

@@ -4,12 +4,11 @@
  * Typed API client functions for interacting with the Web OAuth Service Authentication Endpoints.
  */
 import { 
-    makeServiceRequest,
     ServiceResponse,
     PlatformUser
   } from '@agent-base/types';
 import axios, { AxiosError } from 'axios';
-  
+import { makeAnonymousServiceRequest } from '../utils/service-client';
   // Determine the correct URL for the web-oauth-service
   const WEB_OAUTH_SERVICE_URL = process.env.WEB_OAUTH_SERVICE_URL || 'http://localhost:3005';
   
@@ -93,15 +92,13 @@ import axios, { AxiosError } from 'axios';
    * @returns A ServiceResponse indicating success or failure.
    */
   export const refreshAuthToken = async (
-    platformUserId: string = ''
   ): Promise<ServiceResponse<{}>> => {
     const endpoint = '/auth/refresh';
-    return makeServiceRequest<{
+    return makeAnonymousServiceRequest<{
     }>(
       WEB_OAUTH_SERVICE_URL,
       'POST',
       endpoint,
-      platformUserId
     );
   };
   
@@ -114,15 +111,13 @@ import axios, { AxiosError } from 'axios';
    * @returns A ServiceResponse indicating success or failure.
    */
   export const logoutUser = async (
-    platformUserId: string = ''
   ): Promise<ServiceResponse<{}>> => {
     const endpoint = '/auth/logout';
-    return makeServiceRequest<{
+    return makeAnonymousServiceRequest<{
     }>(
       WEB_OAUTH_SERVICE_URL,
       'POST',
       endpoint,
-      platformUserId
     );
   };
   

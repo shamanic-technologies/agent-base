@@ -31,11 +31,3 @@ export * from './types/utility.js';
 
 // Export credential types
 export * from './types/oauth.js';
-
-// Export utility functions
-export * from './utils/httpClient.js';
-
-// --- Utility Functions (kept here for now) ---
-
-import { AgentRecord, Agent } from './types/agent.js'; // Import types needed by mappers
-import { PlatformUserRecord, PlatformUser } from './types/user.js';

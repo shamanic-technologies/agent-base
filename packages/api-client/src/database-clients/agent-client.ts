@@ -4,7 +4,6 @@
  * Typed API client functions for interacting with the Database Service.
  */
 import { 
-  makeServiceRequest, 
   ServiceResponse,
   PlatformUser,             // Import the PlatformUser type
   GetOrCreatePlatformUserInput, // Import the input type
@@ -14,9 +13,7 @@ import {
   ListUserAgentsInput,
   GetUserAgentInput
 } from '@agent-base/types';
-// TODO: Import specific request/response types from @agent-base/types 
-//       once they are defined (e.g., GetUserParams, CreateUserData, User, etc.)
-
+import { makeAuthenticatedServiceRequest } from '../utils/service-client';
 const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL || 'http://localhost:3006';
 // ==============================================================================
 // Agent Client Functions
@@ -43,7 +40,7 @@ export const createUserAgent = async (
   }
   // Add more validation if needed based on CreateUserAgentInput required fields
   const endpoint = '/agents/create-user-agent';
-  return makeServiceRequest<Agent>(
+  return makeAuthenticatedServiceRequest<Agent>(
     DATABASE_SERVICE_URL,
     'POST',
     endpoint,
@@ -72,7 +69,7 @@ export const updateUserAgent = async (
     throw new Error('[api-client:updateUserAgent] Input data must include userId and agentId.');
   }
   const endpoint = '/agents/update-user-agent';
-  return makeServiceRequest<Agent>(
+  return makeAuthenticatedServiceRequest<Agent>(
     DATABASE_SERVICE_URL,
     'POST',
     endpoint,
@@ -101,7 +98,7 @@ export const listUserAgents = async (
     throw new Error('[api-client:listUserAgents] Query parameters must include userId.');
   }
   const endpoint = '/agents/list-user-agents';
-  return makeServiceRequest<Agent[]>(
+  return makeAuthenticatedServiceRequest<Agent[]>(
     DATABASE_SERVICE_URL,
     'GET',
     endpoint,
@@ -131,7 +128,7 @@ export const getUserAgent = async (
     throw new Error('[api-client:getUserAgent] Query parameters must include userId and agentId.');
   }
   const endpoint = '/agents/get-user-agent';
-  return makeServiceRequest<Agent>(
+  return makeAuthenticatedServiceRequest<Agent>(
     DATABASE_SERVICE_URL,
     'GET',
     endpoint,
