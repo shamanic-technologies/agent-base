@@ -6,14 +6,14 @@
 import express, { RequestHandler, Request, Response, NextFunction } from 'express';
 import { Message } from 'ai';
 import { randomUUID } from 'crypto';
-import {
+import {  
     CreateConversationInput,
-    CreateConversationResponse,
-    GetConversationsResponse,
     ConversationRecord,
     GetConversationsFromAgentInput,
     BaseResponse,
     UpdateConversationInput,
+    ErrorResponse,
+    SuccessResponse,
 } from '@agent-base/types';
 import {
     createConversation,
@@ -33,29 +33,29 @@ router.post('/create-conversation', (async (req: Request, res: Response) => {
     const input: CreateConversationInput = req.body;
 
     // Basic validation (already handled in service, but good practice here too)
-    if (!input.conversation_id || !input.agent_id || !input.channel_id) {
+    if (!input.conversationId || !input.agentId || !input.channelId) {
       res.status(400).json({
         success: false,
-        error: 'Missing required fields: conversation_id, agent_id, channel_id'
-      } as CreateConversationResponse);
+        error: 'Missing required fields: conversationId, agentId, channelId'
+      } as ErrorResponse);
       return;
     }
 
-    console.log(`[DB Route /conversations] Received request to create conversation ${input.conversation_id}`);
-    const result = await createConversation(input);
+    console.log(`[DB Route /conversations] Received request to create conversation ${input.conversationId}`);
+    const createResponse = await createConversation(input);
     
-    if (!result.success) {
+    if (!createResponse.success) {
         // Service handles conflict as success, so this is likely a DB error
-        console.error(`[DB Route /conversations] Service failed to create conversation:`, result.error);
-        res.status(500).json(result as CreateConversationResponse);
+        console.error(`[DB Route /conversations] Service failed to create conversation:`, createResponse.error);
+        res.status(500).json(createResponse);
         return;
     }
 
     // Return 201 if created, 200 if already existed (service returns success:true in both cases)
     // We don't easily know which happened here without more info from service,
     // so let's return 200 OK consistently for idempotency.
-    console.log(`[DB Route /conversations] Conversation creation/check successful for ID: ${result.data?.conversation_id}`);
-    res.status(200).json(result as CreateConversationResponse);
+    console.log(`[DB Route /conversations] Conversation creation/check successful for ID: ${createResponse.data?.conversationId}`);
+    res.status(200).json(createResponse);
 
   } catch (error) {
     console.error('Error in POST /conversations/create-conversation route:', error);
@@ -63,7 +63,7 @@ router.post('/create-conversation', (async (req: Request, res: Response) => {
         res.status(500).json({
             success: false,
             error: error instanceof Error ? error.message : 'Unknown internal server error'
-        } as CreateConversationResponse);
+        } as ErrorResponse);
     }
   }
 }) as RequestHandler);
@@ -75,32 +75,36 @@ router.post('/create-conversation', (async (req: Request, res: Response) => {
 router.get('/get-conversations-from-agent', (async (req: Request, res: Response, next: NextFunction) => {
   try {
     // Extract agent_id from query parameters
-    const agent_id = req.query.agent_id as string;
+    const agentId = req.query.agentId as string;
 
     // Validate agent_id
-    if (!agent_id) {
-      res.status(400).json({ success: false, error: 'agent_id query parameter is required' } as GetConversationsResponse);
+    if (!agentId) {
+      res.status(400).json({ success: false, error: 'agentId query parameter is required' } as ErrorResponse);
       return;
     }
 
-    console.log(`[DB Route /conversations] Getting conversations for agent ${agent_id}`);
-    const input: GetConversationsFromAgentInput = { agent_id };
-    const result = await getConversationsByAgent(input);
+    console.log(`[DB Route /conversations] Getting conversations for agent ${agentId}`);
+    const input: GetConversationsFromAgentInput = { agentId };
+    const getResponse = await getConversationsByAgent(input);
     
     // Handle service errors
-    if (!result.success) {
-       console.error(`[DB Route /conversations] Service error getting conversations:`, result.error);
-       res.status(500).json(result as GetConversationsResponse); 
+    if (!getResponse.success) {
+       console.error(`[DB Route /conversations] Service error getting conversations:`, getResponse.error);
+       res.status(500).json(getResponse); 
        return;
     }
 
     // Return 200 OK with the data (potentially empty array)
-    console.log(`[DB Route /conversations] Retrieved ${result.data?.length ?? 0} conversations.`);
-    res.status(200).json(result as GetConversationsResponse);
+    console.log(`[DB Route /conversations] Retrieved ${getResponse.data?.length ?? 0} conversations.`);
+    res.status(200).json(getResponse);
     return;
 
   } catch (error) {
     console.error('Error in GET /conversations/get-conversations-from-agent route:', error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown internal server error'
+    } as ErrorResponse);
     next(error); 
   }
 }) as unknown as RequestHandler);
@@ -111,67 +115,49 @@ router.get('/get-conversations-from-agent', (async (req: Request, res: Response,
  */
 router.get('/get-or-create-conversations-from-agent', (async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const agent_id = req.query.agent_id as string;
+    const agentId = req.query.agentId as string;
 
-    if (!agent_id) {
-      return res.status(400).json({ success: false, error: 'agent_id query parameter is required' } as GetConversationsResponse);
+    if (!agentId) {
+      return res.status(400).json({ success: false, error: 'agentId query parameter is required' } as ErrorResponse);
     }
 
-    console.log(`[DB Route /conversations] Getting or creating conversation for agent ${agent_id}`);
-    const getInput: GetConversationsFromAgentInput = { agent_id };
-    const getResult = await getConversationsByAgent(getInput);
+    console.log(`[DB Route /conversations] Getting or creating conversation for agent ${agentId}`);
+    const getInput: GetConversationsFromAgentInput = { agentId };
+    const getConversationsResponse = await getConversationsByAgent(getInput);
 
     // Handle errors during fetch
-    if (!getResult.success) {
-      console.error(`[DB Route /conversations] Service error getting conversations for agent ${agent_id}:`, getResult.error);
-      return res.status(500).json(getResult as GetConversationsResponse);
+    if (!getConversationsResponse.success) {
+      console.error(`[DB Route /conversations] Service error getting conversations for agent ${agentId}:`, getConversationsResponse.error);
+      return res.status(500).json(getConversationsResponse);
     }
 
     // If conversations exist, return them
-    if (getResult.data && getResult.data.length > 0) {
-      console.log(`[DB Route /conversations] Found ${getResult.data.length} existing conversations for agent ${agent_id}.`);
-      res.status(200).json(getResult as GetConversationsResponse);
+    if (getConversationsResponse.data && getConversationsResponse.data.length > 0) {
+      console.log(`[DB Route /conversations] Found ${getConversationsResponse.data.length} existing conversations for agent ${agentId}.`);
+      res.status(200).json(getConversationsResponse);
       return;
     }
 
     // If no conversations exist, create a new one
-    console.log(`[DB Route /conversations] No conversations found for agent ${agent_id}. Creating a new one.`);
+    console.log(`[DB Route /conversations] No conversations found for agent ${agentId}. Creating a new one.`);
     const newConversationId = randomUUID();
     const defaultChannelId = 'web'; 
 
     const createInput: CreateConversationInput = {
-      conversation_id: newConversationId,
-      agent_id: agent_id,
-      channel_id: defaultChannelId
+      conversationId: newConversationId,
+      agentId: agentId,
+      channelId: defaultChannelId
     };
 
-    const createResult = await createConversation(createInput);
+    const createResponse = await createConversation(createInput);
 
     // Handle errors during creation
-    if (!createResult.success || !createResult.data?.conversation_id) {
-      console.error(`[DB Route /conversations] Failed to create conversation for agent ${agent_id}:`, createResult.error);
-      return res.status(500).json({ 
-        success: false, 
-        error: `Failed to create initial conversation: ${createResult.error || 'Unknown error'}` 
-      } as GetConversationsResponse); // Return error within the expected response structure
+    if (!createResponse.success || !createResponse.data?.conversationId) {
+      console.error(`[DB Route /conversations] Failed to create conversation for agent ${agentId}:`, createResponse.error);
+      return res.status(500).json(createResponse);
     }
-
-    // Construct the new conversation record to return
-    const newConversation: ConversationRecord = {
-      conversation_id: createResult.data.conversation_id,
-      agent_id: agent_id,
-      channel_id: defaultChannelId,
-      messages: [], // Initialize with empty messages
-      created_at: new Date(), // Use current date
-      updated_at: new Date()  // Use current date
-    };
-
-    console.log(`[DB Route /conversations] Created new conversation ${newConversation.conversation_id} for agent ${agent_id}.`);
     // Return the newly created conversation within the GetConversationsResponse structure
-    res.status(201).json({
-      success: true,
-      data: [newConversation]
-    } as GetConversationsResponse);
+    res.status(201).json(createResponse);
     return;
 
   } catch (error) {
@@ -186,30 +172,34 @@ router.get('/get-or-create-conversations-from-agent', (async (req: Request, res:
  */
 router.get('/get-conversation/:conversation_id', (async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { conversation_id } = req.params;
+    const conversationId = req.params.conversation_id;
 
-    if (!conversation_id) {
+    if (!conversationId) {
       // This case should ideally be caught by Express routing itself
       return res.status(400).json({ success: false, error: 'conversation_id path parameter is required' });
     }
 
-    console.log(`[DB Route /conversations] Getting single conversation ${conversation_id}`);
+    console.log(`[DB Route /conversations] Getting single conversation ${conversationId}`);
     // Directly call the service function
-    const result = await getConversation(conversation_id);
+    const getResponse = await getConversation(conversationId);
 
-    if (!result.success) {
-      const statusCode = result.error?.toLowerCase().includes('not found') ? 404 : 500;
-      console.error(`[DB Route /conversations] Service error getting conversation ${conversation_id}:`, result.error);
-      return res.status(statusCode).json(result);
+    if (!getResponse.success) {
+      const statusCode = getResponse.error?.toLowerCase().includes('not found') ? 404 : 500;
+      console.error(`[DB Route /conversations] Service error getting conversation ${conversationId}:`, getResponse.error);
+      return res.status(statusCode).json(getResponse);
     }
 
     // Success case
-    console.log(`[DB Route /conversations] Successfully retrieved conversation ${conversation_id}`);
-    res.status(200).json(result);
+    console.log(`[DB Route /conversations] Successfully retrieved conversation ${conversationId}`);
+    res.status(200).json(getResponse);
     return;
 
   } catch (error) {
     console.error('Error in GET /conversations/get-conversation/:conversation_id route:', error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown internal server error'
+    } as ErrorResponse);
     next(error); // Pass to default error handler
   }
 }) as unknown as RequestHandler);
@@ -222,32 +212,32 @@ router.get('/get-conversation/:conversation_id', (async (req: Request, res: Resp
 router.post('/update-conversation', (async (req: Request, res: Response, next: NextFunction) => {
   try {
     const input: UpdateConversationInput = req.body;
-    const { conversation_id, messages } = input; // Destructure after validation
+    const { conversationId, messages } = input; // Destructure after validation
 
     // --- Validation ---
     // Basic validation (can be enhanced, e.g., with Zod)
-    if (!conversation_id) {
-      return res.status(400).json({ success: false, error: 'conversation_id is required' } as BaseResponse);
+    if (!conversationId) {
+      return res.status(400).json({ success: false, error: 'conversation_id is required' } as ErrorResponse);
     }
     if (!messages || !Array.isArray(messages)) {
       return res.status(400).json({ success: false, error: 'messages is required and must be an array' } as BaseResponse);
     }
     // --- End Validation ---
 
-    console.log(`[DB Route /conversations] Updating messages for conversation ${conversation_id}`);
-    const result = await updateConversationMessages(conversation_id, messages);
+    console.log(`[DB Route /conversations] Updating messages for conversation ${conversationId}`);
+    const updateResponse = await updateConversationMessages(conversationId, messages);
 
-    if (!result.success) {
+    if (!updateResponse.success) {
       // Service function returns success:false if conversation not found or DB error
       // Determine status code based on error message (heuristic)
-      const statusCode = result.error?.toLowerCase().includes('not found') ? 404 : 500;
-      console.error(`[DB Route /conversations] Service error updating messages for ${conversation_id}:`, result.error);
-      return res.status(statusCode).json(result as BaseResponse);
+      const statusCode = updateResponse.error?.toLowerCase().includes('not found') ? 404 : 500;
+      console.error(`[DB Route /conversations] Service error updating messages for ${conversationId}:`, updateResponse.error);
+      return res.status(statusCode).json(updateResponse);
     }
 
     // Success
-    console.log(`[DB Route /conversations] Successfully updated conversation ${conversation_id}`);
-    res.status(200).json(result);
+    console.log(`[DB Route /conversations] Successfully updated conversation ${conversationId}`);
+    res.status(200).json(updateResponse);
     return;
 
   } catch (error) {
