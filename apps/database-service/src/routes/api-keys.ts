@@ -24,34 +24,31 @@ router.post('/api-keys', async (req: Request, res: Response): Promise<void> => {
       res.status(401).json({ success: false, error: 'Authentication required (x-user-id header missing)' });
       return;
     }
-    if (!keyData.key_id || !keyData.name || !keyData.key_prefix || !keyData.hashed_key) {
+    if (!keyData.keyId || !keyData.name || !keyData.keyPrefix || !keyData.hashedKey) {
       const missing = [];
-      if (!keyData.key_id) missing.push('key_id');
+      if (!keyData.keyId) missing.push('keyId');
       if (!keyData.name) missing.push('name');
-      if (!keyData.key_prefix) missing.push('key_prefix');
-      if (!keyData.hashed_key) missing.push('hashed_key');
+      if (!keyData.keyPrefix) missing.push('keyPrefix');
+      if (!keyData.hashedKey) missing.push('hashedKey');
       res.status(400).json({ success: false, error: `Required fields missing: ${missing.join(', ')}` });
       return;
     }
 
-    console.log(`Creating API key metadata for user: ${userId}, key_id: ${keyData.key_id}`);
+    console.log(`Creating API key metadata for user: ${userId}, keyId: ${keyData.keyId}`);
 
     // Call service to create API key
-    const result = await createApiKey(keyData, userId);
+    const createResponse = await createApiKey(keyData, userId);
 
-    if (!result.success) {
-      if (result.error?.includes('already exists')) {
-        res.status(409).json({ success: false, error: result.error });
+    if (!createResponse.success) {
+      if (createResponse.error?.includes('already exists')) {
+        res.status(409).json(createResponse);
       } else {
-        res.status(500).json({ success: false, error: result.error || 'Failed to create API key' });
+        res.status(500).json(createResponse);
       }
       return;
     }
 
-    res.status(201).json({
-      success: true,
-      data: result.data
-    });
+    res.status(201).json(createResponse);
 
   } catch (error: any) {
     console.error('Error in API key creation:', error);
@@ -69,25 +66,22 @@ router.post('/api-keys', async (req: Request, res: Response): Promise<void> => {
  */
 router.get('/api-keys', async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = req.headers['x-user-id'] as string;
+    const platformUserId = req.headers['x-platform-user-id'] as string;
 
-    if (!userId) {
-      res.status(401).json({ success: false, error: 'Authentication required (x-user-id header missing)' });
+    if (!platformUserId) {
+      res.status(401).json({ success: false, error: 'Authentication required (x-platform-user-id header missing)' });
       return;
     }
 
     // Call service to get API keys
-    const result = await getApiKeys(userId);
+    const getResponse = await getApiKeys(platformUserId);
 
-    if (!result.success) {
-      res.status(500).json({ success: false, error: result.error || 'Failed to fetch API keys' });
+    if (!getResponse.success) {
+      res.status(500).json(getResponse);
       return;
     }
 
-    res.status(200).json({
-      success: true,
-      data: result.data
-    });
+    res.status(200).json(getResponse);
 
   } catch (error: any) {
     console.error('Error fetching API keys:', error);
@@ -105,35 +99,32 @@ router.get('/api-keys', async (req: Request, res: Response): Promise<void> => {
  */
 router.post('/api-keys/validate', async (req: Request, res: Response): Promise<void> => {
   try {
-    const updateData = req.body as ValidateApiKeyRequest;
+    const validateInput = req.body as ValidateApiKeyRequest;
 
     // Validate required fields
-    if (!updateData.hashed_key || !updateData.key_prefix) {
+    if (!validateInput.hashedKey || !validateInput.keyPrefix) {
       const missing = [];
-      if (!updateData.hashed_key) missing.push('hashed_key');
-      if (!updateData.key_prefix) missing.push('key_prefix');
+      if (!validateInput.hashedKey) missing.push('hashedKey');
+      if (!validateInput.keyPrefix) missing.push('keyPrefix');
       res.status(400).json({ success: false, error: `Required fields missing: ${missing.join(', ')}` });
       return;
     }
 
-    console.log(`Validating API key with prefix: ${updateData.key_prefix}`);
+    console.log(`Validating API key with prefix: ${validateInput.keyPrefix}`);
 
     // Call service to update API key
-    const result = await validateApiKey(updateData.hashed_key, updateData.key_prefix);
+    const validateResponse = await validateApiKey(validateInput.hashedKey, validateInput.keyPrefix);
 
-    if (!result.success) {
-      if (result.error?.includes('Invalid API key')) {
-        res.status(404).json({ success: false, error: 'Invalid API key' });
+    if (!validateResponse.success) {
+      if (validateResponse.error?.includes('Invalid API key')) {
+        res.status(404).json(validateResponse);
       } else {
-        res.status(500).json({ success: false, error: result.error || 'Failed to update API key usage' });
+        res.status(500).json(validateResponse);
       }
       return;
     }
 
-    res.status(200).json({
-      success: true,
-      data: result.data
-    });
+    res.status(200).json(validateResponse);
 
   } catch (error: any) {
     console.error('Error updating API key usage:', error);

@@ -43,14 +43,14 @@ const CLIENT_USERS_TABLE_SQL = `
 
 const AGENTS_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS "${AGENTS_TABLE}" (
-    agent_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    agent_first_name VARCHAR(255) NOT NULL,
-    agent_last_name VARCHAR(255) NOT NULL,
-    agent_profile_picture TEXT NOT NULL,
-    agent_gender VARCHAR(50) NOT NULL,
-    agent_model_id VARCHAR(255) NOT NULL,
-    agent_memory TEXT,
-    agent_job_title VARCHAR(255) NOT NULL,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    first_name VARCHAR(255) NOT NULL,
+    last_name VARCHAR(255) NOT NULL,
+    profile_picture TEXT NOT NULL,
+    gender VARCHAR(50) NOT NULL,
+    model_id VARCHAR(255) NOT NULL,
+    memory TEXT,
+    job_title VARCHAR(255) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
   )

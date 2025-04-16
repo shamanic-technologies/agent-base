@@ -36,17 +36,17 @@ export async function createAgent(input: CreateAgentInput): Promise<ServiceRespo
     // Insert new agent
     const result = await client.query(
       `INSERT INTO "${AGENTS_TABLE}" 
-      (agent_first_name, agent_last_name, agent_profile_picture, agent_gender, agent_model_id, agent_memory, agent_job_title)
+      (first_name, last_name, profile_picture, gender, model_id, memory, job_title)
       VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *`,
       [
-        input.agent_first_name,
-        input.agent_last_name,
-        input.agent_profile_picture,
-        input.agent_gender,
-        input.agent_model_id,
-        input.agent_memory,
-        input.agent_job_title
+        input.first_name,
+        input.last_name,
+        input.profile_picture,
+        input.gender,
+        input.model_id,
+        input.memory,
+        input.job_title
       ]
     );
 
@@ -79,39 +79,39 @@ export async function updateAgent(input: UpdateAgentInput): Promise<ServiceRespo
     const params: any[] = [];
     let paramIndex = 1;
     
-    if (input.agent_first_name !== undefined) {
-      updateFields.push(`agent_first_name = $${paramIndex++}`);
-      params.push(input.agent_first_name);
+    if (input.first_name !== undefined) {
+      updateFields.push(`first_name = $${paramIndex++}`);
+      params.push(input.first_name);
     }
     
-    if (input.agent_last_name !== undefined) {
-      updateFields.push(`agent_last_name = $${paramIndex++}`);
-      params.push(input.agent_last_name);
+    if (input.last_name !== undefined) {
+      updateFields.push(`last_name = $${paramIndex++}`);
+      params.push(input.last_name);
     }
     
-    if (input.agent_profile_picture !== undefined) {
-      updateFields.push(`agent_profile_picture = $${paramIndex++}`);
-      params.push(input.agent_profile_picture);
+    if (input.profile_picture !== undefined) {
+      updateFields.push(`profile_picture = $${paramIndex++}`);
+      params.push(input.profile_picture);
     }
     
-    if (input.agent_gender !== undefined) {
-      updateFields.push(`agent_gender = $${paramIndex++}`);
-      params.push(input.agent_gender);
+    if (input.gender !== undefined) {
+      updateFields.push(`gender = $${paramIndex++}`);
+      params.push(input.gender);
     }
     
-    if (input.agent_model_id !== undefined) {
-      updateFields.push(`agent_model_id = $${paramIndex++}`);
-      params.push(input.agent_model_id);
+    if (input.model_id !== undefined) {
+      updateFields.push(`model_id = $${paramIndex++}`);
+      params.push(input.model_id);
     }
     
-    if (input.agent_memory !== undefined) {
-      updateFields.push(`agent_memory = $${paramIndex++}`);
-      params.push(input.agent_memory);
+    if (input.memory !== undefined) {
+      updateFields.push(`memory = $${paramIndex++}`);
+      params.push(input.memory);
     }
     
-    if (input.agent_job_title !== undefined) {
-      updateFields.push(`agent_job_title = $${paramIndex++}`);
-      params.push(input.agent_job_title);
+    if (input.job_title !== undefined) {
+      updateFields.push(`job_title = $${paramIndex++}`);
+      params.push(input.job_title);
     }
     
     // Always update the updated_at timestamp
@@ -123,12 +123,12 @@ export async function updateAgent(input: UpdateAgentInput): Promise<ServiceRespo
     }
     
     // Add the agent_id as the last parameter
-    params.push(input.agent_id);
+    params.push(input.id);
     
     const result = await client.query(
       `UPDATE "${AGENTS_TABLE}"
        SET ${updateFields.join(', ')}
-       WHERE agent_id = $${paramIndex}
+       WHERE id = $${paramIndex}
        RETURNING *`,
       params
     );
@@ -197,7 +197,7 @@ export async function listClientUserAgents(input: ListUserAgentsInput): Promise<
     const result = await client.query(
       `SELECT a.* 
        FROM "${AGENTS_TABLE}" a
-       INNER JOIN "${CLIENT_USER_AGENTS_TABLE}" ua ON a.agent_id = ua.agent_id
+       INNER JOIN "${CLIENT_USER_AGENTS_TABLE}" ua ON a.id = ua.agent_id
        WHERE ua.client_user_id = $1
        ORDER BY a.created_at DESC`,
       [input.user_id]
@@ -231,8 +231,8 @@ export async function getClientUserAgent(input: GetUserAgentInput): Promise<Serv
     const query = `
       SELECT a.*
       FROM ${AGENTS_TABLE} a
-      JOIN ${CLIENT_USER_AGENTS_TABLE} ua ON a.agent_id = ua.agent_id
-      WHERE a.agent_id = $1 AND ua.client_user_id = $2;
+      JOIN ${CLIENT_USER_AGENTS_TABLE} ua ON a.id = ua.agent_id
+      WHERE a.id = $1 AND ua.client_user_id = $2;
     `;
     const values = [input.agent_id, input.user_id];
     const result = await client.query(query, values);
@@ -275,7 +275,7 @@ export async function getConversationAgent(conversation_id: string): Promise<Ser
 
   const query = `
     SELECT a.* FROM ${AGENTS_TABLE} a
-    JOIN ${CONVERSATIONS_TABLE} c ON a.agent_id = c.agent_id
+    JOIN ${CONVERSATIONS_TABLE} c ON a.id = c.agent_id
     WHERE c.conversation_id = $1
   `;
 
@@ -293,7 +293,7 @@ export async function getConversationAgent(conversation_id: string): Promise<Ser
       };
     } 
 
-    console.log(`[DB Service] Found agent ${result.rows[0].agent_id} for conversation ${conversation_id}`);
+    console.log(`[DB Service] Found agent ${result.rows[0].id} for conversation ${conversation_id}`);
     return { 
       success: true, 
       data: mapAgentFromDatabase(result.rows[0])
