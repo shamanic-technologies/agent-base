@@ -28,7 +28,7 @@ export interface UserAgentRecord {
 
 // --- Agent Input Fields & Inputs ---
 
-export interface AgentCreationFields {
+export interface CreateAgentInput {
   agent_first_name: string;
   agent_last_name: string;
   agent_profile_picture: string;
@@ -38,11 +38,16 @@ export interface AgentCreationFields {
   agent_job_title: string;
 }
 
-export interface CreateUserAgentInput extends AgentCreationFields {
+export interface CreateUserAgentInput extends CreateAgentInput {
   user_id: string;
 }
 
-export interface UpdateAgentInputFields {
+export interface LinkAgentToUserInput {
+  user_id: string;
+  agent_id: string;
+}
+
+export interface UpdateAgentInput {
   agent_id: string; 
   agent_first_name?: string;
   agent_last_name?: string;
@@ -53,7 +58,7 @@ export interface UpdateAgentInputFields {
   agent_job_title?: string;
 }
 
-export interface UpdateUserAgentInput extends UpdateAgentInputFields {
+export interface UpdateUserAgentInput extends UpdateAgentInput {
   user_id: string;
 }
 
@@ -64,24 +69,6 @@ export interface ListUserAgentsInput {
 export interface GetUserAgentInput {
   user_id: string;
   agent_id: string;
-}
-
-// --- Agent Responses ---
-
-export interface CreateUserAgentResponse extends BaseResponse {
-  data?: AgentRecord;
-}
-
-export interface UpdateUserAgentResponse extends BaseResponse {
-  data?: AgentRecord;
-}
-
-export interface ListUserAgentsResponse extends BaseResponse {
-  data?: AgentRecord[];
-}
-
-export interface GetUserAgentResponse extends BaseResponse {
-  data?: AgentRecord;
 }
 
 // --- Simplified Application-Level Interface ---

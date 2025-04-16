@@ -4,16 +4,13 @@
  * API endpoints for managing agents
  */
 import express, { Request, Response, RequestHandler, NextFunction } from 'express';
-import { createAgent, updateAgent, linkAgentToUser, listUserAgents, getUserAgent, getConversationAgent } from '../services/agents.js';
+import { createAgent, updateAgent, linkAgentToClientUser, listClientUserAgents, getClientUserAgent, getConversationAgent } from '../services/agents.js';
 import { 
-  CreateUserAgentInput, // Import from shared package
-  UpdateUserAgentInput, 
-  UpdateUserAgentResponse, 
+  UpdateAgentInput, 
   ListUserAgentsInput, 
   GetUserAgentInput, 
   AgentRecord, // Keep other needed types
-  CreateUserAgentResponse, // <-- Add import for the renamed response type
-  ListUserAgentsResponse // <-- Add import for the new response type
+  CreateAgentInput, // <-- Add import for the renamed response type
 } from '@agent-base/types';
 
 const router = express.Router();
@@ -60,7 +57,7 @@ router.post('/create-user-agent', async (req: Request, res: Response): Promise<v
     // --- Step 2: Link Agent to User ---
     console.log(`[DB Service /create-user-agent] Attempting to link agent ${newAgentId} to user ${user_id}`);
     const linkInput = { user_id, agent_id: newAgentId };
-    const linkResult = await linkAgentToUser(linkInput);
+    const linkResult = await linkAgentToClientUser(linkInput);
 
     if (!linkResult.success) {
       console.error(`[DB Service /create-user-agent] Failed to link agent ${newAgentId} to user ${user_id}:`, linkResult.error);
@@ -115,7 +112,7 @@ router.post('/update-user-agent', async (req: Request, res: Response): Promise<v
 
     // --- Authorization Check ---
     console.log(`[DB Service /update-user-agent] Checking ownership for agent ${agent_id} by user ${user_id}`);
-    const ownershipCheckResult = await getUserAgent({ user_id, agent_id });
+    const ownershipCheckResult = await getClientUserAgent({ user_id, agent_id });
 
     if (!ownershipCheckResult.success) {
         // This means agent not found OR not linked to this user.
@@ -177,7 +174,7 @@ router.get('/list-user-agents', async (req: Request, res: Response): Promise<voi
 
     console.log(`[DB Service /list-user-agents] Fetching agents for user ${user_id}`);
     const input: ListUserAgentsInput = { user_id };
-    const result = await listUserAgents(input);
+    const result = await listClientUserAgents(input);
     
     // Check for actual errors from the service
     if (!result.success) {
@@ -240,7 +237,7 @@ router.get('/get-user-agent', async (req: Request, res: Response): Promise<void>
 
     const input: GetUserAgentInput = { user_id, agent_id };
     // Call the service function to fetch the agent
-    const result = await getUserAgent(input);
+    const result = await getClientUserAgent(input);
     
     // If agent not found or doesn't belong to user, service should return success: false
     if (!result.success) {

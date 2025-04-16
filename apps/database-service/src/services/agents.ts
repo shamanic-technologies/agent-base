@@ -4,23 +4,23 @@
  * Handles all database operations related to agents
  */
 import { PoolClient } from 'pg';
-import { v4 as uuidv4 } from 'uuid';
 import { getClient } from '../db.js';
 import {
   AgentRecord,
-  CreateUserAgentInput,
-  CreateUserAgentResponse,
   UpdateUserAgentInput,
-  UpdateUserAgentResponse,
   ListUserAgentsInput,
-  ListUserAgentsResponse,
   GetUserAgentInput,
-  GetUserAgentResponse,
-  BaseResponse
+  LinkAgentToUserInput,
+  BaseResponse,
+  CreateAgentInput,
+  ServiceResponse,
+  mapAgentFromDatabase,
+  Agent,
+  UpdateAgentInput
 } from '@agent-base/types';
 
 const AGENTS_TABLE = 'agents';
-const USER_AGENTS_TABLE = 'user_agents';
+const CLIENT_USER_AGENTS_TABLE = 'client_user_agents';
 const CONVERSATIONS_TABLE = 'conversations';
 
 /**
@@ -28,7 +28,7 @@ const CONVERSATIONS_TABLE = 'conversations';
  * @param input - The agent data to create, excluding user_id.
  * @returns A BaseResponse indicating success or failure, with the created agent data on success.
  */
-export async function createAgent(input: Omit<CreateUserAgentInput, 'user_id'>): Promise<CreateUserAgentResponse> {
+export async function createAgent(input: CreateAgentInput): Promise<ServiceResponse<Agent>> {
   let client: PoolClient | null = null;
   try {
     client = await getClient();
@@ -52,7 +52,7 @@ export async function createAgent(input: Omit<CreateUserAgentInput, 'user_id'>):
 
     return {
       success: true,
-      data: result.rows[0] as AgentRecord
+      data: mapAgentFromDatabase(result.rows[0])
     };
   } catch (error: any) {
     console.error('Error creating agent:', error);
@@ -69,7 +69,7 @@ export async function createAgent(input: Omit<CreateUserAgentInput, 'user_id'>):
  * @param input - The agent data to update, excluding user_id.
  * @returns A BaseResponse indicating success or failure, with the updated agent data on success.
  */
-export async function updateAgent(input: Omit<UpdateUserAgentInput, 'user_id'>): Promise<UpdateUserAgentResponse> {
+export async function updateAgent(input: UpdateAgentInput): Promise<ServiceResponse<Agent>> {
   let client: PoolClient | null = null;
   try {
     client = await getClient();
@@ -142,7 +142,7 @@ export async function updateAgent(input: Omit<UpdateUserAgentInput, 'user_id'>):
 
     return {
       success: true,
-      data: result.rows[0] as AgentRecord
+      data: mapAgentFromDatabase(result.rows[0])
     };
   } catch (error: any) {
     console.error('Error updating agent:', error);
@@ -159,17 +159,17 @@ export async function updateAgent(input: Omit<UpdateUserAgentInput, 'user_id'>):
  * @param input - An object containing user_id and agent_id.
  * @returns A BaseResponse indicating success or failure.
  */
-export async function linkAgentToUser(input: { user_id: string, agent_id: string }): Promise<BaseResponse> {
+export async function linkAgentToClientUser(input: LinkAgentToUserInput): Promise<BaseResponse> {
   let client: PoolClient | null = null;
   try {
     client = await getClient();
     const query = `
-      INSERT INTO ${USER_AGENTS_TABLE} (user_id, agent_id)
+      INSERT INTO ${CLIENT_USER_AGENTS_TABLE} (client_user_id, agent_id)
       VALUES ($1, $2)
-      ON CONFLICT (user_id, agent_id) DO NOTHING
+      ON CONFLICT (client_user_id, agent_id) DO NOTHING
       RETURNING *;`;
     const values = [input.user_id, input.agent_id];
-    const result = await client.query(query, values);
+    await client.query(query, values);
 
     // Even if no new row was created (due to ON CONFLICT DO NOTHING), still consider it a success
     return { success: true };
@@ -188,7 +188,7 @@ export async function linkAgentToUser(input: { user_id: string, agent_id: string
  * @param input - An object containing the user_id.
  * @returns A BaseResponse indicating success or failure, with the list of agents on success.
  */
-export async function listUserAgents(input: ListUserAgentsInput): Promise<ListUserAgentsResponse> {
+export async function listClientUserAgents(input: ListUserAgentsInput): Promise<ServiceResponse<Agent[]>> {
   let client: PoolClient | null = null;
   try {
     client = await getClient();
@@ -197,19 +197,19 @@ export async function listUserAgents(input: ListUserAgentsInput): Promise<ListUs
     const result = await client.query(
       `SELECT a.* 
        FROM "${AGENTS_TABLE}" a
-       INNER JOIN "${USER_AGENTS_TABLE}" ua ON a.agent_id = ua.agent_id
-       WHERE ua.user_id = $1
+       INNER JOIN "${CLIENT_USER_AGENTS_TABLE}" ua ON a.agent_id = ua.agent_id
+       WHERE ua.client_user_id = $1
        ORDER BY a.created_at DESC`,
       [input.user_id]
     );
 
     return {
       success: true,
-      data: result.rows as AgentRecord[]
+      data: result.rows.map(mapAgentFromDatabase)
     };
   } catch (error: any) {
-    console.error('Error listing user agents:', error);
-    return { success: false, error: error.message || 'Failed to list user agents' };
+    console.error('Error listing client user agents:', error);
+    return { success: false, error: error.message || 'Failed to list client user agents' };
   } finally {
     if (client) {
       client.release();
@@ -222,7 +222,7 @@ export async function listUserAgents(input: ListUserAgentsInput): Promise<ListUs
  * @param input - An object containing user_id and agent_id.
  * @returns A BaseResponse indicating success or failure, with the agent data on success.
  */
-export async function getUserAgent(input: GetUserAgentInput): Promise<GetUserAgentResponse> {
+export async function getClientUserAgent(input: GetUserAgentInput): Promise<ServiceResponse<Agent>> {
   let client: PoolClient | null = null;
   try {
     client = await getClient();
@@ -231,8 +231,8 @@ export async function getUserAgent(input: GetUserAgentInput): Promise<GetUserAge
     const query = `
       SELECT a.*
       FROM ${AGENTS_TABLE} a
-      JOIN ${USER_AGENTS_TABLE} ua ON a.agent_id = ua.agent_id
-      WHERE a.agent_id = $1 AND ua.user_id = $2;
+      JOIN ${CLIENT_USER_AGENTS_TABLE} ua ON a.agent_id = ua.agent_id
+      WHERE a.agent_id = $1 AND ua.client_user_id = $2;
     `;
     const values = [input.agent_id, input.user_id];
     const result = await client.query(query, values);
@@ -248,12 +248,12 @@ export async function getUserAgent(input: GetUserAgentInput): Promise<GetUserAge
     // Agent found and user has access
     return {
       success: true,
-      data: result.rows[0] as AgentRecord // Return the agent data
+      data: mapAgentFromDatabase(result.rows[0])
     };
 
   } catch (error: any) {
-    console.error('Error getting user agent:', error);
-    return { success: false, error: error.message || 'Failed to get user agent' };
+    console.error('Error getting client user agent:', error);
+    return { success: false, error: error.message || 'Failed to get client user agent' };
   } finally {
     if (client) {
       client.release();
@@ -266,7 +266,7 @@ export async function getUserAgent(input: GetUserAgentInput): Promise<GetUserAge
  * @param conversation_id The ID of the conversation
  * @returns The agent record or error
  */
-export async function getConversationAgent(conversation_id: string): Promise<BaseResponse & { data?: AgentRecord }> {
+export async function getConversationAgent(conversation_id: string): Promise<ServiceResponse<Agent>> {
   console.log(`[DB Service] Getting agent for conversation: ${conversation_id}`);
 
   if (!conversation_id) {
@@ -296,7 +296,7 @@ export async function getConversationAgent(conversation_id: string): Promise<Bas
     console.log(`[DB Service] Found agent ${result.rows[0].agent_id} for conversation ${conversation_id}`);
     return { 
       success: true, 
-      data: result.rows[0] as AgentRecord 
+      data: mapAgentFromDatabase(result.rows[0])
     };
 
   } catch (error) {
