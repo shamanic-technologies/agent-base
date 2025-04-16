@@ -1,11 +1,9 @@
 /**
  * Types related to Conversations.
  */
-import { BaseResponse } from './common.js';
 // Use Message from 'ai' instead of UIMessage
 // @ts-ignore - Message not directly exported from 'ai' in this context
 import { Message } from 'ai';
-import { ConversationRecord as ConversationRecordType } from './conversation.js'; // Self-import for consistency if needed, or define directly
 // --- Conversation Records and Inputs ---
 
 export interface ConversationRecord {
@@ -17,31 +15,66 @@ export interface ConversationRecord {
   updated_at: string | Date;
 }
 
+export interface Conversation {
+  conversationId: string;
+  agentId: string;
+  channelId: string;
+  messages: Message[];
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
 export interface CreateConversationInput {
-  conversation_id: string; 
-  agent_id: string;
-  channel_id: string;
+  conversationId: string; 
+  agentId: string;
+  channelId: string;
 }
 
 export interface GetConversationsFromAgentInput {
-  agent_id: string;
+  agentId: string;
 }
 
 export interface UpdateConversationInput {
-  conversation_id: string;
+  conversationId: string;
   messages: Message[];
 }
 
 // --- Conversation Responses ---
 
-export interface CreateConversationResponse extends BaseResponse {
-    data?: { conversation_id: string };
+export interface ConversationId {
+  conversationId: string;
 }
 
-export interface GetConversationsResponse extends BaseResponse {
-    data?: ConversationRecord[]; // Use the defined type
+
+/**
+ * Maps a snake_case database record to camelCase agent object
+ */
+export function mapConversationFromDatabase(record: ConversationRecord): Conversation {
+  if (!record) {
+    throw new Error('Invalid record provided to mapFromDatabase');
+  }
+  return {
+    conversationId: record.conversation_id,
+    agentId: record.agent_id,
+    channelId: record.channel_id,
+    messages: record.messages,
+    createdAt: record.created_at,
+    updatedAt: record.updated_at
+  };
 }
 
-export interface GetConversationResponse extends BaseResponse {
-    data?: ConversationRecord; // Use the defined type
+/**
+ * Maps a camelCase agent object to snake_case database fields
+ */
+export function mapConversationToDatabase(conversation: Conversation): Partial<ConversationRecord> {
+  if (!conversation) {
+    throw new Error('Invalid conversation provided to mapToDatabase');
+  }
+  const record: Partial<ConversationRecord> = {};
+  if (conversation.conversationId !== undefined) record.conversation_id = conversation.conversationId;
+  if (conversation.agentId !== undefined) record.agent_id = conversation.agentId;
+  if (conversation.channelId !== undefined) record.channel_id = conversation.channelId;
+  if (conversation.messages !== undefined) record.messages = conversation.messages;
+  return record;
 }
+
