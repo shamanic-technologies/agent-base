@@ -12,25 +12,33 @@ import { getUserFromDatabase } from '../utils/database';
 
 /**
  * Validate the user's token
- * Reads token from httpOnly cookie
+ * Reads token from the Authorization header (Bearer token).
  */
 export const validateTokenHandler: AsyncRequestHandler = async (req, res) => {
-  // Extract token from the httpOnly cookie
-  const token = req.cookies['auth-token'];
-  
+  let token: string | undefined = undefined;
+
+  // Check Authorization header for Bearer token
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.substring(7); // Extract token after 'Bearer '
+    console.log('[Auth Service] Token validation attempt via Authorization header');
+  }
+  // Removed cookie check logic
+
   if (!token) {
-    console.log('[Auth Service] No auth-token cookie found for validation');
+    // Token was not found in the Authorization header
+    console.log('[Auth Service] No token found in Authorization header');
     return res.status(401).json({
       success: false,
       error: 'No token provided' // Keep error message generic
     });
   }
   
-  console.log('[Auth Service] Token validation attempt via cookie, token length:', token.length);
+  // Log token length for debugging (optional)
+  console.log('[Auth Service] Token found, length:', token.length);
   
-  // Validate token using passport jwt strategy
-  // Note: Passport's jwt strategy defaults to Authorization header.
-  // We manually verify here for simplicity and consistency with /refresh.
+  // Validate token using a verification function (replace verifyToken if needed)
+  // This function should handle verification against your secret/public key
   const userData = verifyToken(token);
 
   if (!userData) {

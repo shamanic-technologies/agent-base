@@ -5,10 +5,13 @@ import { Request, Response } from 'express';
 import axios, { AxiosError } from 'axios';
 
 export async function forwardRequest(targetUrl: string, req: Request, res: Response) {
-    const requestUrl = `${targetUrl}${req.originalUrl}`;
+    // Construct the target URL using req.url which excludes the mount point prefix 
+    // but includes the query string.
+    const targetPathWithQuery = req.url; // e.g., /platform-users/me?param=value
+    const requestUrl = `${targetUrl}${targetPathWithQuery}`;
     
-    // Log basic request information
-    console.log(`[Web Gateway] Forwarding request to ${new URL(targetUrl).hostname} - ${req.method} ${req.originalUrl}`);
+    // Log which path is being forwarded
+    console.log(`[Web Gateway] Forwarding request to ${new URL(targetUrl).hostname} - ${req.method} ${targetPathWithQuery}`);
     
     try {
       const axiosConfig = {
