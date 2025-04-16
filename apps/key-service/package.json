@@ -13,6 +13,7 @@
     "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
   },
   "dependencies": {
+    "@agent-base/api-client": "workspace:^",
     "@agent-base/types": "workspace:^",
     "axios": "^1.6.7",
     "cors": "^2.8.5",

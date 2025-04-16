@@ -5,7 +5,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { checkSecretExists } from '@/lib/google-secret-manager';
-import { CheckSecretRequest, CheckSecretResponse } from '@agent-base/types';
+import { CheckSecretRequest, SecretExists } from '@agent-base/types';
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,9 +28,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if the secret exists
-    const result: CheckSecretResponse = await checkSecretExists({ userId, secretType });
+    const checkResponse = await checkSecretExists({ userId, secretType });
 
-    return NextResponse.json(result, { status: 200 });
+    return NextResponse.json(checkResponse, { status: 200 });
   } catch (error) {
     console.error('Error checking secret:', error);
     return NextResponse.json(

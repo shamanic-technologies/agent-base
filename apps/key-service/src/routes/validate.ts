@@ -15,7 +15,7 @@ const router = Router();
 router.post('/validate', async (req, res) => {
   try {
     const { apiKey } = req.body;
-    const userId = req.headers['x-user-id'] as string;
+    const platformUserId = req.headers['x-platform-user-id'] as string;
 
     if (!apiKey || typeof apiKey !== 'string') {
       return res.status(400).json({ 
@@ -25,22 +25,13 @@ router.post('/validate', async (req, res) => {
     }
 
     // Call dbService to validate the API key
-    const result = await dbService.validateApiKey(apiKey, userId);
+    const validateResponse = await dbService.validateApiKey(apiKey, platformUserId);
     
-    if (!result.success) {
-      return res.status(401).json({ 
-        success: false, 
-        error: result.error || 'Invalid or revoked API key' 
-      } as ErrorResponse);
+    if (!validateResponse.success) {
+      return res.status(401).json(validateResponse);
     }
 
-    return res.status(200).json({
-      success: true,
-      data: {
-        userId: result.data.user_id,
-        keyId: result.data.key_id
-      } as ValidateApiKeyResponse
-    });
+    return res.status(200).json(validateResponse);
   } catch (error) {
     console.error('Error during API key validation process:', error instanceof Error ? error.message : error);
     return res.status(500).json({

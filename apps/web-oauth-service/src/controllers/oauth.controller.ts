@@ -6,7 +6,7 @@
 import { AsyncRequestHandler } from '../utils/types';
 import { config } from '../config/env';
 import { generateToken } from '../utils/passport';
-import { getOrCreateUserToDatabase } from '../utils/database';
+import { getOrCreateUserInDatabase } from '../utils/database';
 import { cookieSettings } from '../config/env';
 import { ProviderUser, PlatformUser, ServiceResponse, JWTPayload } from '@agent-base/types';
 
@@ -29,7 +29,7 @@ export const authSuccessHandler: AsyncRequestHandler = async (req, res) => {
     let platformUser: PlatformUser; // Use 'any' for now, define a proper type later
     try {
       // saveUserToDatabase should return the full user record from the DB
-      const dbResponse: ServiceResponse<PlatformUser> = await getOrCreateUserToDatabase(userFromProvider);
+      const dbResponse: ServiceResponse<PlatformUser> = await getOrCreateUserInDatabase(userFromProvider);
       if (!dbResponse.success || !dbResponse.data) { // Check for the DB UUID 'id'
          console.error('[Auth Service] Failed to get valid user record with DB UUID from database service.');
          return res.redirect(`${config.clientAppUrl}?error=database_error&details=no_db_uuid`);

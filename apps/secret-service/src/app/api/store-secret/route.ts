@@ -5,7 +5,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { storeSecret } from '@/lib/google-secret-manager';
-import { StoreSecretRequest, StoreSecretResponse } from '@agent-base/types';
+import { StoreSecretRequest, ServiceResponse, ErrorResponse } from '@agent-base/types';
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,38 +20,38 @@ export async function POST(request: NextRequest) {
     // Validate required parameters
     if (!userId) {
       return NextResponse.json(
-        { success: false, error: 'userId is required in x-user-id header' } as StoreSecretResponse,
+        { success: false, error: 'userId is required in x-user-id header' } as ErrorResponse,
         { status: 400 }
       );
     }
 
     if (!secretType) {
       return NextResponse.json(
-        { success: false, error: 'secretType is required' } as StoreSecretResponse,
+        { success: false, error: 'secretType is required' } as ErrorResponse,
         { status: 400 }
       );
     }
 
     if (!secretValue) {
       return NextResponse.json(
-        { success: false, error: 'secretValue is required' } as StoreSecretResponse,
+        { success: false, error: 'secretValue is required' } as ErrorResponse,
         { status: 400 }
       );
     }
 
     // Store the secret
-    const result: StoreSecretResponse = await storeSecret(body, userId);
+    const storeResponse = await storeSecret(body, userId);
 
-    if (!result.success) {
+    if (!storeResponse.success) {
       return NextResponse.json(
-        { success: false, error: result.error || 'Failed to store secret' } as StoreSecretResponse,
+        { success: false, error: storeResponse.error || 'Failed to store secret' } as ErrorResponse,
         { status: 500 }
       );
     }
 
-    const response: StoreSecretResponse = {
+    const response: ServiceResponse<string> = {
       success: true,
-      message: result.message
+      data: storeResponse.data
     };
 
     return NextResponse.json(response, { status: 200 });
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
         success: false,
         error: 'Failed to store secret',
         details: error instanceof Error ? error.message : 'Unknown error',
-      } as StoreSecretResponse as StoreSecretResponse,
+      } as ErrorResponse,
       { status: 500 }
     );
   }

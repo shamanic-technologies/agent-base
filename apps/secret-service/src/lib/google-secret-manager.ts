@@ -4,7 +4,7 @@
  * Provides an abstraction layer for interacting with Google Secret Manager
  */
 // @ts-ignore - Ignore type checking for this import
-import { CheckSecretRequest, CheckSecretResponse, GetSecretRequest, GetSecretResponse, StoreSecretRequest, StoreSecretResponse } from '@agent-base/types';
+import { CheckSecretRequest, CheckSecretResponse, ErrorResponse, GetSecretRequest, GetSecretResponse, SecretExists, SecretValue, ServiceResponse, StoreSecretRequest, StoreSecretResponse } from '@agent-base/types';
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 
 // Initialize the Secret Manager client
@@ -25,7 +25,7 @@ if (!projectId) {
  * @param secretValue The value to store (will be stringified)
  * @returns Success status and message
  */
-export async function storeSecret(request: StoreSecretRequest, userId: string): Promise<StoreSecretResponse> {
+export async function storeSecret(request: StoreSecretRequest, userId: string): Promise<ServiceResponse<string>> {
   try {
     const { secretType, secretValue } = request;
 
@@ -54,7 +54,7 @@ export async function storeSecret(request: StoreSecretRequest, userId: string): 
         });
 
         console.log(`Updated secret ${secretId} with new version: ${version.name}`);
-        return { success: true, message: 'Secret updated successfully' };
+        return { success: true, data: 'Secret updated successfully' };
       }
     } catch (error) {
       // Secret doesn't exist, continue to create it
@@ -81,13 +81,13 @@ export async function storeSecret(request: StoreSecretRequest, userId: string): 
     });
 
     console.log(`Created secret ${secretId} with version: ${version.name}`);
-    return { success: true, message: 'Secret created successfully' } as StoreSecretResponse;
+    return { success: true, data: 'Secret created successfully' };
   } catch (error) {
     console.error('Error storing secret:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error storing secret',
-    } as StoreSecretResponse;
+    } as ErrorResponse;
   }
 }
 
@@ -98,7 +98,7 @@ export async function storeSecret(request: StoreSecretRequest, userId: string): 
  * @param secretType The type of secret (e.g., 'stripe_api_keys')
  * @returns Whether the secret exists
  */
-export async function checkSecretExists(request: CheckSecretRequest): Promise<CheckSecretResponse> {
+export async function checkSecretExists(request: CheckSecretRequest): Promise<ServiceResponse<SecretExists>> {
   try {
     const { userId, secretType } = request;
 
@@ -115,18 +115,17 @@ export async function checkSecretExists(request: CheckSecretRequest): Promise<Ch
         name,
       });
 
-      return { exists: !!secret, success: true };
+      return { success: true, data: { exists: !!secret } };
     } catch (error: unknown) {
       // If the error is "NOT_FOUND", the secret doesn't exist
       if (typeof error === 'object' && error !== null && 'code' in error && (error as any).code === 5) { // 5 is the gRPC code for NOT_FOUND
-        return { exists: false, success: true };
+        return { success: true, data: { exists: false } };
       }
       throw error;
     }
   } catch (error) {
     console.error('Error checking if secret exists:', error);
     return {
-      exists: false,
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error checking secret',
     };
@@ -140,7 +139,7 @@ export async function checkSecretExists(request: CheckSecretRequest): Promise<Ch
  * @param secretType The type of secret (e.g., 'stripe_api_keys')
  * @returns The secret value (parsed from JSON)
  */
-export async function getSecret(request: GetSecretRequest): Promise<GetSecretResponse> {
+export async function getSecret(request: GetSecretRequest): Promise<ServiceResponse<SecretValue>> {
   try {
     const { userId, secretType } = request;
 

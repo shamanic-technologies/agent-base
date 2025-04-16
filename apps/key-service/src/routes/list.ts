@@ -4,7 +4,7 @@
 import { Router } from 'express';
 import * as dbService from '../services/dbService.js';
 import { ErrorResponse, SuccessResponse } from '@agent-base/types';
-import { ApiKeyMetadata } from '@agent-base/types';
+import { ApiKey } from '@agent-base/types';
 
 const router = Router();
 
@@ -14,21 +14,21 @@ const router = Router();
  */
 router.get('/', async (req, res) => {
   try {
-    const userId = req.headers['x-user-id'] as string;
+    const platformUserId = req.headers['x-platform-user-id'] as string;
     
-    if (!userId) {
-      return res.status(401).json({ success: false, error: 'Authentication required (x-user-id header missing)' });
+    if (!platformUserId) {
+      return res.status(401).json({ success: false, error: 'Authentication required (x-platform-user-id header missing)' });
     }
 
-    console.log(`Fetching API key metadata for user: ${userId}`);
-    const keys = await dbService.getUserApiKeys(userId);
+    console.log(`Fetching API key metadata for user: ${platformUserId}`);
+    const keysResponse = await dbService.getUserApiKeys(platformUserId);
     
-    if (keys === null) {
-      throw new Error('Failed to fetch API keys metadata');
+    if (!keysResponse.success) {
+      return res.status(400).json(keysResponse);
     }
 
-    console.log(`Found ${keys.length} API keys for user ${userId}`);
-    return res.status(200).json({ success: true, data: keys } as SuccessResponse<ApiKeyMetadata[]>);
+    console.log(`Found ${keysResponse.data.length} API keys for user ${platformUserId}`);
+    return res.status(200).json(keysResponse);
   } catch (error) {
     console.error('Error listing API keys:', error instanceof Error ? error.message : error);
     return res.status(500).json({ success: false, error: 'Internal server error while listing API keys' } as ErrorResponse);
