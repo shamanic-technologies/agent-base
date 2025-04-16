@@ -16,7 +16,8 @@ import {
   ServiceResponse,
   mapAgentFromDatabase,
   Agent,
-  UpdateAgentInput
+  UpdateAgentInput,
+  ConversationId
 } from '@agent-base/types';
 
 const AGENTS_TABLE = 'agents';
@@ -40,13 +41,13 @@ export async function createAgent(input: CreateAgentInput): Promise<ServiceRespo
       VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *`,
       [
-        input.first_name,
-        input.last_name,
-        input.profile_picture,
+        input.firstName,
+        input.lastName,
+        input.profilePicture,
         input.gender,
-        input.model_id,
+        input.modelId,
         input.memory,
-        input.job_title
+        input.jobTitle
       ]
     );
 
@@ -79,19 +80,19 @@ export async function updateAgent(input: UpdateAgentInput): Promise<ServiceRespo
     const params: any[] = [];
     let paramIndex = 1;
     
-    if (input.first_name !== undefined) {
+    if (input.firstName !== undefined) {
       updateFields.push(`first_name = $${paramIndex++}`);
-      params.push(input.first_name);
+      params.push(input.firstName);
     }
     
-    if (input.last_name !== undefined) {
+    if (input.lastName !== undefined) {
       updateFields.push(`last_name = $${paramIndex++}`);
-      params.push(input.last_name);
+      params.push(input.lastName);
     }
     
-    if (input.profile_picture !== undefined) {
+    if (input.profilePicture !== undefined) {
       updateFields.push(`profile_picture = $${paramIndex++}`);
-      params.push(input.profile_picture);
+      params.push(input.profilePicture);
     }
     
     if (input.gender !== undefined) {
@@ -99,9 +100,9 @@ export async function updateAgent(input: UpdateAgentInput): Promise<ServiceRespo
       params.push(input.gender);
     }
     
-    if (input.model_id !== undefined) {
+    if (input.modelId !== undefined) {
       updateFields.push(`model_id = $${paramIndex++}`);
-      params.push(input.model_id);
+      params.push(input.modelId);
     }
     
     if (input.memory !== undefined) {
@@ -109,9 +110,9 @@ export async function updateAgent(input: UpdateAgentInput): Promise<ServiceRespo
       params.push(input.memory);
     }
     
-    if (input.job_title !== undefined) {
+    if (input.jobTitle !== undefined) {
       updateFields.push(`job_title = $${paramIndex++}`);
-      params.push(input.job_title);
+      params.push(input.jobTitle);
     }
     
     // Always update the updated_at timestamp
@@ -168,7 +169,7 @@ export async function linkAgentToClientUser(input: LinkAgentToUserInput): Promis
       VALUES ($1, $2)
       ON CONFLICT (client_user_id, agent_id) DO NOTHING
       RETURNING *;`;
-    const values = [input.user_id, input.agent_id];
+    const values = [input.userId, input.agentId];
     await client.query(query, values);
 
     // Even if no new row was created (due to ON CONFLICT DO NOTHING), still consider it a success
@@ -200,7 +201,7 @@ export async function listClientUserAgents(input: ListUserAgentsInput): Promise<
        INNER JOIN "${CLIENT_USER_AGENTS_TABLE}" ua ON a.id = ua.agent_id
        WHERE ua.client_user_id = $1
        ORDER BY a.created_at DESC`,
-      [input.user_id]
+      [input.userId]
     );
 
     return {
@@ -234,7 +235,7 @@ export async function getClientUserAgent(input: GetUserAgentInput): Promise<Serv
       JOIN ${CLIENT_USER_AGENTS_TABLE} ua ON a.id = ua.agent_id
       WHERE a.id = $1 AND ua.client_user_id = $2;
     `;
-    const values = [input.agent_id, input.user_id];
+    const values = [input.agentId, input.userId];
     const result = await client.query(query, values);
 
     // Check if an agent was found for this user
@@ -266,41 +267,42 @@ export async function getClientUserAgent(input: GetUserAgentInput): Promise<Serv
  * @param conversation_id The ID of the conversation
  * @returns The agent record or error
  */
-export async function getConversationAgent(conversation_id: string): Promise<ServiceResponse<Agent>> {
-  console.log(`[DB Service] Getting agent for conversation: ${conversation_id}`);
+export async function getConversationAgent(input: ConversationId): Promise<ServiceResponse<Agent>> {
+  const { conversationId } = input;
+  console.log(`[DB Service] Getting agent for conversation: ${conversationId}`);
 
-  if (!conversation_id) {
-    return { success: false, error: 'conversation_id is required' };
+  if (!conversationId) {
+    return { success: false, error: 'conversationId is required' };
   }
 
   const query = `
     SELECT a.* FROM ${AGENTS_TABLE} a
     JOIN ${CONVERSATIONS_TABLE} c ON a.id = c.agent_id
-    WHERE c.conversation_id = $1
+      WHERE c.conversation_id = $1
   `;
 
   let client: PoolClient | null = null;
   try {
     client = await getClient();
 
-    const result = await client.query(query, [conversation_id]);
+    const result = await client.query(query, [conversationId]);
 
     if (result.rowCount === 0) {
-      console.log(`[DB Service] No agent found for conversation ${conversation_id}`);
+      console.log(`[DB Service] No agent found for conversation ${conversationId}`);
       return { 
         success: false, 
         error: 'No agent found for this conversation'
       };
     } 
 
-    console.log(`[DB Service] Found agent ${result.rows[0].id} for conversation ${conversation_id}`);
+    console.log(`[DB Service] Found agent ${result.rows[0].id} for conversation ${conversationId}`);
     return { 
       success: true, 
       data: mapAgentFromDatabase(result.rows[0])
     };
 
   } catch (error) {
-    console.error(`[DB Service] Error getting agent for conversation ${conversation_id}:`, error);
+    console.error(`[DB Service] Error getting agent for conversation ${conversationId}:`, error);
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Database error occurred'

@@ -2,60 +2,106 @@
  * Types for webhook integrations
  */
 
-import { BaseResponse } from './common.js';
-
 export enum WebhookProvider {
   CRISP = 'crisp'
 }
 
 export interface WebhookCredentials {};
-export interface CrispWebhookCredentials extends WebhookCredentials {
-  website_id: string;
-}
+// export interface CrispWebhookCredentials extends WebhookCredentials {
+//   website_id: string;
+// }
 
 /**
  * Webhook record in database
  */
-export interface Webhook {
+export interface WebhookRecord {
   webhook_provider_id: string;
-  user_id: string;
+  client_user_id: string;
   webhook_credentials: WebhookCredentials;
   created_at?: Date;
   updated_at?: Date;
 }
 
-export interface CrispWebhook extends Webhook {
-  webhook_credentials: CrispWebhookCredentials;
+export interface Webhook {
+  webhookProviderId: string;
+  clientUserId: string;
+  webhookCredentials: WebhookCredentials;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
+
+// export interface CrispWebhook extends Webhook {
+//   webhook_credentials: CrispWebhookCredentials;
+// }
 
 /**
  * Webhook agent mapping in database
  */
-export interface WebhookAgentMapping {
+export interface WebhookAgentRecord {
   agent_id: string;
-  webhook_provider_id: WebhookProvider | string;
-  user_id: string;
+  webhook_provider_id: WebhookProvider;
+  client_user_id: string;
   created_at?: Date;
 }
 
 /**
  * Webhook event record in database
  */
-export interface WebhookEvent {
+export interface WebhookEventRecord {
   webhook_provider_id: string;
-  user_id: string;
+  client_user_id: string;
   webhook_event_payload: WebhookEventPayload;
   created_at?: Date;
   updated_at?: Date;
 }
 
+
 /**
- * Webhook API response
+ * Application-level Webhook Event type (camelCase)
  */
-export interface WebhookResponse extends BaseResponse {
-  data?: Record<string, any>;
-  message?: string;
-  details?: string;
+export interface WebhookEvent {
+  webhookProviderId: string;
+  clientUserId: string;
+  webhookEventPayload: WebhookEventPayload;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface CreateWebhookRequest {
+  webhookProviderId: string;
+  clientUserId: string;
+  webhookCredentials: WebhookCredentials;
+}
+
+export interface MapAgentToWebhookRequest {
+  agentId: string;
+  webhookProviderId: string;
+  clientUserId: string;
+}
+
+export interface CreateWebhookEventRequest {
+  webhookProviderId: string;
+  clientUserId: string;
+  webhookEventPayload: WebhookEventPayload;
+}
+
+export interface GetWebhookAgentRequest {
+  webhookProviderId: string;
+  clientUserId: string;
+}
+
+/**
+ * Parameters for getting user IDs associated with a Crisp website.
+ */
+export interface GetCrispUsersParams {
+  websiteId: string; // From path
+}
+
+/**
+ * Response containing user IDs associated with a Crisp website.
+ */
+export interface CrispUsersResponse {
+  userIds: string[];
 }
 
 /**

@@ -11,7 +11,8 @@ import { ApiKeyRecord,
   SuccessResponse, 
   ErrorResponse, 
   ServiceResponse, 
-  mapAPIKeyFromDatabase } from '@agent-base/types';
+  mapAPIKeyFromDatabase,
+  ValidateApiKeyRequest } from '@agent-base/types';
 
 // Table name constant
 const PLATFORM_USER_API_KEY_TABLE = 'platform_user_api_keys';
@@ -83,9 +84,9 @@ export async function getApiKeys(userId: string, keyPrefix?: string): Promise<Se
     client = await getClient();
     
     let query = `
-      SELECT key_id, user_id, name, key_prefix, hashed_key, created_at, last_used
+      SELECT key_id, platform_user_id, name, key_prefix, hashed_key, created_at, last_used
       FROM "${PLATFORM_USER_API_KEY_TABLE}"
-      WHERE user_id = $1
+      WHERE platform_user_id = $1
     `;
     const queryParams: any[] = [userId];
 
@@ -122,9 +123,9 @@ export async function getApiKeys(userId: string, keyPrefix?: string): Promise<Se
  * @param keyPrefix - The key prefix for additional filtering
  * @returns A response with the updated API key metadata
  */
-export async function validateApiKey(hashedKey: string, keyPrefix: string): Promise<ServiceResponse<ApiKey>> {
+export async function validateApiKey(input: ValidateApiKeyRequest): Promise<ServiceResponse<ApiKey>> {
   let client: PoolClient | null = null;
-  
+  const { hashedKey, keyPrefix } = input;
   try {
     client = await getClient();
     

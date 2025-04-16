@@ -63,8 +63,8 @@ const CLIENT_USER_AGENTS_TABLE_SQL = `
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (client_user_id, agent_id),
-    FOREIGN KEY (agent_id) REFERENCES ${AGENTS_TABLE}(agent_id) ON DELETE CASCADE,
-    FOREIGN KEY (client_user_id) REFERENCES "${CLIENT_USERS_TABLE}" (client_user_id) ON DELETE CASCADE
+    FOREIGN KEY (agent_id) REFERENCES ${AGENTS_TABLE}(id) ON DELETE CASCADE,
+    FOREIGN KEY (client_user_id) REFERENCES "${CLIENT_USERS_TABLE}"(id) ON DELETE CASCADE
   )
 `;
 
@@ -76,7 +76,7 @@ const CONVERSATIONS_TABLE_SQL = `
     messages JSONB DEFAULT '[]',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (agent_id) REFERENCES agents(agent_id) ON DELETE CASCADE
+    FOREIGN KEY (agent_id) REFERENCES ${AGENTS_TABLE}(id) ON DELETE CASCADE
   );
 
   -- Index on agent_id for faster lookups
@@ -109,7 +109,7 @@ const WEBHOOK_TABLE_SQL = `
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (webhook_provider_id, client_user_id),
-    FOREIGN KEY (client_user_id) REFERENCES "${CLIENT_USERS_TABLE}" (client_user_id) ON DELETE CASCADE
+    FOREIGN KEY (client_user_id) REFERENCES "${CLIENT_USERS_TABLE}"(id) ON DELETE CASCADE
   )
 `;
 
@@ -120,8 +120,8 @@ const AGENT_WEBHOOK_TABLE_SQL = `
     client_user_id UUID NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (webhook_provider_id, client_user_id) REFERENCES "${WEBHOOK_TABLE}" (webhook_provider_id, client_user_id) ON DELETE CASCADE,
-    FOREIGN KEY (agent_id) REFERENCES "${AGENTS_TABLE}" (agent_id) ON DELETE CASCADE,
-    FOREIGN KEY (client_user_id) REFERENCES "${CLIENT_USERS_TABLE}" (client_user_id) ON DELETE CASCADE,
+    FOREIGN KEY (agent_id) REFERENCES "${AGENTS_TABLE}"(id) ON DELETE CASCADE,
+    FOREIGN KEY (client_user_id) REFERENCES "${CLIENT_USERS_TABLE}"(id) ON DELETE CASCADE,
     PRIMARY KEY (agent_id,webhook_provider_id, client_user_id)
   )
 `;
@@ -137,7 +137,7 @@ const CLIENT_USER_OAUTH_TABLE_SQL = `
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (client_user_id, oauth_provider, scope),
-    FOREIGN KEY (client_user_id) REFERENCES "${CLIENT_USERS_TABLE}" (client_user_id) ON DELETE CASCADE
+    FOREIGN KEY (client_user_id) REFERENCES "${CLIENT_USERS_TABLE}"(id) ON DELETE CASCADE
   )
 `;
 
@@ -149,7 +149,7 @@ const WEBHOOK_EVENTS_TABLE_SQL = `
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (webhook_provider_id, client_user_id, created_at),
-    FOREIGN KEY (client_user_id) REFERENCES "${CLIENT_USERS_TABLE}" (client_user_id) ON DELETE CASCADE,
+    FOREIGN KEY (client_user_id) REFERENCES "${CLIENT_USERS_TABLE}"(id) ON DELETE CASCADE,
     FOREIGN KEY (webhook_provider_id, client_user_id) REFERENCES "${WEBHOOK_TABLE}" (webhook_provider_id, client_user_id) ON DELETE CASCADE
   )
 `;
@@ -163,8 +163,8 @@ const PLATFORM_USER_API_KEY_TABLE_SQL = `
     hashed_key TEXT NOT NULL UNIQUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     last_used TIMESTAMP WITH TIME ZONE,
-    FOREIGN KEY (platform_user_id) REFERENCES "${PLATFORM_USERS_TABLE}" (platform_user_id) ON DELETE CASCADE,
-    UNIQUE(user_id, name)
+    FOREIGN KEY (platform_user_id) REFERENCES "${PLATFORM_USERS_TABLE}"(id) ON DELETE CASCADE,
+    UNIQUE(platform_user_id, name)
   );
 
   -- Now create the index with the correct definition

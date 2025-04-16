@@ -8,7 +8,7 @@ const router = Router();
 /**
  * Health check endpoint
  */
-router.get('/health', (req: Request, res: Response): void => {
+router.get('/', (req: Request, res: Response): void => {
   res.status(200).json({ 
     status: 'healthy',
     provider: 'railway-postgres'

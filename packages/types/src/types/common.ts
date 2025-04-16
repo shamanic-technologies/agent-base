@@ -31,3 +31,11 @@ export interface BaseResponse {
 
   export type ServiceResponse<T> = SuccessResponse<T> | ErrorResponse;
 
+/**
+ * Type definition for the health check endpoint response.
+ */
+export interface HealthStatusResponse {
+  status: string;
+  provider: string;
+}
+

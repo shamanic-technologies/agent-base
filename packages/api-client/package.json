@@ -1,0 +1,34 @@
+{
+  "name": "@agent-base/api-client",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Typed API clients for inter-service communication",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "clean": "rimraf dist .turbo node_modules",
+    "lint": "eslint . --ext .ts,.tsx",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@agent-base/types": "workspace:*",
+    "axios": "^1.7.2"
+  },
+  "devDependencies": {
+    "@kit/eslint-config": "workspace:*",
+    "@kit/tsconfig": "workspace:*",
+    "eslint": "^8.57.0", 
+    "rimraf": "^5.0.7",
+    "tsup": "^8.1.0",
+    "typescript": "^5.4.5"
+  },
+  "peerDependencies": {
+    "@agent-base/types": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+} 
