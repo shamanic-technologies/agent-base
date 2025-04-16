@@ -38,6 +38,7 @@ const requiredEnvVars = [
   'KEYS_SERVICE_URL',
   'PAYMENT_SERVICE_URL',
   'LOGGING_SERVICE_URL',
+  'DATABASE_SERVICE_URL',
   'WEB_GATEWAY_API_KEY'
 ];
 
@@ -55,7 +56,7 @@ const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL!;
 const KEYS_SERVICE_URL = process.env.KEYS_SERVICE_URL!;
 const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL!;
 const LOGGING_SERVICE_URL = process.env.LOGGING_SERVICE_URL!;
-
+const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL!;
 // API key for gateway access
 const WEB_GATEWAY_API_KEY = process.env.WEB_GATEWAY_API_KEY!;
 
@@ -141,7 +142,8 @@ app.get('/health', (req, res) => {
       auth: AUTH_SERVICE_URL,
       keys: KEYS_SERVICE_URL,
       payment: PAYMENT_SERVICE_URL,
-      logging: LOGGING_SERVICE_URL
+      logging: LOGGING_SERVICE_URL,
+      database: DATABASE_SERVICE_URL
     }
   });
 });
@@ -152,6 +154,7 @@ const keysRouter = express.Router();
 const paymentRouter = express.Router();
 const oauthRouter = express.Router();
 const loggingRouter = express.Router();
+const databaseRouter = express.Router();
 
 // Auth service route handler
 authRouter.all('*', (req, res) => {
@@ -190,13 +193,19 @@ loggingRouter.all('*', (req, res) => {
   return forwardRequest(LOGGING_SERVICE_URL, req, res);
 });
 
+// Database service route handler
+databaseRouter.all('*', (req, res) => {
+  console.log('🗄️ Database service route handler'+ req.path);
+  return forwardRequest(DATABASE_SERVICE_URL, req, res);
+});
+
 // Mount the allowed routers
 app.use('/auth', authRouter);
 app.use('/oauth', oauthRouter);
 app.use('/keys', keysRouter);
 app.use('/payment', paymentRouter);
 app.use('/logging', loggingRouter);
-
+app.use('/database', databaseRouter);
 /**
  * 404 Handler for unknown routes
  */
@@ -215,4 +224,5 @@ app.listen(PORT, () => {
   console.log(`🔑 Keys Service: ${KEYS_SERVICE_URL}`);
   console.log(`💳 Payment Service: ${PAYMENT_SERVICE_URL}`);
   console.log(`📝 Logging Service: ${LOGGING_SERVICE_URL}`);
+  console.log(`🗄️ Database Service: ${DATABASE_SERVICE_URL}`);
 }); 

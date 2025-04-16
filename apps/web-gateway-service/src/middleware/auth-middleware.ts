@@ -56,6 +56,7 @@ const SKIP_AUTH_PATHS = [
  * @returns {string | undefined} The extracted platformUser token, or undefined if not found or invalid format.
  */
 function extractPlatformUserToken(authHeader: string | undefined): string | undefined {
+  console.log(`[Auth Middleware] Extracting token from Authorization header: ${authHeader}`);
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     console.log('[Auth Middleware] No or invalid Authorization header format.');
     return undefined;
@@ -91,19 +92,20 @@ async function validatePlatformUserToken(platformUserToken: string): Promise<Ser
   console.log(`[Auth Middleware] Validating platformUser token via api-client`);
   
   // Call the API client function, passing the token
-  const response = await validateAuthToken(platformUserToken);
+  console.log(`[Auth Middleware] Calling validateAuthToken with token: ${platformUserToken}`);
+  const validateResponse = await validateAuthToken(platformUserToken);
 
-  console.log('[Auth Middleware] Token validation response received:', JSON.stringify(response));
+  console.log('[Auth Middleware] Token validation response received:', JSON.stringify(validateResponse));
   
   // If validation was successful and we got user data, cache it
-  if (response.success && response.data) {
-    tokenCache.set(platformUserToken, response.data);
-    console.log(`[Auth Middleware] PlatformUser token validated successfully for user ID ${response.data.id}. Caching result.`);
+  if (validateResponse.success && validateResponse.data) {
+    tokenCache.set(platformUserToken, validateResponse.data);
+    console.log(`[Auth Middleware] PlatformUser token validated successfully for user ID ${validateResponse.data.id}. Caching result.`);
   } else {
-    console.log(`[Auth Middleware] PlatformUser token validation failed: ${response.error || 'Unknown reason.'}`);
+    console.log(`[Auth Middleware] PlatformUser token validation failed: ${validateResponse.error || 'Unknown reason.'}`);
   }
 
-  return response; // Return the ServiceResponse directly
+  return validateResponse; // Return the ServiceResponse directly
 }
 
 /**
@@ -120,6 +122,7 @@ async function validatePlatformUserToken(platformUserToken: string): Promise<Ser
  * @param {NextFunction} next - Express next middleware function.
  */
 export async function authMiddleware(req: Request, res: Response, next: NextFunction): Promise<void> {
+  console.log(`[Auth Middleware] Incoming request to path: ${req.path}`);
   // Skip authentication for configured public paths
   if (SKIP_AUTH_PATHS.some(path => req.path.startsWith(path))) {
     console.log(`[Auth Middleware] Skipping auth for public path: ${req.path}`);
@@ -127,7 +130,7 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
   }
   // Extract the platformUser token from the Authorization header
   const token = extractPlatformUserToken(req.headers.authorization);
-  
+  console.log(`[Auth Middleware] Extracted token: ${token}`);
   // If no token is present for a path that requires authentication
   if (!token) {
     console.log(`[Auth Middleware] No platformUser token provided for protected path: ${req.path}`);
