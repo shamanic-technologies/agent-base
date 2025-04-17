@@ -3,12 +3,27 @@
  * 
  * Provides an abstraction layer for interacting with Google Secret Manager
  */
-// @ts-ignore - Ignore type checking for this import
-import { CheckSecretRequest, CheckSecretResponse, ErrorResponse, GetSecretRequest, GetSecretResponse, SecretExists, SecretValue, ServiceResponse, StoreSecretRequest, StoreSecretResponse } from '@agent-base/types';
+// Remove @ts-ignore - Ensure types are correctly exported from @agent-base/types
+import { 
+    CheckSecretRequest, 
+    // CheckSecretResponse, // Likely encompassed by ServiceResponse<SecretExists>
+    ErrorResponse, 
+    GetSecretRequest, 
+    // GetSecretResponse, // Likely encompassed by ServiceResponse<SecretValue>
+    SecretExists, 
+    SecretValue, 
+    ServiceResponse, 
+    StoreSecretRequest, 
+    // StoreSecretResponse // Likely encompassed by ServiceResponse<string>
+    UserType // Import UserType enum
+} from '@agent-base/types';
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 
-// Initialize the Secret Manager client
-const client = new SecretManagerServiceClient() as any;
+// Initialize the Secret Manager client (remove 'as any' if type inference works)
+// Note: The official types might not perfectly align, 'as any' might still be needed
+// if the library's usage doesn't match standard patterns or if types are complex.
+// Let's try without 'as any' first.
+const client = new SecretManagerServiceClient(); 
 
 // Get the project ID from environment variables
 const projectId = process.env.GOOGLE_PROJECT_ID;
@@ -18,23 +33,43 @@ if (!projectId) {
 }
 
 /**
+ * Maps UserType enum to its lowercase string representation.
+ * 
+ * @param userType The UserType enum value.
+ * @returns The lowercase string ('platform' or 'client').
+ * @throws Error if the userType is invalid.
+ */
+function getUserTypeString(userType: UserType): string {
+    switch (userType) {
+        case UserType.Platform:
+            return 'platform';
+        case UserType.Client:
+            return 'client';
+        default:
+            // This should ideally not happen if validation occurs upstream,
+            // but defensively throw an error.
+            throw new Error(`Invalid UserType enum value: ${userType}`);
+    }
+}
+
+/**
  * Create a secret key for a user
  * 
- * @param userId The user ID
- * @param secretType The type of secret (e.g., 'stripe_api_keys')
- * @param secretValue The value to store (will be stringified)
+ * @param request Object containing userType, userId, secretType, and secretValue
  * @returns Success status and message
  */
-export async function storeSecret(request: StoreSecretRequest, userId: string): Promise<ServiceResponse<string>> {
+export async function storeSecret(request: StoreSecretRequest): Promise<ServiceResponse<string>> {
   try {
-    const { secretType, secretValue } = request;
+    // Destructure directly from the request object
+    const { userType, userId, secretType, secretValue } = request;
 
     if (!projectId) {
       throw new Error('GOOGLE_PROJECT_ID environment variable is not set');
     }
 
-    // Create a secret ID based on user and secret type
-    const secretId = `user_${userId}_${secretType}`;
+    // Create a secret ID based on user type, user id and secret type
+    const userTypeStr = getUserTypeString(userType); // Use helper function
+    const secretId = `${userTypeStr}_${userId}_${secretType}`.toLowerCase(); // Ensure lowercase
     const parent = `projects/${projectId}`;
     const secretName = `${parent}/secrets/${secretId}`;
 
@@ -94,20 +129,21 @@ export async function storeSecret(request: StoreSecretRequest, userId: string): 
 /**
  * Check if a secret exists for a user
  * 
- * @param userId The user ID
- * @param secretType The type of secret (e.g., 'stripe_api_keys')
+ * @param request Object containing userType, userId, and secretType
  * @returns Whether the secret exists
  */
 export async function checkSecretExists(request: CheckSecretRequest): Promise<ServiceResponse<SecretExists>> {
   try {
-    const { userId, secretType } = request;
+    // Destructure from the request object
+    const { userType, userId, secretType } = request;
 
     if (!projectId) {
       throw new Error('GOOGLE_PROJECT_ID environment variable is not set');
     }
 
-    // Create the secret name
-    const secretId = `user_${userId}_${secretType}`;
+    // Create the secret name based on user type, user id and secret type
+    const userTypeStr = getUserTypeString(userType); // Use helper function
+    const secretId = `${userTypeStr}_${userId}_${secretType}`.toLowerCase(); // Ensure lowercase
     const name = `projects/${projectId}/secrets/${secretId}`;
 
     try {
@@ -115,16 +151,19 @@ export async function checkSecretExists(request: CheckSecretRequest): Promise<Se
         name,
       });
 
-      return { success: true, data: { exists: !!secret } };
+      // Fix: Return boolean directly for ServiceResponse<SecretExists>
+      return { success: true, data: !!secret }; 
     } catch (error: unknown) {
-      // If the error is "NOT_FOUND", the secret doesn't exist
-      if (typeof error === 'object' && error !== null && 'code' in error && (error as any).code === 5) { // 5 is the gRPC code for NOT_FOUND
-        return { success: true, data: { exists: false } };
+      if (typeof error === 'object' && error !== null && 'code' in error && (error as any).code === 5) { // 5 is gRPC code for NOT_FOUND
+         // Fix: Return boolean directly for ServiceResponse<SecretExists>
+        return { success: true, data: false }; 
       }
       throw error;
     }
   } catch (error) {
     console.error('Error checking if secret exists:', error);
+    // Fix: Ensure error response matches ServiceResponse structure
+    // The 'data' field is not applicable here, only success and error.
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error checking secret',
@@ -135,20 +174,21 @@ export async function checkSecretExists(request: CheckSecretRequest): Promise<Se
 /**
  * Get a secret for a user
  * 
- * @param userId The user ID
- * @param secretType The type of secret (e.g., 'stripe_api_keys')
+ * @param request Object containing userType, userId, and secretType
  * @returns The secret value (parsed from JSON)
  */
 export async function getSecret(request: GetSecretRequest): Promise<ServiceResponse<SecretValue>> {
   try {
-    const { userId, secretType } = request;
+    // Destructure from the request object
+    const { userType, userId, secretType } = request;
 
     if (!projectId) {
       throw new Error('GOOGLE_PROJECT_ID environment variable is not set');
     }
 
-    // Create the secret name
-    const secretId = `user_${userId}_${secretType}`;
+    // Create the secret name based on user type, user id and secret type
+    const userTypeStr = getUserTypeString(userType); // Use helper function
+    const secretId = `${userTypeStr}_${userId}_${secretType}`.toLowerCase(); // Ensure lowercase
     const name = `projects/${projectId}/secrets/${secretId}/versions/latest`;
 
     // Access the secret version
@@ -160,10 +200,13 @@ export async function getSecret(request: GetSecretRequest): Promise<ServiceRespo
     
     try {
       const parsedPayload = JSON.parse(payload);
-      return { success: true, data: parsedPayload };
+      // Ensure the returned data structure matches ServiceResponse<SecretValue>
+      // parsedPayload should already be in the form { value: ... }, assuming it was stored correctly.
+      return { success: true, data: parsedPayload as SecretValue };
     } catch (error) {
-      // If the payload isn't valid JSON, return it as a string
-      return { success: true, data: payload };
+      // If the payload isn't valid JSON, wrap the raw string in the SecretValue structure
+      console.warn(`Payload for secret ${name} is not valid JSON. Returning as raw string wrapped in SecretValue.`);
+      return { success: true, data: { value: payload } };
     }
   } catch (error) {
     console.error('Error getting secret:', error);
