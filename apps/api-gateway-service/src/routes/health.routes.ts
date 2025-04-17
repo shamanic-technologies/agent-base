@@ -44,8 +44,5 @@ export const configureHealthRoutes = (
     });
   });
 
-  // Removed /test-agent-connection and /test-utility-connection endpoints for simplicity.
-  // Downstream service health should be monitored independently or inferred from proxy errors.
-
   return router;
 }; 
