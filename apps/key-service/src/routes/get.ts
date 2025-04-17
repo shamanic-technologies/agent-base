@@ -5,7 +5,7 @@
 import { Router } from 'express';
 import { getUserApiKeys, createApiKey } from '../services/dbService.js';
 import { getSecret } from '@agent-base/api-client';
-import { GetSecretRequest } from '@agent-base/types';
+import { GetSecretRequest, SecretValue, ServiceResponse, UserType } from '@agent-base/types';
 
 
 const router = Router();
@@ -15,7 +15,7 @@ const router = Router();
  * Retrieves or creates an API key for a user by key name
  * 
  * Headers:
- * - x-user-id: User ID (required)
+ * - x-platform-user-id: User ID (required)
  * 
  * Query Parameters:
  * - name: The name of the API key to retrieve or create (required)
@@ -67,15 +67,15 @@ router.get('/by-name', async (req, res) => {
       // Get the full API key from the secret service
       console.log(`Retrieving API key secret for key ${key.keyId}`);
       const getSecretRequest: GetSecretRequest = {
+        userType: UserType.Platform,
         userId: platformUserId,
         secretType: `api_key_${key.keyId}`
       };
-      const apiKeyResponse = await getSecret(platformUserId, getSecretRequest);
+      const apiKeyResponse: ServiceResponse<SecretValue> = await getSecret(platformUserId, getSecretRequest);
       
       if (!apiKeyResponse.success) {
           return res.status(404).json(apiKeyResponse);
       }
-      
       // Return just the secret value
       return res.status(200).json(apiKeyResponse);
     }
@@ -105,7 +105,7 @@ router.get('/by-name', async (req, res) => {
  * Retrieves an API key by ID for the authenticated user
  * 
  * Headers:
- * - x-user-id: User ID (required)
+ * - x-platform-user-id: User ID (required)
  * 
  * Parameters:
  * - keyId: The ID of the API key to retrieve
@@ -139,6 +139,7 @@ router.get('/:keyId', async (req, res) => {
     // Get the API key from the secret service
     console.log(`Retrieving API key secret for key ${keyId}`);
     const getSecretRequest: GetSecretRequest = {
+      userType: UserType.Platform,
       userId: platformUserId,
       secretType: `api_key_${keyId}`
     };
