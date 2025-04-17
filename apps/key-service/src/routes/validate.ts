@@ -9,13 +9,14 @@ const router = Router();
 
 /**
  * Validate an API key
- * POST /keys/validate
+ * POST /validate
  * Handles validation by calling the database service
  */
-router.post('/validate', async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const { apiKey } = req.body;
-    const platformUserId = req.headers['x-platform-user-id'] as string;
+    // platformUserId is not required for validation based on the new auth flow
+    // const platformUserId = req.headers['x-platform-user-id'] as string;
 
     if (!apiKey || typeof apiKey !== 'string') {
       return res.status(400).json({ 
@@ -25,7 +26,9 @@ router.post('/validate', async (req, res) => {
     }
 
     // Call dbService to validate the API key
-    const validateResponse = await dbService.validateApiKey(apiKey, platformUserId);
+    // Passing empty string for platformUserId as placeholder, required by function signature.
+    // TODO: Refactor dbService.validateApiKey to not require platformUserId or create separate function.
+    const validateResponse = await dbService.validateApiKey(apiKey, '');
     
     if (!validateResponse.success) {
       return res.status(401).json(validateResponse);

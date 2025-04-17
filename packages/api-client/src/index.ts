@@ -12,8 +12,13 @@ export * from './database-clients/oauth-client';
 export * from './database-clients/webhook-client';
 
 // Export functions from web OAuth service client files
-export * from './web-oauth-clients/auth-client';
-export * from './utils/service-client';
+export * from './auth-client';
 
 // Export Secret Service client functions
-export * from './secret-clients/secret-client.js';
+export * from './secret-client';
+
+// Export the Key Service client function
+export * from './key-client';
+
+// Export utility functions/types if any
+export * from './utils/service-client';
