@@ -4,10 +4,10 @@
   "private": true,
   "main": "dist/server.js",
   "scripts": {
-    "dev": "tsx watch --require dotenv/config src/server.ts",
-    "build": "tsc",
+    "dev": "tsx watch src/server.ts",
+    "build": "tsup src/server.ts --format cjs --dts",
     "start": "node dist/server.js",
-    "lint": "eslint . --max-warnings 0",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist && rm -rf .turbo && rm -rf node_modules"
   },

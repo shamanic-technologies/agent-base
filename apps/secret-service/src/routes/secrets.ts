@@ -15,7 +15,9 @@ const router = Router();
 /**
  * @route POST /api/secrets
  * @description Stores a secret value associated with a user and type.
- * @access Private (Requires valid x-user-id header - *** NEEDS PROPER AUTH ***)
+ * @access Private (Requires valid x-platform-api-key header - *** NEEDS PROPER AUTH ***)
+ * @access Private (Requires valid x-platform-user-id header - *** NEEDS PROPER AUTH ***)
+ * @access Private (Requires valid x-client-user-id header - *** NEEDS PROPER AUTH ***)
  * @requestBody { secretType: string, secretValue: any }
  * @response 200 { success: true, data: string } - Success message
  * @response 400 { success: false, error: string } - Missing parameters
@@ -26,7 +28,9 @@ router.post('/', secretsController.storeSecretHandler);
 /**
  * @route GET /api/secrets/:secretType
  * @description Retrieves a secret value for a given user and type.
- * @access Private (Requires valid x-user-id header - *** NEEDS PROPER AUTH ***)
+ * @access Private (Requires valid x-platform-api-key header - *** NEEDS PROPER AUTH ***)
+ * @access Private (Requires valid x-platform-user-id header - *** NEEDS PROPER AUTH ***)
+ * @access Private (Requires valid x-client-user-id header - *** NEEDS PROPER AUTH ***)
  * @urlParam secretType - The type identifier of the secret.
  * @response 200 { success: true, data: SecretValue } - Secret value
  * @response 400 { success: false, error: string } - Missing parameters
@@ -38,7 +42,9 @@ router.get('/:secretType', secretsController.getSecretHandler);
 /**
  * @route GET /api/secrets/exists/:secretType
  * @description Checks if a secret exists for a given user and type.
- * @access Private (Requires valid x-user-id header - *** NEEDS PROPER AUTH ***)
+ * @access Private (Requires valid x-platform-api-key header - *** NEEDS PROPER AUTH ***)
+ * @access Private (Requires valid x-platform-user-id header - *** NEEDS PROPER AUTH ***)
+ * @access Private (Requires valid x-client-user-id header - *** NEEDS PROPER AUTH ***)
  * @urlParam secretType - The type identifier of the secret.
  * @response 200 { success: true, data: { exists: boolean } } - Existence status
  * @response 400 { success: false, error: string } - Missing parameters

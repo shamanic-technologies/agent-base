@@ -7,11 +7,12 @@
 import express, { Express, Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import path from 'path'; // Import path module
 import routes from './routes/index.js'; // Import the main router (explicitly index.js)
 import { ErrorResponse } from '@agent-base/types'; // Import shared error type
 
-// Load environment variables from .env file
-dotenv.config();
+// Load environment variables from .env file, explicitly setting the path
+dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
 
 // Initialize Express app
 const app: Express = express();
