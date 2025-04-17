@@ -1,52 +1,38 @@
 /**
- * Conversation Service Proxy Routes (/conversation/*)
+ * Conversation Service Proxy Routes
+ * 
+ * Configures routes under /conversation/* for proxying requests to the Agent Service.
+ * It applies authentication, injects necessary headers, and uses the createApiProxy utility.
  */
 import express from 'express';
-import axios from 'axios';
-import { User } from '../types/index.js';
+import { createApiProxy } from '../utils/proxy.util.js';
+import { injectCustomHeaders } from '../middlewares/header.middleware.js';
 
 /**
- * Configure generic forwarding for /conversation routes
+ * Configures routes for conversations, proxying them to the Agent Service.
+ *
+ * @param {express.Router} router - The Express router instance to configure.
+ * @param {string} targetServiceUrl - The base URL of the target Agent Service (handling /conversation).
+ * @param {express.RequestHandler} authMiddleware - Middleware for authenticating requests.
+ * @returns {express.Router} The configured router.
  */
 export const configureConversationRoutes = (
   router: express.Router,
-  targetServiceUrl: string,
+  targetServiceUrl: string, // Points to Agent Service
   authMiddleware: express.RequestHandler
 ) => {
 
+  // Apply authentication middleware first.
   router.use(authMiddleware);
 
-  router.all('*', async (req: express.Request, res: express.Response) => {
-    const userId = req.user ? (req.user as User).id : undefined;
-    const apiKey = req.headers['x-api-key'] as string;
-    const originalPath = req.path.replace('/conversation', ''); 
-    const targetUrl = `${targetServiceUrl}/conversation${originalPath}`; 
+  // Apply the middleware to inject custom headers (x-platform-user-id, etc.)
+  router.use(injectCustomHeaders);
 
-    console.log(`[API Gateway /conversation] Forwarding ${req.method} ${req.originalUrl} to ${targetUrl} with query ${JSON.stringify(req.query)} for user ${userId}`);
+  // Create the proxy middleware instance for the Agent Service (handling conversation routes).
+  const conversationProxy = createApiProxy(targetServiceUrl, 'Agent Service (Conversations)');
 
-    if (!userId) return res.status(401).json({ success: false, error: 'User not authenticated' });
-
-    try {
-      const response = await axios({
-        method: req.method as any,
-        url: targetUrl,
-        data: req.body,
-        params: req.query, 
-        headers: {
-          ...req.headers,
-          'host': new URL(targetServiceUrl).host,
-          'x-user-id': userId, 
-          'x-api-key': apiKey,
-          'connection': undefined,
-        },
-      });
-      res.status(response.status).json(response.data);
-    } catch (error: any) {
-      console.error(`[API Gateway /conversation] Error forwarding request to ${targetUrl}:`, error.message);
-      if (error.response) res.status(error.response.status).json(error.response.data);
-      else res.status(500).json({ success: false, error: 'Gateway error forwarding request', details: error.message });
-    }
-  });
+  // Apply the proxy middleware for all paths under the router's mount point.
+  router.use(conversationProxy);
 
   return router;
 }; 

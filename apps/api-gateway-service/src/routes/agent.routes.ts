@@ -1,13 +1,22 @@
 /**
  * Agent Service Routes
  * 
- * Routes for proxying requests to the Agent Service.
+ * Configures routes for proxying requests to the backend Agent Service.
+ * It applies authentication and then uses the createApiProxy utility.
  */
 import express from 'express';
-import axios from 'axios';
+import { createApiProxy } from '../utils/proxy.util.js';
+import { injectCustomHeaders } from '../middlewares/header.middleware.js';
+
+// Request type augmentation is handled globally via src/types/index.ts
 
 /**
- * Configure generic forwarding for /agent routes
+ * Configures routes related to agents, proxying them to the Agent Service.
+ *
+ * @param {express.Router} router - The Express router instance to configure.
+ * @param {string} targetServiceUrl - The base URL of the target Agent Service.
+ * @param {express.RequestHandler} authMiddleware - Middleware for authenticating requests.
+ * @returns {express.Router} The configured router.
  */
 export const configureAgentRoutes = (
   router: express.Router,
@@ -15,50 +24,19 @@ export const configureAgentRoutes = (
   authMiddleware: express.RequestHandler
 ) => {
 
+  // Apply authentication middleware to all agent routes.
   router.use(authMiddleware);
 
-  // Generic forwarder for all methods and paths under /agent
-  router.all('*', async (req: express.Request, res: express.Response) => {
-    const platformUserId = req.platformUserId ? req.platformUserId : undefined;
-    const platformApiKey = req.platformApiKey ? req.platformApiKey : undefined;
-    const clientUserId = req.clientUserId ? req.clientUserId : undefined;
-    // Construct target URL on the agent service
-    const targetUrl = `${targetServiceUrl}${req.originalUrl}`; 
+  // Apply the middleware to inject custom headers before proxying.
+  router.use(injectCustomHeaders);
 
-    console.log(`[API Gateway /agent] Forwarding ${req.method} ${req.originalUrl} to ${targetUrl} with query ${req.query} for user ${platformUserId}`);
+  // Create the proxy middleware instance for the Agent Service.
+  const agentProxy = createApiProxy(targetServiceUrl, 'Agent Service');
 
-    if (!platformUserId) return res.status(401).json({ success: false, error: 'Platform User not authenticated' });
-    if (!platformApiKey) return res.status(401).json({ success: false, error: 'Platform API key not provided' });
-    if (!clientUserId) return res.status(401).json({ success: false, error: 'Client User not provided' });
+  // Apply the proxy middleware. This will forward all requests matching the router's path.
+  router.use(agentProxy);
 
-    try {
-      const response = await axios({
-        method: req.method as any,
-        url: targetUrl,
-        data: req.body,
-        params: req.query, // Forward query params
-        headers: {
-          ...req.headers,
-          'host': new URL(targetServiceUrl).host,
-          'x-platform-user-id': platformUserId,
-          'x-platform-api-key': platformApiKey,
-          'x-client-user-id': clientUserId,
-          'connection': undefined,
-        },
-      });
-      // Forward status and data
-      res.status(response.status).json(response.data);
-
-    } catch (error: any) {
-      console.error(`[API Gateway /agent] Error forwarding request to ${targetUrl}:`, error.message);
-      // Forward error response if possible
-      if (error.response) {
-        res.status(error.response.status).json(error.response.data);
-      } else {
-        res.status(500).json({ success: false, error: 'Gateway error forwarding request', details: error.message });
-      }
-    }
-  });
-
+  // The router is implicitly returned by Express when configured this way,
+  // but returning explicitly for clarity might be preferred by some.
   return router;
 }; 
