@@ -21,7 +21,7 @@ console.log('Initializing middleware and routes...');
 app.use(healthRoutes);
 app.use(routes); // Mount all routes from the routes index
 
-console.log('Routes mounted: /health, /keys');
+console.log('Routes mounted: /health, /, /validate, /by-name, /:keyId');
 console.log('==================================');
 
 export default app; 

@@ -10,10 +10,11 @@ import getKeyRoutes from './get.js';
 
 const router = Router();
 
-// Mount all key routes with /keys prefix
-// router.use('/keys', createKeyRoutes);  // POST /keys
-router.use('/keys', listKeysRoutes);   // GET /keys
-router.use('/keys', validateKeyRoutes); // POST /keys/validate
-router.use('/keys', getKeyRoutes);     // GET /keys/:keyId
+// Mount all key routes directly at the root
+// Note: Ensure paths within the route files are adjusted accordingly (e.g., '/' in list.ts)
+// router.use('/', createKeyRoutes);  // POST /
+router.use('/', listKeysRoutes);   // GET /
+router.use('/validate', validateKeyRoutes); // POST /validate
+router.use('/', getKeyRoutes);     // GET /:keyId, GET /by-name
 
 export default router; 

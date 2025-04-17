@@ -7,7 +7,7 @@ import {
   SecretValue,
   GetSecretRequest
 } from '@agent-base/types';
-import { makeAuthenticatedServiceRequest } from '../utils/service-client.js';
+import { makeAuthenticatedServiceRequest } from './utils/service-client.js';
   // Determine the correct URL for the web-oauth-service
   const SECRET_SERVICE_URL = process.env.SECRET_SERVICE_URL || 'http://localhost:3070';
   
