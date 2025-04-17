@@ -1,8 +1,8 @@
 {
-  "extends": "@agent-base/typescript-config/base.json",
+  "extends": "../../tooling/typescript/base.json",
   "compilerOptions": {
     "target": "ES2016",
-    "module": "CommonJS",
+    "module": "esnext",
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,

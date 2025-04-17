@@ -7,7 +7,7 @@
 import express, { Express, Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import routes from './routes'; // Import the main router
+import routes from './routes/index.js'; // Import the main router (explicitly index.js)
 import { ErrorResponse } from '@agent-base/types'; // Import shared error type
 
 // Load environment variables from .env file
