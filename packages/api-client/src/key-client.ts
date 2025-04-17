@@ -21,8 +21,8 @@ if (!process.env.KEY_SERVICE_URL) {
 }
 
 // --- Types --- //
-type PlatformUserId = string;
-type PlatformAPIKeySecret = string;
+export type PlatformUserId = string;
+export type PlatformAPIKeySecret = string;
 
 export interface GetApiKeyByNameRequest {
   platformUserId: PlatformUserId;

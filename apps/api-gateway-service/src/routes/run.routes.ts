@@ -1,75 +1,39 @@
 /**
- * Run Service Proxy Routes (/run/*)
+ * Run Service Proxy Routes
+ * 
+ * Configures routes under /run/* for proxying requests to the Agent Service.
+ * It applies authentication, injects necessary headers, and uses the createApiProxy utility.
  */
 import express from 'express';
-import axios from 'axios';
-import { User } from '../types/index.js';
+import { createApiProxy } from '../utils/proxy.util.js';
+import { injectCustomHeaders } from '../middlewares/header.middleware.js';
 
 /**
- * Configure generic forwarding for /run routes
+ * Configures routes for agent runs, proxying them to the Agent Service.
+ *
+ * @param {express.Router} router - The Express router instance to configure.
+ * @param {string} targetServiceUrl - The base URL of the target Agent Service (handling /run).
+ * @param {express.RequestHandler} authMiddleware - Middleware for authenticating requests.
+ * @returns {express.Router} The configured router.
  */
 export const configureRunRoutes = (
   router: express.Router,
-  targetServiceUrl: string,
+  targetServiceUrl: string, // Should still point to Agent Service as per routes/index.ts
   authMiddleware: express.RequestHandler
 ) => {
 
+  // Apply authentication middleware first.
   router.use(authMiddleware);
 
-  router.all('*', async (req: express.Request, res: express.Response) => {
-    const userId = req.user ? (req.user as User).id : undefined;
-    const apiKey = req.headers['x-api-key'] as string;
-    const originalPath = req.path.replace('/run', ''); 
-    const targetUrl = `${targetServiceUrl}/run${originalPath}`; 
-    const isStreaming = req.headers.accept?.includes('text/event-stream');
+  // Apply the middleware to inject custom headers (x-platform-user-id, etc.)
+  router.use(injectCustomHeaders);
 
-    console.log(`[API Gateway /run] Forwarding ${req.method} ${req.originalUrl} to ${targetUrl} for user ${userId} (Streaming: ${!!isStreaming})`);
+  // Create the proxy middleware instance. 
+  // Note: http-proxy-middleware handles streaming responses automatically.
+  const runProxy = createApiProxy(targetServiceUrl, 'Agent Service (Runs)'); // Target is Agent Service
 
-    if (!userId) return res.status(401).json({ success: false, error: 'User not authenticated' });
-
-    try {
-      const response = await axios({
-        method: req.method as any,
-        url: targetUrl,
-        data: req.body,
-        params: req.query,
-        // Set responseType to stream if the client accepts it
-        responseType: isStreaming ? 'stream' : 'json',
-        headers: {
-          ...req.headers,
-          'host': new URL(targetServiceUrl).host,
-          'x-user-id': userId,
-          'x-api-key': apiKey,
-          'connection': isStreaming ? 'keep-alive' : undefined, // Keep-alive for streams
-          // Ensure Accept header is passed if client sent it
-          'accept': req.headers.accept || undefined, 
-        },
-      });
-
-      // Handle streaming vs JSON response
-      if (isStreaming && response.data?.pipe) {
-        res.setHeader('Content-Type', 'text/event-stream');
-        res.setHeader('Cache-Control', 'no-cache');
-        res.setHeader('Connection', 'keep-alive');
-        response.data.pipe(res);
-      } else {
-        res.status(response.status).json(response.data);
-      }
-
-    } catch (error: any) {
-      // Determine the status code from the downstream error or default to 500
-      const status = error.response?.status || 500;
-      
-      // Log the original error message for server-side debugging
-      console.error(`[API Gateway /run] Error forwarding request to ${targetUrl}: Status ${status}, Original Error: ${error.message}`);
-      
-      // Send a simple, generic error response to the client
-      res.status(status).json({ 
-        success: false, 
-        error: `Gateway encountered an error (Status: ${status}) while communicating with the agent service.` 
-      });
-    }
-  });
+  // Apply the proxy middleware for all paths under the router's mount point.
+  router.use(runProxy);
 
   return router;
 }; 
