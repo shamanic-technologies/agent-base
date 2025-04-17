@@ -7,11 +7,11 @@ import {
   ServiceResponse,
   PlatformUser,             // Import the PlatformUser type
   GetOrCreatePlatformUserInput, // Import the input type
-  Agent,
-  CreateUserAgentInput,
+  GetClientUserAgentInput,
+  CreateClientUserAgentInput,
   UpdateUserAgentInput,
   ListUserAgentsInput,
-  GetUserAgentInput,
+  ListClientUserAgentsInput,
   AgentRecord,
   // Assuming these inputs contain clientUserId internally
   // ListUserAgentsResponse, 
@@ -37,13 +37,13 @@ interface GetAgentFromConversationParams { conversationId: string; }
  * POST /agents/create-user-agent
  */
 export const createUserAgent = async (
-  data: CreateUserAgentInput,
+  data: CreateClientUserAgentInput,
   platformUserId: string,
   platformApiKey: string,
   clientUserId: string
-): Promise<ServiceResponse<Agent>> => { // Revert to generic response type
+): Promise<ServiceResponse<GetClientUserAgentInput>> => { // Revert to generic response type
 
-  return makeAPIServiceRequest<Agent>( // Expect AgentRecord in data
+  return makeAPIServiceRequest<GetClientUserAgentInput>( // Expect AgentRecord in data
     DATABASE_SERVICE_URL,
     'POST',
     '/agents/create-user-agent',
@@ -64,9 +64,9 @@ export const updateUserAgent = async (
   platformUserId: string,
   platformApiKey: string,
   clientUserId: string
-): Promise<ServiceResponse<Agent>> => { // Revert to generic response type
+): Promise<ServiceResponse<GetClientUserAgentInput>> => { // Revert to generic response type
 
-  return makeAPIServiceRequest<Agent>( // Expect AgentRecord in data
+  return makeAPIServiceRequest<GetClientUserAgentInput>( // Expect AgentRecord in data
     DATABASE_SERVICE_URL,
     'POST',
     '/agents/update-user-agent',
@@ -87,9 +87,9 @@ export const listUserAgents = async (
   platformUserId: string,
   platformApiKey: string,
   clientUserId: string
-): Promise<ServiceResponse<Agent[]>> => { // Revert to generic response type
+): Promise<ServiceResponse<GetClientUserAgentInput[]>> => { // Revert to generic response type
   
-  return makeAPIServiceRequest<Agent[]>( // Expect AgentRecord[] in data
+  return makeAPIServiceRequest<GetClientUserAgentInput[]>( // Expect AgentRecord[] in data
     DATABASE_SERVICE_URL,
     'GET',
     '/agents/list-user-agents',
@@ -111,9 +111,9 @@ export const getUserAgentApiClient = async (
   platformUserId: string,
   platformApiKey: string,
   clientUserId: string
-): Promise<ServiceResponse<Agent>> => { // Revert to generic response type
+): Promise<ServiceResponse<GetClientUserAgentInput>> => { // Revert to generic response type
 
-  return makeAPIServiceRequest<Agent>( // Expect AgentRecord in data
+  return makeAPIServiceRequest<GetClientUserAgentInput>( // Expect AgentRecord in data
     DATABASE_SERVICE_URL,
     'GET',
     '/agents/get-user-agent',
@@ -135,9 +135,9 @@ export const getAgentFromConversation = async (
   clientUserId: string, // Pass clientUserId explicitly for the header
   platformUserId: string,
   platformApiKey: string
-): Promise<ServiceResponse<Agent>> => { // Revert to generic response type
+): Promise<ServiceResponse<GetClientUserAgentInput>> => { // Revert to generic response type
 
-  return makeAPIServiceRequest<Agent>( // Expect AgentRecord in data
+  return makeAPIServiceRequest<GetClientUserAgentInput>( // Expect AgentRecord in data
     DATABASE_SERVICE_URL,
     'GET',
     '/agents/get-conversation-agent',

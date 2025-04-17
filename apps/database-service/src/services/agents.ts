@@ -7,17 +7,16 @@ import { PoolClient } from 'pg';
 import { getClient } from '../db.js';
 import {
   AgentRecord,
-  UpdateUserAgentInput,
-  ListUserAgentsInput,
-  GetUserAgentInput,
-  LinkAgentToUserInput,
+  ListClientUserAgentsInput,
   BaseResponse,
   CreateAgentInput,
   ServiceResponse,
   mapAgentFromDatabase,
-  Agent,
+  GetClientUserAgentInput,
   UpdateAgentInput,
-  ConversationId
+  ConversationId,
+  Agent,
+  LinkAgentToClientUserInput
 } from '@agent-base/types';
 
 const AGENTS_TABLE = 'agents';
@@ -160,7 +159,7 @@ export async function updateAgent(input: UpdateAgentInput): Promise<ServiceRespo
  * @param input - An object containing user_id and agent_id.
  * @returns A BaseResponse indicating success or failure.
  */
-export async function linkAgentToClientUser(input: LinkAgentToUserInput): Promise<BaseResponse> {
+export async function linkAgentToClientUser(input: LinkAgentToClientUserInput): Promise<BaseResponse> {
   let client: PoolClient | null = null;
   try {
     client = await getClient();
@@ -169,7 +168,7 @@ export async function linkAgentToClientUser(input: LinkAgentToUserInput): Promis
       VALUES ($1, $2)
       ON CONFLICT (client_user_id, agent_id) DO NOTHING
       RETURNING *;`;
-    const values = [input.userId, input.agentId];
+    const values = [input.clientUserId, input.agentId];
     await client.query(query, values);
 
     // Even if no new row was created (due to ON CONFLICT DO NOTHING), still consider it a success
@@ -189,7 +188,7 @@ export async function linkAgentToClientUser(input: LinkAgentToUserInput): Promis
  * @param input - An object containing the user_id.
  * @returns A BaseResponse indicating success or failure, with the list of agents on success.
  */
-export async function listClientUserAgents(input: ListUserAgentsInput): Promise<ServiceResponse<Agent[]>> {
+export async function listClientUserAgents(input: ListClientUserAgentsInput): Promise<ServiceResponse<Agent[]>> {
   let client: PoolClient | null = null;
   try {
     client = await getClient();
@@ -201,7 +200,7 @@ export async function listClientUserAgents(input: ListUserAgentsInput): Promise<
        INNER JOIN "${CLIENT_USER_AGENTS_TABLE}" ua ON a.id = ua.agent_id
        WHERE ua.client_user_id = $1
        ORDER BY a.created_at DESC`,
-      [input.userId]
+      [input.clientUserId]
     );
 
     return {
@@ -223,7 +222,7 @@ export async function listClientUserAgents(input: ListUserAgentsInput): Promise<
  * @param input - An object containing user_id and agent_id.
  * @returns A BaseResponse indicating success or failure, with the agent data on success.
  */
-export async function getClientUserAgent(input: GetUserAgentInput): Promise<ServiceResponse<Agent>> {
+export async function getClientUserAgent(input: GetClientUserAgentInput): Promise<ServiceResponse<Agent>> {
   let client: PoolClient | null = null;
   try {
     client = await getClient();
@@ -235,7 +234,7 @@ export async function getClientUserAgent(input: GetUserAgentInput): Promise<Serv
       JOIN ${CLIENT_USER_AGENTS_TABLE} ua ON a.id = ua.agent_id
       WHERE a.id = $1 AND ua.client_user_id = $2;
     `;
-    const values = [input.agentId, input.userId];
+    const values = [input.agentId, input.clientUserId];
     const result = await client.query(query, values);
 
     // Check if an agent was found for this user

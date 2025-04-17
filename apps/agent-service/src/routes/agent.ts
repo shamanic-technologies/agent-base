@@ -8,14 +8,14 @@ import { Router, Request, Response, NextFunction } from 'express';
 // import axios from 'axios'; 
 import {
   // Keep types needed for validation and payload creation
-  CreateUserAgentInput,
+  CreateClientUserAgentInput,
   UpdateUserAgentInput,
   // Response types might not be directly needed if service returns specific data structure
   // UpdateUserAgentResponse, 
   // CreateUserAgentResponse, 
   // GetUserAgentResponse
   AgentRecord,
-  Agent, // Keep for default agent creation typing
+  GetClientUserAgentInput, // Keep for default agent creation typing
   // Remove ServiceResponse import - Use specific response types like UserResponse etc.
   // ServiceResponse 
 } from '@agent-base/types';
@@ -40,7 +40,7 @@ const router = Router();
  */
 router.post('/create-user-agent', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const agentInput: Agent = req.body;
+    const agentInput: GetClientUserAgentInput = req.body;
     // Log the received body
     console.log('[Agent Service /create-user-agent] Received Body:', JSON.stringify(agentInput, null, 2));
     
@@ -66,7 +66,7 @@ router.post('/create-user-agent', async (req: Request, res: Response, next: Next
     }
 
     // We no longer combine user_id into the input here, it's passed separately
-    const combinedInput: CreateUserAgentInput = {
+    const combinedInput: CreateClientUserAgentInput = {
       ...agentInput,
       userId: clientUserId
     };
