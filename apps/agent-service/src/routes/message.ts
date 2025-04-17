@@ -23,7 +23,7 @@ const router = Router();
 
 /**
  * Get all messages for a specific conversation
- * GET /get-messages-from-conversation?conversation_id=...
+ * GET /get-messages-from-conversation?conversationId=...
  */
 router.get('/get-messages-from-conversation', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const conversationId = req.query.conversation_id as string;
@@ -32,7 +32,7 @@ router.get('/get-messages-from-conversation', async (req: Request, res: Response
     const platformApiKey = req.headers['x-platform-api-key'] as string;
 
     if (!conversationId) {
-        res.status(400).json({ success: false, error: 'conversation_id query parameter is required' });
+        res.status(400).json({ success: false, error: 'conversationId query parameter is required' });
         return;
     }
     if (!clientUserId || !platformUserId || !platformApiKey) {
@@ -79,7 +79,7 @@ router.get('/get-messages-from-agent', async (req: Request, res: Response, next:
     const platformApiKey = req.headers['x-platform-api-key'] as string;
 
     if (!agentId) {
-        res.status(400).json({ success: false, error: 'agent_id query parameter is required' });
+        res.status(400).json({ success: false, error: 'agentId query parameter is required' });
         return;
     }
     if (!clientUserId || !platformUserId || !platformApiKey) {

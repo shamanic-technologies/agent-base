@@ -84,7 +84,7 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
         return;
       }
       if (!currentMessage || !conversationId) {
-        res.status(400).json({ success: false, error: 'Missing required fields: message, conversation_id' });
+        res.status(400).json({ success: false, error: 'Missing required fields: message, conversationId' });
         return;
       }
       // --- End Extraction & Validation ---
