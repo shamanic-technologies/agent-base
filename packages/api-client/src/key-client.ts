@@ -10,8 +10,8 @@ import {
 
 // Import the shared request helpers
 import { 
-  makeAuthenticatedServiceRequest, 
-  makeAnonymousServiceRequest // Add this import
+  makeWebAuthenticatedServiceRequest, 
+  makeWebAnonymousServiceRequest // Add this import
 } from './utils/service-client.js';
 
 // --- Key Service URL Configuration --- //
@@ -57,7 +57,7 @@ export const validatePlatformApiKeySecret = async (
   const endpoint = '/validate'; // Endpoint path
 
   // Use the anonymous helper, as this endpoint performs the authentication
-  return await makeAnonymousServiceRequest<PlatformUserId>(
+  return await makeWebAnonymousServiceRequest<PlatformUserId>(
     KEY_SERVICE_URL,
     'post',
     endpoint,
@@ -79,7 +79,7 @@ export const listPlatformApiKeys = async (
   if (!platformUserId) {
     return { success: false, error: 'platformUserId is required for listApiKeys.' };
   }
-  return await makeAuthenticatedServiceRequest<ApiKey[]>(
+  return await makeWebAuthenticatedServiceRequest<ApiKey[]>(
     KEY_SERVICE_URL,
     'get',
     '/',
@@ -104,7 +104,7 @@ export const getPlatformApiKeySecretById = async (
   if (!keyId) {
     return { success: false, error: 'Key ID parameter is required.' };
   }
-  return await makeAuthenticatedServiceRequest<SecretValue>(
+  return await makeWebAuthenticatedServiceRequest<SecretValue>(
     KEY_SERVICE_URL,
     'get',
     `/${keyId}`,
@@ -130,7 +130,7 @@ export const getPlatformApiKeySecretByName = async (
     return { success: false, error: 'Key name query parameter is required.' };
   }
   const queryParams = { name: keyName };
-  return await makeAuthenticatedServiceRequest<SecretValue>(
+  return await makeWebAuthenticatedServiceRequest<SecretValue>(
     KEY_SERVICE_URL,
     'get',
     '/by-name',

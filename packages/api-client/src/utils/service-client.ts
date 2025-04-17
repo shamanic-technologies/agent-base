@@ -5,101 +5,166 @@ import axios, { AxiosRequestConfig, Method } from 'axios';
 import { ServiceResponse } from '@agent-base/types';
 
 /**
- * Makes an AUTHENTICATED HTTP request to another microservice endpoint.
- * Includes the x-platform-user-id header.
- * 
- * @param {string} serviceUrl - The base URL of the target service (e.g., 'http://localhost:3001').
- * @param {Method} method - The HTTP method (e.g., 'GET', 'POST').
- * @param {string} endpoint - The specific API endpoint path (e.g., '/users/profile').
- * @param {string} platformUserId - Platform user ID to propagate in the 'x-platform-user-id' header. MUST be provided.
- * @param {any} [data] - Optional request body data (typically for POST, PUT, PATCH).
- * @param {any} [params] - Optional URL query parameters.
- * @returns {Promise<ServiceResponse<T>>} - A promise resolving to a standard ServiceResponse object.
- * @template T - The expected type of the data payload within the ServiceResponse on success.
+ * Base logic for making service requests and handling responses/errors.
+ * Internal helper function.
  */
-export async function makeAuthenticatedServiceRequest<T>(
-  serviceUrl: string,
-  method: Method,
-  endpoint: string,
-  platformUserId: string, // Required for authenticated requests
-  data?: any,
-  params?: any
+async function _makeServiceRequest<T>(
+  fullUrl: string,
+  config: AxiosRequestConfig,
+  logContext: string // e.g., '[httpClient:WebAuth]', '[httpClient:ApiAuth]', '[httpClient:Anon]'
 ): Promise<ServiceResponse<T>> {
-  const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  const fullUrl = `${serviceUrl}${formattedEndpoint}`;
-
-  if (!platformUserId) {
-    // Enforce platformUserId for authenticated requests
-    console.error(`[httpClient:Auth] platformUserId is required for authenticated request to ${fullUrl}.`);
-    return {
-      success: false,
-      error: 'Internal error: platformUserId missing for authenticated service request'
-    };
-  }
-
   try {
-    const config: AxiosRequestConfig = {
-      method,
-      url: fullUrl,
-      params,
-      headers: {
-        'x-platform-user-id': platformUserId // Always add the header
-      }
-    };
-    
-    if (data) {
-      config.data = data;
-    }
-        
-    console.log(`[httpClient:Auth] Making ${method} request to ${fullUrl} for user ${platformUserId}`);
-
+    console.log(`${logContext} Making ${config.method} request to ${fullUrl}`);
     const response = await axios.request<ServiceResponse<T>>(config);
 
+    // Check if the response looks like a standard ServiceResponse
     if (typeof response.data === 'object' && response.data !== null && 'success' in response.data) {
-       console.log(`[httpClient:Auth] Received successful standard response from ${fullUrl}`);
+       console.log(`${logContext} Received successful standard response from ${fullUrl}`);
        return response.data;
     } else {
-       console.warn(`[httpClient:Auth] Received non-standard success response from ${fullUrl}. Wrapping data.`);
+       // If not standard, wrap it assuming success (may need adjustment based on actual service responses)
+       console.warn(`${logContext} Received non-standard success response from ${fullUrl}. Wrapping data.`);
        return { success: true, data: response.data as T };
     }
-
   } catch (error) {
-    console.error(`[httpClient:Auth] Service request error to ${fullUrl} for user ${platformUserId}:`, error);
+    console.error(`${logContext} Service request error to ${fullUrl}:`, error);
     
     if (axios.isAxiosError(error)) {
       const status = error.response?.status || 'unknown';
       const responseData = error.response?.data;
-      console.error(`[httpClient:Auth] Axios error details: Status=${status}, Response=${JSON.stringify(responseData)}`);
-      
-      const specificError = responseData?.error || error.message;
+      const specificError = responseData?.error || error.message; // Prefer specific error from response body
+      console.error(`${logContext} Axios error details: Status=${status}, Response=${JSON.stringify(responseData)}`);
       
       return {
         success: false,
         error: specificError || `Service communication error (Status: ${status})`
       };
     } else {
-      console.error(`[httpClient:Auth] Non-Axios error during request to ${fullUrl}: ${error}`);
+      // Handle non-Axios errors (e.g., network issues before request sends)
+      console.error(`${logContext} Non-Axios error during request to ${fullUrl}: ${error}`);
       return { 
         success: false, 
         error: 'Internal error during service request execution' 
       };
     }
   }
+}
+
+/**
+ * Makes a WEB Authenticated HTTP request (only platformUserId).
+ * Includes ONLY the required x-platform-user-id header.
+ * 
+ * @param serviceUrl - Base URL of the target service.
+ * @param method - HTTP method.
+ * @param endpoint - API endpoint path.
+ * @param platformUserId - Required platform user ID for 'x-platform-user-id' header.
+ * @param data - Optional request body.
+ * @param params - Optional URL query parameters.
+ * @returns Promise<ServiceResponse<T>>.
+ * @template T - Expected data payload type.
+ */
+export async function makeWebAuthenticatedServiceRequest<T>(
+  serviceUrl: string,
+  method: Method,
+  endpoint: string,
+  platformUserId: string, // Required
+  data?: any,
+  params?: any
+): Promise<ServiceResponse<T>> {
+  const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const fullUrl = `${serviceUrl}${formattedEndpoint}`;
+  const logContext = `[httpClient:WebAuth] User ${platformUserId}`; 
+
+  if (!platformUserId) {
+    console.error(`${logContext} platformUserId is strictly required for web authenticated request to ${fullUrl}.`);
+    return { success: false, error: 'Internal error: platformUserId missing for web authenticated service request' };
+  }
+
+  const config: AxiosRequestConfig = {
+    method,
+    url: fullUrl,
+    params,
+    headers: {
+      'x-platform-user-id': platformUserId,
+    },
+    data
+  };
+
+  return _makeServiceRequest<T>(fullUrl, config, logContext);
 } 
 
 /**
- * Makes an ANONYMOUS HTTP request to another microservice endpoint.
- * Does NOT include the x-platform-user-id header.
+ * Makes an API Authenticated HTTP request (platformUserId, clientUserId, platformApiKey).
+ * Includes x-platform-user-id, x-client-user-id, and x-platform-api-key headers.
+ * All three auth identifiers are required.
  * 
- * @param {string} serviceUrl - The base URL of the target service.
- * @param {Method} method - The HTTP method.
- * @param {string} endpoint - The specific API endpoint path.
- * @param {any} [data] - Optional request body data.
- * @param {any} [params] - Optional URL query parameters.
- * @returns {Promise<ServiceResponse<T>>} - A promise resolving to a standard ServiceResponse object.
- * @template T - The expected type of the data payload within the ServiceResponse on success.
+ * @param serviceUrl - Base URL of the target service.
+ * @param method - HTTP method.
+ * @param endpoint - API endpoint path.
+ * @param platformUserId - Required platform user ID for 'x-platform-user-id' header.
+ * @param clientUserId - Required client user ID for 'x-client-user-id' header.
+ * @param platformApiKey - Required platform API key for 'x-platform-api-key' header.
+ * @param data - Optional request body.
+ * @param params - Optional URL query parameters.
+ * @returns Promise<ServiceResponse<T>>.
+ * @template T - Expected data payload type.
  */
-export async function makeAnonymousServiceRequest<T>(
+export async function makeAPIServiceRequest<T>(
+  serviceUrl: string,
+  method: Method,
+  endpoint: string,
+  platformUserId: string, // Required
+  clientUserId: string,   // Required
+  platformApiKey: string, // Required
+  data?: any,
+  params?: any
+): Promise<ServiceResponse<T>> {
+  const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const fullUrl = `${serviceUrl}${formattedEndpoint}`;
+  const logContext = `[httpClient:ApiAuth] PlatformUser ${platformUserId}, ClientUser ${clientUserId}`;
+
+  // Validate required parameters
+  if (!platformUserId || !clientUserId || !platformApiKey) {
+    const missing = [
+        !platformUserId ? 'platformUserId' : null,
+        !clientUserId ? 'clientUserId' : null,
+        !platformApiKey ? 'platformApiKey' : null
+    ].filter(Boolean).join(', ');
+    console.error(`${logContext} Missing required parameters for API authenticated request to ${fullUrl}: ${missing}.`);
+    return {
+      success: false,
+      error: `Internal error: Missing required parameter(s) for API authenticated service request: ${missing}`
+    };
+  }
+
+  const config: AxiosRequestConfig = {
+    method,
+    url: fullUrl,
+    params,
+    headers: {
+      'x-platform-user-id': platformUserId,
+      'x-client-user-id': clientUserId,
+      'x-platform-api-key': platformApiKey,
+    },
+    data
+  };
+
+  return _makeServiceRequest<T>(fullUrl, config, logContext);
+}
+
+/**
+ * Makes an ANONYMOUS HTTP request to another microservice endpoint.
+ * Does NOT include authentication headers.
+ * 
+ * @param serviceUrl - Base URL of the target service.
+ * @param method - HTTP method.
+ * @param endpoint - API endpoint path.
+ * @param data - Optional request body.
+ * @param params - Optional URL query parameters.
+ * @returns Promise<ServiceResponse<T>>.
+ * @template T - Expected data payload type.
+ */
+export async function makeWebAnonymousServiceRequest<T>(
   serviceUrl: string,
   method: Method,
   endpoint: string,
@@ -108,51 +173,15 @@ export async function makeAnonymousServiceRequest<T>(
 ): Promise<ServiceResponse<T>> {
   const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const fullUrl = `${serviceUrl}${formattedEndpoint}`;
+  const logContext = '[httpClient:Anon]';
 
-  try {
-    const config: AxiosRequestConfig = {
-      method,
-      url: fullUrl,
-      params,
-      headers: {} // No platformUserId header
-    };
-    
-    if (data) {
-      config.data = data;
-    }
-        
-    console.log(`[httpClient:Anon] Making ${method} request to ${fullUrl}`);
+  const config: AxiosRequestConfig = {
+    method,
+    url: fullUrl,
+    params,
+    headers: {}, // No auth headers
+    data
+  };
 
-    const response = await axios.request<ServiceResponse<T>>(config);
-
-    if (typeof response.data === 'object' && response.data !== null && 'success' in response.data) {
-       console.log(`[httpClient:Anon] Received successful standard response from ${fullUrl}`);
-       return response.data;
-    } else {
-       console.warn(`[httpClient:Anon] Received non-standard success response from ${fullUrl}. Wrapping data.`);
-       return { success: true, data: response.data as T };
-    }
-
-  } catch (error) {
-    console.error(`[httpClient:Anon] Service request error to ${fullUrl}:`, error);
-    
-    if (axios.isAxiosError(error)) {
-      const status = error.response?.status || 'unknown';
-      const responseData = error.response?.data;
-      console.error(`[httpClient:Anon] Axios error details: Status=${status}, Response=${JSON.stringify(responseData)}`);
-      
-      const specificError = responseData?.error || error.message;
-      
-      return {
-        success: false,
-        error: specificError || `Service communication error (Status: ${status})`
-      };
-    } else {
-      console.error(`[httpClient:Anon] Non-Axios error during request to ${fullUrl}: ${error}`);
-      return { 
-        success: false, 
-        error: 'Internal error during service request execution' 
-      };
-    }
-  }
-} 
+  return _makeServiceRequest<T>(fullUrl, config, logContext);
+}

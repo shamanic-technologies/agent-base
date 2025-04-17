@@ -15,7 +15,20 @@ import { fileURLToPath } from 'url'; // Import needed for __dirname in ES Module
 
 // Import routes configuration
 import { configureRoutes } from './routes/index.js';
-import { User } from '@agent-base/types'; // Import from shared package
+// Import specific user types
+import { ClientUser, PlatformUser } from '@agent-base/types'; 
+
+// Extend Express Request interface to include platformUserId
+declare global {
+  namespace Express {
+    interface Request {
+      // Augment request with the client user details (potentially partial)
+      user?: Partial<ClientUser>; 
+      // Store the platform user ID separately
+      platformUserId?: string; 
+    }
+  }
+}
 
 // Load environment variables based on NODE_ENV
 const nodeEnv = process.env.NODE_ENV || 'development';
@@ -54,20 +67,39 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 /**
- * Authentication middleware - extracts user from x-user-* headers
+ * Authentication middleware - extracts user IDs from headers
  * These headers are set by the API Gateway from the validated API key
+ * - x-client-user-id: ID of the end-user using the client application. Used for most internal logic.
+ * - x-platform-user-id: ID of the platform user (tenant/customer) owning the API key. Passed downstream.
  */
 app.use((req, res, next) => {
   try {
-    // Get user ID from header set by API gateway middleware
-    const userId = req.headers['x-user-id'] as string;
+    // Get user IDs from headers set by API gateway middleware
+    const clientUserId = req.headers['x-client-user-id'] as string;
+    const platformUserIdHeader = req.headers['x-platform-user-id'] as string;
     
-    if (userId) {
-      // Set user object on request for route handlers
-      // Use Partial<User> if only id is available here
-      (req as any).user = {
-        id: userId,
-      } as Partial<User>; // Assign as Partial<User>
+    if (clientUserId) {
+      // Set client user object on request for route handlers
+      // Store clientUserId in the 'id' field of the Partial<ClientUser>
+      req.user = {
+        id: clientUserId, // Store clientUserId here
+      } as Partial<ClientUser>; // Assign as Partial<ClientUser>
+      console.log(`[Agent Service Auth] Client User ID: ${clientUserId}`);
+    } else {
+      // Client User ID is essential for most operations
+      console.warn('[Agent Service Auth] Missing x-client-user-id header.');
+      // Optionally block requests
+      // return res.status(401).json({ success: false, error: 'Missing x-client-user-id header' });
+    }
+
+    if (platformUserIdHeader) {
+      // Store platform user ID separately for downstream calls
+      req.platformUserId = platformUserIdHeader;
+      console.log(`[Agent Service Auth] Platform User ID: ${platformUserIdHeader}`);
+    } else {
+       console.warn('[Agent Service Auth] Missing x-platform-user-id header.');
+       // Optionally block requests
+       // return res.status(401).json({ success: false, error: 'Missing x-platform-user-id header' });
     }
     
     next();

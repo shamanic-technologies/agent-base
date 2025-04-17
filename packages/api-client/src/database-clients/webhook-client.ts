@@ -12,7 +12,7 @@ import {
   GetWebhookAgentRequest,
   GetCrispUsersParams
 } from '@agent-base/types';
-import { makeAuthenticatedServiceRequest } from '../utils/service-client';
+import { makeAPIServiceRequest } from '../utils/service-client';
 // Use the same base URL as defined elsewhere or manage centrally
 const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL || 'http://localhost:3006'; // Ensure consistency
 
@@ -31,20 +31,18 @@ const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL || 'http://localho
  */
 export const createOrUpdateWebhookConfig = async (
   data: CreateWebhookRequest,
-  platformUserId: string
+  platformUserId: string,
+  platformApiKey: string,
+  clientUserId: string
 ): Promise<ServiceResponse<Webhook>> => {
-  if (!platformUserId) {
-    throw new Error('[api-client:createOrUpdateWebhookConfig] platformUserId is required for request header.');
-  }
-  if (!data || !data.webhookProviderId || !data.clientUserId) {
-    throw new Error('[api-client:createOrUpdateWebhookConfig] Input data must include webhookProviderId and clientUserId.');
-  }
   const endpoint = '/webhooks/';
-  return makeAuthenticatedServiceRequest<Webhook>(
+  return makeAPIServiceRequest<Webhook>(
     DATABASE_SERVICE_URL,
     'POST',
     endpoint,
     platformUserId,
+    clientUserId,
+    platformApiKey,
     data
   );
 };
@@ -60,7 +58,9 @@ export const createOrUpdateWebhookConfig = async (
  */
 export const mapAgentToWebhook = async (
   data: MapAgentToWebhookRequest,
-  platformUserId: string
+  platformUserId: string,
+  platformApiKey: string,
+  clientUserId: string
 ): Promise<ServiceResponse<MapAgentToWebhookRequest>> => {
   if (!platformUserId) {
     throw new Error('[api-client:mapAgentToWebhook] platformUserId is required for request header.');
@@ -69,11 +69,13 @@ export const mapAgentToWebhook = async (
     throw new Error('[api-client:mapAgentToWebhook] Input data must include agentId, webhookProviderId, and clientUserId.');
   }
   const endpoint = '/webhooks/map-agent';
-  return makeAuthenticatedServiceRequest<MapAgentToWebhookRequest>(
+  return makeAPIServiceRequest<MapAgentToWebhookRequest>(
     DATABASE_SERVICE_URL,
     'POST',
     endpoint,
     platformUserId,
+    clientUserId,
+    platformApiKey,
     data
   );
 };
@@ -89,7 +91,9 @@ export const mapAgentToWebhook = async (
  */
 export const getWebhookAgentMapping = async (
   params: GetWebhookAgentRequest,
-  platformUserId: string
+  platformUserId: string,
+  platformApiKey: string,
+  clientUserId: string
 ): Promise<ServiceResponse<string>> => {
   if (!platformUserId) {
     throw new Error('[api-client:getWebhookAgentMapping] platformUserId is required for request header.');
@@ -100,11 +104,13 @@ export const getWebhookAgentMapping = async (
   const endpoint = `/webhooks/${params.webhookProviderId}/agent`;
   // Pass clientUserId as query parameter
   const queryParams = { clientUserId: params.clientUserId }; 
-  return makeAuthenticatedServiceRequest<string>(
+  return makeAPIServiceRequest<string>(
     DATABASE_SERVICE_URL,
     'GET',
     endpoint,
     platformUserId,
+    clientUserId,
+    platformApiKey,
     undefined, // No body
     queryParams
   );
@@ -121,7 +127,9 @@ export const getWebhookAgentMapping = async (
  */
 export const createWebhookEvent = async (
   data: CreateWebhookEventRequest,
-  platformUserId: string
+  platformUserId: string,
+  platformApiKey: string,
+  clientUserId: string
 ): Promise<ServiceResponse<WebhookEvent>> => {
   if (!platformUserId) {
     throw new Error('[api-client:createWebhookEvent] platformUserId is required for request header.');
@@ -130,11 +138,13 @@ export const createWebhookEvent = async (
     throw new Error('[api-client:createWebhookEvent] Input data must include webhookProviderId, clientUserId, and webhookEventPayload.');
   }
   const endpoint = '/webhooks/events';
-  return makeAuthenticatedServiceRequest<WebhookEvent>(
+  return makeAPIServiceRequest<WebhookEvent>(
     DATABASE_SERVICE_URL,
     'POST',
     endpoint,
     platformUserId,
+    clientUserId,
+    platformApiKey,
     data
   );
 };
@@ -150,20 +160,20 @@ export const createWebhookEvent = async (
  */
 export const getCrispWebsiteUserIds = async (
   params: GetCrispUsersParams,
-  platformUserId: string
+  platformUserId: string,
+  platformApiKey: string,
+  clientUserId: string
 ): Promise<ServiceResponse<CrispUsersResponse>> => {
-  if (!platformUserId) {
-    throw new Error('[api-client:getCrispWebsiteUserIds] platformUserId is required for request header.');
-  }
-  if (!params || !params.websiteId) {
-    throw new Error('[api-client:getCrispWebsiteUserIds] Parameters must include websiteId.');
-  }
+
   const endpoint = `/webhooks/crisp/users/${params.websiteId}`;
-  return makeAuthenticatedServiceRequest<CrispUsersResponse>(
+  return makeAPIServiceRequest<CrispUsersResponse>(
     DATABASE_SERVICE_URL,
     'GET',
     endpoint,
-    platformUserId
-    // No query params or body needed
+    platformUserId,
+    clientUserId,
+    platformApiKey,
+    undefined, // No body
+    undefined // No query params
   );
 }; 

@@ -8,7 +8,7 @@ import {
   ValidateApiKeyRequest,
   ValidateApiKeyResponse // Response type for validation endpoint
 } from '@agent-base/types';
-import { makeAuthenticatedServiceRequest } from '../utils/service-client';
+import { makeWebAuthenticatedServiceRequest } from '../utils/service-client';
 // Use the same base URL as defined elsewhere or manage centrally
 const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL || 'http://localhost:3006'; // Ensure consistency
 
@@ -36,7 +36,7 @@ export const createApiKeyMetadata = async (
     throw new Error('[api-client:createApiKeyMetadata] Input data must include keyId, name, keyPrefix, and hashedKey.');
   }
   const endpoint = '/api-keys/';
-  return makeAuthenticatedServiceRequest<ApiKey>(
+  return makeWebAuthenticatedServiceRequest<ApiKey>(
     DATABASE_SERVICE_URL,
     'POST',
     endpoint,
@@ -60,7 +60,7 @@ export const listApiKeyMetadata = async (
     throw new Error('[api-client:listApiKeyMetadata] platformUserId is required for request header.');
   }
   const endpoint = '/api-keys/';
-  return makeAuthenticatedServiceRequest<ApiKey[]>(
+  return makeWebAuthenticatedServiceRequest<ApiKey[]>(
     DATABASE_SERVICE_URL,
     'GET',
     endpoint,
@@ -88,7 +88,7 @@ export const validateApiKey = async (
   // Pass an empty string or handle differently if platformUserId is truly not needed by makeServiceRequest
   // Assuming makeServiceRequest requires it, but it won't be used by this specific endpoint's backend logic.
   const placeholderUserId = ''; // Or adjust makeServiceRequest if possible
-  return makeAuthenticatedServiceRequest<ValidateApiKeyResponse>(
+  return makeWebAuthenticatedServiceRequest<ValidateApiKeyResponse>(
     DATABASE_SERVICE_URL,
     'POST',
     endpoint,

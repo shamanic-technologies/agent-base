@@ -8,7 +8,7 @@ import {
     PlatformUser
   } from '@agent-base/types';
 import axios, { AxiosError } from 'axios';
-import { makeAnonymousServiceRequest } from './utils/service-client';
+import { makeWebAnonymousServiceRequest } from './utils/service-client';
   // Determine the correct URL for the web-oauth-service
   const WEB_OAUTH_SERVICE_URL = process.env.WEB_OAUTH_SERVICE_URL || 'http://localhost:3005';
   
@@ -94,7 +94,7 @@ import { makeAnonymousServiceRequest } from './utils/service-client';
   export const refreshAuthToken = async (
   ): Promise<ServiceResponse<{}>> => {
     const endpoint = '/auth/refresh';
-    return makeAnonymousServiceRequest<{
+    return makeWebAnonymousServiceRequest<{
     }>(
       WEB_OAUTH_SERVICE_URL,
       'POST',
@@ -113,7 +113,7 @@ import { makeAnonymousServiceRequest } from './utils/service-client';
   export const logoutUser = async (
   ): Promise<ServiceResponse<{}>> => {
     const endpoint = '/auth/logout';
-    return makeAnonymousServiceRequest<{
+    return makeWebAnonymousServiceRequest<{
     }>(
       WEB_OAUTH_SERVICE_URL,
       'POST',
