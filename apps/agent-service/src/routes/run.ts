@@ -5,7 +5,7 @@
  */
 import { Router, Request, Response, NextFunction } from 'express';
 import {
-  Agent, 
+  GetClientUserAgentInput, 
     ClientUser,
     Conversation,
     PlatformUser,
@@ -51,7 +51,7 @@ const runRouter = Router(); // Use a specific router for this file
  */
 runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
   const handleAgentRun = async () => {
-    let agent: Agent | null = null; // Initialize as null
+    let agent: GetClientUserAgentInput | null = null; // Initialize as null
     let clientUser: ClientUser | null = null; // Initialize as null
     let currentMessage: Message;
     let conversationId: string;
@@ -90,7 +90,7 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       // --- End Extraction & Validation ---
       
       // --- Get Agent Details --- 
-      const agentResponse : ServiceResponse<Agent> = await getAgentFromConversation(
+      const agentResponse : ServiceResponse<GetClientUserAgentInput> = await getAgentFromConversation(
         { conversationId: conversationId }, // Pass params object
         clientUserId, // Pass clientUserId for header
         platformUserId, // Pass platformUserId for header

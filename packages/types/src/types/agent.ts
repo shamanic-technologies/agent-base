@@ -20,8 +20,8 @@ export interface AgentRecord {
   updated_at: Date;
 }
 
-export interface UserAgentRecord {
-  user_id: string;
+export interface ClientUserAgentRecord {
+  client_user_id: string;
   agent_id: string;
   created_at: Date;
 }
@@ -38,12 +38,12 @@ export interface CreateAgentInput {
   jobTitle: string;
 }
 
-export interface CreateUserAgentInput extends CreateAgentInput {
-  userId: string;
+export interface CreateClientUserAgentInput extends CreateAgentInput {
+  clientUserId: string;
 }
 
-export interface LinkAgentToUserInput {
-  userId: string;
+export interface LinkAgentToClientUserInput {
+  clientUserId: string;
   agentId: string;
 }
 
@@ -58,8 +58,8 @@ export interface UpdateAgentInput {
   jobTitle?: string;
 }
 
-export interface UpdateUserAgentInput {
-  userId: string;
+export interface UpdateClientUserAgentInput {
+  clientUserId: string;
   agentId: string; 
   agentFirstName?: string;
   agentLastName?: string;
@@ -70,12 +70,12 @@ export interface UpdateUserAgentInput {
   agentJobTitle?: string;
 }
 
-export interface ListUserAgentsInput {
-  userId: string;
+export interface ListClientUserAgentsInput {
+  clientUserId: string;
 }
 
-export interface GetUserAgentInput {
-  userId: string;
+export interface GetClientUserAgentInput {
+  clientUserId: string;
   agentId: string;
 }
 

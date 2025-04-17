@@ -4,7 +4,7 @@
  * Utility functions related to agent data and operations within the agent-service.
  */
 
-import { CreateUserAgentInput, Gender } from "@agent-base/types";
+import { CreateClientUserAgentInput, Gender } from "@agent-base/types";
 import { ModelName } from "../../types/agent-config.js";
 
 /**
@@ -13,9 +13,9 @@ import { ModelName } from "../../types/agent-config.js";
  * @param userId - The ID of the user for whom the default agent is being created.
  * @returns The CreateUserAgentInput object for the default agent.
  */
-export function createDefaultAgentPayload(userId: string): CreateUserAgentInput {
+export function createDefaultAgentPayload(userId: string): CreateClientUserAgentInput {
     // Define default agent data (ensure it matches CreateUserAgentInput)
-    const defaultAgentPayload: CreateUserAgentInput = {
+    const defaultAgentPayload: CreateClientUserAgentInput = {
         user_id: userId,
         agent_first_name: 'Alex',
         agent_last_name: 'Sinnek',
