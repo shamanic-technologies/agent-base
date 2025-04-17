@@ -18,10 +18,10 @@ import { PLATFORM_USERS_TABLE } from '../utils/schema-initializer.js';
 
 /**
  * Gets user data by internal user_id
- * @param userId - The internal user_id to look up
+ * @param platformUserId - The internal user_id to look up
  * @returns A response with user data if found
  */
-export async function getPlatformUserById(userId: string): Promise<ServiceResponse<PlatformUser>> {
+export async function getPlatformUserById(platformUserId: string): Promise<ServiceResponse<PlatformUser>> {
   let client: PoolClient | null = null;
   
   try {
@@ -34,7 +34,7 @@ export async function getPlatformUserById(userId: string): Promise<ServiceRespon
       LIMIT 1
     `;
     
-    const result = await client.query(query, [userId]);
+    const result = await client.query(query, [platformUserId]);
     
     if (result.rowCount === 0) {
       return {

@@ -153,6 +153,116 @@ export async function makeAPIServiceRequest<T>(
 }
 
 /**
+ * Makes an API Authenticated HTTP request (platformUserId, clientUserId, platformApiKey).
+ * Includes x-platform-user-id, x-client-user-id, and x-platform-api-key headers.
+ * All three auth identifiers are required.
+ * 
+ * @param serviceUrl - Base URL of the target service.
+ * @param method - HTTP method.
+ * @param endpoint - API endpoint path.
+ * @param platformUserId - Required platform user ID for 'x-platform-user-id' header.
+ * @param clientUserId - Required client user ID for 'x-client-user-id' header.
+ * @param platformApiKey - Required platform API key for 'x-platform-api-key' header.
+ * @param data - Optional request body.
+ * @param params - Optional URL query parameters.
+ * @returns Promise<ServiceResponse<T>>.
+ * @template T - Expected data payload type.
+ */
+export async function makePlatformUserValidationRequest<T>(
+  serviceUrl: string,
+  method: Method,
+  endpoint: string,
+  platformApiKey: string, // Required
+  data?: any,
+  params?: any
+): Promise<ServiceResponse<T>> {
+  const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const fullUrl = `${serviceUrl}${formattedEndpoint}`;
+  const logContext = `[httpClient:ApiAuth] PlatformApiKey ${platformApiKey}`;
+
+  // Validate required parameters
+  if (!platformApiKey) {
+    const missing = [
+        !platformApiKey ? 'platformApiKey' : null
+    ].filter(Boolean).join(', ');
+    console.error(`${logContext} Missing required parameters for API authenticated request to ${fullUrl}: ${missing}.`);
+    return {
+      success: false,
+      error: `Internal error: Missing required parameter(s) for API authenticated service request: ${missing}`
+    };
+  }
+
+  const config: AxiosRequestConfig = {
+    method,
+    url: fullUrl,
+    params,
+    headers: {
+      'x-platform-api-key': platformApiKey,
+    },
+    data
+  };
+
+  return _makeServiceRequest<T>(fullUrl, config, logContext);
+}
+
+
+/**
+ * Makes an API Authenticated HTTP request (platformUserId, clientUserId, platformApiKey).
+ * Includes x-platform-user-id, x-client-user-id, and x-platform-api-key headers.
+ * All three auth identifiers are required.
+ * 
+ * @param serviceUrl - Base URL of the target service.
+ * @param method - HTTP method.
+ * @param endpoint - API endpoint path.
+ * @param platformUserId - Required platform user ID for 'x-platform-user-id' header.
+ * @param clientUserId - Required client user ID for 'x-client-user-id' header.
+ * @param platformApiKey - Required platform API key for 'x-platform-api-key' header.
+ * @param data - Optional request body.
+ * @param params - Optional URL query parameters.
+ * @returns Promise<ServiceResponse<T>>.
+ * @template T - Expected data payload type.
+ */
+export async function makeClientUserValidationRequest<T>(
+  serviceUrl: string,
+  method: Method,
+  endpoint: string,
+  platformClientUserId: string, // Required
+  platformUserId: string, // Required
+  data?: any,
+  params?: any
+): Promise<ServiceResponse<T>> {
+  const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const fullUrl = `${serviceUrl}${formattedEndpoint}`;
+  const logContext = `[httpClient:ApiAuth] PlatformClient ${platformClientUserId}`;
+
+  // Validate required parameters
+  if (!platformClientUserId || !platformUserId) {
+    const missing = [
+        !platformClientUserId ? 'platformClientUserId' : null,
+        !platformUserId ? 'platformUserId' : null
+    ].filter(Boolean).join(', ');
+    console.error(`${logContext} Missing required parameters for API authenticated request to ${fullUrl}: ${missing}.`);
+    return {
+      success: false,
+      error: `Internal error: Missing required parameter(s) for API authenticated service request: ${missing}`
+    };
+  }
+
+  const config: AxiosRequestConfig = {
+    method,
+    url: fullUrl,
+    params,
+    headers: {
+      'x-platform-client-user-id': platformClientUserId,
+      'x-platform-user-id': platformUserId,
+    },
+    data
+  };
+
+  return _makeServiceRequest<T>(fullUrl, config, logContext);
+}
+
+/**
  * Makes an ANONYMOUS HTTP request to another microservice endpoint.
  * Does NOT include authentication headers.
  * 
