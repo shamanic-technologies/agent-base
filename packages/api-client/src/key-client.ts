@@ -11,7 +11,8 @@ import {
 // Import the shared request helpers
 import { 
   makeWebAuthenticatedServiceRequest, 
-  makeWebAnonymousServiceRequest // Add this import
+  makeWebAnonymousServiceRequest,
+  makePlatformUserValidationRequest
 } from './utils/service-client.js';
 
 // --- Key Service URL Configuration --- //
@@ -53,15 +54,15 @@ interface ValidateKeyPayload {
 export const validatePlatformApiKeySecret = async (
   platformApiKeySecret: PlatformAPIKeySecret
 ): Promise<ServiceResponse<PlatformUserId>> => {
-  const payload: ValidateKeyPayload = { apiKey: platformApiKeySecret };
+
   const endpoint = '/validate'; // Endpoint path
 
   // Use the anonymous helper, as this endpoint performs the authentication
-  return await makeWebAnonymousServiceRequest<PlatformUserId>(
+  return await makePlatformUserValidationRequest<PlatformUserId>(
     KEY_SERVICE_URL,
     'post',
     endpoint,
-    payload // Send API key in the body
+    platformApiKeySecret // Send API key in the body
   );
 
 };

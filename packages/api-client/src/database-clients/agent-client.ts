@@ -5,19 +5,9 @@
  */
 import { 
   ServiceResponse,
-  PlatformUser,             // Import the PlatformUser type
-  GetOrCreatePlatformUserInput, // Import the input type
   GetClientUserAgentInput,
   CreateClientUserAgentInput,
-  UpdateUserAgentInput,
-  ListUserAgentsInput,
-  ListClientUserAgentsInput,
-  AgentRecord,
-  // Assuming these inputs contain clientUserId internally
-  // ListUserAgentsResponse, 
-  // CreateUserAgentResponse, 
-  // UpdateUserAgentResponse, 
-  // GetUserAgentResponse 
+  UpdateAgentInput,
 } from '@agent-base/types';
 import { makeAPIServiceRequest } from '../utils/service-client';
 const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL || 'http://localhost:3006';
@@ -60,7 +50,7 @@ export const createUserAgent = async (
  * POST /agents/update-user-agent
  */
 export const updateUserAgent = async (
-  data: UpdateUserAgentInput,
+  data: UpdateAgentInput,
   platformUserId: string,
   platformApiKey: string,
   clientUserId: string
