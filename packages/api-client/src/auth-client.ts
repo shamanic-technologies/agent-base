@@ -8,7 +8,7 @@ import {
     PlatformUser
   } from '@agent-base/types';
 import axios, { AxiosError } from 'axios';
-import { makeAnonymousServiceRequest } from '../utils/service-client';
+import { makeAnonymousServiceRequest } from './utils/service-client';
   // Determine the correct URL for the web-oauth-service
   const WEB_OAUTH_SERVICE_URL = process.env.WEB_OAUTH_SERVICE_URL || 'http://localhost:3005';
   
