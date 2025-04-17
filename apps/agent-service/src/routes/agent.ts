@@ -14,7 +14,8 @@ import {
   // UpdateUserAgentResponse, 
   // CreateUserAgentResponse, 
   // GetUserAgentResponse
-  AgentRecord, // Keep for default agent creation typing
+  AgentRecord,
+  Agent, // Keep for default agent creation typing
   // Remove ServiceResponse import - Use specific response types like UserResponse etc.
   // ServiceResponse 
 } from '@agent-base/types';
@@ -39,7 +40,10 @@ const router = Router();
  */
 router.post('/create-user-agent', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const agentInput = req.body;
+    const agentInput: Agent = req.body;
+    // Log the received body
+    console.log('[Agent Service /create-user-agent] Received Body:', JSON.stringify(agentInput, null, 2));
+    
     // Extract auth details from augmented request
     const clientUserId = req.clientUserId as string;
     const platformUserId = req.platformUserId as string;
@@ -52,23 +56,25 @@ router.post('/create-user-agent', async (req: Request, res: Response, next: Next
     }
 
     // Basic validation (keep as before)
-    if (!agentInput.agent_first_name || !agentInput.agent_last_name || !agentInput.agent_profile_picture || 
-        !agentInput.agent_gender || !agentInput.agent_model_id || 
-        !agentInput.agent_memory || !agentInput.agent_job_title) {
+    if (!agentInput.firstName || !agentInput.lastName || !agentInput.profilePicture || 
+        !agentInput.gender || !agentInput.modelId || 
+        !agentInput.memory || !agentInput.jobTitle) {
+      // Log if validation fails
+      console.error('[Agent Service /create-user-agent] Validation Failed! Body:', JSON.stringify(agentInput, null, 2));
       res.status(400).json({ success: false, error: 'Missing required agent fields' });
       return;
     }
 
     // We no longer combine user_id into the input here, it's passed separately
-    // const combinedInput: CreateUserAgentInput = {
-    //   ...agentInput,
-    //   user_id: clientUserId
-    // };
+    const combinedInput: CreateUserAgentInput = {
+      ...agentInput,
+      userId: clientUserId
+    };
 
     console.log(`[Agent Service /create-user-agent] Calling createUserAgent service for user ${clientUserId}`);
     // Call the service function with all required arguments
     const result = await createUserAgent(
-      agentInput, // Pass the original body as data
+      combinedInput, // Pass the combined input
       platformUserId,
       platformApiKey,
       clientUserId
@@ -106,8 +112,8 @@ router.post('/update-user-agent', async (req: Request, res: Response, next: Next
         return;
     }
 
-    if (!agentUpdateData.agent_id) {
-      res.status(400).json({ success: false, error: 'agent_id is required in request body' });
+    if (!agentUpdateData.agentId) {
+      res.status(400).json({ success: false, error: 'agentId is required in request body' });
       return;
     }
 
@@ -238,7 +244,7 @@ router.get('/get-user-agent', async (req: Request, res: Response, next: NextFunc
     }
 
     if (!agentId) {
-      res.status(400).json({ success: false, error: 'agent_id query parameter is required' });
+      res.status(400).json({ success: false, error: 'agentId query parameter is required' });
       return;
     }
 

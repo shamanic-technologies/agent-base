@@ -41,7 +41,7 @@ router.get('/get-or-create-conversations-from-agent', async (req: Request, res: 
 
         // Validate agent_id parameter
         if (!agentId) {
-            res.status(400).json({ success: false, error: 'agent_id query parameter is required' });
+            res.status(400).json({ success: false, error: 'agentId query parameter is required' });
             return;
         }
 
