@@ -95,9 +95,9 @@ export const getOrCreateConversationsFromAgentApiClient = async (
     clientUserId: string, // Required for header
     platformUserId: string, // Required for header
     platformApiKey: string
-): Promise<ServiceResponse<ConversationRecord[]>> => { // Expect array of records
+): Promise<ServiceResponse<Conversation[]>> => { // Expect array of records
 
-    return makeAPIServiceRequest<ConversationRecord[]>(
+    return makeAPIServiceRequest<Conversation[]>(
         DATABASE_SERVICE_URL,
         'GET',
         '/conversations/get-or-create-conversations-from-agent',
@@ -118,9 +118,9 @@ export const getConversationByIdApiClient = async (
     clientUserId: string, // Required for header
     platformUserId: string, // Required for header
     platformApiKey: string
-): Promise<ServiceResponse<ConversationRecord>> => { // Expect single record
+): Promise<ServiceResponse<Conversation>> => { // Expect single record
 
-    return makeAPIServiceRequest<ConversationRecord>(
+    return makeAPIServiceRequest<Conversation>(
         DATABASE_SERVICE_URL,
         'GET',
         `/conversations/get-conversation/${params.agentId}`,
@@ -164,9 +164,9 @@ export const createConversationApiClient = async (
     clientUserId: string, // Required for header
     platformUserId: string, // Required for header
     platformApiKey: string
-): Promise<ServiceResponse<ConversationRecord>> => { // Expect created record
+): Promise<ServiceResponse<Conversation>> => { // Expect created record
  
-    return makeAPIServiceRequest<ConversationRecord>( // Expect created record
+    return makeAPIServiceRequest<Conversation>( // Expect created record
         DATABASE_SERVICE_URL,
         'POST',
         '/conversations/create-conversation',

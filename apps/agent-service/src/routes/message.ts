@@ -8,15 +8,15 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { Message } from 'ai'; // Changed import to Message from 'ai'
 import {
     // Import necessary types
-    GetConversationResponse, // Needed for getConversationById
-    GetConversationsResponse, // Needed for getOrCreateConversationsFromAgent
-    ConversationRecord // Keep for type safety
+    // GetConversationResponse, // Needed for getConversationById
+    // GetConversationsResponse, // Needed for getOrCreateConversationsFromAgent
+    // ConversationRecord // Keep for type safety
 } from '@agent-base/types';
 // Import the database service functions
 import { 
-    getConversationById, 
-    getOrCreateConversationsFromAgent 
-} from '../services/conversationServiceDb.js';
+    getConversation,
+    getOrCreateConversationsFromAgentApiClient
+} from '@agent-base/api-client';
 
 const router = Router();
 // DATABASE_SERVICE_URL is no longer needed here
@@ -27,22 +27,29 @@ const router = Router();
  */
 router.get('/get-messages-from-conversation', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const conversationId = req.query.conversation_id as string;
-    const userId = (req as any).user?.id as string;
+    const clientUserId = req.clientUserId as string;
+    const platformUserId = req.platformUserId as string;
+    const platformApiKey = req.headers['x-platform-api-key'] as string;
 
     if (!conversationId) {
         res.status(400).json({ success: false, error: 'conversation_id query parameter is required' });
         return;
     }
-    if (!userId) {
-        res.status(401).json({ success: false, error: 'User authentication required' });
+    if (!clientUserId || !platformUserId || !platformApiKey) {
+        res.status(401).json({ success: false, error: 'Authentication details missing' });
         return;
     }
 
-    const logPrefix = `[Agent Service /msg/get-from-conv] User ${userId}, Conv ${conversationId}:`;
+    const logPrefix = `[Agent Service /msg/get-from-conv] User ${clientUserId}, Conv ${conversationId}:`;
 
     try {
-        console.log(`${logPrefix} Calling getConversationById service`);
-        const conversationResponse = await getConversationById(conversationId, userId);
+        console.log(`${logPrefix} Calling getConversation service`);
+        const conversationResponse = await getConversation(
+            { conversationId: conversationId },
+            platformUserId,
+            platformApiKey,
+            clientUserId
+        );
 
         if (conversationResponse.success && conversationResponse.data) {
             // Access messages directly from conversationResponse.data (assuming it's ConversationRecord)
@@ -67,23 +74,29 @@ router.get('/get-messages-from-conversation', async (req: Request, res: Response
  */
 router.get('/get-messages-from-agent', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const agentId = req.query.agent_id as string;
-    const userId = (req as any).user?.id as string;
+    const clientUserId = req.clientUserId as string;
+    const platformUserId = req.platformUserId as string;
+    const platformApiKey = req.headers['x-platform-api-key'] as string;
 
     if (!agentId) {
         res.status(400).json({ success: false, error: 'agent_id query parameter is required' });
         return;
     }
-    if (!userId) {
-        res.status(401).json({ success: false, error: 'User authentication required' });
+    if (!clientUserId || !platformUserId || !platformApiKey) {
+        res.status(401).json({ success: false, error: 'Authentication details missing' });
         return;
     }
 
-    const logPrefix = `[Agent Service /msg/get-from-agent] User ${userId}, Agent ${agentId}:`;
+    const logPrefix = `[Agent Service /msg/get-from-agent] User ${clientUserId}, Agent ${agentId}:`;
 
     try {
-        console.log(`${logPrefix} Calling getOrCreateConversationsFromAgent service`);
-        // Service returns GetConversationsResponse = { success: boolean, data?: ConversationRecord[], error?: string }
-        const conversationsResponse = await getOrCreateConversationsFromAgent(agentId, userId);
+        console.log(`${logPrefix} Calling getOrCreateConversationsFromAgentApiClient service`);
+        const conversationsResponse = await getOrCreateConversationsFromAgentApiClient(
+            { agentId: agentId },
+            clientUserId,
+            platformUserId,
+            platformApiKey
+        );
 
         if (conversationsResponse.success && conversationsResponse.data) {
             let allMessages: Message[] = [];

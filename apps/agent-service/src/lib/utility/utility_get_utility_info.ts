@@ -31,7 +31,7 @@ const API_GATEWAY_URL = process.env.API_GATEWAY_URL;
  * Creates the get utility info tool with the given credentials
  */
 export function createGetUtilityInfoTool(credentials: UtilityToolCredentials) {
-  const { userId, conversationId, apiKey, agent_id } = credentials;
+  const { clientUserId: userId, conversationId, apiKey, agent_id } = credentials;
   
   return tool({
     name: 'utility_get_utility_info',

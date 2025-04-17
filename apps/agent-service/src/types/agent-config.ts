@@ -60,9 +60,9 @@ export type ThreadId = string;
  * Used to track tool invocations within the agent system
  */
 export interface ToolMetadata {
-  node_id: string;
-  node_type: NodeType;
-  parent_node_id: string | null;
-  parent_node_type: NodeType | null;
-  user_id: string;
+  nodeId: string;
+  nodeType: NodeType;
+  parentNodeId: string | null;
+  parentNodeType: NodeType | null;
+  userId: string;
 }

@@ -13,7 +13,6 @@ import {
   // Response types might not be directly needed if service returns specific data structure
   // UpdateUserAgentResponse, 
   // CreateUserAgentResponse, 
-  ListUserAgentsResponse, // Keep for formatting the final response in get-or-create
   // GetUserAgentResponse
   AgentRecord, // Keep for default agent creation typing
   // Remove ServiceResponse import - Use specific response types like UserResponse etc.
@@ -25,8 +24,8 @@ import {
   createUserAgent,
   updateUserAgent,
   listUserAgents,
-  getUserAgent
-} from '../services/agentServiceDb.js';
+  getUserAgentApiClient
+} from '@agent-base/api-client';
 
 // Import the new utility function
 import { createDefaultAgentPayload } from '../lib/utils/agentUtils.js';
@@ -41,10 +40,14 @@ const router = Router();
 router.post('/create-user-agent', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const agentInput = req.body;
-    const userId = (req as any).user?.id as string;
+    // Extract auth details from augmented request
+    const clientUserId = req.clientUserId as string;
+    const platformUserId = req.platformUserId as string;
+    const platformApiKey = req.headers['x-platform-api-key'] as string;
 
-    if (!userId) {
-        res.status(401).json({ success: false, error: 'User authentication required' });
+    // Validate auth details first
+    if (!clientUserId || !platformUserId || !platformApiKey) {
+        res.status(401).json({ success: false, error: 'Authentication details missing from request headers/context' });
         return;
     }
 
@@ -56,14 +59,20 @@ router.post('/create-user-agent', async (req: Request, res: Response, next: Next
       return;
     }
 
-    const combinedInput: CreateUserAgentInput = {
-      ...agentInput,
-      user_id: userId
-    };
+    // We no longer combine user_id into the input here, it's passed separately
+    // const combinedInput: CreateUserAgentInput = {
+    //   ...agentInput,
+    //   user_id: clientUserId
+    // };
 
-    console.log(`[Agent Service /create-user-agent] Calling createUserAgent service for user ${userId}`);
-    // Call the service function
-    const result = await createUserAgent(combinedInput);
+    console.log(`[Agent Service /create-user-agent] Calling createUserAgent service for user ${clientUserId}`);
+    // Call the service function with all required arguments
+    const result = await createUserAgent(
+      agentInput, // Pass the original body as data
+      platformUserId,
+      platformApiKey,
+      clientUserId
+    );
 
     if (result.success && result.data) {
       // Send 201 Created on success
@@ -86,10 +95,14 @@ router.post('/create-user-agent', async (req: Request, res: Response, next: Next
 router.post('/update-user-agent', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const agentUpdateData = req.body;
-    const userId = (req as any).user?.id as string;
+    // Extract auth details from augmented request
+    const clientUserId = req.clientUserId as string;
+    const platformUserId = req.platformUserId as string;
+    const platformApiKey = req.headers['x-platform-api-key'] as string;
 
-    if (!userId) {
-        res.status(401).json({ success: false, error: 'User authentication required' });
+    // Validate auth details first
+    if (!clientUserId || !platformUserId || !platformApiKey) {
+        res.status(401).json({ success: false, error: 'Authentication details missing from request headers/context' });
         return;
     }
 
@@ -98,23 +111,29 @@ router.post('/update-user-agent', async (req: Request, res: Response, next: Next
       return;
     }
 
-    const combinedInput: UpdateUserAgentInput = {
-      ...agentUpdateData,
-      user_id: userId
-    };
+    // We no longer combine user_id into the input here, it's passed separately
+    // const combinedInput: UpdateUserAgentInput = {
+    //   ...agentUpdateData,
+    //   user_id: clientUserId
+    // };
 
-    console.log(`[Agent Service /update-user-agent] Calling updateUserAgent service for user ${userId}, agent ${agentUpdateData.agent_id}`);
-    // Call the service function
-    const result = await updateUserAgent(combinedInput);
+    console.log(`[Agent Service /update-user-agent] Calling updateUserAgent service for user ${clientUserId}, agent ${agentUpdateData.agent_id}`);
+    // Call the service function with all required arguments
+    const updateResponse = await updateUserAgent(
+      agentUpdateData, // Pass the original body as data
+      platformUserId,
+      platformApiKey,
+      clientUserId
+      );
 
-    if (result.success && result.data) {
+    if (updateResponse.success && updateResponse.data) {
       // Send 200 OK on success
-      res.status(200).json(result); 
+      res.status(200).json(updateResponse); 
     } else {
       // Handle service failure - Send 500 Internal Server Error
-      console.error(`[Agent Service /update-user-agent] Service call failed: ${result.error}`);
+      console.error(`[Agent Service /update-user-agent] Service call failed: ${updateResponse.error}`);
       // Potentially check error message for specific DB service codes (like 403/404) if needed
-      res.status(500).json({ success: false, error: result.error || 'Failed to update agent via database service' });
+      res.status(500).json({ success: false, error: updateResponse.error || 'Failed to update agent via database service' });
     }
 
   } catch (error) {
@@ -128,22 +147,30 @@ router.post('/update-user-agent', async (req: Request, res: Response, next: Next
  * If the user has no agents, creates a default agent and returns it.
  */
 router.get('/get-or-create-user-agents', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  const userId = (req as any).user?.id as string;
+  // Extract auth details from augmented request
+  const clientUserId = req.clientUserId as string;
+  const platformUserId = req.platformUserId as string;
+  const platformApiKey = req.headers['x-platform-api-key'] as string;
 
-  if (!userId) {
-    console.error('[Agent Service /get-or-create-user-agents] User ID not found in request.');
-    // Use BaseResponse format for error
-    res.status(401).json({ success: false, error: 'User authentication required' });
-    return;
+  // Validate auth details first
+  if (!clientUserId || !platformUserId || !platformApiKey) {
+      console.error('[Agent Service /get-or-create-user-agents] Authentication details missing from request headers/context.');
+      res.status(401).json({ success: false, error: 'Authentication details missing from request headers/context' });
+      return;
   }
 
-  const logPrefix = `[Agent Service /get-or-create-user-agents] User ${userId}:`;
+  const logPrefix = `[Agent Service /get-or-create-user-agents] User ${clientUserId}:`;
 
   try {
     // Step 1: Try to list existing agents using the service function
     console.log(`${logPrefix} Calling listUserAgents service`);
-    // The service function now returns ListUserAgentsResponse directly
-    const listResult = await listUserAgents(userId);
+    // Pass params object and auth details
+    const listResult = await listUserAgents(
+      { clientUserId: clientUserId }, // Params object
+      platformUserId,
+      platformApiKey,
+      clientUserId
+    );
 
     // Check for successful response and if agents exist
     if (listResult.success && listResult.data && listResult.data.length > 0) {
@@ -160,18 +187,24 @@ router.get('/get-or-create-user-agents', async (req: Request, res: Response, nex
     
     // Step 2: No agents found, create default using the utility function
     console.log(`${logPrefix} No existing agents found. Creating default agent via service.`);
-    const defaultAgentPayload = createDefaultAgentPayload(userId);
+    // Pass clientUserId to the utility function as required
+    const defaultAgentPayload = createDefaultAgentPayload(clientUserId); 
     
     // Call the createUserAgent service function (returns CreateUserAgentResponse)
-    const createResult = await createUserAgent(defaultAgentPayload);
+    const createResult = await createUserAgent(
+      defaultAgentPayload,
+      platformUserId,
+      platformApiKey,
+      clientUserId
+    );
 
     if (createResult.success && createResult.data) {
-      console.log(`${logPrefix} Default agent created successfully (Agent ID: ${createResult.data.agent_id}).`);
+      console.log(`${logPrefix} Default agent created successfully (Agent ID: ${createResult.data.id}).`); // Use agent.id
       // Format the response as ListUserAgentsResponse
       res.status(201).json({
         success: true,
         data: [createResult.data] // Wrap single agent in array
-      } as ListUserAgentsResponse);
+      });
       return;
     } else {
       console.error(`${logPrefix} Failed to create default agent via service:`, createResult.error);
@@ -192,37 +225,41 @@ router.get('/get-or-create-user-agents', async (req: Request, res: Response, nex
  */
 router.get('/get-user-agent', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const userId = (req as any).user?.id as string;
+    // Extract auth details and agentId from query
+    const clientUserId = req.clientUserId as string;
+    const platformUserId = req.platformUserId as string;
+    const platformApiKey = req.headers['x-platform-api-key'] as string;
     const agentId = req.query.agent_id as string;
     
-    if (!userId) {
-      res.status(401).json({ success: false, error: 'User authentication required' });
-      return;
+    // Validate auth details first
+    if (!clientUserId || !platformUserId || !platformApiKey) {
+        res.status(401).json({ success: false, error: 'Authentication details missing from request headers/context' });
+        return;
     }
+
     if (!agentId) {
       res.status(400).json({ success: false, error: 'agent_id query parameter is required' });
       return;
     }
 
-    console.log(`[Agent Service /get-user-agent] Calling getUserAgent service for user ${userId}, agent ${agentId}`);
-    // Call the service function
-    const result = await getUserAgent(userId, agentId);
+    console.log(`[Agent Service /get-user-agent] Calling getUserAgentApiClient service for user ${clientUserId}, agent ${agentId}`);
+    // Call the service function with params object and auth details
+    const result = await getUserAgentApiClient(
+      { clientUserId: clientUserId, agentId: agentId }, // Params object
+      platformUserId,
+      platformApiKey,
+      clientUserId
+    );
 
     if (result.success && result.data) {
-      // Send 200 OK on success
-      res.status(200).json(result);
+      // Send 200 OK with the agent data
+      res.status(200).json(result); 
     } else {
-      // Handle service failure - Send 500 or potentially 404 if error indicates not found
+      // Handle service failure (e.g., agent not found, DB error)
       console.error(`[Agent Service /get-user-agent] Service call failed: ${result.error}`);
-      
-      // Check if error is a string before calling toLowerCase
-      const isNotFoundError = typeof result.error === 'string' && result.error.toLowerCase().includes('not found');
-      const statusCode = isNotFoundError ? 404 : 500;
-      
-      // Construct error message safely
-      const errorMessage = typeof result.error === 'string' ? result.error : 'Failed to get agent via database service';
-      
-      res.status(statusCode).json({ success: false, error: errorMessage });
+      // Use a 404 if agent not found, 500 otherwise - needs more specific error handling from API client ideally
+      const statusCode = result.error?.toLowerCase().includes('not found') ? 404 : 500;
+      res.status(statusCode).json({ success: false, error: result.error || 'Failed to get agent via database service' });
     }
 
   } catch (error) {

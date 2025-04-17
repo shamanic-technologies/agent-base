@@ -7,7 +7,8 @@
 import { 
     ServiceResponse,
     PlatformUser,             // For platform user operations
-    GetOrCreatePlatformUserInput, // For platform user creation
+    GetOrCreatePlatformUserInput,
+    ClientUser, // For platform user creation
     // Import only necessary types from @agent-base/types
     // Add specific record/input types here if they become available and are needed
 } from '@agent-base/types';
@@ -16,13 +17,6 @@ import { makeAPIServiceRequest } from '../utils/service-client';
 // Ensure the URL points to the correct database service
 const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL || 'http://localhost:3006';
 
-// Define a basic structure for expected user data if specific type isn't available/known
-// This represents the expected data structure within ServiceResponse.data
-interface BasicUserRecord { 
-    id: string; 
-    // Add other known fields if available, e.g., email?: string; name?: string;
-    [key: string]: any; // Allow other fields
-}
 
 // ==============================================================================
 // Client User Client Functions
@@ -42,13 +36,7 @@ export const getClientUserByIdApiClient = async (
   clientUserId: string,
   platformUserId: string,
   platformApiKey: string
-): Promise<ServiceResponse<BasicUserRecord>> => { 
-  // Validate required IDs for headers
-  if (!platformUserId || !clientUserId) {
-    const errorMsg = 'platformUserId and clientUserId are required for headers.';
-    console.error(`[api-client:getClientUserById] ${errorMsg}`);
-    return { success: false, error: errorMsg };
-  }
+): Promise<ServiceResponse<ClientUser>> => { 
 
   // Define the target endpoint
   const endpoint = '/users/me'; 
@@ -56,7 +44,7 @@ export const getClientUserByIdApiClient = async (
   // Call the authenticated service request utility
   // It handles constructing headers and making the request
   // We expect the response data to conform to BasicUserRecord
-  return makeAPIServiceRequest<BasicUserRecord>( 
+  return makeAPIServiceRequest<ClientUser>( 
     DATABASE_SERVICE_URL,
     'GET',
     endpoint,

@@ -6,17 +6,20 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import {
     // Import necessary types
-    GetConversationsResponse,
-    ConversationRecord,
-    CreateConversationResponse,
+    // GetConversationsResponse,
+    // ConversationRecord,
+    // CreateConversationResponse,
     CreateConversationInput,
     BaseResponse
 } from '@agent-base/types';
 // Import the new service function
-import { getOrCreateConversationsFromAgent, createConversation } from '../services/index.js'; // Updated import
+import { 
+    getOrCreateConversationsFromAgentApiClient, 
+    createConversationApiClient
+} from '@agent-base/api-client';
 
 const router = Router();
-const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL || 'http://localhost:3006'; // This is now unused here
+// const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL || 'http://localhost:3006'; // Unused
 
 /**
  * Get conversations for an agent, or create one if none exist
@@ -25,11 +28,14 @@ const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL || 'http://localho
 router.get('/get-or-create-conversations-from-agent', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const agentId = req.query.agent_id as string;
-        const userId = (req as any).user?.id as string;
+        // Extract auth details from augmented request
+        const clientUserId = req.clientUserId as string;
+        const platformUserId = req.platformUserId as string;
+        const platformApiKey = req.headers['x-platform-api-key'] as string;
 
-        // Validate user authentication
-        if (!userId) {
-            res.status(401).json({ success: false, error: 'User authentication required' });
+        // Validate auth details first
+        if (!clientUserId || !platformUserId || !platformApiKey) {
+            res.status(401).json({ success: false, error: 'Authentication details missing from request headers/context' });
             return;
         }
 
@@ -41,11 +47,15 @@ router.get('/get-or-create-conversations-from-agent', async (req: Request, res: 
 
         // Call the database service wrapper function
         try {
-            // Call the new function from database.ts
-            const conversationsResponse = await getOrCreateConversationsFromAgent(agentId, userId);
+            // Call the correct API client function with required params and auth details
+            const conversationsResponse = await getOrCreateConversationsFromAgentApiClient(
+                { agentId: agentId }, // Params object
+                clientUserId,
+                platformUserId,
+                platformApiKey
+            );
             console.log('[Agent Service] Conversations response:', JSON.stringify(conversationsResponse, null, 2));
             // Forward the successful response from the database service
-            // Note: The service function already returns the structured response
             res.status(200).json(conversationsResponse);
 
         } catch (error) {
@@ -56,7 +66,6 @@ router.get('/get-or-create-conversations-from-agent', async (req: Request, res: 
                 success: false,
                 error: error instanceof Error ? error.message : 'Failed to get or create conversations'
             });
-            // No return needed here as the catch block ends the function execution
         }
 
     } catch (error) {
@@ -78,41 +87,49 @@ router.get('/get-or-create-conversations-from-agent', async (req: Request, res: 
  */
 router.post('/create-conversation', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-        const { agent_id, channel_id, conversation_id } = req.body;
-        const userId = (req as any).user?.id as string;
+        const { agentId, channelId, conversationId } = req.body;
+        // Extract auth details from augmented request
+        const clientUserId = req.clientUserId as string;
+        const platformUserId = req.platformUserId as string;
+        const platformApiKey = req.headers['x-platform-api-key'] as string;
 
-        // Validate user authentication
-        if (!userId) {
-            res.status(401).json({ success: false, error: 'User authentication required' });
+        // Validate auth details first
+        if (!clientUserId || !platformUserId || !platformApiKey) {
+            res.status(401).json({ success: false, error: 'Authentication details missing from request headers/context' });
             return;
         }
 
         // Validate required parameters
-        if (!agent_id) {
-            res.status(400).json({ success: false, error: 'agent_id is required in request body' });
+        if (!agentId) {
+            res.status(400).json({ success: false, error: 'agentId is required in request body' });
             return;
         }
 
-        if (!channel_id) {
-            res.status(400).json({ success: false, error: 'channel_id is required in request body' });
+        if (!channelId) {
+            res.status(400).json({ success: false, error: 'channelId is required in request body' });
             return;
         }
 
-        if (!conversation_id) {
-            res.status(400).json({ success: false, error: 'conversation_id is required in request body' });
+        if (!conversationId) {
+            res.status(400).json({ success: false, error: 'conversationId is required in request body' });
             return;
         }
 
         try {
             // Create the input object using the CreateConversationInput type
             const input: CreateConversationInput = {
-                agent_id,
-                channel_id,
-                conversation_id
+                agentId,
+                channelId,
+                conversationId
             };
             
-            // Call the database service wrapper function with the input object
-            const response = await createConversation(input, userId);
+            // Call the correct API client function with the input object and auth details
+            const response = await createConversationApiClient(
+                input, 
+                clientUserId, 
+                platformUserId, 
+                platformApiKey
+            );
             
             // Forward the response from the database service
             res.status(response.success ? 201 : 500).json(response);
