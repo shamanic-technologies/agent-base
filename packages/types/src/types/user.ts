@@ -4,6 +4,10 @@
 import { BaseResponse, ServiceResponse } from './common.js';
 import { OAuthProvider } from './oauth.js';
 
+export enum UserType {
+  Platform = 'platform',
+  Client = 'client'
+}
 
 /**
  * User record from the database
