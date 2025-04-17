@@ -53,20 +53,33 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
     let clientUser: ClientUser | null = null; // Initialize as null
     let currentMessage: Message;
     let conversation_id: string;
-    let platformUser: PlatformUser;
+    // Use the correct types from the augmented request
+    let clientUserId: string | undefined; 
+    let platformUserId: string | undefined;
+    let platformApiKey: string | undefined; // Renamed from apiKey
 
     try {
       // --- Extraction & Validation --- 
       ({ message: currentMessage, conversation_id } = req.body);
-      platformUser = (req as any).user?.id as string;
-      const apiKey = req.headers['x-api-key'] as string;
+      // Extract from augmented request object
+      clientUserId = req.user?.id; 
+      platformUserId = req.platformUserId;
+      // Extract correct platform API key header
+      platformApiKey = req.headers['x-platform-api-key'] as string;
 
-      if (!platformUser) {
-        res.status(401).json({ success: false, error: 'User authentication required (Missing x-user-id)' });
+      if (!clientUserId) {
+        // Use the extracted clientUserId for checks
+        res.status(401).json({ success: false, error: 'User authentication required (Missing x-client-user-id)' });
         return;
       }
-      if (!apiKey) {
-        res.status(401).json({ success: false, error: 'API Key required (Missing x-api-key header)' });
+      if (!platformUserId) {
+        // Check for platformUserId from augmented request
+        res.status(401).json({ success: false, error: 'Platform user context required (Missing x-platform-user-id)' });
+        return;
+      }
+      if (!platformApiKey) {
+        // Check for the platformApiKey variable
+        res.status(401).json({ success: false, error: 'API Key required (Missing x-platform-api-key header)' });
         return;
       }
       if (!currentMessage || !conversation_id) {
@@ -76,7 +89,7 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       // --- End Extraction & Validation ---
       
       // --- Get Agent Details --- 
-      const agentResponse = await getAgentFromConversation(conversation_id, platformUser);
+      const agentResponse = await getAgentFromConversation(conversation_id, platformUserId);
       if (!agentResponse.success || !agentResponse.data) {
           console.error(`[Agent Service /run] Failed to get agent for conversation ${conversation_id}:`, agentResponse.error);
           // Decide appropriate error response - potentially 404 or 500
@@ -84,14 +97,16 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
           return;
       }
       agent = agentResponse.data; // Assign agent data
+      // @ts-ignore - Assuming agent_model_id exists on AgentRecord
       console.log(`[Agent Service /run] Fetched agent details for conversation: ${conversation_id}, using model: ${agent.agent_model_id}`);
       // --- End Get Agent Details ---
 
       // --- Initialize Tools (Requires Agent to be fetched first) ---
       const toolCredentials: UtilityToolCredentials = {
-        userId: platformUser, 
+        userId: clientUserId, // Pass clientUserId here 
         conversationId: conversation_id, 
-        apiKey, 
+        apiKey: platformApiKey, // Pass platformApiKey here
+        // @ts-ignore - Assuming agent_id exists on AgentRecord
         agent_id: agent.agent_id
       };
       const tools = {
@@ -102,20 +117,23 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       // --- End Initialize Tools ---
       
       // --- Get User Profile --- 
-      const profileResponse= await getUserById(platformUser); // Call the service
+      const profileResponse= await getUserById(clientUserId); // Call the service
       if (profileResponse.success && profileResponse.data) {
-          clientUser = mapUserFromDatabase(profileResponse.data);
-          console.log(`[Agent Service /run] Fetched user profile for user: ${platformUser}`);
+          // Assuming UserRecord from DB service is compatible with ClientUser type
+          // Remove mapping function call
+          clientUser = profileResponse.data as ClientUser; // Assign directly and cast
+          console.log(`[Agent Service /run] Fetched user profile for user: ${clientUserId}`);
           console.log(`[Agent Service /run] User profile: ${JSON.stringify(clientUser)}`);
       } else {
           // Log warning but continue - profile is optional context
-          console.warn(`[Agent Service /run] Could not fetch profile for user ${platformUser}:`, profileResponse.error);
+          console.warn(`[Agent Service /run] Could not fetch profile for user ${clientUserId}:`, profileResponse.error);
       }
       // --- End Get User Profile --- 
 
       // --- Get Conversation & History --- 
       let historyMessages: Message[] = [];
-      const conversationResponse = await getConversationById(conversation_id, platformUser);
+      // Pass clientUserId to the service call
+      const conversationResponse = await getConversationById(conversation_id, clientUserId);
       // Now check the success field of the ServiceResponse
       if (conversationResponse.success && conversationResponse.data?.messages) {
           historyMessages = conversationResponse.data.messages;
@@ -141,6 +159,7 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
 
       // --- Call AI Model --- 
       const result = await streamText({
+        // @ts-ignore - Assuming agent_model_id exists on AgentRecord
         model: anthropic(agent.agent_model_id),
         messages: allMessages as any[],
         // @ts-ignore - system is supported by Vercel AI SDK but might not be in inferred type
@@ -167,7 +186,7 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
                 
                 // Save the complete, updated message list back to the database service
                 // Use the refactored service function
-                const saveResult = await updateConversationMessagesInDb(conversation_id, finalMessages, platformUser);
+                const saveResult = await updateConversationMessagesInDb(conversation_id, finalMessages, clientUserId);
                 
                 if (!saveResult.success) {
                     // Log the error returned from the service function

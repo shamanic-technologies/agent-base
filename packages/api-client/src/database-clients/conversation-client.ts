@@ -7,9 +7,11 @@ import {
   CreateConversationInput,
   UpdateConversationInput,
   GetConversationsFromAgentInput,
-  ConversationId
+  ConversationId,
+  ConversationRecord,
+  BaseResponse
 } from '@agent-base/types';
-import { makeAuthenticatedServiceRequest } from '../utils/service-client';
+import { makeAPIServiceRequest } from '../utils/service-client';
 // Use the same base URL as defined elsewhere or manage centrally
 const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL || 'http://localhost:3006'; // Ensure consistency
 
@@ -28,7 +30,9 @@ const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL || 'http://localho
  */
 export const createConversation = async (
   data: CreateConversationInput,
-  platformUserId: string
+  platformUserId: string,
+  platformApiKey: string,
+  clientUserId: string
 ): Promise<ServiceResponse<Conversation>> => {
   if (!platformUserId) {
     throw new Error('[api-client:createConversation] platformUserId is required for request header.');
@@ -37,11 +41,13 @@ export const createConversation = async (
     throw new Error('[api-client:createConversation] Input data must include conversationId, agentId, and channelId.');
   }
   const endpoint = '/conversations/create-conversation';
-  return makeAuthenticatedServiceRequest<Conversation>(
+  return makeAPIServiceRequest<Conversation>(
     DATABASE_SERVICE_URL,
     'POST',
     endpoint,
     platformUserId,
+    clientUserId,
+    platformApiKey,
     data
   );
 };
@@ -57,7 +63,9 @@ export const createConversation = async (
  */
 export const getConversationsFromAgent = async (
   params: GetConversationsFromAgentInput,
-  platformUserId: string
+  platformUserId: string,
+  platformApiKey: string,
+  clientUserId: string
 ): Promise<ServiceResponse<Conversation[]>> => {
   if (!platformUserId) {
     throw new Error('[api-client:getConversationsFromAgent] platformUserId is required for request header.');
@@ -66,46 +74,108 @@ export const getConversationsFromAgent = async (
     throw new Error('[api-client:getConversationsFromAgent] Query parameters must include agentId.');
   }
   const endpoint = '/conversations/get-conversations-from-agent';
-  return makeAuthenticatedServiceRequest<Conversation[]>(
+  return makeAPIServiceRequest<Conversation[]>(
     DATABASE_SERVICE_URL,
     'GET',
     endpoint,
     platformUserId,
+    clientUserId,
+    platformApiKey,
     undefined, // No request body for GET
     params     // Pass params as query parameters
   );
 };
 
 /**
- * Gets conversations for an agent, or creates a default one if none exist.
- * 
- * Corresponds to: GET /conversations/get-or-create-conversations-from-agent
- * Note: The response type might be Conversation[] if found, or Conversation if created.
- * This client function reflects the endpoint directly. Consider separate get/create calls for simpler typing if needed.
- * 
- * @param params - Query parameters containing the agentId.
- * @param platformUserId - The platform user ID making the request (for headers).
- * @returns A ServiceResponse containing Conversation[] or Conversation or an error.
+ * Retrieves conversations for an agent, or creates a default one.
+ * GET /conversations/get-or-create-conversations-from-agent
  */
-export const getOrCreateConversationsFromAgent = async (
-  params: GetConversationsFromAgentInput,
-  platformUserId: string
-): Promise<ServiceResponse<Conversation[] | Conversation>> => {
-  if (!platformUserId) {
-    throw new Error('[api-client:getOrCreateConversationsFromAgent] platformUserId is required for request header.');
-  }
-  if (!params || !params.agentId) {
-    throw new Error('[api-client:getOrCreateConversationsFromAgent] Query parameters must include agentId.');
-  }
-  const endpoint = '/conversations/get-or-create-conversations-from-agent';
-  return makeAuthenticatedServiceRequest<Conversation[] | Conversation>(
-    DATABASE_SERVICE_URL,
-    'GET',
-    endpoint,
-    platformUserId,
-    undefined, // No request body for GET
-    params     // Pass params as query parameters
-  );
+export const getOrCreateConversationsFromAgentApiClient = async (
+    params: GetConversationsFromAgentInput,
+    clientUserId: string, // Required for header
+    platformUserId: string, // Required for header
+    platformApiKey: string
+): Promise<ServiceResponse<ConversationRecord[]>> => { // Expect array of records
+
+    return makeAPIServiceRequest<ConversationRecord[]>(
+        DATABASE_SERVICE_URL,
+        'GET',
+        '/conversations/get-or-create-conversations-from-agent',
+        platformUserId,
+        clientUserId,
+        platformApiKey,
+        undefined, // No Body
+        { agent_id: params.agentId } // Query param
+    );
+};
+
+/**
+ * Retrieves a single conversation by its ID.
+ * GET /conversations/get-conversation/:conversationId
+ */
+export const getConversationByIdApiClient = async (
+    params: GetConversationsFromAgentInput,
+    clientUserId: string, // Required for header
+    platformUserId: string, // Required for header
+    platformApiKey: string
+): Promise<ServiceResponse<ConversationRecord>> => { // Expect single record
+
+    return makeAPIServiceRequest<ConversationRecord>(
+        DATABASE_SERVICE_URL,
+        'GET',
+        `/conversations/get-conversation/${params.agentId}`,
+        platformUserId,
+        clientUserId,
+        platformApiKey,
+        undefined, // No Body
+        undefined // No Query Params
+    );
+};
+
+/**
+ * Updates the messages array for a specific conversation.
+ * POST /conversations/update-conversation
+ */
+export const updateConversationMessagesApiClient = async (
+    body: UpdateConversationInput,
+    clientUserId: string, // Required for header
+    platformUserId: string, // Required for header
+    platformApiKey: string
+): Promise<BaseResponse> => { // Expect BaseResponse (success/error)
+
+    return makeAPIServiceRequest<BaseResponse>( // Specify BaseResponse
+        DATABASE_SERVICE_URL,
+        'POST',
+        '/conversations/update-conversation',
+        platformUserId,
+        clientUserId,
+        platformApiKey,
+        body,      // Pass body
+        undefined // No Query Params
+    );
+};
+
+/**
+ * Creates a new conversation.
+ * POST /conversations/create-conversation
+ */
+export const createConversationApiClient = async (
+    body: CreateConversationInput, // Use shared type
+    clientUserId: string, // Required for header
+    platformUserId: string, // Required for header
+    platformApiKey: string
+): Promise<ServiceResponse<ConversationRecord>> => { // Expect created record
+ 
+    return makeAPIServiceRequest<ConversationRecord>( // Expect created record
+        DATABASE_SERVICE_URL,
+        'POST',
+        '/conversations/create-conversation',
+        platformUserId,
+        clientUserId,
+        platformApiKey,
+        body,      // Pass body
+        undefined // No Query Params
+    );
 };
 
 /**
@@ -119,22 +189,21 @@ export const getOrCreateConversationsFromAgent = async (
  */
 export const getConversation = async (
   params: ConversationId,
-  platformUserId: string
+  platformUserId: string,
+  platformApiKey: string,
+  clientUserId: string
 ): Promise<ServiceResponse<Conversation>> => {
-  if (!platformUserId) {
-    throw new Error('[api-client:getConversation] platformUserId is required for request header.');
-  }
-  if (!params || !params.conversationId) {
-    throw new Error('[api-client:getConversation] Path parameters must include conversationId.');
-  }
   // Construct endpoint with path parameter
   const endpoint = `/conversations/get-conversation/${params.conversationId}`;
-  return makeAuthenticatedServiceRequest<Conversation>(
+  return makeAPIServiceRequest<Conversation>(
     DATABASE_SERVICE_URL,
     'GET',
     endpoint,
-    platformUserId
-    // No query params or body needed
+    platformUserId,
+    clientUserId,
+    platformApiKey,
+    undefined, // No Body
+    undefined // No Query Params
   );
 };
 
@@ -149,20 +218,19 @@ export const getConversation = async (
  */
 export const updateConversation = async (
   data: UpdateConversationInput,
-  platformUserId: string
+  platformUserId: string,
+  platformApiKey: string,
+  clientUserId: string
 ): Promise<ServiceResponse<Conversation>> => {
-  if (!platformUserId) {
-    throw new Error('[api-client:updateConversation] platformUserId is required for request header.');
-  }
-  if (!data || !data.conversationId || !data.messages) {
-    throw new Error('[api-client:updateConversation] Input data must include conversationId and messages.');
-  }
   const endpoint = '/conversations/update-conversation';
-  return makeAuthenticatedServiceRequest<Conversation>(
+  return makeAPIServiceRequest<Conversation>(
     DATABASE_SERVICE_URL,
     'POST',
     endpoint,
     platformUserId,
-    data
+    clientUserId,
+    platformApiKey,
+    data,
+    undefined // No Query Params
   );
 }; 
