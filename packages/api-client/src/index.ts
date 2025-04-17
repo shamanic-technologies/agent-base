@@ -10,9 +10,10 @@ export * from './database-clients/conversation-client';
 export * from './database-clients/api-key-client';
 export * from './database-clients/oauth-client';
 export * from './database-clients/webhook-client';
+export * from './database-clients/client-user';
 
 // Export functions from web OAuth service client files
-export * from './auth-client';
+export * from './web-oauth-client';
 
 // Export Secret Service client functions
 export * from './secret-client';

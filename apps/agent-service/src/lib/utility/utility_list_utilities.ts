@@ -31,7 +31,7 @@ const API_GATEWAY_URL = process.env.API_GATEWAY_URL;
  * Creates the list utilities tool with the given credentials
  */
 export function createListUtilitiesTool(credentials: UtilityToolCredentials) {
-  const { userId, conversationId, apiKey, agent_id } = credentials;
+  const { clientUserId: userId, conversationId, apiKey, agentId } = credentials;
   
   return tool({
     name: 'utility_list_utilities',
@@ -53,7 +53,7 @@ export function createListUtilitiesTool(credentials: UtilityToolCredentials) {
             headers: {
               'Content-Type': 'application/json',
               'x-api-key': apiKey,
-              'x-agent-id': agent_id
+              'x-agent-id': agentId
             }
           }
         );

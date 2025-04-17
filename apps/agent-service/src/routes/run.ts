@@ -5,9 +5,11 @@
  */
 import { Router, Request, Response, NextFunction } from 'express';
 import {
-    AgentRecord, 
+  Agent, 
     ClientUser,
-    PlatformUser
+    Conversation,
+    PlatformUser,
+    ServiceResponse
 } from '@agent-base/types';
 // AI SDK imports
 import { anthropic } from '@ai-sdk/anthropic';
@@ -17,13 +19,13 @@ import { Message } from 'ai';
 // Import User type
 import { UtilityToolCredentials } from '../types/index.js';
 
-// Service function imports
+// Import necessary API client functions - Use versions without ApiClient suffix where available
 import { 
-  getAgentFromConversation, 
-  getConversationById,
-  updateConversationMessagesInDb,
-  getUserById
-} from '../services/index.js'; // Updated path to barrel file
+    getAgentFromConversation,
+    getConversation, // Use this instead of getConversationByIdApiClient
+    updateConversation, // Use this instead of updateConversationMessagesApiClient
+    getClientUserByIdApiClient // This one seems correctly named
+} from '@agent-base/api-client';
 
 // Tool Creator Imports
 import { createListUtilitiesTool } from '../lib/utility/utility_list_utilities.js';
@@ -49,10 +51,10 @@ const runRouter = Router(); // Use a specific router for this file
  */
 runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
   const handleAgentRun = async () => {
-    let agent: AgentRecord | null = null; // Initialize as null
+    let agent: Agent | null = null; // Initialize as null
     let clientUser: ClientUser | null = null; // Initialize as null
     let currentMessage: Message;
-    let conversation_id: string;
+    let conversationId: string;
     // Use the correct types from the augmented request
     let clientUserId: string | undefined; 
     let platformUserId: string | undefined;
@@ -60,11 +62,10 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
 
     try {
       // --- Extraction & Validation --- 
-      ({ message: currentMessage, conversation_id } = req.body);
+      ({ message: currentMessage, conversationId: conversationId } = req.body);
       // Extract from augmented request object
-      clientUserId = req.user?.id; 
+      clientUserId = req.clientUserId; 
       platformUserId = req.platformUserId;
-      // Extract correct platform API key header
       platformApiKey = req.headers['x-platform-api-key'] as string;
 
       if (!clientUserId) {
@@ -82,32 +83,36 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
         res.status(401).json({ success: false, error: 'API Key required (Missing x-platform-api-key header)' });
         return;
       }
-      if (!currentMessage || !conversation_id) {
+      if (!currentMessage || !conversationId) {
         res.status(400).json({ success: false, error: 'Missing required fields: message, conversation_id' });
         return;
       }
       // --- End Extraction & Validation ---
       
       // --- Get Agent Details --- 
-      const agentResponse = await getAgentFromConversation(conversation_id, platformUserId);
+      const agentResponse : ServiceResponse<Agent> = await getAgentFromConversation(
+        { conversationId: conversationId }, // Pass params object
+        clientUserId, // Pass clientUserId for header
+        platformUserId, // Pass platformUserId for header
+        platformApiKey // Pass platformApiKey for header
+      );
       if (!agentResponse.success || !agentResponse.data) {
-          console.error(`[Agent Service /run] Failed to get agent for conversation ${conversation_id}:`, agentResponse.error);
+          console.error(`[Agent Service /run] Failed to get agent for conversation ${conversationId}:`, agentResponse.error);
           // Decide appropriate error response - potentially 404 or 500
           res.status(500).json({ success: false, error: `Failed to load agent configuration: ${agentResponse.error}` });
           return;
       }
       agent = agentResponse.data; // Assign agent data
       // @ts-ignore - Assuming agent_model_id exists on AgentRecord
-      console.log(`[Agent Service /run] Fetched agent details for conversation: ${conversation_id}, using model: ${agent.agent_model_id}`);
+      console.log(`[Agent Service /run] Fetched agent details for conversation: ${conversationId}, using model: ${agent.agent_model_id}`);
       // --- End Get Agent Details ---
 
       // --- Initialize Tools (Requires Agent to be fetched first) ---
       const toolCredentials: UtilityToolCredentials = {
-        userId: clientUserId, // Pass clientUserId here 
-        conversationId: conversation_id, 
+        clientUserId: clientUserId, // Pass clientUserId here 
+        conversationId: conversationId, 
         apiKey: platformApiKey, // Pass platformApiKey here
-        // @ts-ignore - Assuming agent_id exists on AgentRecord
-        agent_id: agent.agent_id
+        agentId: agent.id
       };
       const tools = {
           utility_list_utilities: createListUtilitiesTool(toolCredentials),
@@ -117,7 +122,11 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       // --- End Initialize Tools ---
       
       // --- Get User Profile --- 
-      const profileResponse= await getUserById(clientUserId); // Call the service
+      const profileResponse = await getClientUserByIdApiClient(
+          clientUserId, 
+          platformUserId, 
+          platformApiKey
+      ); 
       if (profileResponse.success && profileResponse.data) {
           // Assuming UserRecord from DB service is compatible with ClientUser type
           // Remove mapping function call
@@ -132,15 +141,20 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
 
       // --- Get Conversation & History --- 
       let historyMessages: Message[] = [];
-      // Pass clientUserId to the service call
-      const conversationResponse = await getConversationById(conversation_id, clientUserId);
+      // Use API Client function - getConversation
+      const conversationResponse = await getConversation( // Changed function name
+        { conversationId: conversationId }, // Pass params object with conversationId
+        platformUserId, // Pass platformUserId for header (assuming order based on getConversation signature)
+        platformApiKey, // Pass platformApiKey for header
+        clientUserId    // Pass clientUserId for header
+      ); 
       // Now check the success field of the ServiceResponse
       if (conversationResponse.success && conversationResponse.data?.messages) {
           historyMessages = conversationResponse.data.messages;
-          console.log(`[Agent Service /run] Fetched ${historyMessages.length} history messages for conv: ${conversation_id}`);
+          console.log(`[Agent Service /run] Fetched ${historyMessages.length} history messages for conv: ${conversationId}`);
       } else {
           // Log warning if fetching failed or conversation has no messages
-          console.warn(`[Agent Service /run] Conversation ${conversation_id} not found, error fetching, or no messages present. Starting with empty history. Error: ${conversationResponse.error}`);
+          console.warn(`[Agent Service /run] Conversation ${conversationId} not found, error fetching, or no messages present. Starting with empty history. Error: ${conversationResponse.error}`);
       }
       // --- End Get History --- 
 
@@ -185,8 +199,13 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
                 console.log(`[Agent Service /run] finalMessages count to save: ${finalMessages.length}`);
                 
                 // Save the complete, updated message list back to the database service
-                // Use the refactored service function
-                const saveResult = await updateConversationMessagesInDb(conversation_id, finalMessages, clientUserId);
+                // Use API Client function - updateConversation
+                const saveResult = await updateConversation( // Changed function name
+                  { conversationId: conversationId, messages: finalMessages }, // Pass data object with camelCase conversationId
+                  platformUserId, // Pass platformUserId for header
+                  platformApiKey, // Pass platformApiKey for header
+                  clientUserId    // Pass clientUserId for header
+                );
                 
                 if (!saveResult.success) {
                     // Log the error returned from the service function

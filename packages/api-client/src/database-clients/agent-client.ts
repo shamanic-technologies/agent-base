@@ -111,9 +111,9 @@ export const getUserAgentApiClient = async (
   platformUserId: string,
   platformApiKey: string,
   clientUserId: string
-): Promise<ServiceResponse<AgentRecord>> => { // Revert to generic response type
+): Promise<ServiceResponse<Agent>> => { // Revert to generic response type
 
-  return makeAPIServiceRequest<AgentRecord>( // Expect AgentRecord in data
+  return makeAPIServiceRequest<Agent>( // Expect AgentRecord in data
     DATABASE_SERVICE_URL,
     'GET',
     '/agents/get-user-agent',
@@ -135,9 +135,9 @@ export const getAgentFromConversation = async (
   clientUserId: string, // Pass clientUserId explicitly for the header
   platformUserId: string,
   platformApiKey: string
-): Promise<ServiceResponse<AgentRecord>> => { // Revert to generic response type
+): Promise<ServiceResponse<Agent>> => { // Revert to generic response type
 
-  return makeAPIServiceRequest<AgentRecord>( // Expect AgentRecord in data
+  return makeAPIServiceRequest<Agent>( // Expect AgentRecord in data
     DATABASE_SERVICE_URL,
     'GET',
     '/agents/get-conversation-agent',

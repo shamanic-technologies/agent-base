@@ -22,10 +22,9 @@ import { ClientUser, PlatformUser } from '@agent-base/types';
 declare global {
   namespace Express {
     interface Request {
-      // Augment request with the client user details (potentially partial)
-      user?: Partial<ClientUser>; 
-      // Store the platform user ID separately
-      platformUserId?: string; 
+      clientUserId?: string; 
+      platformUserId?: string;
+      platformApiKey?: string;
     }
   }
 }
@@ -79,17 +78,13 @@ app.use((req, res, next) => {
     const platformUserIdHeader = req.headers['x-platform-user-id'] as string;
     
     if (clientUserId) {
-      // Set client user object on request for route handlers
-      // Store clientUserId in the 'id' field of the Partial<ClientUser>
-      req.user = {
-        id: clientUserId, // Store clientUserId here
-      } as Partial<ClientUser>; // Assign as Partial<ClientUser>
+      req.clientUserId = clientUserId;
       console.log(`[Agent Service Auth] Client User ID: ${clientUserId}`);
     } else {
       // Client User ID is essential for most operations
       console.warn('[Agent Service Auth] Missing x-client-user-id header.');
       // Optionally block requests
-      // return res.status(401).json({ success: false, error: 'Missing x-client-user-id header' });
+      return res.status(401).json({ success: false, error: 'Missing x-client-user-id header' });
     }
 
     if (platformUserIdHeader) {
@@ -99,7 +94,7 @@ app.use((req, res, next) => {
     } else {
        console.warn('[Agent Service Auth] Missing x-platform-user-id header.');
        // Optionally block requests
-       // return res.status(401).json({ success: false, error: 'Missing x-platform-user-id header' });
+       return res.status(401).json({ success: false, error: 'Missing x-platform-user-id header' });
     }
     
     next();

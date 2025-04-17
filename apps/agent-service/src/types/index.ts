@@ -3,7 +3,7 @@
  */
 
 // Import shared User type for Express Request augmentation
-import { User } from '@agent-base/types';
+import { ClientUser, PlatformUser } from '@agent-base/types';
 
 /**
  * UtilityError Interface
@@ -22,10 +22,10 @@ export interface UtilityError {
  * Standard credentials required by all utility tools.
  */
 export interface UtilityToolCredentials {
-  userId: string;
+  clientUserId: string;
   conversationId: string;
   apiKey: string;
-  agent_id: string;
+  agentId: string;
 }
 
 // Removed local User interface
@@ -35,7 +35,9 @@ export interface UtilityToolCredentials {
 declare global {
   namespace Express {
     interface Request {
-      user?: User; // Use the imported shared User type
+      clientUserId?: string; // Use the imported shared User type
+      platformUserId?: string; // Use the imported shared User type
+      platformApiKey?: string; // Use the imported shared User type
     }
   }
 }
