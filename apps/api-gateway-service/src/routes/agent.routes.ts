@@ -5,7 +5,6 @@
  */
 import express from 'express';
 import axios from 'axios';
-import { User } from '../types/index.js';
 
 /**
  * Configure generic forwarding for /agent routes
@@ -20,16 +19,17 @@ export const configureAgentRoutes = (
 
   // Generic forwarder for all methods and paths under /agent
   router.all('*', async (req: express.Request, res: express.Response) => {
-      const userId = req.user ? (req.user as User).id : undefined;
-    const apiKey = req.headers['x-api-key'] as string;
-    // Get path relative to /agent mount point
-    const originalPath = req.path.replace('/agent', ''); 
+    const platformUserId = req.platformUserId ? req.platformUserId : undefined;
+    const platformApiKey = req.platformApiKey ? req.platformApiKey : undefined;
+    const clientUserId = req.clientUserId ? req.clientUserId : undefined;
     // Construct target URL on the agent service
-    const targetUrl = `${targetServiceUrl}/agent${originalPath}`; 
+    const targetUrl = `${targetServiceUrl}${req.originalUrl}`; 
 
-    console.log(`[API Gateway /agent] Forwarding ${req.method} ${req.originalUrl} to ${targetUrl} with query ${req.query} for user ${userId}`);
+    console.log(`[API Gateway /agent] Forwarding ${req.method} ${req.originalUrl} to ${targetUrl} with query ${req.query} for user ${platformUserId}`);
 
-    if (!userId) return res.status(401).json({ success: false, error: 'User not authenticated' });
+    if (!platformUserId) return res.status(401).json({ success: false, error: 'Platform User not authenticated' });
+    if (!platformApiKey) return res.status(401).json({ success: false, error: 'Platform API key not provided' });
+    if (!clientUserId) return res.status(401).json({ success: false, error: 'Client User not provided' });
 
     try {
       const response = await axios({
@@ -40,8 +40,9 @@ export const configureAgentRoutes = (
         headers: {
           ...req.headers,
           'host': new URL(targetServiceUrl).host,
-          'x-user-id': userId,
-          'x-api-key': apiKey,
+          'x-platform-user-id': platformUserId,
+          'x-platform-api-key': platformApiKey,
+          'x-client-user-id': clientUserId,
           'connection': undefined,
         },
       });

@@ -25,8 +25,8 @@ export const configureRoutes = (
     agent: string;
     utilityTool: string;
     key: string;
-    logging?: string;
-    secret?: string;
+    logging: string;
+    secret: string;
   },
   authMiddleware: express.RequestHandler
 ) => {
@@ -36,40 +36,34 @@ export const configureRoutes = (
   configureHealthRoutes(healthRouter, serviceUrls);
   app.use('/health', healthRouter);
   
-  // --- Agent Service Prefixes --- 
-  // Each prefix gets its own router and forwarding configuration
-
   // /agent prefix
   const agentRouter = express.Router();
   configureAgentRoutes(agentRouter, serviceUrls.agent, authMiddleware);
-  app.use('/agent', agentRouter);
+  app.use('/', agentRouter);
 
   // /message prefix
   const messageRouter = express.Router();
   configureMessageRoutes(messageRouter, serviceUrls.agent, authMiddleware);
-  app.use('/message', messageRouter);
+  app.use('/', messageRouter);
 
   // /conversation prefix
   const conversationRouter = express.Router();
   configureConversationRoutes(conversationRouter, serviceUrls.agent, authMiddleware);
-  app.use('/conversation', conversationRouter);
+  app.use('/', conversationRouter);
 
   // /run prefix
   const runRouter = express.Router();
   configureRunRoutes(runRouter, serviceUrls.agent, authMiddleware);
-  app.use('/run', runRouter);
-  // --- End Agent Service Prefixes ---
+  app.use('/', runRouter);
   
   // Utility tool service routes
   const utilityRouter = express.Router();
   configureUtilityRoutes(utilityRouter, serviceUrls.utilityTool, authMiddleware);
-  // The next line means that the routes defined in utility.routes.ts will be available at /utility-tool/*
-  // So /get-list in utility.routes.ts becomes /utility-tool/get-list
-  app.use('/utility-tool', utilityRouter);
+  app.use('/', utilityRouter);
 
   // Secret service routes
   const secretRouter = express.Router();
   configureSecretRoutes(secretRouter, serviceUrls.secret, authMiddleware);
-  app.use('/secret', secretRouter);
+  app.use('/', secretRouter);
 
 }; 
