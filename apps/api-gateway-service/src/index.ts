@@ -60,7 +60,7 @@ configureRoutes(
     key: KEY_SERVICE_URL,
     logging: LOGGING_SERVICE_URL
   },
-  authMiddleware(KEY_SERVICE_URL)
+  authMiddleware()
 );
 
 // Start server
