@@ -14,6 +14,8 @@ import {
     UpdateConversationInput,
     ErrorResponse,
     SuccessResponse,
+    ServiceResponse,
+    ConversationId,
 } from '@agent-base/types';
 import {
     createConversation,
@@ -115,10 +117,10 @@ router.get('/get-conversations-from-agent', (async (req: Request, res: Response,
  */
 router.get('/get-or-create-conversations-from-agent', (async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const agentId = req.query.agentId as string;
+    const agentId = req.query.agent_id as string;
 
     if (!agentId) {
-      return res.status(400).json({ success: false, error: 'agentId query parameter is required' } as ErrorResponse);
+      return res.status(400).json({ success: false, error: 'agent_id query parameter is required' } as ErrorResponse);
     }
 
     console.log(`[DB Route /conversations] Getting or creating conversation for agent ${agentId}`);
@@ -149,10 +151,10 @@ router.get('/get-or-create-conversations-from-agent', (async (req: Request, res:
       channelId: defaultChannelId
     };
 
-    const createResponse = await createConversation(createInput);
+    const createResponse : ServiceResponse<ConversationId> = await createConversation(createInput);
 
     // Handle errors during creation
-    if (!createResponse.success || !createResponse.data?.conversationId) {
+    if (!createResponse.success) {
       console.error(`[DB Route /conversations] Failed to create conversation for agent ${agentId}:`, createResponse.error);
       return res.status(500).json(createResponse);
     }
