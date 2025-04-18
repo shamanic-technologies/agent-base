@@ -9,9 +9,10 @@ import express from 'express';
 import { 
   validatePlatformApiKeySecret, 
   upsertClientUserApiClient,
-  PlatformUserId
+  PlatformAPIKeySecretData,
+  PlatformUserIdData
 } from '@agent-base/api-client'; 
-import { ServiceResponse, ClientUser } from '@agent-base/types';
+import { ServiceResponse, ClientUser, UpsertClientUserInput } from '@agent-base/types';
 
 /**
  * Authentication middleware factory that returns a middleware function
@@ -37,20 +38,28 @@ export const authMiddleware = () => {
         });
       }
 
-      // Validate the API key and get user information (platformUserId string)
-      const validationResponse: ServiceResponse<PlatformUserId> = await validatePlatformApiKeySecret(platformApiKey); 
-      
-      // Check for valid status and presence of data (which is the platformUserId string)
-      if (!validationResponse.success || !validationResponse.data) { 
-        console.log(`[Auth Middleware] Invalid API key`);
-        // Use the specific error from the validation response if available
-        return res.status(401).json(validationResponse || { success: false, error: 'Invalid API Key' });
+      // Validate the API key and get the FULL ApiKey object
+      // Note: The client function is declared as returning ServiceResponse<PlatformUserId>,
+      // but the actual data returned by the service flow is the ApiKey object.
+      // We need to handle the actual returned type here.
+      const platformApiKeySecretData: PlatformAPIKeySecretData = {
+        platformAPIKeySecret: platformApiKey
+      };
+      const validationResponse : ServiceResponse<PlatformUserIdData> = await validatePlatformApiKeySecret(platformApiKeySecretData);
+
+      // Check for validation success first
+      if (!validationResponse.success) {
+        console.log(`[Auth Middleware] Key validation failed: ${validationResponse.error}`);
+        return res.status(401).json(validationResponse);
       }
 
-      // validationResponse.data IS the platformUserId string
-      const platformUserId: string = validationResponse.data;
-      (req as any).platformUserId = platformUserId; // Store on request
-      req.headers['x-platform-user-id'] = platformUserId; // Set header for downstream
+
+      // At this point, we know apiKeyData is an object with platformUserId
+      const platformUserId: string = validationResponse.data.platformUserId;
+
+      // Now platformUserId is correctly the string UUID
+      (req as any).platformUserId = platformUserId; // Store correct string on request
+      req.headers['x-platform-user-id'] = platformUserId; // Set correct string header for downstream
       console.log(`[Auth Middleware] Authenticated platform user ${platformUserId}`);
 
       // 2. Platform Client User ID Validation (Optional)
@@ -59,13 +68,12 @@ export const authMiddleware = () => {
       if (platformClientUserId) {
         console.log(`[Auth Middleware] Found x-platform-client-user-id: ${platformClientUserId}. Validating/upserting...`);
         
-        // Prepare input for the client user upsert function
-        // Both platformUserId (string) and platformClientUserId (string) are needed
-        const upsertInput = { platformUserId, platformClientUserId };
 
-        // Call the client user upsert API
-        // Pass the input object AND the platformUserId string for auth
-        const clientUserResponse: ServiceResponse<ClientUser> = await upsertClientUserApiClient(upsertInput, platformClientUserId, platformUserId);
+
+        const clientUserResponse: ServiceResponse<ClientUser> = await upsertClientUserApiClient(
+          platformClientUserId, 
+          platformUserId // Pass the correct string ID here
+        );
 
         if (!clientUserResponse.success || !clientUserResponse.data || !clientUserResponse.data.id) {
           console.error(`[Auth Middleware] Failed to validate/upsert client user ID ${platformClientUserId} for platform user ${platformUserId}. Error: ${clientUserResponse.error}`);

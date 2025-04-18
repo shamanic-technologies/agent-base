@@ -8,8 +8,7 @@ import {
   GetUserOAuthInput
 } from '@agent-base/types';
 import { makeWebAuthenticatedServiceRequest } from '../utils/service-client';
-// Use the same base URL as defined elsewhere or manage centrally
-const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL || 'http://localhost:3006'; // Ensure consistency
+import { getDatabaseServiceUrl } from '../utils/config'; // Import the centralized getter
 
 // ==============================================================================
 // OAuth Client Functions
@@ -37,7 +36,7 @@ export const createOrUpdateOAuthCredentials = async (
   }
   const endpoint = '/oauth/';
   return makeWebAuthenticatedServiceRequest<OAuth>(
-    DATABASE_SERVICE_URL,
+    getDatabaseServiceUrl(),
     'POST',
     endpoint,
     platformUserId,
@@ -66,7 +65,7 @@ export const getOAuthCredentials = async (
   }
   const endpoint = '/oauth/';
   return makeWebAuthenticatedServiceRequest<OAuth>(
-    DATABASE_SERVICE_URL,
+    getDatabaseServiceUrl(),
     'GET',
     endpoint,
     platformUserId,

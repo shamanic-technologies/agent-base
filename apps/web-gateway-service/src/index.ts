@@ -1,3 +1,16 @@
+import dotenv from 'dotenv';
+import path from 'path';
+import fs from 'fs';
+
+// Load environment variables from .env.local first
+const envFile = path.resolve(process.cwd(), '.env.local');
+if (fs.existsSync(envFile)) {
+  console.log(`Loading environment from ${envFile}`);
+  dotenv.config({ path: envFile });
+} else {
+  console.log(`Environment file ${envFile} not found, attempting to use system environment variables.`);
+}
+
 /**
  * Web Gateway Service
  * 
@@ -6,36 +19,17 @@
  */
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import { rateLimit } from 'express-rate-limit';
-import path from 'path';
-import fs from 'fs';
 import { authMiddleware } from './middleware/auth-middleware';
 import { tokenCache } from './utils/token-cache';
 import { forwardRequest } from './utils/forward-request';
 
-// Load environment variables based on NODE_ENV
-const NODE_ENV = process.env.NODE_ENV || 'development';
-
-// Only load from .env file in development
-if (NODE_ENV === 'development') {
-  const envFile = path.resolve(process.cwd(), '.env.local');
-  if (fs.existsSync(envFile)) {
-    console.log(`Loading environment from ${envFile}`);
-    dotenv.config({ path: envFile });
-  } else {
-    console.log(`Environment file ${envFile} not found, using default environment variables.`);
-  }
-} else {
-  console.log('Production environment detected, using Railway configuration.');
-}
-
 // Check required environment variables
 const requiredEnvVars = [
   'PORT',
-  'AUTH_SERVICE_URL',
-  'KEYS_SERVICE_URL',
+  'WEB_OAUTH_SERVICE_URL',
+  'KEY_SERVICE_URL',
   'PAYMENT_SERVICE_URL',
   'LOGGING_SERVICE_URL',
   'DATABASE_SERVICE_URL',
@@ -52,8 +46,8 @@ const app = express();
 const PORT = process.env.PORT;
 
 // Service URLs with non-null assertion to handle TypeScript
-const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL!;
-const KEYS_SERVICE_URL = process.env.KEYS_SERVICE_URL!;
+const WEB_OAUTH_SERVICE_URL = process.env.WEB_OAUTH_SERVICE_URL!;
+const KEY_SERVICE_URL = process.env.KEY_SERVICE_URL!;
 const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL!;
 const LOGGING_SERVICE_URL = process.env.LOGGING_SERVICE_URL!;
 const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL!;
@@ -139,8 +133,8 @@ app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'healthy',
     services: {
-      auth: AUTH_SERVICE_URL,
-      keys: KEYS_SERVICE_URL,
+      auth: WEB_OAUTH_SERVICE_URL,
+      keys: KEY_SERVICE_URL,
       payment: PAYMENT_SERVICE_URL,
       logging: LOGGING_SERVICE_URL,
       database: DATABASE_SERVICE_URL
@@ -170,17 +164,17 @@ authRouter.all('*', (req, res) => {
     }
   }
 
-  return forwardRequest(AUTH_SERVICE_URL, req, res);
+  return forwardRequest(WEB_OAUTH_SERVICE_URL, req, res);
 });
 
 // OAuth route handler (for Auth Service)
 oauthRouter.all('*', (req, res) => {
-  return forwardRequest(AUTH_SERVICE_URL, req, res);
+  return forwardRequest(WEB_OAUTH_SERVICE_URL, req, res);
 });
 
 // Keys service route handler
 keysRouter.all('*', (req, res) => {  
-  return forwardRequest(KEYS_SERVICE_URL, req, res);
+  return forwardRequest(KEY_SERVICE_URL, req, res);
 });
 
 // Payment service route handler
@@ -220,8 +214,8 @@ app.use((req, res) => {
 app.listen(PORT, () => {
   console.log(`🚪 Web Gateway Service running on port ${PORT}`);
   console.log('Connected to services:');
-  console.log(`🔐 Auth Service: ${AUTH_SERVICE_URL}`);
-  console.log(`🔑 Keys Service: ${KEYS_SERVICE_URL}`);
+  console.log(`🔐 Web Oauth Service: ${WEB_OAUTH_SERVICE_URL}`);
+  console.log(`🔑 Key Service: ${KEY_SERVICE_URL}`);
   console.log(`💳 Payment Service: ${PAYMENT_SERVICE_URL}`);
   console.log(`📝 Logging Service: ${LOGGING_SERVICE_URL}`);
   console.log(`🗄️ Database Service: ${DATABASE_SERVICE_URL}`);

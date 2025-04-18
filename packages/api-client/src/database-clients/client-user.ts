@@ -13,11 +13,12 @@ import {
     // Import only necessary types from @agent-base/types
     // Add specific record/input types here if they become available and are needed
 } from '@agent-base/types';
-import { makeAPIServiceRequest, makeClientUserValidationRequest } from '../utils/service-client.js';
+import { makeAPIServiceRequest, makeClientUserValidationRequest, makeWebAuthenticatedServiceRequest } from '../utils/service-client.js';
+import { getDatabaseServiceUrl } from '../utils/config'; // Import the centralized getter
+import { Method } from 'axios';
 
 // Ensure the URL points to the correct database service
-const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL || 'http://localhost:3006';
-
+// Removed top-level constant: const DATABASE_SERVICE_URL = ...
 
 // ==============================================================================
 // Client User Client Functions
@@ -34,25 +35,23 @@ const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL || 'http://localho
  * @returns {Promise<ServiceResponse<ClientUser>>} A promise resolving to a ServiceResponse containing the upserted ClientUser data or an error.
  */
 export const upsertClientUserApiClient = async (
-  data: UpsertClientUserInput,
   platformClientUserId: string,
   platformUserId: string
 ): Promise<ServiceResponse<ClientUser>> => {
 
-  // Define the target endpoint
-  const endpoint = '/client-users';
-
-  // Call the web authenticated service request utility
-  // It only requires platformUserId for the header.
-  // API Key and clientUserId are not sent by this specific utility.
+  const input = {
+    serviceUrl: getDatabaseServiceUrl(),
+    method: 'POST' as Method,
+    endpoint: '/client-users',
+    platformClientUserId: platformClientUserId, // Required
+    platformUserId: platformUserId, // Required
+  }
   return makeClientUserValidationRequest<ClientUser>(
-    DATABASE_SERVICE_URL,
-    'POST',
-    endpoint,
-    platformClientUserId,
-    platformUserId,
-    data,           // Request body
-    undefined       // No query parameters needed
+    input.serviceUrl,
+    input.method as Method,
+    input.endpoint,
+    input.platformClientUserId,
+    input.platformUserId,
   );
 };
   

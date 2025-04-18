@@ -13,7 +13,7 @@ import {
   UserType,
   StoreSecretRequest
 } from '@agent-base/types';
-import { makeWebAuthenticatedServiceRequest, storeSecretWebClient } from '@agent-base/api-client';
+import { makeWebAuthenticatedServiceRequest, storeSecretWebClient, makeWebAnonymousServiceRequest } from '@agent-base/api-client';
 import { v4 as uuidv4 } from 'uuid';
 import { generateApiKey, getKeyPrefix, hashApiKey, isValidKeyFormat } from '../utils/apiKeyUtils.js';
 
@@ -109,8 +109,9 @@ export async function getUserApiKeys(platformUserId: string): Promise<ServiceRes
 /**
  * Validate an API key
  * Verifies the key format, hashes it, and validates with the database service
+ * Does NOT require platformUserId as input, as the DB service finds the user based on the key.
  */
-export async function validateApiKey(apiKey: string, platformUserId: string): Promise<ServiceResponse<ApiKey>> {
+export async function validateApiKey(apiKey: string): Promise<ServiceResponse<ApiKey>> {
   try {
     if (!apiKey || !isValidKeyFormat(apiKey)) {
       return { success: false, error: 'Invalid API key format' } as ErrorResponse;
@@ -128,20 +129,26 @@ export async function validateApiKey(apiKey: string, platformUserId: string): Pr
       keyPrefix
     };
 
-    const validateResponse = await makeWebAuthenticatedServiceRequest<ApiKey>(
+    // Use anonymous request: DB service validates the key and returns the associated user info (including platformUserId)
+    const validateResponse = await makeWebAnonymousServiceRequest<ApiKey>(
       DB_SERVICE_URL,
       'post',
       '/api-keys/validate',
-      platformUserId,
       validatePayload
     );
     
     if (!validateResponse.success) {
-      console.log(`Key validation failed for prefix ${keyPrefix}`);
-      return validateResponse;
+      console.log(`Key validation failed for prefix ${keyPrefix}: ${validateResponse.error}`);
+      return { success: false, error: validateResponse.error || 'API key validation failed' };
     }
 
-    console.log(`Key validation successful for key ${validateResponse.data.keyId}`);
+    // Ensure data and platformUserId exist on success
+    if (!validateResponse.data || !validateResponse.data.platformUserId) {
+        console.error(`Key validation succeeded for prefix ${keyPrefix} but response missing data or platformUserId.`);
+        return { success: false, error: 'Internal validation error: Incomplete data from database service.' };
+    }
+
+    console.log(`Key validation successful for key ${validateResponse.data.keyId}, user ${validateResponse.data.platformUserId}`);
     
     return validateResponse;
   } catch (error) {

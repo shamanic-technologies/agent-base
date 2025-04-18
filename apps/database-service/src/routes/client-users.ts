@@ -23,10 +23,10 @@ const router: Router = express.Router();
  * Expects platformUserId and platformClientUserId in the request body.
  * Returns the client user data upon success.
  */
-router.post('/', async (req: Request<{}, {}, UpsertClientUserInput>, res: Response): Promise<void> => {
-  // Input validation: Ensure req.body exists and has the required properties.
-  // TypeScript helps here, but runtime checks prevent unexpected errors.
-  const { platformUserId, platformClientUserId } = req.body;
+router.post('/', async (req: Request, res: Response): Promise<void> => {
+
+  const platformUserId = req.headers['x-platform-user-id'] as string;
+  const platformClientUserId = req.headers['x-platform-client-user-id'] as string;
 
   if (!platformUserId || !platformClientUserId) {
     res.status(400).json({ 

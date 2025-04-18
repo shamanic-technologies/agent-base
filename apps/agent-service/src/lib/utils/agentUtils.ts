@@ -13,16 +13,16 @@ import { ModelName } from "../../types/agent-config.js";
  * @param userId - The ID of the user for whom the default agent is being created.
  * @returns The CreateUserAgentInput object for the default agent.
  */
-export function createDefaultAgentPayload(userId: string): CreateClientUserAgentInput {
+export function createDefaultAgentPayload(clientUserId: string): CreateClientUserAgentInput {
     // Define default agent data (ensure it matches CreateUserAgentInput)
     const defaultAgentPayload: CreateClientUserAgentInput = {
-        user_id: userId,
-        agent_first_name: 'Alex',
-        agent_last_name: 'Sinnek',
-        agent_profile_picture: 'AS', 
-        agent_gender: 'man', // Ensure 'other' is valid in your @agent-base/types Gender definition
-        agent_model_id: ModelName.CLAUDE_3_7_SONNET_20250219, // Ensure this is a valid model ID
-        agent_memory: `{
+        clientUserId: clientUserId,
+        firstName: 'Alex',
+        lastName: 'Sinnek',
+        profilePicture: 'AS', 
+        gender: 'man', // Ensure 'other' is valid in your @agent-base/types Gender definition
+        modelId: ModelName.CLAUDE_3_7_SONNET_20250219, // Ensure this is a valid model ID
+        memory: `{
             objective: 'to be completed',
             kpis: [
                 {
@@ -83,7 +83,7 @@ export function createDefaultAgentPayload(userId: string): CreateClientUserAgent
                 }
             ]
         }`,
-        agent_job_title: 'Assistant',
+        jobTitle: 'Assistant',
     };
     return defaultAgentPayload;
 } 

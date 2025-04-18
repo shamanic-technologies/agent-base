@@ -173,8 +173,6 @@ export async function makePlatformUserValidationRequest<T>(
   method: Method,
   endpoint: string,
   platformApiKey: string, // Required
-  data?: any,
-  params?: any
 ): Promise<ServiceResponse<T>> {
   const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const fullUrl = `${serviceUrl}${formattedEndpoint}`;
@@ -195,11 +193,9 @@ export async function makePlatformUserValidationRequest<T>(
   const config: AxiosRequestConfig = {
     method,
     url: fullUrl,
-    params,
     headers: {
       'x-platform-api-key': platformApiKey,
     },
-    data
   };
 
   return _makeServiceRequest<T>(fullUrl, config, logContext);
@@ -228,8 +224,6 @@ export async function makeClientUserValidationRequest<T>(
   endpoint: string,
   platformClientUserId: string, // Required
   platformUserId: string, // Required
-  data?: any,
-  params?: any
 ): Promise<ServiceResponse<T>> {
   const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const fullUrl = `${serviceUrl}${formattedEndpoint}`;
@@ -251,12 +245,10 @@ export async function makeClientUserValidationRequest<T>(
   const config: AxiosRequestConfig = {
     method,
     url: fullUrl,
-    params,
     headers: {
       'x-platform-client-user-id': platformClientUserId,
       'x-platform-user-id': platformUserId,
     },
-    data
   };
 
   return _makeServiceRequest<T>(fullUrl, config, logContext);

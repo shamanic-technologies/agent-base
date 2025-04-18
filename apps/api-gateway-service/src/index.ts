@@ -1,3 +1,16 @@
+import dotenv from 'dotenv';
+import path from 'path';
+import fs from 'fs';
+
+// Load environment variables from .env.local first
+const envFile = path.resolve(process.cwd(), '.env.local');
+if (fs.existsSync(envFile)) {
+  console.log(`Loading environment from ${envFile}`);
+  dotenv.config({ path: envFile });
+} else {
+  console.log(`Environment file ${envFile} not found, attempting to use system environment variables.`);
+}
+
 /**
  * API Gateway Service
  * 
@@ -5,28 +18,10 @@
  */
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
-import path from 'path';
-import fs from 'fs';
 import { authMiddleware } from './middlewares/auth.middleware.js';
 import { apiLoggerMiddleware } from './middlewares/logging.middleware.js';
 import { configureRoutes } from './routes/index.js';
 
-// Load environment variables based on NODE_ENV
-const NODE_ENV = process.env.NODE_ENV || 'development';
-
-// Only load from .env file in development
-if (NODE_ENV === 'development') {
-  const envFile = path.resolve(process.cwd(), '.env.local');
-  if (fs.existsSync(envFile)) {
-    console.log(`Loading environment from ${envFile}`);
-    dotenv.config({ path: envFile });
-  } else {
-    console.log(`Environment file ${envFile} not found, using default environment variables.`);
-  }
-} else {
-  console.log('Production environment detected, using Railway configuration.');
-}
 
 // Initialize the express app
 const app = express();

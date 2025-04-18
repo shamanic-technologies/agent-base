@@ -14,27 +14,33 @@ const router = Router();
  */
 router.post('/', async (req, res) => {
   try {
-    const { apiKey } = req.body;
-    // platformUserId is not required for validation based on the new auth flow
-    // const platformUserId = req.headers['x-platform-user-id'] as string;
+    // Extract API key from the request headers
+    const platformApiKey = req.headers['x-platform-api-key'];
 
-    if (!apiKey || typeof apiKey !== 'string') {
+    // Validate the key structure/presence
+    if (!platformApiKey || typeof platformApiKey !== 'string') {
       return res.status(400).json({ 
         success: false, 
-        error: 'API key is required' 
+        error: 'API key is required in the request body'
       } as ErrorResponse);
     }
 
-    // Call dbService to validate the API key
-    // Passing empty string for platformUserId as placeholder, required by function signature.
-    // TODO: Refactor dbService.validateApiKey to not require platformUserId or create separate function.
-    const validateResponse = await dbService.validateApiKey(apiKey, '');
+    // Call dbService to validate the API key against the database
+    // dbService.validateApiKey now handles the interaction with the database service
+    // and expects the database service to return the ApiKey object (including platformUserId) on success.
+    const validateResponse = await dbService.validateApiKey(platformApiKey); // Pass only the apiKey
     
+    // If validation failed (invalid key, db error, etc.)
     if (!validateResponse.success) {
-      return res.status(401).json(validateResponse);
+      // Use 401 for authentication failures (invalid/unknown key)
+      // Use 500 for internal errors during validation
+      const statusCode = validateResponse.error?.includes('Internal') ? 500 : 401;
+      return res.status(statusCode).json(validateResponse);
     }
 
-    return res.status(200).json(validateResponse);
+    // Validation successful, return the ApiKey object received from dbService
+    // This object should contain the platformUserId associated with the key.
+    return res.status(200).json(validateResponse); // Contains { success: true, data: ApiKey } 
   } catch (error) {
     console.error('Error during API key validation process:', error instanceof Error ? error.message : error);
     return res.status(500).json({
