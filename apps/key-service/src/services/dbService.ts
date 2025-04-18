@@ -9,12 +9,13 @@ import {
   ErrorResponse,
   ServiceResponse,
   ApiKey,
-  ValidateApiKeyRequest
+  ValidateApiKeyRequest,
+  UserType,
+  StoreSecretRequest
 } from '@agent-base/types';
-import { makeAuthenticatedServiceRequest } from '@agent-base/api-client';
+import { makeWebAuthenticatedServiceRequest, storeSecretWebClient } from '@agent-base/api-client';
 import { v4 as uuidv4 } from 'uuid';
 import { generateApiKey, getKeyPrefix, hashApiKey, isValidKeyFormat } from '../utils/apiKeyUtils.js';
-import { storeSecret } from './secretService.js';
 
 /**
  * Create a new API key
@@ -30,10 +31,16 @@ export async function createApiKey(name: string, platformUserId: string): Promis
     console.log(`Generated new key. ID: ${keyId}, Prefix: ${keyPrefix}, User: ${platformUserId}`);
 
     // Store secret
-    const storeResponse = await storeSecret(platformUserId, keyId, apiKey);
+    const requestData: StoreSecretRequest = {
+      userType: UserType.Platform,
+      userId: platformUserId,
+      secretType: `api_key_${keyId}`,
+      secretValue: apiKey,
+    };
+    const storeResponse = await storeSecretWebClient(platformUserId, requestData);
     if (!storeResponse.success) {
       console.error('Failed to store secret:', storeResponse.error);
-      return storeResponse as ErrorResponse;
+      return storeResponse;
     }
     console.log(`Successfully initiated secret storage for api_key_${keyId}`);
 
@@ -47,7 +54,7 @@ export async function createApiKey(name: string, platformUserId: string): Promis
 
     // Save to database
     console.log(`Saving metadata for key ${keyId} to database...`);
-    const dbResponse = await makeAuthenticatedServiceRequest<ApiKey>(
+    const dbResponse = await makeWebAuthenticatedServiceRequest<ApiKey>(
       DB_SERVICE_URL,
       'post',
       '/api-keys',
@@ -79,7 +86,7 @@ export async function createApiKey(name: string, platformUserId: string): Promis
 export async function getUserApiKeys(platformUserId: string): Promise<ServiceResponse<ApiKey[]>> {
   try {
     console.log(`Fetching API keys for user: ${platformUserId}`);
-    const response = await makeAuthenticatedServiceRequest<ApiKey[]>(
+    const response = await makeWebAuthenticatedServiceRequest<ApiKey[]>(
       DB_SERVICE_URL, 
       'get', 
       '/api-keys', 
@@ -121,7 +128,7 @@ export async function validateApiKey(apiKey: string, platformUserId: string): Pr
       keyPrefix
     };
 
-    const validateResponse = await makeAuthenticatedServiceRequest<ApiKey>(
+    const validateResponse = await makeWebAuthenticatedServiceRequest<ApiKey>(
       DB_SERVICE_URL,
       'post',
       '/api-keys/validate',
