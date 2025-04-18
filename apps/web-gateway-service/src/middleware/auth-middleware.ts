@@ -9,8 +9,7 @@ import { Request, Response, NextFunction } from 'express';
 import { PlatformUser, ServiceResponse, OAuthProvider } from '@agent-base/types'; 
 // Assuming httpClient is exported from the shared package
 import { tokenCache } from '../utils/token-cache'; 
-import dotenv from 'dotenv';
-import axios, { AxiosError } from 'axios'; // Re-add axios import with AxiosError type
+
 import { validateAuthToken } from '@agent-base/api-client'; // Import the new client function
 // Removed fs and path as manual env loading is removed
 
@@ -20,25 +19,23 @@ import { validateAuthToken } from '@agent-base/api-client'; // Import the new cl
 // Add diagnostic logging for environment variables
 console.log('[Auth Middleware] Initializing...');
 console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
-console.log(`AUTH_SERVICE_URL: ${process.env.AUTH_SERVICE_URL}`);
-console.log(`JWT_SECRET (Status): ${process.env.JWT_SECRET ? 'Set' : 'NOT SET - Using default'}`);
+console.log(`WEB_OAUTH_SERVICE_URL: ${process.env.WEB_OAUTH_SERVICE_URL}`);
 
 // Get auth service URL and JWT secret from environment variables
 // Throw error if essential config is missing in production
-const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL;
-// const JWT_SECRET = process.env.JWT_SECRET || 'helloworld_jwt_secret_key'; // Keep default for dev/test
+const WEB_OAUTH_SERVICE_URL = process.env.WEB_OAUTH_SERVICE_URL;
 
-if (process.env.NODE_ENV === 'production' && !AUTH_SERVICE_URL) {
-  console.error('[Auth Middleware] CRITICAL ERROR: AUTH_SERVICE_URL is not defined in production environment.');
+if (process.env.NODE_ENV === 'production' && !WEB_OAUTH_SERVICE_URL) {
+  console.error('[Auth Middleware] CRITICAL ERROR: WEB_OAUTH_SERVICE_URL is not defined in production environment.');
   // Optionally, exit the process or prevent the app from starting
   process.exit(1); 
 }
-if (!AUTH_SERVICE_URL) {
-    console.warn('[Auth Middleware] WARNING: AUTH_SERVICE_URL is not defined. Using default: http://localhost:3005');
+if (!WEB_OAUTH_SERVICE_URL) {
+    console.warn('[Auth Middleware] WARNING: WEB_OAUTH_SERVICE_URL is not defined. Using default: http://localhost:3005');
 }
-const authServiceUrl = AUTH_SERVICE_URL || 'http://localhost:3005';
+const webOauthServiceUrl = WEB_OAUTH_SERVICE_URL || 'http://localhost:3005';
 
-console.log(`[Auth Middleware] Using AUTH_SERVICE_URL: ${authServiceUrl}`);
+console.log(`[Auth Middleware] Using WEB_OAUTH_SERVICE_URL: ${webOauthServiceUrl}`);
 
 // Define endpoints that should skip authentication
 // These paths allow unauthenticated access

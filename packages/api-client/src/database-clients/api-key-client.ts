@@ -9,8 +9,7 @@ import {
   ValidateApiKeyResponse // Response type for validation endpoint
 } from '@agent-base/types';
 import { makeWebAuthenticatedServiceRequest } from '../utils/service-client';
-// Use the same base URL as defined elsewhere or manage centrally
-const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL || 'http://localhost:3006'; // Ensure consistency
+import { getDatabaseServiceUrl } from '../utils/config'; // Import the centralized getter
 
 // ==============================================================================
 // API Key Client Functions
@@ -37,7 +36,7 @@ export const createApiKeyMetadata = async (
   }
   const endpoint = '/api-keys/';
   return makeWebAuthenticatedServiceRequest<ApiKey>(
-    DATABASE_SERVICE_URL,
+    getDatabaseServiceUrl(),
     'POST',
     endpoint,
     platformUserId,
@@ -61,7 +60,7 @@ export const listApiKeyMetadata = async (
   }
   const endpoint = '/api-keys/';
   return makeWebAuthenticatedServiceRequest<ApiKey[]>(
-    DATABASE_SERVICE_URL,
+    getDatabaseServiceUrl(),
     'GET',
     endpoint,
     platformUserId
@@ -89,7 +88,7 @@ export const validateApiKey = async (
   // Assuming makeServiceRequest requires it, but it won't be used by this specific endpoint's backend logic.
   const placeholderUserId = ''; // Or adjust makeServiceRequest if possible
   return makeWebAuthenticatedServiceRequest<ValidateApiKeyResponse>(
-    DATABASE_SERVICE_URL,
+    getDatabaseServiceUrl(),
     'POST',
     endpoint,
     placeholderUserId, // Provide a placeholder or modify makeServiceRequest if necessary

@@ -12,7 +12,7 @@ const router = Router();
 
 // Register route groups
 router.use('/', miscRoutes);
-router.use('/auth', authRoutes);
-router.use('/oauth', oauthRoutes);
+router.use('/', authRoutes);
+router.use('/', oauthRoutes);
 
 export default router; 

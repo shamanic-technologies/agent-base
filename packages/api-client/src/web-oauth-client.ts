@@ -9,13 +9,8 @@ import {
   } from '@agent-base/types';
 import axios, { AxiosError } from 'axios';
 import { makeWebAnonymousServiceRequest } from './utils/service-client';
-  // Determine the correct URL for the web-oauth-service
-  const WEB_OAUTH_SERVICE_URL = process.env.WEB_OAUTH_SERVICE_URL || 'http://localhost:3005';
-  
-  if (!process.env.WEB_OAUTH_SERVICE_URL) {
-    console.warn('[api-client] WEB_OAUTH_SERVICE_URL environment variable not set. Defaulting to http://localhost:3005');
-  }
-  
+import { getWebOauthServiceUrl } from './utils/config';
+
   // ==============================================================================
   // Web OAuth Service - Auth Client Functions
   // ==============================================================================
@@ -34,8 +29,8 @@ import { makeWebAnonymousServiceRequest } from './utils/service-client';
     if (!token) {
       return { success: false, error: '[api-client:validateAuthToken] Token is required.' };
     }
-    const endpoint = '/auth/validate';
-    const url = `${WEB_OAUTH_SERVICE_URL}${endpoint}`;
+    const endpoint = '/validate';
+    const url = `${getWebOauthServiceUrl()}${endpoint}`;
     console.log(`[api-client] Validating token via POST to ${url}`);
 
     try {
@@ -93,10 +88,10 @@ import { makeWebAnonymousServiceRequest } from './utils/service-client';
    */
   export const refreshAuthToken = async (
   ): Promise<ServiceResponse<{}>> => {
-    const endpoint = '/auth/refresh';
+    const endpoint = '/refresh';
     return makeWebAnonymousServiceRequest<{
     }>(
-      WEB_OAUTH_SERVICE_URL,
+      getWebOauthServiceUrl(),
       'POST',
       endpoint,
     );
@@ -112,10 +107,10 @@ import { makeWebAnonymousServiceRequest } from './utils/service-client';
    */
   export const logoutUser = async (
   ): Promise<ServiceResponse<{}>> => {
-    const endpoint = '/auth/logout';
+    const endpoint = '/logout';
     return makeWebAnonymousServiceRequest<{
     }>(
-      WEB_OAUTH_SERVICE_URL,
+      getWebOauthServiceUrl(),
       'POST',
       endpoint,
     );

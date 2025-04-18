@@ -11,10 +11,26 @@ import {
     // Import only necessary types from @agent-base/types
     // Add specific record/input types here if they become available and are needed
 } from '@agent-base/types';
-import { makeWebAuthenticatedServiceRequest } from '../utils/service-client';
+import { makeWebAuthenticatedServiceRequest, makeWebAnonymousServiceRequest } from '../utils/service-client';
+import { getDatabaseServiceUrl } from '../utils/config'; // Import the centralized getter
 
 // Ensure the URL points to the correct database service
-const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL || 'http://localhost:3006';
+
+/**
+ * Retrieves the Database Service URL from environment variables or defaults.
+ * Includes a warning if the environment variable is not set.
+ * @returns The Database Service URL string.
+ */
+/*
+ * Removed duplicate function definition:
+ * function getDatabaseServiceUrl(): string {
+ *   const url = process.env.DATABASE_SERVICE_URL || 'http://localhost:3006';
+ *   if (!process.env.DATABASE_SERVICE_URL) {
+ *     console.warn('[api-client/database-client] DATABASE_SERVICE_URL environment variable not set. Defaulting to ' + url);
+ *   }
+ *   return url;
+ * }
+ */
 
 
 // ==============================================================================
@@ -35,7 +51,7 @@ export const getCurrentPlatformUser = async (
 
     const endpoint = '/platform-users/me'; 
   return makeWebAuthenticatedServiceRequest<PlatformUser>(
-    DATABASE_SERVICE_URL,
+    getDatabaseServiceUrl(), // Use dynamic getter
     'GET',
     endpoint,
     platformUserId // Pass the ID for the header
@@ -45,20 +61,18 @@ export const getCurrentPlatformUser = async (
 
 /**
  * Gets or creates a platform user based on external auth ID and email.
- * Corresponds to: POST /users/get-or-create-platform-user
+ * Corresponds to: POST /platform-users/get-or-create-by-provider-user-id
  */
 export const getOrCreatePlatformUser = async (
   data: GetOrCreatePlatformUserInput,
-  platformUserId: string // Assuming this IS required by the endpoint
 ): Promise<ServiceResponse<PlatformUser>> => {
-  const endpoint = '/users/get-or-create-platform-user';
+  const endpoint = '/platform-users/get-or-create-by-provider-user-id';
   
-  return makeWebAuthenticatedServiceRequest<PlatformUser>(
-    DATABASE_SERVICE_URL,
+  return makeWebAnonymousServiceRequest<PlatformUser>(
+    getDatabaseServiceUrl(), // Use dynamic getter
     'POST',
     endpoint,
-    platformUserId, 
-    undefined, // No clientUserId relevant here
-    data       
+    data,       // Send data in the body
+    undefined   // No params needed
   );
 };

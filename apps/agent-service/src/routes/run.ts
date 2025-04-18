@@ -9,7 +9,8 @@ import {
     ClientUser,
     Conversation,
     PlatformUser,
-    ServiceResponse
+    ServiceResponse,
+    Agent
 } from '@agent-base/types';
 // AI SDK imports
 import { anthropic } from '@ai-sdk/anthropic';
@@ -24,7 +25,6 @@ import {
     getAgentFromConversation,
     getConversation, // Use this instead of getConversationByIdApiClient
     updateConversation, // Use this instead of updateConversationMessagesApiClient
-    getClientUserByIdApiClient // This one seems correctly named
 } from '@agent-base/api-client';
 
 // Tool Creator Imports
@@ -51,8 +51,7 @@ const runRouter = Router(); // Use a specific router for this file
  */
 runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
   const handleAgentRun = async () => {
-    let agent: GetClientUserAgentInput | null = null; // Initialize as null
-    let clientUser: ClientUser | null = null; // Initialize as null
+    let agent: Agent | null = null; // Initialize as null
     let currentMessage: Message;
     let conversationId: string;
     // Use the correct types from the augmented request
@@ -90,7 +89,7 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       // --- End Extraction & Validation ---
       
       // --- Get Agent Details --- 
-      const agentResponse : ServiceResponse<GetClientUserAgentInput> = await getAgentFromConversation(
+      const agentResponse : ServiceResponse<Agent> = await getAgentFromConversation(
         { conversationId: conversationId }, // Pass params object
         clientUserId, // Pass clientUserId for header
         platformUserId, // Pass platformUserId for header
@@ -121,23 +120,6 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       };
       // --- End Initialize Tools ---
       
-      // --- Get User Profile --- 
-      const profileResponse = await getClientUserByIdApiClient(
-          clientUserId, 
-          platformUserId, 
-          platformApiKey
-      ); 
-      if (profileResponse.success && profileResponse.data) {
-          // Assuming UserRecord from DB service is compatible with ClientUser type
-          // Remove mapping function call
-          clientUser = profileResponse.data as ClientUser; // Assign directly and cast
-          console.log(`[Agent Service /run] Fetched user profile for user: ${clientUserId}`);
-          console.log(`[Agent Service /run] User profile: ${JSON.stringify(clientUser)}`);
-      } else {
-          // Log warning but continue - profile is optional context
-          console.warn(`[Agent Service /run] Could not fetch profile for user ${clientUserId}:`, profileResponse.error);
-      }
-      // --- End Get User Profile --- 
 
       // --- Get Conversation & History --- 
       let historyMessages: Message[] = [];
@@ -166,7 +148,7 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       // --- End Combine Messages --- 
 
       // --- Construct System Prompt --- 
-      const systemPrompt = buildSystemPrompt(agent, clientUser); // Pass the whole agent object
+      const systemPrompt = buildSystemPrompt(agent); // Pass the whole agent object
       console.log(`[Agent Service /run] Constructed System Prompt length: ${systemPrompt.length}`); // Log length for debugging
       console.log(`[Agent Service /run] System Prompt: ${systemPrompt}`); // Log the prompt for debugging
       // --- End Construct System Prompt --- 

@@ -9,7 +9,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import {
   // Keep types needed for validation and payload creation
   CreateClientUserAgentInput,
-  UpdateUserAgentInput,
+  UpdateAgentInput,
   // Response types might not be directly needed if service returns specific data structure
   // UpdateUserAgentResponse, 
   // CreateUserAgentResponse, 
@@ -40,7 +40,7 @@ const router = Router();
  */
 router.post('/create-user-agent', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const agentInput: GetClientUserAgentInput = req.body;
+    const agentInput: CreateClientUserAgentInput = req.body;
     // Log the received body
     console.log('[Agent Service /create-user-agent] Received Body:', JSON.stringify(agentInput, null, 2));
     
@@ -68,7 +68,7 @@ router.post('/create-user-agent', async (req: Request, res: Response, next: Next
     // We no longer combine user_id into the input here, it's passed separately
     const combinedInput: CreateClientUserAgentInput = {
       ...agentInput,
-      userId: clientUserId
+      clientUserId
     };
 
     console.log(`[Agent Service /create-user-agent] Calling createUserAgent service for user ${clientUserId}`);

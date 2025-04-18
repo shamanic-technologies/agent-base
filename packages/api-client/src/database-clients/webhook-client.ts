@@ -13,8 +13,7 @@ import {
   GetCrispUsersParams
 } from '@agent-base/types';
 import { makeAPIServiceRequest } from '../utils/service-client';
-// Use the same base URL as defined elsewhere or manage centrally
-const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL || 'http://localhost:3006'; // Ensure consistency
+import { getDatabaseServiceUrl } from '../utils/config'; // Import the centralized getter
 
 // ==============================================================================
 // Webhook Client Functions
@@ -37,7 +36,7 @@ export const createOrUpdateWebhookConfig = async (
 ): Promise<ServiceResponse<Webhook>> => {
   const endpoint = '/webhooks/';
   return makeAPIServiceRequest<Webhook>(
-    DATABASE_SERVICE_URL,
+    getDatabaseServiceUrl(),
     'POST',
     endpoint,
     platformUserId,
@@ -70,7 +69,7 @@ export const mapAgentToWebhook = async (
   }
   const endpoint = '/webhooks/map-agent';
   return makeAPIServiceRequest<MapAgentToWebhookRequest>(
-    DATABASE_SERVICE_URL,
+    getDatabaseServiceUrl(),
     'POST',
     endpoint,
     platformUserId,
@@ -105,7 +104,7 @@ export const getWebhookAgentMapping = async (
   // Pass clientUserId as query parameter
   const queryParams = { clientUserId: params.clientUserId }; 
   return makeAPIServiceRequest<string>(
-    DATABASE_SERVICE_URL,
+    getDatabaseServiceUrl(),
     'GET',
     endpoint,
     platformUserId,
@@ -139,7 +138,7 @@ export const createWebhookEvent = async (
   }
   const endpoint = '/webhooks/events';
   return makeAPIServiceRequest<WebhookEvent>(
-    DATABASE_SERVICE_URL,
+    getDatabaseServiceUrl(),
     'POST',
     endpoint,
     platformUserId,
@@ -167,7 +166,7 @@ export const getCrispWebsiteUserIds = async (
 
   const endpoint = `/webhooks/crisp/users/${params.websiteId}`;
   return makeAPIServiceRequest<CrispUsersResponse>(
-    DATABASE_SERVICE_URL,
+    getDatabaseServiceUrl(),
     'GET',
     endpoint,
     platformUserId,

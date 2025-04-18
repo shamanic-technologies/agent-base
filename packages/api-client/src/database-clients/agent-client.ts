@@ -8,9 +8,11 @@ import {
   GetClientUserAgentInput,
   CreateClientUserAgentInput,
   UpdateAgentInput,
+  Agent
 } from '@agent-base/types';
 import { makeAPIServiceRequest } from '../utils/service-client';
-const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL || 'http://localhost:3006';
+import { getDatabaseServiceUrl } from '../utils/config'; // Import the centralized getter
+import { Method } from 'axios';
 
 // Define clearer input types if not already in @agent-base/types
 interface ListUserAgentsParams { clientUserId: string; }
@@ -31,16 +33,25 @@ export const createUserAgent = async (
   platformUserId: string,
   platformApiKey: string,
   clientUserId: string
-): Promise<ServiceResponse<GetClientUserAgentInput>> => { // Revert to generic response type
+): Promise<ServiceResponse<Agent>> => { // Revert to generic response type
 
-  return makeAPIServiceRequest<GetClientUserAgentInput>( // Expect AgentRecord in data
-    DATABASE_SERVICE_URL,
-    'POST',
-    '/agents/create-user-agent',
-    platformUserId,
-    clientUserId, // Pass clientUserId for header
-    platformApiKey, // Pass platformApiKey for header
-    data          // Pass original data as body
+  const input = {
+    serviceUrl: getDatabaseServiceUrl(),
+    method: 'POST',
+    endpoint: '/agents/create-user-agent',
+    platformUserId: platformUserId,
+    clientUserId: clientUserId,
+    platformApiKey: platformApiKey,
+    data: data
+  };
+  return makeAPIServiceRequest<Agent>( // Expect AgentRecord in data
+    input.serviceUrl,
+    input.method as Method,
+    input.endpoint,
+    input.platformUserId,
+    input.clientUserId, // Pass clientUserId for header
+    input.platformApiKey, // Pass platformApiKey for header
+    input.data          // Pass original data as body
   );
 };
 
@@ -54,10 +65,10 @@ export const updateUserAgent = async (
   platformUserId: string,
   platformApiKey: string,
   clientUserId: string
-): Promise<ServiceResponse<GetClientUserAgentInput>> => { // Revert to generic response type
+): Promise<ServiceResponse<Agent>> => { // Revert to generic response type
 
-  return makeAPIServiceRequest<GetClientUserAgentInput>( // Expect AgentRecord in data
-    DATABASE_SERVICE_URL,
+  return makeAPIServiceRequest<Agent>( // Expect AgentRecord in data
+    getDatabaseServiceUrl(), // Use dynamic getter
     'POST',
     '/agents/update-user-agent',
     platformUserId,
@@ -77,10 +88,10 @@ export const listUserAgents = async (
   platformUserId: string,
   platformApiKey: string,
   clientUserId: string
-): Promise<ServiceResponse<GetClientUserAgentInput[]>> => { // Revert to generic response type
+): Promise<ServiceResponse<Agent[]>> => { // Revert to generic response type
   
-  return makeAPIServiceRequest<GetClientUserAgentInput[]>( // Expect AgentRecord[] in data
-    DATABASE_SERVICE_URL,
+  return makeAPIServiceRequest<Agent[]>( // Expect AgentRecord[] in data
+    getDatabaseServiceUrl(), // Use dynamic getter
     'GET',
     '/agents/list-user-agents',
     platformUserId,
@@ -101,10 +112,10 @@ export const getUserAgentApiClient = async (
   platformUserId: string,
   platformApiKey: string,
   clientUserId: string
-): Promise<ServiceResponse<GetClientUserAgentInput>> => { // Revert to generic response type
+): Promise<ServiceResponse<Agent>> => { // Revert to generic response type
 
-  return makeAPIServiceRequest<GetClientUserAgentInput>( // Expect AgentRecord in data
-    DATABASE_SERVICE_URL,
+  return makeAPIServiceRequest<Agent>( // Expect AgentRecord in data
+    getDatabaseServiceUrl(), // Use dynamic getter
     'GET',
     '/agents/get-user-agent',
     platformUserId,
@@ -125,10 +136,10 @@ export const getAgentFromConversation = async (
   clientUserId: string, // Pass clientUserId explicitly for the header
   platformUserId: string,
   platformApiKey: string
-): Promise<ServiceResponse<GetClientUserAgentInput>> => { // Revert to generic response type
+): Promise<ServiceResponse<Agent>> => { // Revert to generic response type
 
-  return makeAPIServiceRequest<GetClientUserAgentInput>( // Expect AgentRecord in data
-    DATABASE_SERVICE_URL,
+  return makeAPIServiceRequest<Agent>( // Expect AgentRecord in data
+    getDatabaseServiceUrl(), // Use dynamic getter
     'GET',
     '/agents/get-conversation-agent',
     platformUserId,

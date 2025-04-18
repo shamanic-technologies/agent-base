@@ -5,7 +5,8 @@
 import {
   ServiceResponse,
   ApiKey,
-  SecretValue
+  SecretValue,
+  PlatformUser
 } from '@agent-base/types';
 
 // Import the shared request helpers
@@ -14,31 +15,27 @@ import {
   makeWebAnonymousServiceRequest,
   makePlatformUserValidationRequest
 } from './utils/service-client.js';
-
-// --- Key Service URL Configuration --- //
-const KEY_SERVICE_URL = process.env.KEY_SERVICE_URL || 'http://localhost:3003';
-if (!process.env.KEY_SERVICE_URL) {
-  console.warn('[api-client/key-client] KEY_SERVICE_URL environment variable not set. Defaulting to ' + KEY_SERVICE_URL);
-}
+import { getKeyServiceUrl } from './utils/config'; // Import the centralized getter
+import { Method } from 'axios';
 
 // --- Types --- //
-export type PlatformUserId = string;
-export type PlatformAPIKeySecret = string;
+export type PlatformUserIdData = {
+  platformUserId: string;
+}
+export type PlatformAPIKeySecretData = {
+  platformAPIKeySecret: string;
+};
 
 export interface GetApiKeyByNameRequest {
-  platformUserId: PlatformUserId;
+  platformUserId: string;
   keyName: string;
 }
 
 export interface GetApiKeyByIdRequest {
-  platformUserId: PlatformUserId;
+  platformUserId: string;
   keyId: string;
 }
 
-// Define the payload for the validation request
-interface ValidateKeyPayload {
-  apiKey: PlatformAPIKeySecret; // Match naming
-}
 
 // --- Endpoint Client Functions --- //
 
@@ -52,17 +49,22 @@ interface ValidateKeyPayload {
  * @returns A promise resolving to ServiceResponse<PlatformUserId>.
  */
 export const validatePlatformApiKeySecret = async (
-  platformApiKeySecret: PlatformAPIKeySecret
-): Promise<ServiceResponse<PlatformUserId>> => {
+  platformApiKeySecret: PlatformAPIKeySecretData
+): Promise<ServiceResponse<PlatformUserIdData>> => {
 
   const endpoint = '/validate'; // Endpoint path
-
-  // Use the anonymous helper, as this endpoint performs the authentication
-  return await makePlatformUserValidationRequest<PlatformUserId>(
-    KEY_SERVICE_URL,
-    'post',
-    endpoint,
-    platformApiKeySecret // Send API key in the body
+  const input = {
+    serviceUrl: getKeyServiceUrl(),
+    method: 'post',
+    endpoint: endpoint,
+    platformApiKey: platformApiKeySecret.platformAPIKeySecret,
+  };
+  // Use the helper function, passing the key in the body
+  return await makePlatformUserValidationRequest<PlatformUserIdData>(
+    input.serviceUrl,
+    input.method as Method,
+    input.endpoint,
+    input.platformApiKey
   );
 
 };
@@ -75,16 +77,16 @@ export const validatePlatformApiKeySecret = async (
  * @returns A promise resolving to ServiceResponse<ApiKey[]>.
  */
 export const listPlatformApiKeys = async (
-  platformUserId: PlatformUserId
+  platformUserId: PlatformUserIdData
 ): Promise<ServiceResponse<ApiKey[]>> => {
   if (!platformUserId) {
     return { success: false, error: 'platformUserId is required for listApiKeys.' };
   }
   return await makeWebAuthenticatedServiceRequest<ApiKey[]>(
-    KEY_SERVICE_URL,
+    getKeyServiceUrl(), // Use dynamic getter
     'get',
     '/',
-    platformUserId
+    platformUserId.platformUserId
   );
 };
 
@@ -106,7 +108,7 @@ export const getPlatformApiKeySecretById = async (
     return { success: false, error: 'Key ID parameter is required.' };
   }
   return await makeWebAuthenticatedServiceRequest<SecretValue>(
-    KEY_SERVICE_URL,
+    getKeyServiceUrl(), // Use dynamic getter
     'get',
     `/${keyId}`,
     platformUserId
@@ -132,7 +134,7 @@ export const getPlatformApiKeySecretByName = async (
   }
   const queryParams = { name: keyName };
   return await makeWebAuthenticatedServiceRequest<SecretValue>(
-    KEY_SERVICE_URL,
+    getKeyServiceUrl(), // Use dynamic getter
     'get',
     '/by-name',
     platformUserId,
