@@ -45,7 +45,7 @@ export async function createConversation(input: CreateConversationInput): Promis
       channelId,
       '[]' // Empty JSON array for messages
     ]);
-
+    console.log(`[DB Service] Result: ${JSON.stringify(result)}`);
     if (result.rowCount === 1 && result.rows[0]?.conversationId) {
       console.log(`[DB Service] Conversation created with ID: ${result.rows[0].conversationId}`);
       return { 
