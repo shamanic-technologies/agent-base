@@ -47,7 +47,6 @@ const runRouter = Router(); // Use a specific router for this file
  */
 runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
   const handleAgentRun = async () => {
-    let agent: Agent | null = null; // Initialize as null
     let currentMessage: Message;
     let conversationId: string;
     let clientUserId: string | undefined; 
@@ -97,9 +96,8 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
           res.status(500).json({ success: false, error: `Failed to load agent configuration: ${agentResponse.error}` });
           return;
       }
-      agent = agentResponse.data; // Assign agent data
-      // @ts-ignore - Assuming agent_model_id exists on AgentRecord
-      console.log(`[Agent Service /run] Fetched agent details for conversation: ${conversationId}, using model: ${agent.agent_model_id}`);
+      const agent: Agent = agentResponse.data; // Assign agent data
+      console.log(`[Agent Service /run] Fetched agent details for conversation: ${conversationId}, using model: ${agent.modelId}`);
       // --- End Get Agent Details ---
 
       // --- Initialize Tools (Requires Agent to be fetched first) ---
@@ -121,7 +119,7 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       let historyMessages: Message[] = [];
       // Use API Client function - getConversation
       const conversationResponse = await getConversation( // Changed function name
-        { conversationId: conversationId }, // Pass params object with conversationId
+        { conversationId }, // Pass params object with conversationId
         platformUserId, // Pass platformUserId for header (assuming order based on getConversation signature)
         platformApiKey, // Pass platformApiKey for header
         clientUserId    // Pass clientUserId for header
@@ -151,8 +149,7 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
 
       // --- Call AI Model --- 
       const result = await streamText({
-        // @ts-ignore - Assuming agent_model_id exists on AgentRecord
-        model: anthropic(agent.agent_model_id),
+        model: anthropic(agent.modelId),
         messages: allMessages as any[],
         // @ts-ignore - system is supported by Vercel AI SDK but might not be in inferred type
         system: systemPrompt, // Use the dynamic prompt

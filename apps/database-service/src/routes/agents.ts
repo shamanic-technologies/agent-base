@@ -268,7 +268,7 @@ router.get('/get-user-agent', async (req: Request, res: Response): Promise<void>
 router.get('/get-conversation-agent', async (req: Request, res: Response, next: NextFunction) => {
   try {
     // Extract conversation_id from query parameters
-    const conversationId = req.query.conversation_id as string;
+    const conversationId = req.query.conversationId as string;
 
     // Validate conversation_id
     if (!conversationId) {

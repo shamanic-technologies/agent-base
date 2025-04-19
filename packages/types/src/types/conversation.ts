@@ -30,7 +30,7 @@ export interface CreateConversationInput {
   channelId: string;
 }
 
-export interface GetConversationsFromAgentInput {
+export interface AgentId {
   agentId: string;
 }
 

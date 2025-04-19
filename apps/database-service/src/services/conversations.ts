@@ -1,7 +1,7 @@
 import { PoolClient } from 'pg';
 import { 
   CreateConversationInput, 
-  GetConversationsFromAgentInput,
+  AgentId,
   ConversationRecord,
   BaseResponse,
   ConversationId,
@@ -163,7 +163,7 @@ export async function getConversation(
 /**
  * Get all conversations associated with a specific agent.
  */
-export async function getConversationsByAgent(input: GetConversationsFromAgentInput)
+export async function getConversationsByAgent(input: AgentId)
 : Promise<ServiceResponse<Conversation[]>> {
   const { agentId } = input;
 
