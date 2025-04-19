@@ -10,9 +10,9 @@ import {
   validatePlatformApiKeySecret, 
   upsertClientUserApiClient,
   PlatformAPIKeySecretData,
-  PlatformUserIdData
 } from '@agent-base/api-client'; 
-import { ServiceResponse, ClientUser, UpsertClientUserInput } from '@agent-base/types';
+import { ServiceResponse, ClientUser, PlatformUserId, PlatformAPIKeySecret } from '@agent-base/types';
+import { apiCache } from '../utils/api-cache.js'; // Import the API cache
 
 /**
  * Authentication middleware factory that returns a middleware function
@@ -38,57 +38,72 @@ export const authMiddleware = () => {
         });
       }
 
-      // Validate the API key and get the FULL ApiKey object
-      // Note: The client function is declared as returning ServiceResponse<PlatformUserId>,
-      // but the actual data returned by the service flow is the ApiKey object.
-      // We need to handle the actual returned type here.
-      const platformApiKeySecretData: PlatformAPIKeySecretData = {
-        platformAPIKeySecret: platformApiKey
-      };
-      const validationResponse : ServiceResponse<PlatformUserIdData> = await validatePlatformApiKeySecret(platformApiKeySecretData);
+      let platformUserId: string | undefined = apiCache.getPlatformUserId(platformApiKey);
 
-      // Check for validation success first
-      if (!validationResponse.success) {
-        console.log(`[Auth Middleware] Key validation failed: ${validationResponse.error}`);
-        return res.status(401).json(validationResponse);
+      if (!platformUserId) {
+        // Validate the API key and get the FULL ApiKey object
+        // Note: The client function is declared as returning ServiceResponse<PlatformUserId>,
+        // but the actual data returned by the service flow is the ApiKey object.
+        // We need to handle the actual returned type here.
+        const platformApiKeySecret: PlatformAPIKeySecret = {
+          platformAPIKeySecret: platformApiKey
+        };
+        // Define the expected success data shape locally if not exported correctly
+        const validationResponse: ServiceResponse<PlatformUserId> = await validatePlatformApiKeySecret(platformApiKeySecret);
+
+        // Check for validation success first
+        if (!validationResponse.success ) {
+          console.log(`[Auth Middleware] Key validation failed: ${validationResponse.error}`);
+          return res.status(401).json(validationResponse); // Return the original error response
+        }
+        // Extract the platform user ID
+        platformUserId = validationResponse.data.platformUserId;
+        // Cache the successful result
+        apiCache.setPlatformUserId(platformApiKey, platformUserId);
+        console.log(`[Auth Middleware] API Key validated via service. User ID: ${platformUserId}`);
+
       }
-
-
-      // At this point, we know apiKeyData is an object with platformUserId
-      const platformUserId: string = validationResponse.data.platformUserId;
-
-      // Now platformUserId is correctly the string UUID
-      (req as any).platformUserId = platformUserId; // Store correct string on request
-      req.headers['x-platform-user-id'] = platformUserId; // Set correct string header for downstream
+      
+      // Assign platformUserId to request and headers
+      (req as any).platformUserId = platformUserId; 
+      req.headers['x-platform-user-id'] = platformUserId;
       console.log(`[Auth Middleware] Authenticated platform user ${platformUserId}`);
 
       // 2. Platform Client User ID Validation (Optional)
       const platformClientUserId = req.headers['x-platform-client-user-id'] as string;
       
       if (platformClientUserId) {
-        console.log(`[Auth Middleware] Found x-platform-client-user-id: ${platformClientUserId}. Validating/upserting...`);
+        console.log(`[Auth Middleware] Found x-platform-client-user-id: ${platformClientUserId}. Checking cache/validating...`);
+
+        let clientUserId: string | undefined = apiCache.getClientUserId(platformUserId, platformClientUserId);
+
+        if (!clientUserId) {
+          console.log(`[Auth Middleware] Client User Cache MISS for ${platformUserId}:${platformClientUserId}. Validating/upserting...`);
+          
+          const clientUserResponse: ServiceResponse<ClientUser> = await upsertClientUserApiClient(
+            platformClientUserId, 
+            platformUserId // Pass the correct string ID here
+          );
+
+          if (!clientUserResponse.success) {
+            console.error(`[Auth Middleware] Failed to validate/upsert client user ID ${platformClientUserId} for platform user ${platformUserId}. Error: ${clientUserResponse.error}`);
+            return res.status(401).json(clientUserResponse);
+          }
+
+          // Extract the internal client user ID (UUID)
+          clientUserId = clientUserResponse.data.id;
+          // Cache the successful result
+          apiCache.setClientUserId(platformUserId, platformClientUserId, clientUserId);
+          console.log(`[Auth Middleware] Client user validated/upserted via service. Internal ID: ${clientUserId}`);
         
-
-
-        const clientUserResponse: ServiceResponse<ClientUser> = await upsertClientUserApiClient(
-          platformClientUserId, 
-          platformUserId // Pass the correct string ID here
-        );
-
-        if (!clientUserResponse.success || !clientUserResponse.data || !clientUserResponse.data.id) {
-          console.error(`[Auth Middleware] Failed to validate/upsert client user ID ${platformClientUserId} for platform user ${platformUserId}. Error: ${clientUserResponse.error}`);
-          return res.status(401).json({
-            success: false,
-            error: 'Invalid or failed validation for x-platform-client-user-id',
-            details: clientUserResponse.error || 'Could not validate the provided client user identifier.'
-          });
+        } else {
+            console.log(`[Auth Middleware] Client User Cache HIT. Internal ID: ${clientUserId}`);
         }
 
-        // Extract the internal client user ID (UUID)
-        const clientUserId = clientUserResponse.data.id;
-        (req as any).clientUserId = clientUserId; // Store on request object if needed elsewhere in gateway
-        req.headers['x-client-user-id'] = clientUserId; // Set header for downstream services
-        console.log(`[Auth Middleware] Validated client user. Internal ID: ${clientUserId}`);
+        // Assign clientUserId to request and headers
+        (req as any).clientUserId = clientUserId; 
+        req.headers['x-client-user-id'] = clientUserId;
+        console.log(`[Auth Middleware] Authenticated client user. Internal ID: ${clientUserId}`);
 
       } else {
         console.log(`[Auth Middleware] No x-platform-client-user-id header found. Proceeding without client user context.`);
