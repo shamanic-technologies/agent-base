@@ -5,10 +5,6 @@
  */
 import { Router, Request, Response, NextFunction } from 'express';
 import {
-  GetClientUserAgentInput, 
-    ClientUser,
-    Conversation,
-    PlatformUser,
     ServiceResponse,
     Agent
 } from '@agent-base/types';
@@ -54,12 +50,12 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
     let agent: Agent | null = null; // Initialize as null
     let currentMessage: Message;
     let conversationId: string;
-    // Use the correct types from the augmented request
     let clientUserId: string | undefined; 
     let platformUserId: string | undefined;
     let platformApiKey: string | undefined; // Renamed from apiKey
 
     try {
+      console.log(`[Agent Service /run] Received request body: ${JSON.stringify(req.body, null, 2)}`);
       // --- Extraction & Validation --- 
       ({ message: currentMessage, conversationId: conversationId } = req.body);
       // Extract from augmented request object
@@ -95,7 +91,7 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
         platformUserId, // Pass platformUserId for header
         platformApiKey // Pass platformApiKey for header
       );
-      if (!agentResponse.success || !agentResponse.data) {
+      if (!agentResponse.success) {
           console.error(`[Agent Service /run] Failed to get agent for conversation ${conversationId}:`, agentResponse.error);
           // Decide appropriate error response - potentially 404 or 500
           res.status(500).json({ success: false, error: `Failed to load agent configuration: ${agentResponse.error}` });

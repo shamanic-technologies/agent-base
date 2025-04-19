@@ -21,17 +21,17 @@ export const configureRunRoutes = (
   targetServiceUrl: string, // Should still point to Agent Service as per routes/index.ts
   authMiddleware: express.RequestHandler
 ) => {
-
+  console.log(`🟢[API Gateway Service /run] Configuring run routes`);
   // Apply authentication middleware first.
   router.use(authMiddleware);
-
+  console.log(`🟢[API Gateway Service /run] Applying authentication middleware`);
   // Apply the middleware to inject custom headers (x-platform-user-id, etc.)
   router.use(injectCustomHeaders);
-
+  console.log(`🟢[API Gateway Service /run] Injecting custom headers`);
   // Create the proxy middleware instance. 
   // Note: http-proxy-middleware handles streaming responses automatically.
   const runProxy = createApiProxy(targetServiceUrl, 'Agent Service (Runs)'); // Target is Agent Service
-
+  console.log(`🟢[API Gateway Service /run] Creating proxy middleware instance`);
   // Apply the proxy middleware for all paths under the router's mount point.
   router.use(runProxy);
 

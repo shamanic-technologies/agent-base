@@ -23,10 +23,24 @@ async function logToService(req: express.Request) {
       ip: req.ip,
       timestamp: new Date().toISOString()
     };
-    
-    await axios.post(`${loggingServiceUrl}/api-logs/me`, requestData);
+
+    // Prepare headers for the logging request
+    const loggingHeaders: Record<string, string> = {};
+    if (req.platformUserId) { // Assuming auth middleware adds this
+      loggingHeaders['x-platform-user-id'] = req.platformUserId;
+    }
+    if (req.clientUserId) { // Assuming auth middleware adds this
+      loggingHeaders['x-client-user-id'] = req.clientUserId;
+    }
+    // Add other necessary headers if required by logging service authentication
+
+    await axios.post(`${loggingServiceUrl}/api-logs/me`, requestData, {
+      headers: loggingHeaders
+    });
   } catch (error) {
-    throw new Error('Failed to log to service:' + error);
+    // Avoid logging failures breaking the main request flow
+    console.error('Failed to log to service:', error instanceof Error ? error.message : String(error));
+    // Do not re-throw here to prevent breaking the request if logging fails
   }
 }
 
