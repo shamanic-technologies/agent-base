@@ -53,4 +53,18 @@ export function getDatabaseServiceUrl(): string {
     console.warn('[api-client/config] DATABASE_SERVICE_URL environment variable not set. Defaulting to ' + url);
   }
   return url;
+}
+
+/**
+ * Retrieves the External Utility Tool Service URL from environment variables or defaults.
+ * Includes a warning if the environment variable is not set.
+ * @returns The External Utility Tool Service URL string.
+ */
+export function getExternalUtilityToolServiceUrl(): string {
+  // Assuming default port 3008, adjust if necessary
+  const url = process.env.EXTERNAL_UTILITY_TOOL_SERVICE_URL || 'http://localhost:3090'; 
+  if (!process.env.EXTERNAL_UTILITY_TOOL_SERVICE_URL) {
+    console.warn('[api-client/config] EXTERNAL_UTILITY_TOOL_SERVICE_URL environment variable not set. Defaulting to ' + url);
+  }
+  return url;
 } 

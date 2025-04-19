@@ -3,7 +3,7 @@ import {
     UtilitySecret,
     AuthMethod,
     SuccessResponse,
-    SetupNeededData,
+    SetupNeeded,
     UtilityActionConfirmation,
     UtilityInputSecret,
     mapUtilityProviderToOAuthProvider
@@ -26,7 +26,7 @@ export const checkPrerequisites = async (
     logPrefix: string
 ): Promise<{ 
     prerequisitesMet: boolean; 
-    setupNeededResponse?: SuccessResponse<SetupNeededData>; 
+    setupNeededResponse?: SuccessResponse<SetupNeeded>; 
     credentials?: { apiKey?: string | null; oauthToken?: string | null };
 }> => {
      console.log(`${logPrefix} Checking prerequisites...`);
@@ -83,7 +83,7 @@ export const checkPrerequisites = async (
                     console.error(`${logPrefix} OAuth requires setup, but no authUrl provided by auth service.`);
                     throw new Error('OAuth setup required, but authorization URL is missing.');
                 }
-                const setupResponse: SuccessResponse<SetupNeededData> = {
+                const setupResponse: SuccessResponse<SetupNeeded> = {
                     success: true,
                     data: {
                         needs_setup: true,
@@ -114,7 +114,7 @@ export const checkPrerequisites = async (
     const prerequisitesMet = allSecretsAvailable && oauthAuthorized;
 
     if (!prerequisitesMet) {
-        const setupResponse: SuccessResponse<SetupNeededData> = {
+        const setupResponse: SuccessResponse<SetupNeeded> = {
             success: true,
             data: {
                 needs_setup: true,

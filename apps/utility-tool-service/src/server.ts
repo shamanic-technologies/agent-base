@@ -13,17 +13,24 @@ import os from 'os';
 // Import registry for INTERNAL tools
 import { registry } from './registry/registry.js'; 
 
-// Import client for EXTERNAL tools
+// Import client for EXTERNAL tools from the API client package
 import {
     listExternalTools,
     getExternalToolInfo,
-    executeExternalTool
-} from './clients/externalToolServiceClient.js';
+    executeExternalTool,
+} from '@agent-base/api-client'; // <--- Updated Import Path
 
 // Import shared response types for consistency
-import { ServiceResponse, UtilitiesList, UtilitiesListResponse } from '@agent-base/types';
-import { UtilityInfo  } from '@agent-base/types';
-
+import {
+    ErrorResponse,
+    ServiceResponse,
+    UtilitiesList,
+    ExternalUtilityTool,
+    InternalUtilityInfo,
+    ExecuteExternalToolPayload,
+    ExecuteExternalToolResult,
+    InternalUtilityTool
+} from '@agent-base/types';
 // // Define UtilityInfo locally for list/detail responses
 // interface UtilityInfo {
 //   id: string;
@@ -59,10 +66,33 @@ const PORT = process.env.PORT || 3050;
 app.use(cors());
 app.use(express.json());
 
+// Helper to extract auth headers
+const getAuthHeaders = (req: Request): ServiceResponse<{ platformUserId: string; clientUserId: string; platformApiKey: string; agentId?: string }> => {
+  const platformUserId = req.headers['x-platform-user-id'] as string | undefined;
+  const clientUserId = req.headers['x-client-user-id'] as string | undefined;
+  const platformApiKey = req.headers['x-platform-api-key'] as string | undefined;
+  const agentId = req.headers['x-agent-id'] as string | undefined; // Agent ID if provided
+
+  // Validate required headers for external call
+  if (!platformUserId || !clientUserId || !platformApiKey) {
+    // Proceed with only internal tools, or return error depending on requirements
+    return { success: false, error: 'Missing authentication headers for external tools' } as ErrorResponse;
+  }  
+  return { 
+    success: true,
+    data: {
+        platformUserId,
+        clientUserId,
+        platformApiKey,
+        agentId
+    }
+  };
+};
+
 // Centralized Error Handler
 const handleServiceError = (res: Response, error: any, prefix: string) => {
     console.error(`❌ ${prefix} Error:`, error);
-    const statusCode = error.statusCode || 500; // Use status code if available
+    const statusCode = error.statusCode || 500;
     const response: ServiceResponse<never> = {
         success: false,
         error: error.message || 'Internal Server Error',
@@ -74,8 +104,6 @@ const handleServiceError = (res: Response, error: any, prefix: string) => {
 // Health check endpoint
 app.get('/health', (req, res) => {
   console.log(`📡 [UTILITY SERVICE] Health check request received from ${req.ip}`);
-
-  // Get server address information
   let addressInfo = null;
   try {
     // @ts-ignore - Server info object access
@@ -86,15 +114,11 @@ app.get('/health', (req, res) => {
   } catch (error) {
     console.error(`⚠️ [UTILITY SERVICE] Error getting server info:`, error);
   }
-  
-  // Return health response
   res.status(200).json({
     status: 'healthy',
     environment: nodeEnv,
     version: process.env.npm_package_version,
-    serverInfo: {
-      address: addressInfo
-    }
+    serverInfo: { address: addressInfo }
   });
 });
 
@@ -104,93 +128,84 @@ app.get('/health', (req, res) => {
 app.get('/get-list', async (req, res) => {
   const logPrefix = '[GET /get-list]';
   console.log(`📚 ${logPrefix} Request received from ${req.ip}`);
+  const authHeaders = getAuthHeaders(req);
+  if (!authHeaders.success) {
+    return res.status(401).json(authHeaders);
+  }
+  const { platformUserId, clientUserId, platformApiKey } = authHeaders.data;
+
+
+
   try {
     // Get internal tools
-    const internalTools: UtilitiesList = registry.listInternalUtilities(); // Returns { id, description, schema: Record<string, UtilityToolSchema> }
-    
-    // Get external tools - MODIFY LATER TO INCLUDE SCHEMA
-    let externalTools: UtilitiesList = []; 
-    const externalResponse: UtilitiesListResponse = await listExternalTools();
-    if (externalResponse.success) {
-        // Assume externalTools response will include schema after we modify client/EUTS
-        // For now, map and potentially add placeholder schema
-        externalTools = externalResponse.data; 
-    } else {
-        console.warn(`${logPrefix} Failed to fetch external tools: ${externalResponse.error}`);
+    const internalToolsResponse: ServiceResponse<UtilitiesList> = registry.listInternalUtilities(); 
+    if (!internalToolsResponse.success) {
+      return res.status(502).json(internalToolsResponse);
     }
+    
+    let externalTools: UtilitiesList = []; 
+    console.log(`${logPrefix} Fetching external tools...`);
+    const externalResponse: ServiceResponse<ExternalUtilityTool[]> = await listExternalTools(
+        platformUserId, clientUserId, platformApiKey
+    );
+    if (!externalResponse.success) {
+        return res.status(502).json(externalResponse);
+    }
+    // Map ExternalUtilityTool to UtilitiesListItem { id, description }
+    externalTools = externalResponse.data.map(tool => ({ id: tool.id, description: tool.description }));
 
     // Combine lists
-    const allTools = [...internalTools, ...externalTools];
+    const allTools = [...internalToolsResponse.data, ...externalTools];
     
     const response: ServiceResponse<{ count: number; utilities: UtilitiesList }> = {
-        success: true,
-        data: {
-            count: allTools.length,
-            utilities: allTools
-        }
-    };
-    res.status(200).json(response);
-
+      success: true,
+      data: {
+          count: allTools.length,
+          utilities: allTools
+      }
+  };
+  res.status(200).json(response);
   } catch (error) {
     handleServiceError(res, error, logPrefix);
   }
 });
 
-// Keep legacy endpoint for internal use (optional, points to new unified logic)
+// Keep legacy endpoint for internal use (optional)
 app.get('/utilities', (req, res) => {
   console.log(`📚 [GET /utilities - LEGACY] Request received from ${req.ip} - Redirecting to /get-list logic`);
-  res.redirect(301, '/get-list'); // Or duplicate logic if redirect isn't desired
+  res.redirect(301, '/get-list');
 });
 
 // Get info about a specific utility (Internal or External)
 app.get('/get-details/:id', async (req, res) => {
   const { id } = req.params;
+  const authHeaders = getAuthHeaders(req);
+  if (!authHeaders.success) {
+    return res.status(401).json(authHeaders);
+  }
+  const { platformUserId, clientUserId, platformApiKey } = authHeaders.data;
   const logPrefix = `[GET /get-details/${id}]`;
   console.log(`📚 ${logPrefix} Request received from ${req.ip}`);
   
   try {
     // 1. Try internal registry
-    const internalUtility = registry.getInternalUtility(id);
-    if (internalUtility) {
-        console.log(`${logPrefix} Found internal utility.`);
-        const responseData: ServiceResponse<UtilityInfo> = {
-            success: true,
-            data: internalUtility
-        };
-        return res.status(200).json(responseData);
+    const internalUtilityResponse: ServiceResponse<InternalUtilityTool> = registry.getInternalUtility(id);
+    if (internalUtilityResponse.success) {
+        return res.status(200).json(internalUtilityResponse);
     }
 
-    // 2. Try external service
-    console.log(`${logPrefix} Internal utility not found, checking external service.`);
-    const externalResponse = await getExternalToolInfo(id); // Expects { id, description, schema: Record<string, ExternalUtilityParamSchema> }
+    // 2. Try external service (requires auth headers)
+    
+    const externalResponse: ServiceResponse<ExternalUtilityTool> = await getExternalToolInfo(
+        platformUserId, clientUserId, platformApiKey, id
+    );
 
-    if (externalResponse.success) {
-        console.log(`${logPrefix} Found external utility.`);
-        // Ensure the data matches UtilityInfo (it should if client/EUTS are correct)
-        const responseData: ServiceResponse<UtilityInfo> = {
-            success: externalResponse.success,
-            data: externalResponse.data
-        };
-        return res.status(200).json(responseData); 
-    } else {
-        // Check if the error indicates specifically 'not found' vs. other errors
-        if (externalResponse.error?.toLowerCase().includes('not found') || externalResponse.error?.includes('404')) {
-             console.log(`${logPrefix} Utility not found in external service either.`);
-             return res.status(404).json({ 
-                success: false,
-                error: `Utility with ID '${id}' not found anywhere.`
-             });
-        } else {
-            // Different error from EUTS (e.g., service down, config error)
-            console.error(`${logPrefix} Error fetching external utility info: ${externalResponse.error}`);
-            // Forward the error details, but use 502 (Bad Gateway) to indicate issue with downstream service
-            return res.status(502).json({
-                success: false,
-                error: `Failed to get details for external utility '${id}'`,
-                details: externalResponse.error
-            });
-        }
+    if (!externalResponse.success) {
+        return res.status(502).json(externalResponse);
     }
+
+    return res.status(200).json(externalResponse); 
+
   } catch (error) {
       handleServiceError(res, error, logPrefix);
   }
@@ -199,66 +214,45 @@ app.get('/get-details/:id', async (req, res) => {
 // Execute a utility (Internal or External)
 app.post('/call-tool/:id', async (req, res) => {
   const { id } = req.params;
-  const { input, conversation_id, user_id } = req.body;
-  const agent_id = req.headers['x-agent-id'] as string | undefined;
+  // Extract from body
+  const { params, conversationId } : ExecuteExternalToolPayload = req.body; 
+  // Basic input validation
+  if (!conversationId) return res.status(400).json({ success: false, error: 'conversationId is required' });
+  const authHeaders = getAuthHeaders(req);
+  if (!authHeaders.success) {
+    return res.status(401).json(authHeaders);
+  }
+  const { platformUserId, clientUserId, platformApiKey, agentId } = authHeaders.data;
   const logPrefix = `[POST /call-tool/${id}]`;
 
-  console.log(`⚙️ ${logPrefix} Request received from ${req.ip}`);
-  if (agent_id) {
-    console.log(`⚙️ ${logPrefix} Request made by agent: ${agent_id}`);
-  }
-  
-  // Basic input validation
-  if (!conversation_id) {
-    return res.status(400).json({ success: false, error: 'conversation_id is required' });
-  }
-  if (!user_id) {
-    return res.status(400).json({ success: false, error: 'user_id is required' });
-  }
-  
   try {
     // 1. Try internal registry
-    const internalUtility = registry.getInternalUtility(id);
-    if (internalUtility) {
+    const internalUtilityResponse: ServiceResponse<InternalUtilityTool> = registry.getInternalUtility(id);
+    if (internalUtilityResponse.success) {
         console.log(`${logPrefix} Executing internal utility.`);
-        const result = await registry.executeInternalUtility(id, user_id, conversation_id, input, agent_id);
+        // Pass clientUserId as the 'userId' parameter for internal execution
+        const resultResponse: ServiceResponse<any> = await registry.executeInternalUtility(id, clientUserId, conversationId, params, agentId);
         
-        // Check if result is already in a standard format (e.g., error or setupNeeded)
-        if (result && (result.success === false || result.data?.needs_setup === true)) {
-            return res.status(200).json(result); // Return as is (might contain error/setup info)
-        } else {
-            // Wrap successful internal result
-            return res.status(200).json({ success: true, data: result });
+        if (resultResponse.success) {
+            return res.status(200).json(resultResponse); 
         }
     }
 
-    // 2. Try external service
+    // 2. Try external service (requires full auth headers)
     console.log(`${logPrefix} Internal utility not found, calling external service.`);
-    const payload = { userId: user_id, conversationId: conversation_id, params: input, agentId: agent_id };
-    const externalResponse = await executeExternalTool(id, payload);
 
-    // Proxy the ServiceResponse directly from the external service
-    // This handles success, setupNeeded, and errors reported BY the external service
-    if (externalResponse.success) {
-        console.log(`${logPrefix} External execution reported success (might include setupNeeded).`);
-        return res.status(200).json(externalResponse);
-    } else {
-        // Check if the error was simply tool-not-found on EUTS, or a communication failure
-         if (externalResponse.error?.toLowerCase().includes('not found') || externalResponse.error?.includes('404')) {
-             console.log(`${logPrefix} External tool execution failed: Tool not found on EUTS.`);
-             return res.status(404).json({ 
-                success: false,
-                error: `Utility with ID '${id}' not found anywhere.`
-             });
-         } else {
-             // Communication failure or other error reported by the client/EUTS
-             console.error(`${logPrefix} External execution failed: ${externalResponse.error}`);
-             return res.status(502).json(externalResponse); // Proxy the error response (Bad Gateway)
-         }
+    const externalResponse: ServiceResponse<ExecuteExternalToolResult> = await executeExternalTool(
+        platformUserId, clientUserId, platformApiKey, id, req.body
+    );
+
+    if (!externalResponse.success) {
+      console.error(`${logPrefix} External tool execution failed: ${externalResponse.error}`);
+      return res.status(502).json(externalResponse);
     }
+    return res.status(200).json(externalResponse);
 
   } catch (error) {
-    // Catch errors thrown by internal execution or client calls
+    console.error(`${logPrefix} Error executing external tool: ${error}`);
     handleServiceError(res, error, logPrefix);
   }
 });
@@ -267,7 +261,7 @@ app.post('/call-tool/:id', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`🛠️ [UTILITY SERVICE] Utility Service running on port ${PORT}`);
   console.log(`🌐 [UTILITY SERVICE] Environment: ${nodeEnv}`);
-  console.log(`📦 [UTILITY SERVICE] Available utilities: ${registry.getInternalUtilityIds().join(', ')}`);
+  console.log(`📦 [UTILITY SERVICE] Available internal utilities: ${registry.getInternalUtilityIds().join(', ')}`);
 });
 
 export default app; 
