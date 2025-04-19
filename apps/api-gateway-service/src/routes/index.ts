@@ -39,31 +39,31 @@ export const configureRoutes = (
   // /agent prefix
   const agentRouter = express.Router();
   configureAgentRoutes(agentRouter, serviceUrls.agent, authMiddleware);
-  app.use('/', agentRouter);
+  app.use('/agent', agentRouter);
 
-  // /message prefix
-  const messageRouter = express.Router();
-  configureMessageRoutes(messageRouter, serviceUrls.agent, authMiddleware);
-  app.use('/', messageRouter);
+  // // /message prefix
+  // const messageRouter = express.Router();
+  // configureMessageRoutes(messageRouter, serviceUrls.agent, authMiddleware);
+  // app.use('/message', messageRouter);
 
-  // /conversation prefix
-  const conversationRouter = express.Router();
-  configureConversationRoutes(conversationRouter, serviceUrls.agent, authMiddleware);
-  app.use('/', conversationRouter);
+  // // // /conversation prefix
+  // const conversationRouter = express.Router();
+  // configureConversationRoutes(conversationRouter, serviceUrls.agent, authMiddleware);
+  // app.use('/conversation', conversationRouter);
 
-  // /run prefix
-  const runRouter = express.Router();
-  configureRunRoutes(runRouter, serviceUrls.agent, authMiddleware);
-  app.use('/', runRouter);
+  // // /run prefix
+  // const runRouter = express.Router();
+  // configureRunRoutes(runRouter, serviceUrls.agent, authMiddleware);
+  // app.use('/run', runRouter);
   
   // Utility tool service routes
-  const utilityRouter = express.Router();
-  configureUtilityRoutes(utilityRouter, serviceUrls.utilityTool, authMiddleware);
-  app.use('/', utilityRouter);
+  const utilityToolRouter = express.Router();
+  configureUtilityRoutes(utilityToolRouter, serviceUrls.utilityTool, authMiddleware);
+  app.use('/utility-tool', utilityToolRouter);
 
   // Secret service routes
   const secretRouter = express.Router();
   configureSecretRoutes(secretRouter, serviceUrls.secret, authMiddleware);
-  app.use('/', secretRouter);
+  app.use('/secret', secretRouter);
 
 }; 

@@ -40,19 +40,18 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 
   try {
     // Call the service function to perform the upsert operation
-    const response: ServiceResponse<ClientUser> = await upsertClientUser(input);
+    const upsertResponse: ServiceResponse<ClientUser> = await upsertClientUser(input);
 
     // Handle the service response
-    if (response.success && response.data) {
-      // Success: return 200 OK with the user data
-      res.status(200).json(response.data);
-    } else {
+    if (!upsertResponse.success) {
       // Failure: Log the specific error from the service for debugging
-      console.error(`[POST /client-users] Service error: ${response.error}`);
+      console.error(`[POST /client-users] Service error: ${upsertResponse.error}`);
       // Return a generic 500 error to the client for security
-      res.status(500).json({ error: response.error || 'Failed to process request' });
+      res.status(500).json(upsertResponse);
       return;
     }
+    // Success: return 200 OK with the user data
+    res.status(200).json(upsertResponse);
   } catch (error: any) {
     // Catch unexpected errors during the process (e.g., network issues, uncaught exceptions in service)
     console.error('[POST /client-users] Unexpected error:', error);

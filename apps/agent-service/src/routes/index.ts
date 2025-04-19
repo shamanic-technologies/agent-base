@@ -11,10 +11,10 @@ import messageRoutes from './message.js';
 
 // Configure all routes for the application
 export function configureRoutes(app: Express) {
-  app.use('/agent', agentRoutes);
   app.use('/conversation', conversationRoutes);
   app.use('/run', runRoutes);
   app.use('/message', messageRoutes);
+  app.use('/', agentRoutes);
 }
 
 // Default export
