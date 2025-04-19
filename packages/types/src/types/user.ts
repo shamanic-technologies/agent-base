@@ -9,6 +9,9 @@ export enum UserType {
   Client = 'client'
 }
 
+export type PlatformUserId = {
+  platformUserId: string;
+}
 /**
  * User record from the database
  */

@@ -6,7 +6,10 @@ import {
   ServiceResponse,
   ApiKey,
   SecretValue,
-  PlatformUser
+  PlatformUserId,
+  PlatformAPIKeySecret,
+  GetApiKeyByIdRequest,
+  GetApiKeyByNameRequest
 } from '@agent-base/types';
 
 // Import the shared request helpers
@@ -18,23 +21,7 @@ import {
 import { getKeyServiceUrl } from './utils/config'; // Import the centralized getter
 import { Method } from 'axios';
 
-// --- Types --- //
-export type PlatformUserIdData = {
-  platformUserId: string;
-}
-export type PlatformAPIKeySecretData = {
-  platformAPIKeySecret: string;
-};
 
-export interface GetApiKeyByNameRequest {
-  platformUserId: string;
-  keyName: string;
-}
-
-export interface GetApiKeyByIdRequest {
-  platformUserId: string;
-  keyId: string;
-}
 
 
 // --- Endpoint Client Functions --- //
@@ -49,8 +36,8 @@ export interface GetApiKeyByIdRequest {
  * @returns A promise resolving to ServiceResponse<PlatformUserId>.
  */
 export const validatePlatformApiKeySecret = async (
-  platformApiKeySecret: PlatformAPIKeySecretData
-): Promise<ServiceResponse<PlatformUserIdData>> => {
+  platformApiKeySecret: PlatformAPIKeySecret
+): Promise<ServiceResponse<PlatformUserId>> => {
 
   const endpoint = '/validate'; // Endpoint path
   const input = {
@@ -60,7 +47,7 @@ export const validatePlatformApiKeySecret = async (
     platformApiKey: platformApiKeySecret.platformAPIKeySecret,
   };
   // Use the helper function, passing the key in the body
-  return await makePlatformUserValidationRequest<PlatformUserIdData>(
+  return await makePlatformUserValidationRequest<PlatformUserId>(
     input.serviceUrl,
     input.method as Method,
     input.endpoint,
@@ -77,7 +64,7 @@ export const validatePlatformApiKeySecret = async (
  * @returns A promise resolving to ServiceResponse<ApiKey[]>.
  */
 export const listPlatformApiKeys = async (
-  platformUserId: PlatformUserIdData
+  platformUserId: PlatformUserId
 ): Promise<ServiceResponse<ApiKey[]>> => {
   if (!platformUserId) {
     return { success: false, error: 'platformUserId is required for listApiKeys.' };

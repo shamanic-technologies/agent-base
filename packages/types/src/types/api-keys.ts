@@ -31,6 +31,19 @@ export interface ApiKey {
   lastUsed: string | null;
 }
 
+export type PlatformAPIKeySecret = {
+  platformAPIKeySecret: string;
+};
+
+export interface GetApiKeyByNameRequest {
+  platformUserId: string;
+  keyName: string;
+}
+
+export interface GetApiKeyByIdRequest {
+  platformUserId: string;
+  keyId: string;
+}
 /**
  * Request to create a new API key
  */
