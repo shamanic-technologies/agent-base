@@ -67,4 +67,32 @@ export function getExternalUtilityToolServiceUrl(): string {
     console.warn('[api-client/config] EXTERNAL_UTILITY_TOOL_SERVICE_URL environment variable not set. Defaulting to ' + url);
   }
   return url;
-} 
+}
+
+/**
+ * Retrieves the External Utility Tool Service URL from environment variables or defaults.
+ * Includes a warning if the environment variable is not set.
+ * @returns The External Utility Tool Service URL string.
+ */
+export function getUtilityToolServiceUrl(): string {
+    // Assuming default port 3008, adjust if necessary
+    const url = process.env.UTILITY_TOOL_SERVICE_URL || 'http://localhost:3050'; 
+    if (!process.env.UTILITY_TOOL_SERVICE_URL) {
+      console.warn('[api-client/config] UTILITY_TOOL_SERVICE_URL environment variable not set. Defaulting to ' + url);
+    }
+    return url;
+  } 
+
+/**
+ * Retrieves the External Utility Tool Service URL from environment variables or defaults.
+ * Includes a warning if the environment variable is not set.
+ * @returns The External Utility Tool Service URL string.
+ */
+export function getApiGatewayServiceUrl(): string {
+    // Assuming default port 3008, adjust if necessary
+    const url = process.env.API_GATEWAY_SERVICE_URL || 'http://localhost:3002'; 
+    if (!process.env.API_GATEWAY_SERVICE_URL) {
+      console.warn('[api-client/config] API_GATEWAY_SERVICE_URL environment variable not set. Defaulting to ' + url);
+    }
+    return url;
+  } 

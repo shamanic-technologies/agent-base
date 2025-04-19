@@ -6,15 +6,14 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import {
     ServiceResponse,
-    Agent
+    Agent,
+    UtilityToolCredentials
 } from '@agent-base/types';
 // AI SDK imports
 import { anthropic } from '@ai-sdk/anthropic';
 import { streamText } from 'ai';
 // @ts-ignore - Message not directly exported from 'ai' in this context
 import { Message } from 'ai';
-// Import User type
-import { UtilityToolCredentials } from '../types/index.js';
 
 // Import necessary API client functions - Use versions without ApiClient suffix where available
 import { 
@@ -104,7 +103,8 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       const toolCredentials: UtilityToolCredentials = {
         clientUserId: clientUserId, // Pass clientUserId here 
         conversationId: conversationId, 
-        apiKey: platformApiKey, // Pass platformApiKey here
+        platformApiKey: platformApiKey, // Pass platformApiKey here
+        platformUserId: platformUserId, // Pass platformUserId here
         agentId: agent.id
       };
       const tools = {

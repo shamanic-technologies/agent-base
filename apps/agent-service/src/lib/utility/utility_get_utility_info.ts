@@ -1,90 +1,69 @@
 /**
  * Utility Get Utility Info
  * 
- * A tool that calls the utility service API to get information about a specific utility.
+ * A tool that calls the utility service API via the API Gateway to get information about a specific utility.
+ * Uses the dedicated api-gateway-client.
  * Follows Vercel AI SDK tool format for Claude integration.
  */
 
 // @ts-ignore - Tool import from ai package
-import { tool } from 'ai';
+import { tool, Tool } from 'ai';
 import { z } from 'zod';
-import axios from 'axios';
 // Use local types for agent-service specific structures
-import { UtilityError, UtilityToolCredentials } from '../../types/index.js';
-// Import shared types from agents package
-import { ServiceResponse, UtilityInfo } from '@agent-base/types';
-import { handleAxiosError } from '../utils/errorHandlers.js';
-import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-// Load environment variables from .env.local
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const rootDir = path.resolve(__dirname, '../../../');
-dotenv.config({ path: path.resolve(rootDir, '.env.local') });
-
-// API Gateway URL from environment variables
-const API_GATEWAY_URL = process.env.API_GATEWAY_URL;
+import { UtilityError } from '../../types/index.js';
+// Import shared types and the specific gateway client function
+import { ServiceResponse, UtilityInfo, UtilityToolCredentials, AgentServiceCredentials } from '@agent-base/types';
+import { getUtilityInfoFromAgent } from '@agent-base/api-client'; // Use the dedicated gateway client
 
 /**
  * Creates the get utility info tool with the given credentials
  */
-export function createGetUtilityInfoTool(credentials: UtilityToolCredentials) {
-  const { clientUserId: userId, conversationId, apiKey, agent_id } = credentials;
+export function createGetUtilityInfoTool(credentials: AgentServiceCredentials) : Tool {
+  // Pass the whole credentials object to the client
   
   return tool({
     name: 'utility_get_utility_info',
     description: 'Get detailed information about a specific utility.',
     parameters: z.object({
-      utility_id: z.string().describe('The ID of the utility to get information about')
+      utilityId: z.string().describe('The ID of the utility to get information about')
     }),
-    execute: async ({ utility_id }) => {
+    execute: async ({ utilityId }) : Promise<UtilityInfo | UtilityError> => {
       try {
-        console.log(`[Utility Tool] Getting info for utility: ${utility_id}`);
+        console.log(`[Utility Tool] Getting info for utility ${utilityId} via API Gateway client`);
         
-        if (!utility_id) {
+        if (!utilityId) {
           return {
             error: true,
-            message: 'utility_id is required',
+            message: 'utilityId is required',
             status: 'error',
             code: 'MISSING_PARAMETER'
           } as UtilityError;
         }
+
+        // Call the API Gateway using the dedicated client
+        // The client now uses makeAPIServiceRequest which handles standard errors
+        const getResponse : ServiceResponse<UtilityInfo> = await getUtilityInfoFromAgent(credentials, utilityId);
         
-        const response = await axios.get<ServiceResponse<UtilityInfo>>(
-          `${API_GATEWAY_URL}/utility-tool/get-details/${utility_id}`, {
-            params: {
-              user_id: userId,
-              conversation_id: conversationId
-            },
-            headers: {
-              'Content-Type': 'application/json',
-              'x-api-key': apiKey,
-              'x-agent-id': agent_id
-            }
-          }
-        );
-        
-        if (response.data && response.data.success) {
-            console.log(`[Utility Tool] Get info for ${utility_id} successful.`);
-            return response.data.data;
-        } else {
-            const errorMessage = response.data?.error || 'Failed to get utility info.';
-            const errorDetails = response.data?.details;
-            console.error(`[Utility Tool] Utility service failed to get info for ${utility_id}: ${errorMessage}`, errorDetails);
-            return {
-                error: true,
-                message: errorMessage,
-                details: errorDetails,
-                status: 'error',
-                code: 'GET_INFO_FAILED'
-            } as UtilityError;
+        // Check the ServiceResponse from the client
+        if (!getResponse.success) {
+          return {
+            error: true,
+            message: getResponse.error || 'Failed to get utility info.',
+            details: getResponse.details,
+            status: 'error',
+            code: 'GET_INFO_FAILED' // Default error code
+          } as UtilityError;
         }
+        return getResponse.data; // Return the actual UtilityInfo data
         
       } catch (error) {
-        console.error(`[Utility Tool] Error getting info for utility ${utility_id}:`, error);
-        return handleAxiosError(error, `${API_GATEWAY_URL}/utility-tool/get-details/${utility_id}`);
+        return {
+            error: true,
+            message: error instanceof Error ? error.message : 'An unexpected error occurred',
+            details: String(error),
+            status: 'error',
+            code: 'UNEXPECTED_ERROR'
+        } as UtilityError;
       }
     }
   });
