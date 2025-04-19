@@ -26,3 +26,4 @@ export * from './key-client.js';
 export * from './utils/service-client.js';
 
 export * from './external-utility-tool-client.js';
+export * from './utility-tool-client.js';

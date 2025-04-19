@@ -106,6 +106,7 @@ export async function makeWebAuthenticatedServiceRequest<T>(
  * @param platformApiKey - Required platform API key for 'x-platform-api-key' header.
  * @param data - Optional request body.
  * @param params - Optional URL query parameters.
+ * @param agentId - Optional agent ID for 'x-agent-id' header.
  * @returns Promise<ServiceResponse<T>>.
  * @template T - Expected data payload type.
  */
@@ -117,11 +118,12 @@ export async function makeAPIServiceRequest<T>(
   clientUserId: string,   // Required
   platformApiKey: string, // Required
   data?: any,
-  params?: any
+  params?: any,
+  agentId?: string      // Optional agent ID
 ): Promise<ServiceResponse<T>> {
   const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const fullUrl = `${serviceUrl}${formattedEndpoint}`;
-  const logContext = `[httpClient:ApiAuth] PlatformUser ${platformUserId}, ClientUser ${clientUserId}`;
+  const logContext = `[httpClient:ApiAuth] PlatformUser ${platformUserId}, ClientUser ${clientUserId}${agentId ? ', Agent ' + agentId : ''}`;
 
   // Validate required parameters
   if (!platformUserId || !clientUserId || !platformApiKey) {
@@ -145,6 +147,7 @@ export async function makeAPIServiceRequest<T>(
       'x-platform-user-id': platformUserId,
       'x-client-user-id': clientUserId,
       'x-platform-api-key': platformApiKey,
+      ...(agentId && { 'x-agent-id': agentId }), // Conditionally add x-agent-id if provided
     },
     data
   };

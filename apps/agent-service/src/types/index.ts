@@ -23,8 +23,9 @@ export interface UtilityError {
  */
 export interface UtilityToolCredentials {
   clientUserId: string;
+  platformUserId: string;
+  platformApiKey: string;
   conversationId: string;
-  apiKey: string;
   agentId: string;
 }
 

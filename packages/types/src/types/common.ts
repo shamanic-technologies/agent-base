@@ -39,3 +39,22 @@ export interface HealthStatusResponse {
   provider: string;
 }
 
+
+export interface InitialServiceCredentials {
+  platformApiKey: string;
+  platformClientUserId: string;
+}
+
+export interface SecondServiceCredentials extends InitialServiceCredentials {
+  platformUserId: string;
+}
+export interface HumanServiceCredentials {
+  platformApiKey: string;
+  clientUserId: string;
+  platformUserId: string;
+}
+export interface AgentServiceCredentials extends HumanServiceCredentials {
+  agentId: string;
+}
+  
+  
