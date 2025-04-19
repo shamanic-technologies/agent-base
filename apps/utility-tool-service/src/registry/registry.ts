@@ -6,7 +6,8 @@
 import { InternalUtilityTool, 
   InternalUtilityInfo,
   UtilitiesList,
-  UtilitiesListItem
+  UtilitiesListItem,
+  ServiceResponse
 } from '@agent-base/types';
 
 /**
@@ -29,35 +30,43 @@ class InternalUtilityRegistry {
    * @param id The ID of the utility to retrieve
    * @returns The utility if found, undefined otherwise
    */
-  getInternalUtility(id: string): InternalUtilityTool | undefined {
-    return this.utilities.get(id);
+  getInternalUtility(id: string): ServiceResponse<InternalUtilityTool> | undefined {
+    const utility = this.utilities.get(id);
+    if (!utility) {
+      return { success: false, error: `Utility with ID '${id}' not found in registry.` };
+    }
+    return { success: true, data: utility };
   }
   
   /**
    * Get all registered INTERNAL utilities
    * @returns Array of all registered utilities
    */
-  getAllInternalUtilities(): InternalUtilityTool[] {
-    return Array.from(this.utilities.values());
+  getAllInternalUtilities(): ServiceResponse<InternalUtilityTool[]> {
+    return { success: true, data: Array.from(this.utilities.values()) };
   }
   
   /**
    * Get IDs of all registered INTERNAL utilities
    * @returns Array of utility IDs
    */
-  getInternalUtilityIds(): string[] {
-    return Array.from(this.utilities.keys());
+  getInternalUtilityIds(): ServiceResponse<string[]> {
+    return { success: true, data: Array.from(this.utilities.keys()) };
   }
   
   /**
    * List all available INTERNAL utilities with their metadata
    * @returns Array of utility information objects
    */
-  listInternalUtilities(): UtilitiesList {
-    return this.getAllInternalUtilities().map(utility => ({
+  listInternalUtilities(): ServiceResponse<UtilitiesList> {
+    const utilities = this.getAllInternalUtilities();
+    if (!utilities.success) {
+      return { success: false, error: utilities.error };
+    }
+    return { success: true, data: utilities.data.map(utility => ({
       id: utility.id,
       description: utility.description,
-    } as UtilitiesListItem));
+    } as UtilitiesListItem)) };
   }
   
   /**
@@ -75,17 +84,17 @@ class InternalUtilityRegistry {
     conversationId: string,
     params: any,
     agentId?: string
-  ): Promise<any> {
-    const utility = this.getInternalUtility(utilityId);
+  ): Promise<ServiceResponse<any>> {
+    const utilityResponse = this.getInternalUtility(utilityId);
     
-    if (!utility) {
+    if (!utilityResponse.success) {
       console.error(`[Registry] Attempted to execute non-existent internal utility: ${utilityId}`);
       throw new Error(`Internal utility with ID '${utilityId}' not found in registry.`);
     }
     
     try {
       console.log(`⚙️ Executing internal utility: ${utilityId}`);
-      return await utility.execute(userId, conversationId, params, agentId);
+      return await utilityResponse.data.execute(userId, conversationId, params, agentId);
     } catch (error) {
       console.error(`❌ Error executing internal utility ${utilityId}:`, error);
       return {

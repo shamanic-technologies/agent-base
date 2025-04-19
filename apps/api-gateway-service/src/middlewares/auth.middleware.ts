@@ -41,10 +41,7 @@ export const authMiddleware = () => {
       let platformUserId: string | undefined = apiCache.getPlatformUserId(platformApiKey);
 
       if (!platformUserId) {
-        // Validate the API key and get the FULL ApiKey object
-        // Note: The client function is declared as returning ServiceResponse<PlatformUserId>,
-        // but the actual data returned by the service flow is the ApiKey object.
-        // We need to handle the actual returned type here.
+
         const platformApiKeySecret: PlatformAPIKeySecret = {
           platformAPIKeySecret: platformApiKey
         };

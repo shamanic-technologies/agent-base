@@ -24,3 +24,5 @@ export * from './key-client.js';
 
 // Export utility functions/types if any
 export * from './utils/service-client.js';
+
+export * from './external-utility-tool-client.js';

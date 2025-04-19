@@ -1,4 +1,4 @@
-import { makeServiceRequest } from '@agent-base/types/src/utils/httpClient.js';
+import { makeWebAnonymousServiceRequest } from '@agent-base/api-client';
 import { 
     ServiceResponse, 
     ExternalUtilityInfoResponse,
@@ -26,7 +26,7 @@ export const listExternalTools = async (): Promise<UtilitiesListResponse> => {
         console.error('Configuration Error: EXTERNAL_UTILITY_TOOL_SERVICE_URL is not set.');
         return { success: false, error: 'External Utility Tool Service URL is not configured.' };
     }
-    return makeServiceRequest<UtilitiesList>(
+    return makeWebAnonymousServiceRequest<UtilitiesList>(
         externalToolServiceUrl,
         'GET',
         '/api/tools'
@@ -45,7 +45,7 @@ export const getExternalToolInfo = async (toolId: string): Promise<ServiceRespon
         console.error('Configuration Error: EXTERNAL_UTILITY_TOOL_SERVICE_URL is not set.');
         return { success: false, error: 'External Utility Tool Service URL is not configured.' };
     }
-    return makeServiceRequest<ExternalUtilityInfo>(
+    return makeWebAnonymousServiceRequest<ExternalUtilityInfo>(
         externalToolServiceUrl,
         'GET',
         `/api/tools/${toolId}` // Use template literal for the path
@@ -76,7 +76,7 @@ export const executeExternalTool = async (
     
     // Using makeServiceRequest will likely return a 200 OK even for proxied errors or setupNeeded responses from EUTS.
     // The caller (utilityController) will need to inspect the response body.
-    const response = await makeServiceRequest<any>( // Expecting ExternalUtilityExecutionResponse essentially
+    const response = await makeWebAnonymousServiceRequest<any>( // Use the correct function
         externalToolServiceUrl,
         'POST',
         `/api/tools/${toolId}/execute`,
@@ -105,7 +105,7 @@ export const createExternalTool = async (
     }
 
     // Make POST request to the external service's create endpoint
-    return makeServiceRequest<ExternalUtilityInfo>(
+    return makeWebAnonymousServiceRequest<ExternalUtilityInfo>(
         externalToolServiceUrl,
         'POST',
         `/api/tools`, // The create endpoint path
