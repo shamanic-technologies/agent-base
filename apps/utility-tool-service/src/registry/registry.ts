@@ -71,7 +71,9 @@ class InternalUtilityRegistry {
    */
   async executeInternalUtility(
     utilityId: string,
-    userId: string,
+    clientUserId: string,
+    platformUserId: string,
+    platformApiKey: string,
     conversationId: string,
     params: any,
     agentId?: string
@@ -85,7 +87,7 @@ class InternalUtilityRegistry {
     
     try {
       console.log(`⚙️ Executing internal utility: ${utilityId}`);
-      return await utility.execute(userId, conversationId, params, agentId);
+      return await utility.execute(clientUserId, platformUserId, platformApiKey, conversationId, params, agentId);
     } catch (error) {
       console.error(`❌ Error executing internal utility ${utilityId}:`, error);
       return {

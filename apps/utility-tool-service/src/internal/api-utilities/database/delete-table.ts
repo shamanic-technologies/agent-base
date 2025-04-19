@@ -58,7 +58,7 @@ const deleteTableUtility: InternalUtilityTool = {
     }
   },
   
-  execute: async (userId: string, conversationId: string, params: DeleteTableRequest): Promise<DeleteTableResponse> => {
+  execute: async (clientUserId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: DeleteTableRequest): Promise<DeleteTableResponse> => {
     const logPrefix = '📊 [DB_DELETE_TABLE]';
     try {
       // Use raw params
@@ -79,7 +79,7 @@ const deleteTableUtility: InternalUtilityTool = {
         } as ErrorResponse;
       }
       
-      console.log(`${logPrefix} Deleting table: "${table}" for user ${userId}`);
+      console.log(`${logPrefix} Deleting table: "${table}" for user ${clientUserId}`);
       
       // Get workspace
       const workspaceSlug = process.env.XATA_WORKSPACE_SLUG;

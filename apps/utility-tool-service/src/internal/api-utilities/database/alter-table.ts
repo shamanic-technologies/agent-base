@@ -107,7 +107,7 @@ const alterTableUtility: InternalUtilityTool = {
     }
   },
   
-  execute: async (userId: string, conversationId: string, params: AlterTableRequest): Promise<AlterTableResponse> => {
+  execute: async (clientUserId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: AlterTableRequest): Promise<AlterTableResponse> => {
     const logPrefix = '📊 [DB_ALTER_TABLE]';
     try {
       // Use raw params
@@ -131,7 +131,7 @@ const alterTableUtility: InternalUtilityTool = {
          return { success: false, error: "Column name to remove must be a string" } as ErrorResponse;
       }
       
-      console.log(`${logPrefix} Altering table: "${table}" for user ${userId}`);
+      console.log(`${logPrefix} Altering table: "${table}" for user ${clientUserId}`);
       
       // Get workspace
       const workspaceSlug = process.env.XATA_WORKSPACE_SLUG;

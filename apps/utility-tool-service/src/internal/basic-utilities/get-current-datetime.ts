@@ -34,7 +34,7 @@ const getCurrentDateTimeUtility: InternalUtilityTool = {
     }
   },
   
-  execute: async (userId: string, conversationId: string, params: DateTimeRequest): Promise<any> => {
+  execute: async (clientUserId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: DateTimeRequest): Promise<any> => {
     try {
       // Remove Zod validation within execute, use raw params
       // Validation might be handled centrally based on the provided zod schema

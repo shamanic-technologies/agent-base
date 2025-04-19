@@ -77,7 +77,7 @@ const getTableUtility: InternalUtilityTool = {
     }
   },
   
-  execute: async (userId: string, conversationId: string, params: GetTableRequest): Promise<GetTableResponse> => {
+  execute: async (clientUserId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: GetTableRequest): Promise<GetTableResponse> => {
     const logPrefix = '📊 [DB_GET_TABLE]';
     try {
       // Use raw params - validation primarily via Zod schema on the caller side
@@ -93,7 +93,7 @@ const getTableUtility: InternalUtilityTool = {
          return { success: false, error: "Limit cannot exceed 100" } as ErrorResponse;
       }
       
-      console.log(`${logPrefix} Getting table info for: \"${table}\", includeData: ${includeData}, limit: ${limit}, user: ${userId}`);
+      console.log(`${logPrefix} Getting table info for: \"${table}\", includeData: ${includeData}, limit: ${limit}, user: ${clientUserId}`);
       
       // Get workspace
       const workspaceSlug = process.env.XATA_WORKSPACE_SLUG;

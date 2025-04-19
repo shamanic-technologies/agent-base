@@ -64,7 +64,7 @@ const readWebPage: InternalUtilityTool = {
     }
   },
   
-  execute: async (userId: string, conversationId: string, params: FireCrawlExtractContentRequest): Promise<ReadWebPageResponse> => {
+  execute: async (clientUserId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: FireCrawlExtractContentRequest): Promise<ReadWebPageResponse> => {
     const logPrefix = '🔥 [FIRECRAWL]';
     try {
       // Use raw params, assuming validation happens elsewhere
