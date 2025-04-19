@@ -31,6 +31,7 @@ export const configureRoutes = (
   authMiddleware: express.RequestHandler
 ) => {
 
+  console.log(`🟢[API Gateway Service] Configuring routes`);
   // Health check routes
   const healthRouter = express.Router();
   configureHealthRoutes(healthRouter, serviceUrls);
@@ -38,6 +39,7 @@ export const configureRoutes = (
   
   // /agent prefix
   const agentRouter = express.Router();
+  console.log(`🟢[API Gateway Service /agent] Configuring agent routes`);
   configureAgentRoutes(agentRouter, serviceUrls.agent, authMiddleware);
   app.use('/agent', agentRouter);
 

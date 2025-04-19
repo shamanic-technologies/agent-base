@@ -6,7 +6,7 @@ import {
   Conversation, // Use camelCase type for client consistency
   CreateConversationInput,
   UpdateConversationInput,
-  GetConversationsFromAgentInput,
+  AgentId,
   ConversationId,
   ConversationRecord,
   BaseResponse
@@ -61,7 +61,7 @@ export const createConversation = async (
  * @returns A ServiceResponse containing an array of Conversation objects or an error.
  */
 export const getConversationsFromAgent = async (
-  params: GetConversationsFromAgentInput,
+  params: AgentId,
   platformUserId: string,
   platformApiKey: string,
   clientUserId: string
@@ -90,7 +90,7 @@ export const getConversationsFromAgent = async (
  * GET /conversations/get-or-create-conversations-from-agent
  */
 export const getOrCreateConversationsFromAgentApiClient = async (
-    params: GetConversationsFromAgentInput,
+    params: AgentId,
     clientUserId: string, // Required for header
     platformUserId: string, // Required for header
     platformApiKey: string
@@ -104,7 +104,7 @@ export const getOrCreateConversationsFromAgentApiClient = async (
         clientUserId,
         platformApiKey,
         undefined, // No Body
-        { agent_id: params.agentId } // Query param
+        params // Query param
     );
 };
 
@@ -113,7 +113,7 @@ export const getOrCreateConversationsFromAgentApiClient = async (
  * GET /conversations/get-conversation/:conversationId
  */
 export const getConversationByIdApiClient = async (
-    params: GetConversationsFromAgentInput,
+    params: AgentId,
     clientUserId: string, // Required for header
     platformUserId: string, // Required for header
     platformApiKey: string
@@ -194,6 +194,7 @@ export const getConversation = async (
 ): Promise<ServiceResponse<Conversation>> => {
   // Construct endpoint with path parameter
   const endpoint = `/conversations/get-conversation/${params.conversationId}`;
+  console.log(`[api-client:getConversation] Calling endpoint: ${endpoint}`);
   return makeAPIServiceRequest<Conversation>(
     getDatabaseServiceUrl(),
     'GET',

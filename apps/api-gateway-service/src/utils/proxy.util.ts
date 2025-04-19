@@ -22,6 +22,7 @@ export const createApiProxy = (
   targetServiceUrl: string,
   serviceName: string
 ) => {
+  console.log(`🟢[ApiProxy] Creating proxy for ${serviceName} targeting ${targetServiceUrl}`);
   // --- Validation ---
   // Ensure a valid target URL is provided during application setup.
   if (!targetServiceUrl) {
