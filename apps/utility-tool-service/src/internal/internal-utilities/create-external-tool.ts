@@ -14,7 +14,8 @@ import {
   AuthMethod,
   UtilityInputSecret,
   ApiKeyAuthScheme,
-  HttpMethod 
+  HttpMethod ,
+  ExecuteToolResult
 } from '@agent-base/types';
 import { createExternalTool } from '@agent-base/api-client';
 import { registry } from '../../registry/registry.js';
@@ -205,7 +206,7 @@ const createExternalToolUtility: InternalUtilityTool = {
     conversationId: string,
     params: CreateExternalToolParams,
     agentId?: string
-  ): Promise<ServiceResponse<ExternalUtilityInfo>> => {
+  ): Promise<ServiceResponse<ExecuteToolResult>> => {
     const logPrefix = '🛠️ [CREATE_EXTERNAL_TOOL_UTILITY]';
     try {
       // Extract the tool configuration from the parameters
@@ -228,19 +229,23 @@ const createExternalToolUtility: InternalUtilityTool = {
       console.log(`${logPrefix} Attempting to create external tool with ID: ${tool_configuration.id} for platformUser ${platformUserId}`);
       
       // Call the client function with all required arguments
-      const result = await createExternalTool(
-        platformUserId, 
-        clientUserId, 
-        platformApiKey, 
+      const resultResponse : ServiceResponse<ExecuteToolResult> = await createExternalTool(
+        {
+          platformUserId, 
+          clientUserId, 
+          platformApiKey, 
+          agentId
+        },
         tool_configuration // Pass the payload
       );
+      if (!resultResponse.success) {
+        console.error(`${logPrefix} Error creating external tool:`, resultResponse.error);
+        return resultResponse;
+      }
       
-      console.log(`${logPrefix} External service response received: success=${result.success}`);
+      console.log(`${logPrefix} External service response received: success=${resultResponse.success}`);
       
-      // Return the result from the external service directly
-      // TODO: Consider if the response type should be ExternalUtilityTool instead of ExternalUtilityInfo?
-      // Assuming the create endpoint returns the full created tool object.
-      return result;
+      return resultResponse;
 
     } catch (error: any) {
       console.error(`${logPrefix} Error executing utility:`, error);
