@@ -68,7 +68,7 @@ const googleSearchUtility: InternalUtilityTool = {
     }
   },
   
-  execute: async (userId: string, conversationId: string, params: GoogleSearchRequest): Promise<GoogleSearchResponse> => {
+  execute: async (clientUserId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: GoogleSearchRequest): Promise<GoogleSearchResponse> => {
     const logPrefix = '🔍 [GOOGLE_SEARCH]';
     try {
       // Use raw params

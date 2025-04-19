@@ -88,7 +88,7 @@ const createTableUtility: InternalUtilityTool = {
     }
   },
   
-  execute: async (userId: string, conversationId: string, params: CreateTableRequest): Promise<CreateTableResponse> => {
+  execute: async (clientUserId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: CreateTableRequest): Promise<CreateTableResponse> => {
     const logPrefix = '📊 [DB_CREATE_TABLE]';
     try {
       // Use raw params
@@ -111,7 +111,7 @@ const createTableUtility: InternalUtilityTool = {
         }
       }
       
-      console.log(`${logPrefix} Creating table: "${name}" for user ${userId}`);
+      console.log(`${logPrefix} Creating table: "${name}" for user ${clientUserId}`);
       
       // Get workspace
       const workspaceSlug = process.env.XATA_WORKSPACE_SLUG;

@@ -16,8 +16,9 @@ import {
   ApiKeyAuthScheme,
   HttpMethod 
 } from '@agent-base/types';
+import { createExternalTool } from '@agent-base/api-client';
 import { registry } from '../../registry/registry.js';
-import { createExternalTool } from '../../clients/externalToolServiceClient.js'; // Import the client function
+// import { createExternalTool } from '../../clients/externalToolServiceClient.js'; // Import the client function
 
 // --- Local Type Definitions ---
 // Define the input structure expected by this internal utility's execute function
@@ -197,7 +198,14 @@ const createExternalToolUtility: InternalUtilityTool = {
     }
   },
   
-  execute: async (userId: string, conversationId: string, params: CreateExternalToolParams): Promise<ServiceResponse<ExternalUtilityInfo>> => {
+  execute: async (
+    platformUserId: string,
+    clientUserId: string,
+    platformApiKey: string,
+    conversationId: string,
+    params: CreateExternalToolParams,
+    agentId?: string
+  ): Promise<ServiceResponse<ExternalUtilityInfo>> => {
     const logPrefix = '🛠️ [CREATE_EXTERNAL_TOOL_UTILITY]';
     try {
       // Extract the tool configuration from the parameters
@@ -212,16 +220,26 @@ const createExternalToolUtility: InternalUtilityTool = {
           details: "The 'tool_configuration' parameter must be a valid ExternalUtilityTool object."
         };
       }
+
+      // Validation for added parameters
+      if (!platformUserId) return { success: false, error: 'Internal Error: platformUserId is required for createExternalTool utility execution.' };
+      if (!platformApiKey) return { success: false, error: 'Internal Error: platformApiKey is required for createExternalTool utility execution.' };
       
-      console.log(`${logPrefix} Attempting to create external tool with ID: ${tool_configuration.id}`);
+      console.log(`${logPrefix} Attempting to create external tool with ID: ${tool_configuration.id} for platformUser ${platformUserId}`);
       
-      // Call the client function to forward the request to the external service
-      const result = await createExternalTool(tool_configuration);
+      // Call the client function with all required arguments
+      const result = await createExternalTool(
+        platformUserId, 
+        clientUserId, 
+        platformApiKey, 
+        tool_configuration // Pass the payload
+      );
       
       console.log(`${logPrefix} External service response received: success=${result.success}`);
       
       // Return the result from the external service directly
-      // This will include success:true/false and data/error from the external service
+      // TODO: Consider if the response type should be ExternalUtilityTool instead of ExternalUtilityInfo?
+      // Assuming the create endpoint returns the full created tool object.
       return result;
 
     } catch (error: any) {

@@ -228,7 +228,16 @@ app.post('/call-tool/:id', async (req, res) => {
     if (internalUtility) {
         console.log(`${logPrefix} Executing internal utility.`);
         // Pass clientUserId as the 'userId' parameter for internal execution
-        const result: any = await registry.executeInternalUtility(id, clientUserId, conversationId, params, agentId);
+        // Ensure platformUserId and platformApiKey are passed according to the updated interface
+        const result: any = await registry.executeInternalUtility(
+            id, 
+            clientUserId, 
+            platformUserId,
+            platformApiKey,
+            conversationId, 
+            params, 
+            agentId
+        );
         
         return res.status(200).json(result); 
     }

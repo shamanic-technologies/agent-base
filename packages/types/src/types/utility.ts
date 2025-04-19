@@ -6,14 +6,6 @@ import { OAuthProvider } from './oauth.js';
 
 // --- Enums and Core Records ---
 
-export enum UtilityProvider {
-    CRISP = 'crisp',
-    STRIPE = 'stripe',
-    GMAIL = 'gmail',
-    CHARGEBEE = 'chargebee',
-    SLACK = 'slack',
-}
-
 
 // Update UtilityToolParamSchema to represent a JSON Schema object
 // Using a basic type for now, can be refined with more specific JSON Schema types if needed
