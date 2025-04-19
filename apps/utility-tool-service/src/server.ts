@@ -138,10 +138,7 @@ app.get('/get-list', async (req, res) => {
 
   try {
     // Get internal tools
-    const internalToolsResponse: ServiceResponse<UtilitiesList> = registry.listInternalUtilities(); 
-    if (!internalToolsResponse.success) {
-      return res.status(502).json(internalToolsResponse);
-    }
+    const internalTools: UtilitiesList = registry.listInternalUtilities(); 
     
     let externalTools: UtilitiesList = []; 
     console.log(`${logPrefix} Fetching external tools...`);
@@ -155,7 +152,7 @@ app.get('/get-list', async (req, res) => {
     externalTools = externalResponse.data.map(tool => ({ id: tool.id, description: tool.description }));
 
     // Combine lists
-    const allTools = [...internalToolsResponse.data, ...externalTools];
+    const allTools = [...internalTools, ...externalTools];
     
     const response: ServiceResponse<{ count: number; utilities: UtilitiesList }> = {
       success: true,
@@ -189,9 +186,9 @@ app.get('/get-details/:id', async (req, res) => {
   
   try {
     // 1. Try internal registry
-    const internalUtilityResponse: ServiceResponse<InternalUtilityTool> = registry.getInternalUtility(id);
-    if (internalUtilityResponse.success) {
-        return res.status(200).json(internalUtilityResponse);
+    const internalUtility: InternalUtilityTool = registry.getInternalUtility(id);
+    if (internalUtility) {
+        return res.status(200).json(internalUtility);
     }
 
     // 2. Try external service (requires auth headers)
@@ -227,15 +224,13 @@ app.post('/call-tool/:id', async (req, res) => {
 
   try {
     // 1. Try internal registry
-    const internalUtilityResponse: ServiceResponse<InternalUtilityTool> = registry.getInternalUtility(id);
-    if (internalUtilityResponse.success) {
+    const internalUtility: InternalUtilityTool = registry.getInternalUtility(id);
+    if (internalUtility) {
         console.log(`${logPrefix} Executing internal utility.`);
         // Pass clientUserId as the 'userId' parameter for internal execution
-        const resultResponse: ServiceResponse<any> = await registry.executeInternalUtility(id, clientUserId, conversationId, params, agentId);
+        const result: any = await registry.executeInternalUtility(id, clientUserId, conversationId, params, agentId);
         
-        if (resultResponse.success) {
-            return res.status(200).json(resultResponse); 
-        }
+        return res.status(200).json(result); 
     }
 
     // 2. Try external service (requires full auth headers)
