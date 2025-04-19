@@ -1,7 +1,7 @@
 /**
  * API Client functions for interacting with the External Utility Tool Service.
  */
-import { ExecuteExternalToolPayload, ExecuteExternalToolResult, ExternalUtilityTool, ServiceResponse } from '@agent-base/types';
+import { ExecuteExternalToolPayload, ExecuteExternalToolResult, ExecuteToolResult, ExternalUtilityTool, ServiceCredentials, ServiceResponse } from '@agent-base/types';
 import { makeAPIServiceRequest } from './utils/service-client.js';
 import { getExternalUtilityToolServiceUrl } from './utils/config.js'; // Import the config getter
 
@@ -20,10 +20,9 @@ import { getExternalUtilityToolServiceUrl } from './utils/config.js'; // Import 
  * @returns {Promise<ServiceResponse<ExternalUtilityTool[]>>} Service response containing the list of tools or an error.
  */
 export async function listExternalTools(
-  platformUserId: string,
-  clientUserId: string,
-  platformApiKey: string
+  credentials: ServiceCredentials,
 ): Promise<ServiceResponse<ExternalUtilityTool[]>> {
+  const { platformUserId, clientUserId, platformApiKey, agentId } = credentials;
   const baseUrl = getExternalUtilityToolServiceUrl(); // Use the config getter
   return makeAPIServiceRequest<ExternalUtilityTool[]>(
     baseUrl,
@@ -31,7 +30,8 @@ export async function listExternalTools(
     '/', // Endpoint path for listing tools
     platformUserId,
     clientUserId,
-    platformApiKey
+    platformApiKey,
+    agentId
   );
 }
 
@@ -47,14 +47,10 @@ export async function listExternalTools(
  * @returns {Promise<ServiceResponse<ExternalUtilityTool>>} Service response containing the tool details or an error.
  */
 export async function getExternalToolInfo(
-  platformUserId: string,
-  clientUserId: string,
-  platformApiKey: string,
+  credentials: ServiceCredentials,
   toolId: string
 ): Promise<ServiceResponse<ExternalUtilityTool>> {
-  if (!toolId) {
-    return { success: false, error: 'Tool ID is required to get tool info.' };
-  }
+  const { platformUserId, clientUserId, platformApiKey, agentId } = credentials;
   const baseUrl = getExternalUtilityToolServiceUrl(); // Use the config getter
   return makeAPIServiceRequest<ExternalUtilityTool>(
     baseUrl,
@@ -62,7 +58,8 @@ export async function getExternalToolInfo(
     `/${toolId}`, // Endpoint path for getting specific tool info
     platformUserId,
     clientUserId,
-    platformApiKey
+    platformApiKey,
+    agentId
   );
 }
 
@@ -78,23 +75,20 @@ export async function getExternalToolInfo(
  * @returns {Promise<ServiceResponse<ExternalUtilityTool>>} Service response containing the newly created tool or an error.
  */
 export async function createExternalTool(
-  platformUserId: string,
-  clientUserId: string,
-  platformApiKey: string,
+  credentials: ServiceCredentials,
   payload: ExternalUtilityTool
-): Promise<ServiceResponse<ExternalUtilityTool>> {
-  if (!payload || typeof payload !== 'object') {
-    return { success: false, error: 'Valid payload is required to create a tool.' };
-  }
+): Promise<ServiceResponse<ExecuteToolResult>> {
+  const { platformUserId, clientUserId, platformApiKey, agentId } = credentials;
   const baseUrl = getExternalUtilityToolServiceUrl(); // Use the config getter
-  return makeAPIServiceRequest<ExternalUtilityTool>(
+  return makeAPIServiceRequest<ExecuteToolResult>(
     baseUrl,
     'POST',
     '/', // Endpoint path for creating tools
     platformUserId,
     clientUserId,
     platformApiKey,
-    payload // Pass the payload as data
+    payload, // Pass the payload as data
+    agentId
   );
 }
 
@@ -111,20 +105,11 @@ export async function createExternalTool(
  * @returns {Promise<ServiceResponse<ExecuteExternalToolResult>>} Service response containing the execution result or an error.
  */
 export async function executeExternalTool(
-  platformUserId: string,
-  clientUserId: string,
-  platformApiKey: string,
+  credentials: ServiceCredentials,
   toolId: string,
   payload: ExecuteExternalToolPayload
 ): Promise<ServiceResponse<ExecuteExternalToolResult>> {
-  if (!toolId) {
-    return { success: false, error: 'Tool ID is required to execute a tool.' };
-  }
-  // Payload might be optional for some tools, but we expect an object if provided
-  if (payload && typeof payload !== 'object') {
-      return { success: false, error: "Payload must be an object if provided." };
-  }
-
+  const { platformUserId, clientUserId, platformApiKey, agentId } = credentials;
   const baseUrl = getExternalUtilityToolServiceUrl(); // Use the config getter
   return makeAPIServiceRequest<ExecuteExternalToolResult>(
     baseUrl,
@@ -133,6 +118,7 @@ export async function executeExternalTool(
     platformUserId,
     clientUserId,
     platformApiKey,
-    payload || {} // Pass the payload as data, default to empty object if null/undefined
+    payload || {}, // Pass the payload as data, default to empty object if null/undefined
+    agentId
   );
 } 

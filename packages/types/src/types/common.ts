@@ -40,20 +40,27 @@ export interface HealthStatusResponse {
 }
 
 
-export interface InitialServiceCredentials {
+export interface ServiceCredentialsForPlatformUserTokenValidation {
+  platformUserToken: string;
+}
+
+export interface ServiceCredentialsForPlatformKeyValidation {
   platformApiKey: string;
   platformClientUserId: string;
 }
 
-export interface SecondServiceCredentials extends InitialServiceCredentials {
+export interface ServiceCredentialsForPlatformClientUserValidation {
+  platformApiKey: string;
+  platformClientUserId: string;
   platformUserId: string;
 }
-export interface HumanServiceCredentials {
+export interface ServiceCredentials {
   platformApiKey: string;
   clientUserId: string;
   platformUserId: string;
+  agentId?: string;
 }
-export interface AgentServiceCredentials extends HumanServiceCredentials {
+export interface AgentServiceCredentials extends ServiceCredentials {
   agentId: string;
 }
   
