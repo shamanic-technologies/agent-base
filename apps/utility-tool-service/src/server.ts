@@ -18,6 +18,7 @@ import {
     listExternalToolsFromAgent,
     getExternalToolInfoFromAgent,
     executeExternalToolFromAgent,
+    getAuthHeadersFromAgent,
 } from '@agent-base/api-client'; // <--- Updated Import Path
 
 // Import shared response types for consistency
@@ -68,28 +69,6 @@ const PORT = process.env.PORT || 3050;
 app.use(cors());
 app.use(express.json());
 
-// Helper to extract auth headers
-const getAuthHeadersFromAgent = (req: Request): ServiceResponse<AgentServiceCredentials> => {
-  const platformUserId = req.headers['x-platform-user-id'] as string | undefined;
-  const clientUserId = req.headers['x-client-user-id'] as string | undefined;
-  const platformApiKey = req.headers['x-platform-api-key'] as string | undefined;
-  const agentId = req.headers['x-agent-id'] as string | undefined; // Agent ID if provided
-
-  // Validate required headers for external call
-  if (!platformUserId || !clientUserId || !platformApiKey || !agentId) {
-    // Proceed with only internal tools, or return error depending on requirements
-    return { success: false, error: 'Missing authentication headers for external tools' } as ErrorResponse;
-  }  
-  return { 
-    success: true,
-    data: {
-        platformUserId,
-        clientUserId,
-        platformApiKey,
-        agentId
-    }
-  };
-};
 
 // Centralized Error Handler
 const handleServiceError = (res: Response, error: any, prefix: string) => {
@@ -252,7 +231,9 @@ app.post('/call-tool/:id', async (req, res) => {
     }
 
     // 2. Try external service (requires full auth headers)
-    console.log(`${logPrefix} Internal utility not found, calling external service.`);
+    console.log(`${logPrefix} Calling external tool: ${id}`);
+    console.log(`${logPrefix} Calling external tool: ${JSON.stringify(agentServiceCredentials,null,2)}`);
+    console.log(`${logPrefix} Calling external tool: ${JSON.stringify(req.body,null,2)}`);
 
     const externalResponse: ServiceResponse<ExecuteToolResult> = await executeExternalToolFromAgent(
         agentServiceCredentials,

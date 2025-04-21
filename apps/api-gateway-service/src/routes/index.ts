@@ -6,9 +6,6 @@
 import express from 'express';
 import { configureHealthRoutes } from './health.routes.js';
 import { configureAgentRoutes } from './agent.routes.js';
-import { configureMessageRoutes } from './message.routes.js';
-import { configureConversationRoutes } from './conversation.routes.js';
-import { configureRunRoutes } from './run.routes.js';
 import { configureUtilityRoutes } from './utility.routes.js';
 import { configureSecretRoutes } from './secret.routes.js';
 

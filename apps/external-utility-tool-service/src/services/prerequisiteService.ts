@@ -6,30 +6,36 @@ import {
     SetupNeeded,
     UtilityActionConfirmation,
     UtilityInputSecret,
-    mapUtilityProviderToOAuthProvider
+    mapUtilityProviderToOAuthProvider,
+    ServiceResponse,
+    SecretValue,
+    GetSecretRequest,
+    UserType,
+    AgentServiceCredentials
 } from '@agent-base/types';
 
 // Import client functions
-import { fetchSecrets } from '../clients/secretServiceClient';
 import { checkAuth, CheckAuthResultData } from '../clients/toolAuthServiceClient';
+import { getSecretApiClient } from '@agent-base/api-client';
 
 /**
  * Checks prerequisites (Secrets, Actions, OAuth).
- * @param config The tool configuration.
- * @param userId The user ID.
+ * @param externalUtilityTool The tool configuration.
+ * @param agentServiceCredentials The user ID.
  * @param logPrefix Logging prefix.
  * @returns An object indicating if prerequisites are met, any setup needed response, and credentials.
  */
 export const checkPrerequisites = async (
-    config: ExternalUtilityTool,
-    userId: string,
-    logPrefix: string
+    externalUtilityTool: ExternalUtilityTool,
+    agentServiceCredentials: AgentServiceCredentials,
 ): Promise<{ 
     prerequisitesMet: boolean; 
     setupNeededResponse?: SuccessResponse<SetupNeeded>; 
     credentials?: { apiKey?: string | null; oauthToken?: string | null };
 }> => {
-     console.log(`${logPrefix} Checking prerequisites...`);
+    const logPrefix = '[PrerequisiteService]';
+    console.log(`${logPrefix} Checking prerequisites...`);
+    const { platformUserId, platformApiKey, clientUserId } = agentServiceCredentials;
     let allSecretsAvailable = true;
     let oauthAuthorized = true;
     let fetchedApiKey: string | null = null;
@@ -38,22 +44,46 @@ export const checkPrerequisites = async (
     let requiredActionConfirmations: UtilityActionConfirmation[] = [];
 
     // --- Check Secrets and Actions --- 
-    if (config.requiredSecrets && config.requiredSecrets.length > 0) {
+    if (externalUtilityTool.requiredSecrets && externalUtilityTool.requiredSecrets.length > 0) {
         try {
-            const secretsData = await fetchSecrets(userId, config.utilityProvider, config.requiredSecrets, logPrefix);
-            for (const secretKey of config.requiredSecrets) {
-                const value = secretsData?.[secretKey];
-                if (!value || (secretKey === UtilityActionConfirmation.WEBHOOK_URL_INPUTED && value !== 'true')) {
-                    allSecretsAvailable = false;
-                    if (secretKey === UtilityActionConfirmation.WEBHOOK_URL_INPUTED) {
-                        requiredActionConfirmations.push(secretKey);
-                    } else {
-                        requiredSecretInputs.push(secretKey);
-                    }
-                    console.log(`${logPrefix} Missing or invalid secret: ${secretKey}`);
+            for (const secretKey of externalUtilityTool.requiredSecrets) {
+                const getSecretRequest : GetSecretRequest ={
+                    userType: UserType.Client,
+                    userId: clientUserId,
+                    secretType: secretKey
+                };
+                const secretValueResponse : ServiceResponse<SecretValue> = await getSecretApiClient(
+                    getSecretRequest,
+                    platformUserId,
+                    platformApiKey,
+                    clientUserId
+                );
+                if (!secretValueResponse.success) {
+                    console.error(`${logPrefix} Error fetching secret: ${secretKey}`);
+                    throw new Error(`Error fetching secret: ${secretKey}`);
                 }
-                if (config.authMethod === AuthMethod.API_KEY && config.apiKeyDetails?.secretName === secretKey && value) {
-                    fetchedApiKey = value;
+                const secretValue = secretValueResponse.data.value;
+
+                // --- START CHANGE ---
+                // Store the API key if this is the designated API key secret
+                if (secretKey === UtilityInputSecret.API_SECRET_KEY) {
+                    fetchedApiKey = secretValue;
+                    if (fetchedApiKey) {
+                        console.log(`${logPrefix} Fetched API key.`);
+                    } else {
+                        console.log(`${logPrefix} API key secret found but value is not a string or is null.`);
+                    }
+                }
+                // --- END CHANGE ---
+
+                if (secretKey === UtilityActionConfirmation.WEBHOOK_URL_INPUTED && secretValue !== 'true') {
+                    console.log(`${logPrefix} Missing or invalid confirmation action: ${secretKey}`);
+                    allSecretsAvailable = false;
+                    requiredActionConfirmations.push(secretKey);
+                } else if (!secretValue) {
+                    console.log(`${logPrefix} Missing or invalid secret: ${secretKey}`);
+                    allSecretsAvailable = false;
+                    requiredSecretInputs.push(secretKey as UtilityInputSecret);
                 }
             }
         } catch (err) {
@@ -62,14 +92,14 @@ export const checkPrerequisites = async (
     }
 
     // --- Check OAuth --- 
-    if (config.authMethod === AuthMethod.OAUTH) {
-        const oauthProvider = mapUtilityProviderToOAuthProvider(config.utilityProvider);
-        if (!config.requiredScopes || config.requiredScopes.length === 0) {
+    if (externalUtilityTool.authMethod === AuthMethod.OAUTH) {
+        const oauthProvider = mapUtilityProviderToOAuthProvider(externalUtilityTool.utilityProvider);
+        if (!externalUtilityTool.requiredScopes || externalUtilityTool.requiredScopes.length === 0) {
              console.error(`${logPrefix} OAuth tool requires requiredScopes.`);
-             throw new Error(`Configuration error: OAuth tool '${config.id}' must define requiredScopes.`);
+             throw new Error(`Configuration error: OAuth tool '${externalUtilityTool.id}' must define requiredScopes.`);
         }
         try {
-            const authResponse = await checkAuth({ userId, oauthProvider, requiredScopes: config.requiredScopes });
+            const authResponse = await checkAuth({ userId: agentServiceCredentials, oauthProvider, requiredScopes: externalUtilityTool.requiredScopes });
             if (!authResponse.success) {
                 console.error(`${logPrefix} Auth check client call failed: ${authResponse.error}`);
                 throw new Error(`Tool Auth Service communication failed: ${authResponse.error}`);
@@ -87,11 +117,11 @@ export const checkPrerequisites = async (
                     success: true,
                     data: {
                         needs_setup: true,
-                        utility_provider: config.utilityProvider,
+                        utility_provider: externalUtilityTool.utilityProvider,
                         oauth_provider: oauthProvider,
-                        message: `Authentication required for ${config.utilityProvider}.`, 
-                        title: `Connect ${config.utilityProvider}`, 
-                        description: config.description,
+                        message: `Authentication required for ${externalUtilityTool.utilityProvider}.`, 
+                        title: `Connect ${externalUtilityTool.utilityProvider}`, 
+                        description: externalUtilityTool.description,
                         required_secret_inputs: [], 
                         required_action_confirmations: [],
                         required_oauth: authUrl
@@ -118,10 +148,10 @@ export const checkPrerequisites = async (
             success: true,
             data: {
                 needs_setup: true,
-                utility_provider: config.utilityProvider,
-                message: `Configuration required for ${config.utilityProvider}. Please provide the following details or confirm actions.`, 
-                title: `Configure ${config.utilityProvider}`, 
-                description: config.description,
+                utility_provider: externalUtilityTool.utilityProvider,
+                message: `Configuration required for ${externalUtilityTool.utilityProvider}. Please provide the following details or confirm actions.`, 
+                title: `Configure ${externalUtilityTool.utilityProvider}`, 
+                description: externalUtilityTool.description,
                 required_secret_inputs: requiredSecretInputs,
                 required_action_confirmations: requiredActionConfirmations
             }

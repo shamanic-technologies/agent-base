@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import * as utilityService from '../services/utilityService';
-import { ExternalUtilityInfo, ExternalUtilityTool, AuthMethod, ApiKeyAuthScheme } from '@agent-base/types'; // Assuming types are here
+import { ExternalUtilityInfo, ExternalUtilityTool, AuthMethod, ApiKeyAuthScheme, ExecuteToolPayload, AgentServiceCredentials } from '@agent-base/types'; // Assuming types are here
+import { getAuthHeadersFromAgent } from '@agent-base/api-client';
 
 // Controller to list available utility tools
 export const listTools = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -122,15 +123,22 @@ export const executeTool = async (req: Request, res: Response, next: NextFunctio
     console.log('[External Utility Tool Service] Executing tool');
     try {
         const toolId = req.params.id;
-        const { userId, conversationId, params, agentId } = req.body;
-
+        const { conversationId, params } : ExecuteToolPayload = req.body;
+        const authHeaders = getAuthHeadersFromAgent(req);
+        if (!authHeaders.success) {
+            console.log('[External Utility Tool Service] Missing auth headers:', authHeaders);
+            res.status(401).json(authHeaders);
+            return;
+        }
+        const agentServiceCredentials : AgentServiceCredentials = authHeaders.data;
         // Basic input validation
-        if (!userId || !conversationId || !params) {
-            res.status(400).json({ success: false, error: 'Missing required fields: userId, conversationId, params' });
+        if (!toolId || !conversationId || !params) {
+            console.log('[External Utility Tool Service] Missing required fields:', toolId, conversationId, params);
+            res.status(400).json({ success: false, error: 'Missing required fields: toolId, conversationId, params' });
             return;
         }
 
-        const result = await utilityService.runToolExecution(toolId, userId, conversationId, params, agentId);
+        const result = await utilityService.runToolExecution(agentServiceCredentials, toolId, conversationId, params);
 
         // Check if the result indicates setup is needed
         if (result.success === true && result.data?.needs_setup === true) {
@@ -140,6 +148,7 @@ export const executeTool = async (req: Request, res: Response, next: NextFunctio
             // It's a UtilitySuccessResponse
             res.status(200).json(result);
         } else {
+            console.log('[External Utility Tool Service] Error executing tool:', result);
             // It's a UtilityErrorResponse - potentially map to HTTP status codes later
             res.status(400).json(result); // Use 400 for general tool execution errors for now
         }

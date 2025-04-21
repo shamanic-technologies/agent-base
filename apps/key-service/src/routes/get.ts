@@ -71,18 +71,19 @@ router.get('/by-name', async (req, res) => {
         userId: platformUserId,
         secretType: `api_key_${key.keyId}`
       };
-      const apiKeyResponse: ServiceResponse<SecretValue> = await getSecretWebClient(platformUserId, getSecretRequest);
+      const secretValueResponse: ServiceResponse<SecretValue> = await getSecretWebClient(platformUserId, getSecretRequest);
       
-      if (!apiKeyResponse.success) {
-          return res.status(404).json(apiKeyResponse);
+      if (!secretValueResponse.success) {
+          return res.status(404).json(secretValueResponse);
       }
+      const platformApiKey = secretValueResponse.data.value;
       // Return just the secret value
-      return res.status(200).json(apiKeyResponse);
+      return res.status(200).json(platformApiKey);
     }
     
     // If key doesn't exist, create a new one
     console.log(`No key found with name "${keyName}", creating new key`);
-    const newKeyResponse = await createApiKey(keyName, platformUserId);
+    const newKeyResponse : ServiceResponse<string> = await createApiKey(keyName, platformUserId);
     
     if (!newKeyResponse.success) {
       return res.status(500).json(newKeyResponse);
@@ -143,14 +144,14 @@ router.get('/:keyId', async (req, res) => {
       userId: platformUserId,
       secretType: `api_key_${keyId}`
     };
-    const apiKeyResponse = await getSecretWebClient(platformUserId, getSecretRequest);
+    const secretValueResponse: ServiceResponse<SecretValue> = await getSecretWebClient(platformUserId, getSecretRequest);
     
-    if (!apiKeyResponse.success) {
-      return res.status(404).json(apiKeyResponse);
+    if (!secretValueResponse.success) {
+      return res.status(404).json(secretValueResponse);
     }
-    
+    const platformApiKey = secretValueResponse.data.value;
     // Return the secret value
-    return res.status(200).json(apiKeyResponse);
+    return res.status(200).json(platformApiKey);
     
   } catch (error) {
     console.error('Error retrieving API key:', error);

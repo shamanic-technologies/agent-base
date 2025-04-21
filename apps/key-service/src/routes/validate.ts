@@ -3,7 +3,7 @@
  */
 import { Router } from 'express';
 import * as dbService from '../services/dbService.js';
-import { BaseResponse, ValidateApiKeyResponse } from '@agent-base/types';
+import { ApiKey, BaseResponse, ServiceResponse, ValidateApiKeyResponse } from '@agent-base/types';
 import { ErrorResponse } from '@agent-base/types';
 const router = Router();
 
@@ -28,7 +28,7 @@ router.post('/', async (req, res) => {
     // Call dbService to validate the API key against the database
     // dbService.validateApiKey now handles the interaction with the database service
     // and expects the database service to return the ApiKey object (including platformUserId) on success.
-    const validateResponse = await dbService.validateApiKey(platformApiKey); // Pass only the apiKey
+    const validateResponse : ServiceResponse<ApiKey> = await dbService.validateApiKey(platformApiKey); // Pass only the apiKey
     
     // If validation failed (invalid key, db error, etc.)
     if (!validateResponse.success) {
