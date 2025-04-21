@@ -34,13 +34,6 @@ import {
     ServiceCredentials,
     ExecuteToolResult
 } from '@agent-base/types';
-// // Define UtilityInfo locally for list/detail responses
-// interface UtilityInfo {
-//   id: string;
-//   description: string;
-//   // Use a union or a more generic structure for schema to accommodate both internal and external
-//   schema: Record<string, ExternalUtilityParamSchema> | Record<string, UtilityToolSchema>; 
-// }
 
 // --- Ensure internal utilities are registered (if needed by side-effect imports)
 import './index.js';
@@ -116,7 +109,6 @@ app.get('/get-list', async (req, res) => {
   const agentServiceCredentials : AgentServiceCredentials = authHeaders.data;
   // Extract conversationId from query parameters
   const conversationId = req.query.conversationId as string | undefined;
-  console.log(`${logPrefix} Conversation ID from query: ${conversationId}`); 
 
   try {
     // Get internal tools
@@ -147,12 +139,6 @@ app.get('/get-list', async (req, res) => {
   }
 });
 
-// Keep legacy endpoint for internal use (optional)
-app.get('/utilities', (req, res) => {
-  console.log(`📚 [GET /utilities - LEGACY] Request received from ${req.ip} - Redirecting to /get-list logic`);
-  res.redirect(301, '/get-list');
-});
-
 // Get info about a specific utility (Internal or External)
 app.get('/get-details/:id', async (req, res) => {
   const { id } = req.params;
@@ -165,8 +151,6 @@ app.get('/get-details/:id', async (req, res) => {
   const agentServiceCredentials : AgentServiceCredentials = authHeaders.data;
   // Extract conversationId from query parameters
   const conversationId = req.query.conversationId as string | undefined;
-  console.log(`${logPrefix} Conversation ID from query: ${conversationId}`); 
-  console.log(`📚 ${logPrefix} Request received from ${req.ip}`);
   
   try {
     // 1. Try internal registry
@@ -184,6 +168,7 @@ app.get('/get-details/:id', async (req, res) => {
     );
 
     if (!externalResponse.success) {
+        console.log(`${logPrefix} Error getting external tool info:`, externalResponse);
         return res.status(502).json(externalResponse);
     }
 
@@ -231,9 +216,6 @@ app.post('/call-tool/:id', async (req, res) => {
     }
 
     // 2. Try external service (requires full auth headers)
-    console.log(`${logPrefix} Calling external tool: ${id}`);
-    console.log(`${logPrefix} Calling external tool: ${JSON.stringify(agentServiceCredentials,null,2)}`);
-    console.log(`${logPrefix} Calling external tool: ${JSON.stringify(req.body,null,2)}`);
 
     const externalResponse: ServiceResponse<ExecuteToolResult> = await executeExternalToolFromAgent(
         agentServiceCredentials,
