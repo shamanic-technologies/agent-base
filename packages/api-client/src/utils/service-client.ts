@@ -14,14 +14,10 @@ async function _makeServiceRequest<T>(
   logContext: string // e.g., '[httpClient:WebAuth]', '[httpClient:ApiAuth]', '[httpClient:Anon]'
 ): Promise<ServiceResponse<T>> {
   try {
-    console.log(`${logContext} Making ${config.method} request to ${fullUrl}`);
-    // Log the config object just before the request is made
-    console.log(`${logContext} Axios config being used:`, JSON.stringify(config, null, 2));
     const response = await axios.request<ServiceResponse<T>>(config);
 
     // Check if the response looks like a standard ServiceResponse
     if (typeof response.data === 'object' && response.data !== null && 'success' in response.data) {
-       console.log(`${logContext} Received successful standard response from ${fullUrl}`);
        return response.data;
     } else {
        // If not standard, wrap it assuming success (may need adjustment based on actual service responses)

@@ -25,7 +25,7 @@ export async function listExternalToolsFromAgent(
   const { platformUserId, clientUserId, platformApiKey, agentId } = agentServiceCredentials;
   const baseUrl = getExternalUtilityToolServiceUrl(); // Use the config getter
   const input = {
-    url: `${baseUrl}/`,
+    url: `${baseUrl}`,
     method: 'GET' as Method,
     endpoint: '/',
     headers: {
