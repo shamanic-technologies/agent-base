@@ -150,12 +150,12 @@ export async function checkSecretExists(request: CheckSecretRequest): Promise<Se
         name,
       });
 
-      // Fix: Return boolean directly for ServiceResponse<SecretExists>
-      return { success: true, data: !!secret }; 
+      // Fix: Return boolean wrapped in SecretExists structure
+      return { success: true, data: { exists: !!secret } }; 
     } catch (error: unknown) {
       if (typeof error === 'object' && error !== null && 'code' in error && (error as any).code === 5) { // 5 is gRPC code for NOT_FOUND
-         // Fix: Return boolean directly for ServiceResponse<SecretExists>
-        return { success: true, data: false }; 
+         // Fix: Return boolean wrapped in SecretExists structure
+        return { success: true, data: { exists: false } }; 
       }
       throw error;
     }
@@ -181,7 +181,11 @@ export async function getSecret(request: GetSecretRequest): Promise<ServiceRespo
   const projectId = process.env.GOOGLE_PROJECT_ID;
   if (!projectId) {
     console.error('GOOGLE_PROJECT_ID environment variable is not set'); // Keep console error for visibility
-    throw new Error('GOOGLE_PROJECT_ID environment variable is not set');
+    // Return an error response matching the function signature
+    return { 
+      success: false, 
+      error: 'Server configuration error: GOOGLE_PROJECT_ID environment variable is not set' 
+    };
   }
 
   try {
@@ -193,25 +197,45 @@ export async function getSecret(request: GetSecretRequest): Promise<ServiceRespo
     const secretId = `${userTypeStr}_${userId}_${secretType}`.toLowerCase(); // Ensure lowercase
     const name = `projects/${projectId}/secrets/${secretId}/versions/latest`;
 
-    // Access the secret version
-    const [version] = await client.accessSecretVersion({
-      name,
-    });
-
-    const payload = version.payload?.data?.toString() || '{}';
-    
+    // Access the secret version - wrap in try-catch for NOT_FOUND
     try {
-      const parsedPayload = JSON.parse(payload);
-      // Ensure the returned data structure matches ServiceResponse<SecretValue>
-      // parsedPayload should already be in the form { value: ... }, assuming it was stored correctly.
-      return { success: true, data: parsedPayload as SecretValue };
-    } catch (error) {
-      // If the payload isn't valid JSON, wrap the raw string in the SecretValue structure
-      console.warn(`Payload for secret ${name} is not valid JSON. Returning as raw string wrapped in SecretValue.`);
-      return { success: true, data: { value: payload } };
+        const [version] = await client.accessSecretVersion({
+          name,
+        });
+
+        // Ensure payload and data exist
+        if (!version.payload || !version.payload.data) {
+            console.warn(`Secret version ${name} found but has no data.`);
+            // Return null value wrapped in the SecretValue structure
+            return { success: true, data: { value: null } }; 
+        }
+
+        // Decode and parse the secret data
+        const payload = version.payload.data.toString();
+        try {
+            const parsedValue = JSON.parse(payload);
+             // Wrap the parsed value in the SecretValue structure
+            return { success: true, data: { value: parsedValue } };
+        } catch (parseError) {
+            // If parsing fails, return null wrapped in the SecretValue structure
+            console.error(`Error parsing JSON payload for secret ${name}:`, parseError);
+            return { success: true, data: { value: null } }; // Treat parse error as data unavailable
+        }
+
+    } catch (error: unknown) {
+      // Check if the error is a Google Cloud "NOT_FOUND" error (code 5)
+      if (typeof error === 'object' && error !== null && 'code' in error && (error as { code: number }).code === 5) {
+        console.log(`Secret ${name} not found. Returning null.`);
+        // If secret is not found, return success with null wrapped in SecretValue structure
+        return { success: true, data: { value: null } };
+      }
+      // For any other errors, re-throw to be caught by the outer catch block
+      throw error; 
     }
+
   } catch (error) {
     console.error('Error getting secret:', error);
+    // Return a structured error response
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error getting secret',

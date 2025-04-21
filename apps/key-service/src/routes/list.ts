@@ -3,7 +3,7 @@
  */
 import { Router } from 'express';
 import * as dbService from '../services/dbService.js';
-import { ErrorResponse, SuccessResponse } from '@agent-base/types';
+import { ErrorResponse, ServiceResponse, SuccessResponse } from '@agent-base/types';
 import { ApiKey } from '@agent-base/types';
 
 const router = Router();
@@ -21,7 +21,7 @@ router.get('/', async (req, res) => {
     }
 
     console.log(`Fetching API key metadata for user: ${platformUserId}`);
-    const keysResponse = await dbService.getUserApiKeys(platformUserId);
+    const keysResponse : ServiceResponse<ApiKey[]> = await dbService.getUserApiKeys(platformUserId);
     
     if (!keysResponse.success) {
       return res.status(400).json(keysResponse);

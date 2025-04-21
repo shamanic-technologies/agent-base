@@ -35,6 +35,10 @@ export interface GetSecretRequest {
   secretType: string;
 }
 
-export type SecretExists = boolean;
+export type SecretExists = {
+  exists: boolean;
+}
 
-export type SecretValue = string | object;
+export type SecretValue = {
+  value: string | null;
+}

@@ -3,6 +3,7 @@ import {
     ExternalUtilityExecutionResponse,
     SuccessResponse,
     ErrorResponse,
+    AgentServiceCredentials,
 } from '@agent-base/types';
 import axios from 'axios';
 
@@ -21,24 +22,25 @@ import { makeApiCall } from './apiCallService';
  * @returns The result of the execution (Success, Error, or SetupNeeded).
  */
 export const handleExecution = async (
-    config: ExternalUtilityTool,
-    userId: string,
+    agentServiceCredentials: AgentServiceCredentials,
+    utilityTool: ExternalUtilityTool,
+    conversationId: string,
     params: Record<string, any>,
-    logPrefix: string
 ): Promise<ExternalUtilityExecutionResponse> => {
+    const logPrefix = `[EXECUTE ${utilityTool.id}] User: ${agentServiceCredentials.clientUserId}`;
     try {
         // 1. Validate Input Parameters (using validationService)
-        const validationResult = validateInputParameters(config, params, logPrefix);
+        const validationResult = validateInputParameters(utilityTool, params, logPrefix);
         if ('success' in validationResult && !validationResult.success) {
+            console.log(`${logPrefix} Validation failed. Returning error response.` + JSON.stringify(validationResult,null,2));
             return validationResult; // Return ErrorResponse directly
         }
         // Type assertion is safe because we checked for error case above
         const validatedParams = (validationResult as { validatedParams: Record<string, any> }).validatedParams;
 
         // 2. Check Prerequisites (using prerequisiteService)
-        const prereqResult = await checkPrerequisites(config, userId, logPrefix);
+        const prereqResult = await checkPrerequisites(utilityTool, agentServiceCredentials);
         if (!prereqResult.prerequisitesMet) {
-            console.log(`${logPrefix} Prerequisites not met. Returning setup needed response.`);
             // Non-null assertion is safe here due to prerequisitesMet check
             return prereqResult.setupNeededResponse!;
         }
@@ -46,7 +48,7 @@ export const handleExecution = async (
         const credentials = prereqResult.credentials!;
 
         // 3. Execute API Call (if defined, using apiCallService)
-        if (!config.apiDetails) {
+        if (!utilityTool.apiDetails) {
             console.log(`${logPrefix} No apiDetails defined. Prerequisites met. Returning success.`);
             const successResponse: SuccessResponse<{ message: string }> = {
                 success: true,
@@ -56,14 +58,13 @@ export const handleExecution = async (
         }
 
         console.log(`${logPrefix} Prerequisites met. Proceeding with API call.`);
-        const apiResult = await makeApiCall(config, validatedParams, credentials, logPrefix);
+        const apiResult = await makeApiCall(utilityTool, validatedParams, credentials, logPrefix);
 
         // 4. Format and Return Success Response
         const successResponse: SuccessResponse<any> = {
             success: true,
             data: apiResult
         };
-        console.log(`${logPrefix} API call successful. Returning result.`);
         return successResponse;
 
     } catch (error) {

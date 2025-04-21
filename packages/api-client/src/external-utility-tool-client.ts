@@ -162,9 +162,8 @@ export async function executeExternalToolFromAgent(
   exectuteToolPayload: ExecuteToolPayload
 ): Promise<ServiceResponse<ExecuteToolResult>> {
   const { platformUserId, clientUserId, platformApiKey, agentId } = agentServiceCredentials;
-  const baseUrl = getExternalUtilityToolServiceUrl(); // Use the config getter
   const input = {
-    url: `${baseUrl}/${toolId}/execute`,
+    url: getExternalUtilityToolServiceUrl(),
     method: 'POST' as Method,
     endpoint: `/${toolId}/execute`,
     headers: {

@@ -15,6 +15,7 @@ import {
     UtilitiesListItem,
     SuccessResponse,
     ErrorResponse,
+    AgentServiceCredentials,
     // SetupNeededData // No longer needed directly here
 } from '@agent-base/types';
 // Import database service functions
@@ -65,21 +66,20 @@ export const addNewTool = async (newConfig: ExternalUtilityTool): Promise<Extern
  * Loads the tool configuration and delegates execution to executionService.
  */
 export const runToolExecution = async (
+    agentServiceCredentials: AgentServiceCredentials,
     toolId: string,
-    userId: string,
-    conversationId: string, // Keep for potential future use (logging, context)
-    params: Record<string, any>,
-    agentId?: string        // Keep for potential future use
+    conversationId: string,
+    params: Record<string, any>
 ): Promise<ExternalUtilityExecutionResponse> => {
-
-    const logPrefix = `[EXECUTE ${toolId}] User: ${userId}`; 
+    const { clientUserId, platformUserId, platformApiKey, agentId } = agentServiceCredentials;
+    const logPrefix = `[EXECUTE ${toolId}] User: ${clientUserId}`; 
     console.log(`${logPrefix} Orchestrating execution with params:`, params);
 
     try {
         // 1. Load Tool Configuration
         const utilities = await readUtilities();
-        const config = utilities.find(t => t.id === toolId);
-        if (!config) {
+        const utilityTool = utilities.find(t => t.id === toolId);
+        if (!utilityTool) {
             console.error(`${logPrefix} Error: Tool config not found.`);
             // Return specific error if tool config itself is not found
             const errorResponse: ErrorResponse = {
@@ -91,7 +91,7 @@ export const runToolExecution = async (
 
         // 2. Delegate Execution to executionService
         console.log(`${logPrefix} Delegating to handleExecution...`);
-        const result = await handleExecution(config, userId, params, logPrefix);
+        const result = await handleExecution(agentServiceCredentials, utilityTool, conversationId, params);
         
         // 3. Return the result from executionService
         console.log(`${logPrefix} Execution handled. Returning result.`);

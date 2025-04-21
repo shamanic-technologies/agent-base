@@ -312,6 +312,9 @@ importers:
 
   apps/external-utility-tool-service:
     dependencies:
+      '@agent-base/api-client':
+        specifier: workspace:*
+        version: link:../../packages/api-client
       '@agent-base/types':
         specifier: workspace:*
         version: link:../../packages/types

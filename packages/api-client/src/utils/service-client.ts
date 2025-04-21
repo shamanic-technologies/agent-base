@@ -15,6 +15,8 @@ async function _makeServiceRequest<T>(
 ): Promise<ServiceResponse<T>> {
   try {
     console.log(`${logContext} Making ${config.method} request to ${fullUrl}`);
+    // Log the config object just before the request is made
+    console.log(`${logContext} Axios config being used:`, JSON.stringify(config, null, 2));
     const response = await axios.request<ServiceResponse<T>>(config);
 
     // Check if the response looks like a standard ServiceResponse
@@ -163,11 +165,7 @@ export async function makeAPIServiceRequest<T>(
  * @param serviceUrl - Base URL of the target service.
  * @param method - HTTP method.
  * @param endpoint - API endpoint path.
- * @param platformUserId - Required platform user ID for 'x-platform-user-id' header.
- * @param clientUserId - Required client user ID for 'x-client-user-id' header.
  * @param platformApiKey - Required platform API key for 'x-platform-api-key' header.
- * @param data - Optional request body.
- * @param params - Optional URL query parameters.
  * @returns Promise<ServiceResponse<T>>.
  * @template T - Expected data payload type.
  */
@@ -179,7 +177,7 @@ export async function makePlatformUserValidationRequest<T>(
 ): Promise<ServiceResponse<T>> {
   const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const fullUrl = `${serviceUrl}${formattedEndpoint}`;
-  const logContext = `[httpClient:ApiAuth] PlatformApiKey ${platformApiKey}`;
+  const logContext = `[httpClient:ApiAuth] PlatformApiKey validation for key starting with ${platformApiKey ? platformApiKey.substring(0, 5) : 'N/A'}`;
 
   // Validate required parameters
   if (!platformApiKey) {
@@ -199,6 +197,7 @@ export async function makePlatformUserValidationRequest<T>(
     headers: {
       'x-platform-api-key': platformApiKey,
     },
+    data: {}
   };
 
   return _makeServiceRequest<T>(fullUrl, config, logContext);
