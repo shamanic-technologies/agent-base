@@ -16,8 +16,8 @@ import { registry } from './registry/registry.js';
 // Import client for EXTERNAL tools from the API client package
 import {
     listExternalToolsFromAgent,
-    getExternalToolInfo,
-    executeExternalTool,
+    getExternalToolInfoFromAgent,
+    executeExternalToolFromAgent,
 } from '@agent-base/api-client'; // <--- Updated Import Path
 
 // Import shared response types for consistency
@@ -27,11 +27,11 @@ import {
     UtilitiesList,
     ExternalUtilityTool,
     InternalUtilityInfo,
-    ExecuteExternalToolPayload,
-    ExecuteExternalToolResult,
+    ExecuteToolPayload,
     InternalUtilityTool,
     AgentServiceCredentials,
-    ServiceCredentials
+    ServiceCredentials,
+    ExecuteToolResult
 } from '@agent-base/types';
 // // Define UtilityInfo locally for list/detail responses
 // interface UtilityInfo {
@@ -135,12 +135,16 @@ app.get('/get-list', async (req, res) => {
     return res.status(401).json(authHeaders);
   }
   const agentServiceCredentials : AgentServiceCredentials = authHeaders.data;
+  // Extract conversationId from query parameters
+  const conversationId = req.query.conversationId as string | undefined;
+  console.log(`${logPrefix} Conversation ID from query: ${conversationId}`); 
+
   try {
     // Get internal tools
     const internalTools: UtilitiesList = registry.listInternalUtilities(); 
     // Get external tools
     let externalTools: UtilitiesList = []; 
-    const externalResponse: ServiceResponse<ExternalUtilityTool[]> = await listExternalToolsFromAgent(agentServiceCredentials);
+    const externalResponse: ServiceResponse<ExternalUtilityTool[]> = await listExternalToolsFromAgent(agentServiceCredentials, conversationId);
     if (!externalResponse.success) {
       console.log(`${logPrefix} Error listing external tools:`, externalResponse);
       return res.status(502).json(externalResponse);
@@ -180,6 +184,9 @@ app.get('/get-details/:id', async (req, res) => {
     return res.status(401).json(authHeaders);
   }
   const agentServiceCredentials : AgentServiceCredentials = authHeaders.data;
+  // Extract conversationId from query parameters
+  const conversationId = req.query.conversationId as string | undefined;
+  console.log(`${logPrefix} Conversation ID from query: ${conversationId}`); 
   console.log(`📚 ${logPrefix} Request received from ${req.ip}`);
   
   try {
@@ -191,8 +198,9 @@ app.get('/get-details/:id', async (req, res) => {
 
     // 2. Try external service (requires auth headers)
     
-    const externalResponse: ServiceResponse<ExternalUtilityTool> = await getExternalToolInfo(
+    const externalResponse: ServiceResponse<ExternalUtilityTool> = await getExternalToolInfoFromAgent(
         agentServiceCredentials,
+        conversationId,
         id
     );
 
@@ -210,22 +218,24 @@ app.get('/get-details/:id', async (req, res) => {
 // Execute a utility (Internal or External)
 app.post('/call-tool/:id', async (req, res) => {
   const { id } = req.params;
-  // Extract from body
-  const { params, conversationId } : ExecuteExternalToolPayload = req.body; 
+  const logPrefix = `[POST /call-tool/${id}]`;
+  const { conversationId, params } : ExecuteToolPayload = req.body;
   // Basic input validation
-  if (!conversationId) return res.status(400).json({ success: false, error: 'conversationId is required' });
+  if (!conversationId) {
+    console.log(`${logPrefix} Conversation ID is required`);
+    return res.status(400).json({ success: false, error: 'conversationId is required' });
+  }
   const authHeaders = getAuthHeadersFromAgent(req);
   if (!authHeaders.success) {
+    console.log(`${logPrefix} Auth headers:`, authHeaders);
     return res.status(401).json(authHeaders);
   }
   const agentServiceCredentials : AgentServiceCredentials = authHeaders.data;
-  const logPrefix = `[POST /call-tool/${id}]`;
 
   try {
     // 1. Try internal registry
     const internalUtility: InternalUtilityTool = registry.getInternalUtility(id);
     if (internalUtility) {
-        console.log(`${logPrefix} Executing internal utility.`);
         // Pass clientUserId as the 'userId' parameter for internal execution
         // Ensure platformUserId and platformApiKey are passed according to the updated interface
         const result: any = await registry.executeInternalUtility(
@@ -244,7 +254,7 @@ app.post('/call-tool/:id', async (req, res) => {
     // 2. Try external service (requires full auth headers)
     console.log(`${logPrefix} Internal utility not found, calling external service.`);
 
-    const externalResponse: ServiceResponse<ExecuteExternalToolResult> = await executeExternalTool(
+    const externalResponse: ServiceResponse<ExecuteToolResult> = await executeExternalToolFromAgent(
         agentServiceCredentials,
         id,
         req.body

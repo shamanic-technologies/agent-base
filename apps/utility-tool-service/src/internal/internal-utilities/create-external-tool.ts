@@ -15,19 +15,12 @@ import {
   UtilityInputSecret,
   ApiKeyAuthScheme,
   HttpMethod ,
-  ExecuteToolResult
+  ExecuteToolResult,
+  AgentServiceCredentials,
 } from '@agent-base/types';
-import { createExternalTool } from '@agent-base/api-client';
+import { createExternalToolFromAgent } from '@agent-base/api-client';
 import { registry } from '../../registry/registry.js';
-// import { createExternalTool } from '../../clients/externalToolServiceClient.js'; // Import the client function
 
-// --- Local Type Definitions ---
-// Define the input structure expected by this internal utility's execute function
-interface CreateExternalToolParams {
-    tool_configuration: ExternalUtilityTool; // The main parameter is the tool config object
-}
-
-// --- End Local Definitions ---
 
 /**
  * Implementation of the Create External Tool utility
@@ -204,17 +197,14 @@ const createExternalToolUtility: InternalUtilityTool = {
     clientUserId: string,
     platformApiKey: string,
     conversationId: string,
-    params: CreateExternalToolParams,
+    params: ExternalUtilityTool,
     agentId?: string
   ): Promise<ServiceResponse<ExecuteToolResult>> => {
     const logPrefix = '🛠️ [CREATE_EXTERNAL_TOOL_UTILITY]';
     try {
-      // Extract the tool configuration from the parameters
-      const { tool_configuration } = params || {}; 
-      
       // Basic validation
-      if (!tool_configuration || typeof tool_configuration !== 'object' || !tool_configuration.id) {
-        console.error(`${logPrefix} Invalid or missing tool_configuration parameter.`);
+      if (!params) {
+        console.error(`${logPrefix} Invalid or missing params parameter.`);
         return { 
           success: false, 
           error: "Invalid input: 'tool_configuration' parameter is missing or invalid.",
@@ -226,21 +216,18 @@ const createExternalToolUtility: InternalUtilityTool = {
       if (!platformUserId) return { success: false, error: 'Internal Error: platformUserId is required for createExternalTool utility execution.' };
       if (!platformApiKey) return { success: false, error: 'Internal Error: platformApiKey is required for createExternalTool utility execution.' };
       
-      console.log(`${logPrefix} Attempting to create external tool with ID: ${tool_configuration.id} for platformUser ${platformUserId}`);
+      console.log(`${logPrefix} Attempting to create external tool with ID: ${JSON.stringify(params)} for platformUser ${platformUserId}`);
       
-      // Call the client function with all required arguments
-      const ToolCredentials = {
-        
+      const agentServiceCredentials : AgentServiceCredentials = {
+        platformUserId, 
+        clientUserId, 
+        platformApiKey, 
+        agentId
       };
-
-      const resultResponse : ServiceResponse<ExecuteToolResult> = await createExternalTool(
-        {
-          platformUserId, 
-          clientUserId, 
-          platformApiKey, 
-          agentId
-        },
-        tool_configuration // Pass the payload
+      const resultResponse : ServiceResponse<ExecuteToolResult> = await createExternalToolFromAgent(
+        agentServiceCredentials,
+        conversationId,
+        params // Pass the payload
       );
       if (!resultResponse.success) {
         console.error(`${logPrefix} Error creating external tool:`, resultResponse.error);
