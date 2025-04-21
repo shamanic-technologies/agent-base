@@ -29,7 +29,8 @@ import {
     InternalUtilityInfo,
     ExecuteExternalToolPayload,
     ExecuteExternalToolResult,
-    InternalUtilityTool
+    InternalUtilityTool,
+    ServiceCredentials
 } from '@agent-base/types';
 // // Define UtilityInfo locally for list/detail responses
 // interface UtilityInfo {
@@ -127,26 +128,22 @@ app.get('/health', (req, res) => {
 // List ALL available utilities (Internal + External)
 app.get('/get-list', async (req, res) => {
   const logPrefix = '[GET /get-list]';
-  console.log(`📚 ${logPrefix} Request received from ${req.ip}`);
   const authHeaders = getAuthHeaders(req);
   if (!authHeaders.success) {
+    console.log(`${logPrefix} Auth headers:`, authHeaders);
     return res.status(401).json(authHeaders);
   }
-  const { platformUserId, clientUserId, platformApiKey } = authHeaders.data;
-
-
-
+  const serviceCredentials : ServiceCredentials = authHeaders.data;
   try {
     // Get internal tools
     const internalTools: UtilitiesList = registry.listInternalUtilities(); 
-    
+    console.log(`${logPrefix} Internal tools:`, internalTools);
     let externalTools: UtilitiesList = []; 
-    console.log(`${logPrefix} Fetching external tools...`);
-    const externalResponse: ServiceResponse<ExternalUtilityTool[]> = await listExternalTools(
-        platformUserId, clientUserId, platformApiKey
-    );
+    const externalResponse: ServiceResponse<ExternalUtilityTool[]> = await listExternalTools(serviceCredentials);
+    console.log(`${logPrefix} External tools:`, externalResponse);
     if (!externalResponse.success) {
-        return res.status(502).json(externalResponse);
+      console.log(`${logPrefix} Error listing external tools:`, externalResponse);
+      return res.status(502).json(externalResponse);
     }
     // Map ExternalUtilityTool to UtilitiesListItem { id, description }
     externalTools = externalResponse.data.map(tool => ({ id: tool.id, description: tool.description }));

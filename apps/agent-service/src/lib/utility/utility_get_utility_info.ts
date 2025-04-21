@@ -18,7 +18,7 @@ import { getUtilityInfoFromAgent } from '@agent-base/api-client'; // Use the ded
 /**
  * Creates the get utility info tool with the given credentials
  */
-export function createGetUtilityInfoTool(credentials: AgentServiceCredentials) : Tool {
+export function createGetUtilityInfoTool(agentServiceCredentials: AgentServiceCredentials, conversationId: string) : Tool {
   // Pass the whole credentials object to the client
   
   return tool({
@@ -42,7 +42,11 @@ export function createGetUtilityInfoTool(credentials: AgentServiceCredentials) :
 
         // Call the API Gateway using the dedicated client
         // The client now uses makeAPIServiceRequest which handles standard errors
-        const getResponse : ServiceResponse<UtilityInfo> = await getUtilityInfoFromAgent(credentials, utilityId);
+        const getResponse : ServiceResponse<UtilityInfo> = await getUtilityInfoFromAgent(
+          agentServiceCredentials,
+          conversationId,
+          utilityId
+        );
         
         // Check the ServiceResponse from the client
         if (!getResponse.success) {

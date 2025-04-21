@@ -9,7 +9,6 @@ import express from 'express';
 import { 
   validatePlatformApiKeySecret, 
   upsertClientUserApiClient,
-  PlatformAPIKeySecretData,
 } from '@agent-base/api-client'; 
 import { ServiceResponse, ClientUser, PlatformUserId, PlatformAPIKeySecret } from '@agent-base/types';
 import { apiCache } from '../utils/api-cache.js'; // Import the API cache
@@ -102,10 +101,6 @@ export const authMiddleware = () => {
         req.headers['x-client-user-id'] = clientUserId;
         console.log(`[Auth Middleware] Authenticated client user. Internal ID: ${clientUserId}`);
 
-      } else {
-        console.log(`[Auth Middleware] No x-platform-client-user-id header found. Proceeding without client user context.`);
-        // Optionally, remove any existing x-client-user-id header if it shouldn't be passed
-        delete req.headers['x-client-user-id']; 
       }
 
       // Proceed to next middleware/route handler
