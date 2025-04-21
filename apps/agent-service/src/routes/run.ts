@@ -7,7 +7,8 @@ import { Router, Request, Response, NextFunction } from 'express';
 import {
     ServiceResponse,
     Agent,
-    UtilityToolCredentials
+    UtilityToolCredentials,
+    AgentServiceCredentials
 } from '@agent-base/types';
 // AI SDK imports
 import { anthropic } from '@ai-sdk/anthropic';
@@ -100,17 +101,16 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       // --- End Get Agent Details ---
 
       // --- Initialize Tools (Requires Agent to be fetched first) ---
-      const toolCredentials: UtilityToolCredentials = {
+      const agentServiceCredentials: AgentServiceCredentials = {
         clientUserId: clientUserId, // Pass clientUserId here 
-        conversationId: conversationId, 
         platformApiKey: platformApiKey, // Pass platformApiKey here
         platformUserId: platformUserId, // Pass platformUserId here
         agentId: agent.id
       };
       const tools = {
-          utility_list_utilities: createListUtilitiesTool(toolCredentials),
-          utility_get_utility_info: createGetUtilityInfoTool(toolCredentials),
-          utility_call_utility: createCallUtilityTool(toolCredentials)
+          utility_list_utilities: createListUtilitiesTool(agentServiceCredentials, conversationId),
+          utility_get_utility_info: createGetUtilityInfoTool(agentServiceCredentials, conversationId),
+          utility_call_utility: createCallUtilityTool(agentServiceCredentials, conversationId)
       };
       // --- End Initialize Tools ---
       

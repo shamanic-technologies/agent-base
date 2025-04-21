@@ -112,5 +112,5 @@ app.listen(PORT, () => {
   console.log(`🤖 [AGENT SERVICE] Port ${PORT}`);
   console.log(`🌐 [AGENT SERVICE] Environment: ${nodeEnv}`);
   console.log(`🔑 [AGENT SERVICE] Anthropic API Key ${process.env.ANTHROPIC_API_KEY ? 'is configured' : 'is MISSING'}`);
-  console.log(`🔗 [AGENT SERVICE] API Gateway URL: ${process.env.API_GATEWAY_URL || 'not set'}`);
+  console.log(`🔗 [AGENT SERVICE] API Gateway URL: ${process.env.API_GATEWAY_SERVICE_URL || 'not set'}`);
 });

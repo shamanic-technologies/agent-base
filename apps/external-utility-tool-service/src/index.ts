@@ -29,12 +29,8 @@ const port = process.env.PORT;
 app.use(express.json()); // Parse JSON bodies
 
 // Routes
-app.use('/api/tools', utilityRoutes); // Mount utility routes
-
-// Basic Root Route
-app.get('/', (req: Request, res: Response) => {
-  res.send('External Utility Tool Service is running!');
-});
+// Mount utility routes directly at the root path '/'
+app.use('/', utilityRoutes);
 
 // Global Error Handler (very basic)
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {

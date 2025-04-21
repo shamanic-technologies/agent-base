@@ -28,13 +28,13 @@ import { getApiGatewayServiceUrl } from './utils/config.js';
  * @throws Throws AxiosError if the request fails (handled by makeAPIServiceRequest, returning ErrorResponse).
  */
 export async function callUtilityFromAgent(
-    config: AgentServiceCredentials,
+    agentServiceCredentials: AgentServiceCredentials,
+    conversationId: string,
     utilityId: string,
     parameters?: Record<string, any>
 ): Promise<ServiceResponse<ExecuteToolResult>> {
-    const { clientUserId, platformUserId, platformApiKey, agentId } = config;
+    const { clientUserId, platformUserId, platformApiKey, agentId } = agentServiceCredentials;
     const endpoint = `utility-tool/call-tool/${utilityId}`;
-    
     console.log(`[ApiGatewayClient] Calling utility ${utilityId} via gateway: POST ${endpoint}`);
 
     // Use makeAPIServiceRequest, passing conversationId in data and agentId for header
@@ -46,7 +46,7 @@ export async function callUtilityFromAgent(
         clientUserId,
         platformApiKey,
         parameters, // Pass data containing input and conversationId
-        undefined,   // No query params for POST
+        {conversationId},
         agentId      // Pass agentId for the header
     );
 }
@@ -60,10 +60,11 @@ export async function callUtilityFromAgent(
  * @throws Throws AxiosError if the request fails (handled by makeAPIServiceRequest, returning ErrorResponse).
  */
 export async function getUtilityInfoFromAgent(
-    config: AgentServiceCredentials,
+    agentServiceCredentials: AgentServiceCredentials,
+    conversationId: string,
     utilityId: string
 ): Promise<ServiceResponse<UtilityInfo>> {
-    const { clientUserId, platformUserId, platformApiKey, agentId } = config;
+    const { clientUserId, platformUserId, platformApiKey, agentId } = agentServiceCredentials;
     const endpoint = `utility-tool/get-details/${utilityId}`;
 
     console.log(`[ApiGatewayClient] Getting info for utility ${utilityId} via gateway: GET ${endpoint}`);
@@ -77,7 +78,7 @@ export async function getUtilityInfoFromAgent(
         clientUserId,
         platformApiKey,
         undefined,    // No data body for GET
-        undefined,  // Pass params containing conversationId
+        {conversationId},
         agentId       // Pass agentId for the header
     );
 }
@@ -85,30 +86,32 @@ export async function getUtilityInfoFromAgent(
 /**
  * Fetches the list of available utilities via the API Gateway using makeAPIServiceRequest.
  * 
- * @param config - API client configuration (URL, credentials).
+ * @param agentServiceCredentials - API client configuration (URL, credentials).
  * @returns The ServiceResponse from the API Gateway.
  * @throws Throws AxiosError if the request fails (handled by makeAPIServiceRequest, returning ErrorResponse).
  */
 export async function listUtilitiesFromAgent(
-    config: AgentServiceCredentials,
+    agentServiceCredentials: AgentServiceCredentials,
+    conversationId: string
 ): Promise<ServiceResponse<ListUtilities>> {
-    const { clientUserId, platformUserId, platformApiKey, agentId } = config;
+    const { clientUserId, platformUserId, platformApiKey, agentId } = agentServiceCredentials;
     // conversationId not needed for this endpoint
     const endpoint = 'utility-tool/get-list';
 
     console.log(`[ApiGatewayClient] Listing utilities via gateway: GET ${endpoint}`);
+    console.log(`[ApiGatewayClient] Config: ${JSON.stringify(agentServiceCredentials)}`);
 
-    // Use makeAPIServiceRequest, passing agentId for header
+    // Use makeAPIServiceRequest, passing agentId for header and conversationId as query param
     return await makeAPIServiceRequest<ListUtilities>(
         getApiGatewayServiceUrl(),
         'get',
         endpoint,
         platformUserId,
-            clientUserId,
-            platformApiKey,
-            undefined, // No data body for GET
-            undefined, // No query params needed
-            agentId    // Pass agentId for the header
-        );
+        clientUserId,
+        platformApiKey,
+        undefined, // No data body for GET
+        { conversationId: conversationId }, // Pass conversationId as a query parameter object
+        agentId    // Pass agentId for the header
+    );
 
 }

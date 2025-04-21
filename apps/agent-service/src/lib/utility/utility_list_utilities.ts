@@ -12,14 +12,14 @@ import { z } from 'zod';
 // Use local types for agent-service specific structures
 import { UtilityError } from '../../types/index.js';
 // Import shared types and the specific gateway client function
-import { ServiceResponse, UtilitiesList, AgentServiceCredentials, ListUtilities } from '@agent-base/types';
+import { ServiceResponse, AgentServiceCredentials, ListUtilities } from '@agent-base/types';
 import { listUtilitiesFromAgent } from '@agent-base/api-client'; // Use the dedicated gateway client
 
 
 /**
  * Creates the list utilities tool with the given credentials
  */
-export function createListUtilitiesTool(credentials: AgentServiceCredentials) : Tool {
+export function createListUtilitiesTool(agentServiceCredentials: AgentServiceCredentials, conversationId: string) : Tool {
   // Pass the whole credentials object to the client
   
   return tool({
@@ -28,12 +28,13 @@ export function createListUtilitiesTool(credentials: AgentServiceCredentials) : 
     parameters: z.object({}),
     execute: async () : Promise<ListUtilities | UtilityError> => {
       try {
-        console.log(`[Utility Tool] Listing utilities via API Gateway client`);
-        
 
         // Call the API Gateway using the dedicated client
         // The client now uses makeAPIServiceRequest which handles standard errors
-        const listResponse : ServiceResponse<ListUtilities> = await listUtilitiesFromAgent(credentials);
+        const listResponse : ServiceResponse<ListUtilities> = await listUtilitiesFromAgent(
+          agentServiceCredentials,
+          conversationId
+        );
         
         // Check the ServiceResponse from the client
         if (!listResponse.success) {
@@ -47,7 +48,6 @@ export function createListUtilitiesTool(credentials: AgentServiceCredentials) : 
         }
 
         return listResponse.data;
- 
 
       } catch (error) {
           return {
@@ -57,7 +57,7 @@ export function createListUtilitiesTool(credentials: AgentServiceCredentials) : 
             status: 'error',
             code: 'UNEXPECTED_ERROR'
             } as UtilityError;
-        }
+      }
       
     }
   });

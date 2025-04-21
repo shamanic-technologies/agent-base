@@ -4,16 +4,19 @@ import { ExternalUtilityInfo, ExternalUtilityTool, AuthMethod, ApiKeyAuthScheme 
 
 // Controller to list available utility tools
 export const listTools = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    console.log('[External Utility Tool Service] Listing tools');
     try {
         const tools = await utilityService.listAvailableTools();
         res.status(200).json({ success: true, data: tools });
     } catch (error) {
+        console.error('Error listing tools:', error);
         next(error); // Pass error to global error handler
     }
 };
 
 // Controller to get detailed information about a specific tool
 export const getToolInfo = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    console.log('[External Utility Tool Service] Getting tool info');
     try {
         const toolId = req.params.id;
         const toolInfo = await utilityService.getToolDetails(toolId);
@@ -23,12 +26,14 @@ export const getToolInfo = async (req: Request, res: Response, next: NextFunctio
         }
         res.status(200).json({ success: true, data: toolInfo });
     } catch (error) {
+        console.error('Error getting tool info:', error);
         next(error);
     }
 };
 
 // Controller to create a new tool configuration
 export const createTool = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    console.log('[External Utility Tool Service] Creating tool');
     try {
         const newConfig: ExternalUtilityTool = req.body;
         const validationErrors: string[] = [];
@@ -106,6 +111,7 @@ export const createTool = async (req: Request, res: Response, next: NextFunction
         if (error instanceof Error && error.message.includes('already exists')) {
             res.status(409).json({ success: false, error: error.message });
         } else {
+            console.error('Error creating tool:', error);
             next(error);
         }
     }
@@ -113,6 +119,7 @@ export const createTool = async (req: Request, res: Response, next: NextFunction
 
 // Controller to execute a specific utility tool
 export const executeTool = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    console.log('[External Utility Tool Service] Executing tool');
     try {
         const toolId = req.params.id;
         const { userId, conversationId, params, agentId } = req.body;
@@ -142,7 +149,8 @@ export const executeTool = async (req: Request, res: Response, next: NextFunctio
          if (error instanceof Error && error.message.includes('not found')) {
             res.status(404).json({ success: false, error: error.message });
          } else {
-             next(error); // Pass other errors to the global handler
+            console.error('Error executing tool:', error);
+            next(error); // Pass other errors to the global handler
          }
     }
 }; 

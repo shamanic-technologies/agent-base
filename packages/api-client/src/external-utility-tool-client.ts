@@ -1,7 +1,7 @@
 /**
  * API Client functions for interacting with the External Utility Tool Service.
  */
-import { ExecuteExternalToolPayload, ExecuteExternalToolResult, ExecuteToolResult, ExternalUtilityTool, ServiceCredentials, ServiceResponse } from '@agent-base/types';
+import { AgentServiceCredentials, ExecuteExternalToolPayload, ExecuteExternalToolResult, ExecuteToolResult, ExternalUtilityTool, ServiceCredentials, ServiceResponse } from '@agent-base/types';
 import { makeAPIServiceRequest } from './utils/service-client.js';
 import { getExternalUtilityToolServiceUrl } from './utils/config.js'; // Import the config getter
 
@@ -19,10 +19,10 @@ import { getExternalUtilityToolServiceUrl } from './utils/config.js'; // Import 
  * @param {string} platformApiKey - The platform API key.
  * @returns {Promise<ServiceResponse<ExternalUtilityTool[]>>} Service response containing the list of tools or an error.
  */
-export async function listExternalTools(
-  credentials: ServiceCredentials,
+export async function listExternalToolsFromAgent(
+  agentServiceCredentials: AgentServiceCredentials,
 ): Promise<ServiceResponse<ExternalUtilityTool[]>> {
-  const { platformUserId, clientUserId, platformApiKey, agentId } = credentials;
+  const { platformUserId, clientUserId, platformApiKey, agentId } = agentServiceCredentials;
   const baseUrl = getExternalUtilityToolServiceUrl(); // Use the config getter
   return makeAPIServiceRequest<ExternalUtilityTool[]>(
     baseUrl,

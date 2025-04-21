@@ -229,6 +229,10 @@ const createExternalToolUtility: InternalUtilityTool = {
       console.log(`${logPrefix} Attempting to create external tool with ID: ${tool_configuration.id} for platformUser ${platformUserId}`);
       
       // Call the client function with all required arguments
+      const ToolCredentials = {
+        
+      };
+
       const resultResponse : ServiceResponse<ExecuteToolResult> = await createExternalTool(
         {
           platformUserId, 
