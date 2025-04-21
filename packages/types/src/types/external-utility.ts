@@ -132,20 +132,6 @@ export enum UtilityInputSecret {
 
 export type UtilitySecret = UtilityInputSecret | UtilityActionConfirmation;
 
-/**
- * Payload for executing an external tool.
- */
-export interface ExecuteExternalToolPayload {
-    conversationId: string;
-    params: Record<string, unknown>; // Use unknown for better type safety than any
-}
-
-/**
- * Response from executing an external tool.
- */
-export interface ExecuteExternalToolResult {
-    result: any; // Define based on expected tool outputs
-}
 
 /**
  * Maps a UtilityProvider to an OAuthProvider

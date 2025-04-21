@@ -12,15 +12,14 @@ import { z } from "zod";
 // Use local types for agent-service specific structures
 import { UtilityError } from '../../types/index.js';
 // Import shared types and the specific gateway client function
-import { AgentServiceCredentials, ExecuteToolResult, ServiceResponse, UtilityToolCredentials } from '@agent-base/types'; 
+import { AgentServiceCredentials, ExecuteToolPayload, ExecuteToolResult, ServiceResponse, UtilityToolCredentials } from '@agent-base/types'; 
 import { callUtilityFromAgent } from '@agent-base/api-client'; // Use the dedicated gateway client
 
 /**
  * Creates the call utility tool with the given credentials
  */
-export function createCallUtilityTool(utilityToolCredentials: UtilityToolCredentials) : Tool {
+export function createCallUtilityTool(agentServiceCredentials: AgentServiceCredentials, conversationId: string) : Tool {
   // Pass the whole credentials object to the client
-  const { clientUserId, platformUserId, platformApiKey, agentId } = utilityToolCredentials;
   return tool({
     name: 'utility_call_utility',
     description: 'Execute a specific utility function by its ID.',
@@ -41,9 +40,17 @@ export function createCallUtilityTool(utilityToolCredentials: UtilityToolCredent
           } as UtilityError;
         }
         
+        const executeToolPayload : ExecuteToolPayload = {
+          conversationId,
+          params: parameters
+        }
         // Call the API Gateway using the dedicated client
         // The client now uses makeAPIServiceRequest which handles standard errors
-        const resultResponse : ServiceResponse<ExecuteToolResult> = await callUtilityFromAgent(utilityToolCredentials, utilityId, parameters);
+        const resultResponse : ServiceResponse<ExecuteToolResult> = await callUtilityFromAgent(
+          agentServiceCredentials,
+          utilityId,
+          executeToolPayload
+        );
         
         // Check the ServiceResponse from the client
         if (!resultResponse.success) {

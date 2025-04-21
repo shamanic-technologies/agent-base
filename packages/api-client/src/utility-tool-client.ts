@@ -10,7 +10,8 @@ import {
     UtilitiesList ,
     AgentServiceCredentials,
     ExecuteToolResult,
-    ListUtilities
+    ListUtilities,
+    ExecuteToolPayload
 } from '@agent-base/types';
 import { makeAPIServiceRequest } from './utils/service-client.js'; // Import the shared helper
 import { getApiGatewayServiceUrl } from './utils/config.js';
@@ -23,15 +24,14 @@ import { getApiGatewayServiceUrl } from './utils/config.js';
  * 
  * @param config - API client configuration (URL, credentials).
  * @param utilityId - The ID of the utility to call.
- * @param parameters - Input parameters for the utility.
+ * @param executeToolPayload - Input parameters for the utility.
  * @returns The ServiceResponse from the API Gateway.
  * @throws Throws AxiosError if the request fails (handled by makeAPIServiceRequest, returning ErrorResponse).
  */
 export async function callUtilityFromAgent(
     agentServiceCredentials: AgentServiceCredentials,
-    conversationId: string,
     utilityId: string,
-    parameters?: Record<string, any>
+    executeToolPayload: ExecuteToolPayload
 ): Promise<ServiceResponse<ExecuteToolResult>> {
     const { clientUserId, platformUserId, platformApiKey, agentId } = agentServiceCredentials;
     const endpoint = `utility-tool/call-tool/${utilityId}`;
@@ -45,8 +45,8 @@ export async function callUtilityFromAgent(
         platformUserId,
         clientUserId,
         platformApiKey,
-        parameters, // Pass data containing input and conversationId
-        {conversationId},
+        executeToolPayload, // Pass data containing input and conversationId
+        undefined,
         agentId      // Pass agentId for the header
     );
 }
