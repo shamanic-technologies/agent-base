@@ -15,7 +15,7 @@ import { registry } from './registry/registry.js';
 
 // Import client for EXTERNAL tools from the API client package
 import {
-    listExternalTools,
+    listExternalToolsFromAgent,
     getExternalToolInfo,
     executeExternalTool,
 } from '@agent-base/api-client'; // <--- Updated Import Path
@@ -30,6 +30,7 @@ import {
     ExecuteExternalToolPayload,
     ExecuteExternalToolResult,
     InternalUtilityTool,
+    AgentServiceCredentials,
     ServiceCredentials
 } from '@agent-base/types';
 // // Define UtilityInfo locally for list/detail responses
@@ -68,14 +69,14 @@ app.use(cors());
 app.use(express.json());
 
 // Helper to extract auth headers
-const getAuthHeaders = (req: Request): ServiceResponse<{ platformUserId: string; clientUserId: string; platformApiKey: string; agentId?: string }> => {
+const getAuthHeadersFromAgent = (req: Request): ServiceResponse<AgentServiceCredentials> => {
   const platformUserId = req.headers['x-platform-user-id'] as string | undefined;
   const clientUserId = req.headers['x-client-user-id'] as string | undefined;
   const platformApiKey = req.headers['x-platform-api-key'] as string | undefined;
   const agentId = req.headers['x-agent-id'] as string | undefined; // Agent ID if provided
 
   // Validate required headers for external call
-  if (!platformUserId || !clientUserId || !platformApiKey) {
+  if (!platformUserId || !clientUserId || !platformApiKey || !agentId) {
     // Proceed with only internal tools, or return error depending on requirements
     return { success: false, error: 'Missing authentication headers for external tools' } as ErrorResponse;
   }  
@@ -128,19 +129,18 @@ app.get('/health', (req, res) => {
 // List ALL available utilities (Internal + External)
 app.get('/get-list', async (req, res) => {
   const logPrefix = '[GET /get-list]';
-  const authHeaders = getAuthHeaders(req);
+  const authHeaders = getAuthHeadersFromAgent(req);
   if (!authHeaders.success) {
     console.log(`${logPrefix} Auth headers:`, authHeaders);
     return res.status(401).json(authHeaders);
   }
-  const serviceCredentials : ServiceCredentials = authHeaders.data;
+  const agentServiceCredentials : AgentServiceCredentials = authHeaders.data;
   try {
     // Get internal tools
     const internalTools: UtilitiesList = registry.listInternalUtilities(); 
-    console.log(`${logPrefix} Internal tools:`, internalTools);
+    // Get external tools
     let externalTools: UtilitiesList = []; 
-    const externalResponse: ServiceResponse<ExternalUtilityTool[]> = await listExternalTools(serviceCredentials);
-    console.log(`${logPrefix} External tools:`, externalResponse);
+    const externalResponse: ServiceResponse<ExternalUtilityTool[]> = await listExternalToolsFromAgent(agentServiceCredentials);
     if (!externalResponse.success) {
       console.log(`${logPrefix} Error listing external tools:`, externalResponse);
       return res.status(502).json(externalResponse);
@@ -173,12 +173,13 @@ app.get('/utilities', (req, res) => {
 // Get info about a specific utility (Internal or External)
 app.get('/get-details/:id', async (req, res) => {
   const { id } = req.params;
-  const authHeaders = getAuthHeaders(req);
+  const logPrefix = `[GET /get-details/${id}]`;
+  const authHeaders = getAuthHeadersFromAgent(req);
   if (!authHeaders.success) {
+    console.log(`${logPrefix} Auth headers:`, authHeaders);
     return res.status(401).json(authHeaders);
   }
-  const { platformUserId, clientUserId, platformApiKey } = authHeaders.data;
-  const logPrefix = `[GET /get-details/${id}]`;
+  const agentServiceCredentials : AgentServiceCredentials = authHeaders.data;
   console.log(`📚 ${logPrefix} Request received from ${req.ip}`);
   
   try {
@@ -191,7 +192,8 @@ app.get('/get-details/:id', async (req, res) => {
     // 2. Try external service (requires auth headers)
     
     const externalResponse: ServiceResponse<ExternalUtilityTool> = await getExternalToolInfo(
-        platformUserId, clientUserId, platformApiKey, id
+        agentServiceCredentials,
+        id
     );
 
     if (!externalResponse.success) {
@@ -212,11 +214,11 @@ app.post('/call-tool/:id', async (req, res) => {
   const { params, conversationId } : ExecuteExternalToolPayload = req.body; 
   // Basic input validation
   if (!conversationId) return res.status(400).json({ success: false, error: 'conversationId is required' });
-  const authHeaders = getAuthHeaders(req);
+  const authHeaders = getAuthHeadersFromAgent(req);
   if (!authHeaders.success) {
     return res.status(401).json(authHeaders);
   }
-  const { platformUserId, clientUserId, platformApiKey, agentId } = authHeaders.data;
+  const agentServiceCredentials : AgentServiceCredentials = authHeaders.data;
   const logPrefix = `[POST /call-tool/${id}]`;
 
   try {
@@ -228,12 +230,12 @@ app.post('/call-tool/:id', async (req, res) => {
         // Ensure platformUserId and platformApiKey are passed according to the updated interface
         const result: any = await registry.executeInternalUtility(
             id, 
-            clientUserId, 
-            platformUserId,
-            platformApiKey,
+            agentServiceCredentials.clientUserId, 
+            agentServiceCredentials.platformUserId,
+            agentServiceCredentials.platformApiKey,
             conversationId, 
             params, 
-            agentId
+            agentServiceCredentials.agentId
         );
         
         return res.status(200).json(result); 
@@ -243,7 +245,9 @@ app.post('/call-tool/:id', async (req, res) => {
     console.log(`${logPrefix} Internal utility not found, calling external service.`);
 
     const externalResponse: ServiceResponse<ExecuteExternalToolResult> = await executeExternalTool(
-        platformUserId, clientUserId, platformApiKey, id, req.body
+        agentServiceCredentials,
+        id,
+        req.body
     );
 
     if (!externalResponse.success) {
