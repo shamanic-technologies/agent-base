@@ -54,13 +54,24 @@ export interface ServiceCredentialsForPlatformClientUserValidation {
   platformClientUserId: string;
   platformUserId: string;
 }
-export interface ServiceCredentials {
+export interface InternalServiceCredentials {
   platformApiKey: string;
   clientUserId: string;
   platformUserId: string;
   agentId?: string;
 }
-export interface AgentServiceCredentials extends ServiceCredentials {
+
+export interface ServiceCredentials {
+  platformApiKey: string;
+  clientUserId?: string;
+  platformUserId?: string;
+  agentId?: string;
+}
+
+export interface AgentServiceCredentials  {
+  platformApiKey: string;
+  clientUserId: string;
+  platformUserId: string;
   agentId: string;
 }
   

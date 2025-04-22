@@ -12,7 +12,7 @@ import {
     // GetSecretResponse, // Likely encompassed by ServiceResponse<SecretValue>
     SecretExists, 
     SecretValue, 
-    ServiceCredentials, 
+    InternalServiceCredentials, 
     ServiceResponse, 
     StoreSecretRequest, 
     // StoreSecretResponse // Likely encompassed by ServiceResponse<string>

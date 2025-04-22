@@ -1,7 +1,7 @@
 /**
  * API Client functions for interacting with the External Utility Tool Service.
  */
-import { AgentServiceCredentials, ExecuteToolPayload, ExecuteToolResult, ExternalUtilityTool, ServiceCredentials, ServiceResponse } from '@agent-base/types';
+import { AgentServiceCredentials, ExecuteToolPayload, ExecuteToolResult, ExternalUtilityTool, InternalServiceCredentials, ServiceResponse } from '@agent-base/types';
 import { makeInternalAPIServiceRequest } from './utils/service-client.js';
 import { getExternalUtilityToolServiceUrl } from './utils/config.js'; // Import the config getter
 import { Method } from 'axios';
