@@ -12,11 +12,13 @@ import {
     // GetSecretResponse, // Likely encompassed by ServiceResponse<SecretValue>
     SecretExists, 
     SecretValue, 
+    ServiceCredentials, 
     ServiceResponse, 
     StoreSecretRequest, 
     // StoreSecretResponse // Likely encompassed by ServiceResponse<string>
     UserType // Import UserType enum
 } from '@agent-base/types';
+import { getAuthHeaders } from '@agent-base/api-client';
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 
 // Initialize the Secret Manager client (remove 'as any' if type inference works)
@@ -48,10 +50,10 @@ function getUserTypeString(userType: UserType): string {
 /**
  * Create a secret key for a user
  * 
- * @param request Object containing userType, userId, secretType, and secretValue
+ * @param storeSecretRequest Object containing userType, userId, secretType, and secretValue
  * @returns Success status and message
  */
-export async function storeSecret(request: StoreSecretRequest): Promise<ServiceResponse<string>> {
+export async function storeSecret(storeSecretRequest: StoreSecretRequest, userId: string): Promise<ServiceResponse<string>> {
   // Add projectId check inside the function
   const projectId = process.env.GOOGLE_PROJECT_ID;
   if (!projectId) {
@@ -61,7 +63,7 @@ export async function storeSecret(request: StoreSecretRequest): Promise<ServiceR
 
   try {
     // Destructure directly from the request object
-    const { userType, userId, secretType, secretValue } = request;
+    const { userType, secretType, secretValue } = storeSecretRequest;
 
     // Create a secret ID based on user type, user id and secret type
     const userTypeStr = getUserTypeString(userType); // Use helper function
@@ -128,7 +130,7 @@ export async function storeSecret(request: StoreSecretRequest): Promise<ServiceR
  * @param request Object containing userType, userId, and secretType
  * @returns Whether the secret exists
  */
-export async function checkSecretExists(request: CheckSecretRequest): Promise<ServiceResponse<SecretExists>> {
+export async function checkSecretExists(request: CheckSecretRequest, userId: string): Promise<ServiceResponse<SecretExists>> {
   // Add projectId check inside the function
   const projectId = process.env.GOOGLE_PROJECT_ID;
   if (!projectId) {
@@ -138,7 +140,7 @@ export async function checkSecretExists(request: CheckSecretRequest): Promise<Se
 
   try {
     // Destructure from the request object
-    const { userType, userId, secretType } = request;
+    const { userType, secretType } = request;
 
     // Create the secret name based on user type, user id and secret type
     const userTypeStr = getUserTypeString(userType); // Use helper function
@@ -176,7 +178,7 @@ export async function checkSecretExists(request: CheckSecretRequest): Promise<Se
  * @param request Object containing userType, userId, and secretType
  * @returns The secret value (parsed from JSON)
  */
-export async function getSecret(request: GetSecretRequest): Promise<ServiceResponse<SecretValue>> {
+export async function getSecret(request: GetSecretRequest, userId: string): Promise<ServiceResponse<SecretValue>> {
   // Add projectId check inside the function
   const projectId = process.env.GOOGLE_PROJECT_ID;
   if (!projectId) {
@@ -190,7 +192,7 @@ export async function getSecret(request: GetSecretRequest): Promise<ServiceRespo
 
   try {
     // Destructure from the request object
-    const { userType, userId, secretType } = request;
+    const { userType, secretType } = request;
 
     // Create the secret name based on user type, user id and secret type
     const userTypeStr = getUserTypeString(userType); // Use helper function

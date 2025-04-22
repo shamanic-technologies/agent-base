@@ -104,7 +104,7 @@ export async function getSecretWebClient(
   platformUserId: string, // This ID value will be placed in the header determined by getSecretRequest.userType
   getSecretRequest: GetSecretRequest
 ): Promise<ServiceResponse<SecretValue>> {
-  const { userType, userId, secretType } = getSecretRequest; // Include userId
+  const { userType, secretType } = getSecretRequest; // Include userId
 
   // GET requests use path params and query params. userType goes in query. userId is implicit via header.
   return await makeWebAuthenticatedServiceRequest<SecretValue>(
@@ -132,7 +132,7 @@ export async function getSecretApiClient(
   platformApiKey: string,
   clientUserId: string
 ): Promise<ServiceResponse<SecretValue>> {
-  const { userType, userId, secretType } = getSecretRequest; // Include userId
+  const { userType, secretType } = getSecretRequest; // Include userId
   const userTypeStr = userType === UserType.Platform ? 'platform' : 'client';
 
   // GET requests use path params and query params. userType goes in query. userId is implicit via headers.
@@ -159,7 +159,7 @@ export async function checkSecretExistsWebClient(
   platformUserId: string, // This ID value will be placed in the header determined by checkSecretRequest.userType
   checkSecretRequest: CheckSecretRequest
 ): Promise<ServiceResponse<SecretExists>> {
-  const { userType, userId, secretType } = checkSecretRequest; // Include userId
+  const { userType, secretType } = checkSecretRequest; // Include userId
   const userTypeStr = userType === UserType.Platform ? 'platform' : 'client';
 
   // GET requests use path params and query params. userType goes in query. userId is implicit via header.
@@ -188,7 +188,7 @@ export async function checkSecretExistsApiClient(
   platformApiKey: string,
   clientUserId: string
 ): Promise<ServiceResponse<SecretExists>> {
-  const { userType, userId, secretType } = checkSecretRequest; // Include userId
+  const { userType, secretType } = checkSecretRequest; // Include userId
   const userTypeStr = userType === UserType.Platform ? 'platform' : 'client';
 
   // GET requests use path params and query params. userType goes in query. userId is implicit via headers.

@@ -14,8 +14,10 @@ import {
     SecretValue, 
     SecretExists, 
     ServiceResponse,
-    UserType // Import UserType
+    UserType,
+    ServiceCredentials // Import UserType
 } from '@agent-base/types'; // Import shared types
+import { getAuthHeaders } from '@agent-base/api-client';
 
 /**
  * Extracts User ID from the relevant request header based on UserType.
@@ -59,12 +61,21 @@ function isValidUserType(userType: any): userType is UserType {
 export async function storeSecretHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
         // Extract request body, now including userId directly
-        const body: StoreSecretRequest = req.body;
-        const { userType, userId, secretType, secretValue } = body; // Destructure userId from body
+        const storeRequest: StoreSecretRequest = req.body;
+        const serviceCredentialsResponse : ServiceResponse<ServiceCredentials> = await getAuthHeaders(req);
+        if (!serviceCredentialsResponse.success) {
+          console.error('Error getting service credentials:', serviceCredentialsResponse.error);
+          res.status(400).json(serviceCredentialsResponse);
+          return;
+        }
+        const { platformUserId, clientUserId, platformApiKey } = serviceCredentialsResponse.data;
+        const { userType, secretType, secretValue } = storeRequest; // Destructure userId from body
+        const userId = userType === UserType.Platform ? platformUserId : clientUserId;
 
         // --- Input Validation --- //
         // Check for valid userType
         if (!isValidUserType(userType)) {
+            console.error('Invalid userType provided:', userType);
             const errorResponse: ErrorResponse = { success: false, error: 'Invalid userType provided' };
             res.status(400).json(errorResponse);
             return; 
@@ -72,6 +83,7 @@ export async function storeSecretHandler(req: Request, res: Response, next: Next
 
         // Check for missing userId (now expected in body)
         if (!userId) {
+            console.error('Missing userId in request body');
             const errorResponse: ErrorResponse = { success: false, error: 'userId is required in the request body' };
             res.status(400).json(errorResponse);
             return; 
@@ -79,6 +91,7 @@ export async function storeSecretHandler(req: Request, res: Response, next: Next
 
         // Check for missing secretType
         if (!secretType) {
+            console.error('Missing secretType in request body');
             const errorResponse: ErrorResponse = { success: false, error: 'secretType is required' };
             res.status(400).json(errorResponse);
             return; 
@@ -86,18 +99,15 @@ export async function storeSecretHandler(req: Request, res: Response, next: Next
 
         // Check for missing secretValue
         if (secretValue === undefined || secretValue === null) {
+            console.error('Missing secretValue in request body');
             const errorResponse: ErrorResponse = { success: false, error: 'secretValue is required' };
             res.status(400).json(errorResponse);
             return; 
         }
-        
-        // --- Prepare Request for Library --- //
-        // The request body now directly matches the StoreSecretRequest type
-        const storeRequest: StoreSecretRequest = body;
 
         // --- Call Library Function --- //
         // Pass the request object from the body
-        const storeResponse = await GsmLib.storeSecret(storeRequest);
+        const storeResponse: ServiceResponse<string> = await GsmLib.storeSecret(storeRequest, userId);
 
         // --- Handle Response --- //
         if (!storeResponse.success) {
@@ -125,34 +135,29 @@ export async function getSecretHandler(req: Request, res: Response, next: NextFu
         // Extract secretType from URL parameters
         const secretType = req.params.secretType;
         // Extract userType from query parameters
-        const userTypeQuery = req.query.userType as string | undefined;
+        const userType : UserType = req.query.userType as UserType;
         
-        // --- Input Validation --- //
-        // Validate and cast userType from query param
-        let userType: UserType;
-        if (userTypeQuery?.toLowerCase() === 'platform') {
-            userType = UserType.Platform;
-        } else if (userTypeQuery?.toLowerCase() === 'client') {
-            userType = UserType.Client;
-        } else {
-            const errorResponse: ErrorResponse = { success: false, error: 'Valid userType (platform or client) is required as a query parameter' };
-            res.status(400).json(errorResponse);
-            return; 
+        const serviceCredentialsResponse : ServiceResponse<ServiceCredentials> = await getAuthHeaders(req);
+        if (!serviceCredentialsResponse.success) {
+          console.error('Error getting service credentials:', serviceCredentialsResponse.error);
+          res.status(400).json(serviceCredentialsResponse);
+          return;
         }
-        
-        // Extract user ID based on the validated userType
-        const userId = getUserIdFromHeader(req, userType);
-        const requiredHeader = userType === UserType.Platform ? 'x-platform-user-id' : 'x-client-user-id';
+        const { platformUserId, clientUserId, platformApiKey } = serviceCredentialsResponse.data;
+        const userId = userType === UserType.Platform ? platformUserId : clientUserId;
+
 
         // Check for missing user ID in header
         if (!userId) {
-            const errorResponse: ErrorResponse = { success: false, error: `userId is required in ${requiredHeader} header for userType ${userType}` };
+            console.error('Missing userId in header');
+            const errorResponse: ErrorResponse = { success: false, error: `userId is required in header for userType ${userType}` };
             res.status(400).json(errorResponse);
             return; 
         }
 
         // Check for missing secretType (from path param)
         if (!secretType) {
+            console.error('Missing secretType in URL path');
             const errorResponse: ErrorResponse = { success: false, error: 'secretType is required in URL path' };
             res.status(400).json(errorResponse);
             return; 
@@ -160,13 +165,14 @@ export async function getSecretHandler(req: Request, res: Response, next: NextFu
 
         // --- Prepare Request for Library --- //
         // Create request object conforming to GetSecretRequest type
-        const getRequest: GetSecretRequest = { userType, userId, secretType };
+        const getRequest: GetSecretRequest = { userType, secretType };
 
         // --- Call Library Function --- //
-        const getResponse = await GsmLib.getSecret(getRequest);
+        const getResponse: ServiceResponse<SecretValue> = await GsmLib.getSecret(getRequest, userId);
 
         // --- Handle Response --- //
         if (!getResponse.success) {
+            console.error('Error getting secret:', getResponse.error);
             const errorResponse: ErrorResponse = { success: false, error: getResponse.error || 'Secret not found' };
             const statusCode = (getResponse.error || '').toLowerCase().includes('not found') ? 404 : 500;
             res.status(statusCode).json(errorResponse);
@@ -192,34 +198,28 @@ export async function checkSecretExistsHandler(req: Request, res: Response, next
         // Extract secretType from URL parameters
         const secretType = req.params.secretType;
         // Extract userType from query parameters
-        const userTypeQuery = req.query.userType as string | undefined;
+        const userType: UserType = req.query.userType as UserType;
         
-        // --- Input Validation --- //
-        // Validate and cast userType from query param
-        let userType: UserType;
-        if (userTypeQuery?.toLowerCase() === 'platform') {
-            userType = UserType.Platform;
-        } else if (userTypeQuery?.toLowerCase() === 'client') {
-            userType = UserType.Client;
-        } else {
-            const errorResponse: ErrorResponse = { success: false, error: 'Valid userType (platform or client) is required as a query parameter' };
-            res.status(400).json(errorResponse);
-            return; 
+        const serviceCredentialsResponse : ServiceResponse<ServiceCredentials> = await getAuthHeaders(req);
+        if (!serviceCredentialsResponse.success) {
+          console.error('Error getting service credentials:', serviceCredentialsResponse.error);
+          res.status(400).json(serviceCredentialsResponse);
+          return;
         }
-
-        // Extract user ID based on the validated userType
-        const userId = getUserIdFromHeader(req, userType);
-        const requiredHeader = userType === UserType.Platform ? 'x-platform-user-id' : 'x-client-user-id';
+        const { platformUserId, clientUserId, platformApiKey } = serviceCredentialsResponse.data;
+        const userId = userType === UserType.Platform ? platformUserId : clientUserId;
 
         // Check for missing user ID in header
         if (!userId) {
-             const errorResponse: ErrorResponse = { success: false, error: `userId is required in ${requiredHeader} header for userType ${userType}` };
+            console.error('Missing userId in header');
+            const errorResponse: ErrorResponse = { success: false, error: `userId is required in header for userType ${userType}` };
             res.status(400).json(errorResponse);
             return; 
         }
 
         // Check for missing secretType (from path param)
         if (!secretType) {
+            console.error('Missing secretType in URL path');
             const errorResponse: ErrorResponse = { success: false, error: 'secretType is required in URL path' };
             res.status(400).json(errorResponse);
             return; 
@@ -227,13 +227,14 @@ export async function checkSecretExistsHandler(req: Request, res: Response, next
 
         // --- Prepare Request for Library --- //
         // Create request object conforming to CheckSecretRequest type
-        const checkRequest: CheckSecretRequest = { userType, userId, secretType };
+        const checkRequest: CheckSecretRequest = { userType, secretType };
 
         // --- Call Library Function --- //
-        const checkResponse = await GsmLib.checkSecretExists(checkRequest);
+        const checkResponse: ServiceResponse<SecretExists> = await GsmLib.checkSecretExists(checkRequest, userId);
 
         // --- Handle Response --- //
         if (!checkResponse.success) {
+            console.error('Error checking secret existence:', checkResponse.error);
             const errorResponse: ErrorResponse = { success: false, error: checkResponse.error || 'Failed to check secret existence' };
             res.status(500).json(errorResponse);
             return; 

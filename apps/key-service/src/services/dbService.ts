@@ -33,7 +33,6 @@ export async function createApiKey(name: string, platformUserId: string): Promis
     // Store secret
     const requestData: StoreSecretRequest = {
       userType: UserType.Platform,
-      userId: platformUserId,
       secretType: `api_key_${keyId}`,
       secretValue: apiKey,
     };

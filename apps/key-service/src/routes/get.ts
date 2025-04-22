@@ -68,7 +68,6 @@ router.get('/by-name', async (req, res) => {
       console.log(`Retrieving API key secret for key ${key.keyId}`);
       const getSecretRequest: GetSecretRequest = {
         userType: UserType.Platform,
-        userId: platformUserId,
         secretType: `api_key_${key.keyId}`
       };
       const secretValueResponse: ServiceResponse<SecretValue> = await getSecretWebClient(platformUserId, getSecretRequest);
@@ -141,7 +140,6 @@ router.get('/:keyId', async (req, res) => {
     console.log(`Retrieving API key secret for key ${keyId}`);
     const getSecretRequest: GetSecretRequest = {
       userType: UserType.Platform,
-      userId: platformUserId,
       secretType: `api_key_${keyId}`
     };
     const secretValueResponse: ServiceResponse<SecretValue> = await getSecretWebClient(platformUserId, getSecretRequest);

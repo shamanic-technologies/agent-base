@@ -1,4 +1,4 @@
-import { makeServiceRequest, OAuthProvider } from '@agent-base/types';
+import { makeServiceRequest, OAuthProvider } from '@agent-base/api-client';
 // Import types directly from their definition files if not exported at root
 import { UtilityProvider, ServiceResponse } from '@agent-base/types';
 import { OAuth, CheckAuthInput } from '@agent-base/types';
@@ -66,7 +66,7 @@ export const checkAuth = async ( input: CheckAuthInput): Promise<ServiceResponse
         toolAuthServiceUrl,
         'POST',
         '/api/check-auth',
-        undefined, // Let makeServiceRequest handle x-user-id if needed, though not used by this endpoint
+        userId, // Let makeServiceRequest handle x-user-id if needed, though not used by this endpoint
         input
     );
 
