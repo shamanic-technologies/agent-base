@@ -499,8 +499,11 @@ importers:
 
   apps/secret-service:
     dependencies:
+      '@agent-base/api-client':
+        specifier: workspace:*
+        version: link:../../packages/api-client
       '@agent-base/types':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/types
       '@google-cloud/secret-manager':
         specifier: ^5.6.0

@@ -77,30 +77,32 @@ app.use((req, res, next) => {
     const clientUserId = req.headers['x-client-user-id'] as string;
     const platformUserIdHeader = req.headers['x-platform-user-id'] as string;
     
-    if (clientUserId) {
-      req.clientUserId = clientUserId;
-      console.log(`[Agent Service Auth] Client User ID: ${clientUserId}`);
-    } else {
+    if (!clientUserId) {
       // Client User ID is essential for most operations
       console.warn('[Agent Service Auth] Missing x-client-user-id header.');
-      // Optionally block requests
-      return res.status(401).json({ success: false, error: 'Missing x-client-user-id header' });
+      // Block request if missing
+      res.status(401).json({ success: false, error: 'Missing x-client-user-id header' });
+      return; // Explicitly return to end execution here
     }
+    req.clientUserId = clientUserId;
+    console.log(`[Agent Service Auth] Client User ID: ${clientUserId}`);
 
-    if (platformUserIdHeader) {
-      // Store platform user ID separately for downstream calls
-      req.platformUserId = platformUserIdHeader;
-      console.log(`[Agent Service Auth] Platform User ID: ${platformUserIdHeader}`);
-    } else {
+    if (!platformUserIdHeader) {
        console.warn('[Agent Service Auth] Missing x-platform-user-id header.');
-       // Optionally block requests
-       return res.status(401).json({ success: false, error: 'Missing x-platform-user-id header' });
+       // Block request if missing
+       res.status(401).json({ success: false, error: 'Missing x-platform-user-id header' });
+       return; // Explicitly return to end execution here
     }
+    // Store platform user ID separately for downstream calls
+    req.platformUserId = platformUserIdHeader;
+    console.log(`[Agent Service Auth] Platform User ID: ${platformUserIdHeader}`);
     
-    next();
+    next(); // Continue to the next middleware/route
   } catch (error) {
-    console.error('[Agent Service] Error processing request:', error);
-    next();
+    console.error('[Agent Service] Error processing request headers:', error);
+    // Send a generic error response in case of unexpected issues during header processing
+    res.status(500).json({ success: false, error: 'Internal server error processing authentication headers' });
+    // Do not call next() here, as the response has been sent.
   }
 });
 

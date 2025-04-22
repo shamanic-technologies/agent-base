@@ -49,7 +49,6 @@ export const checkPrerequisites = async (
             for (const secretKey of externalUtilityTool.requiredSecrets) {
                 const getSecretRequest : GetSecretRequest ={
                     userType: UserType.Client,
-                    userId: clientUserId,
                     secretType: secretKey
                 };
                 const secretValueResponse : ServiceResponse<SecretValue> = await getSecretApiClient(

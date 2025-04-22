@@ -10,7 +10,6 @@ import { UserType } from './user.js';
  */
 export interface StoreSecretRequest {
   userType: UserType;
-  userId: string;
   secretType: string;
   secretValue: string | object;
 }
@@ -22,7 +21,6 @@ export interface StoreActionConfirmationRequest extends StoreSecretRequest {
 
 export interface CheckSecretRequest {
   userType: UserType;
-  userId: string;
   secretType: string;
 }
 
@@ -31,7 +29,6 @@ export interface CheckSecretRequest {
  */
 export interface GetSecretRequest {
   userType: UserType;
-  userId: string;
   secretType: string;
 }
 
