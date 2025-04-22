@@ -19,6 +19,7 @@ router.post('/', async (req, res) => {
 
     // Validate the key structure/presence
     if (!platformApiKey || typeof platformApiKey !== 'string') {
+      console.error('API key is required in the request body');
       return res.status(400).json({ 
         success: false, 
         error: 'API key is required in the request body'
@@ -34,6 +35,7 @@ router.post('/', async (req, res) => {
     if (!validateResponse.success) {
       // Use 401 for authentication failures (invalid/unknown key)
       // Use 500 for internal errors during validation
+      console.error('API key validation failed:', validateResponse.error);
       const statusCode = validateResponse.error?.includes('Internal') ? 500 : 401;
       return res.status(statusCode).json(validateResponse);
     }

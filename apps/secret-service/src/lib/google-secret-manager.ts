@@ -12,7 +12,6 @@ import {
     // GetSecretResponse, // Likely encompassed by ServiceResponse<SecretValue>
     SecretExists, 
     SecretValue, 
-    InternalServiceCredentials, 
     ServiceResponse, 
     StoreSecretRequest, 
     // StoreSecretResponse // Likely encompassed by ServiceResponse<string>
@@ -26,26 +25,6 @@ import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 // if the library's usage doesn't match standard patterns or if types are complex.
 // Let's try without 'as any' first.
 const client = new SecretManagerServiceClient(); 
-
-/**
- * Maps UserType enum to its lowercase string representation.
- * 
- * @param userType The UserType enum value.
- * @returns The lowercase string ('platform' or 'client').
- * @throws Error if the userType is invalid.
- */
-function getUserTypeString(userType: UserType): string {
-    switch (userType) {
-        case UserType.Platform:
-            return 'platform';
-        case UserType.Client:
-            return 'client';
-        default:
-            // This should ideally not happen if validation occurs upstream,
-            // but defensively throw an error.
-            throw new Error(`Invalid UserType enum value: ${userType}`);
-    }
-}
 
 /**
  * Create a secret key for a user
@@ -63,11 +42,10 @@ export async function storeSecret(storeSecretRequest: StoreSecretRequest, userId
 
   try {
     // Destructure directly from the request object
-    const { userType, secretType, secretValue } = storeSecretRequest;
+    const { userType, secretUtilityProvider, secretType, secretValue } = storeSecretRequest;
 
     // Create a secret ID based on user type, user id and secret type
-    const userTypeStr = getUserTypeString(userType); // Use helper function
-    const secretId = `${userTypeStr}_${userId}_${secretType}`.toLowerCase(); // Ensure lowercase
+    const secretId = `${userType}_${userId}_${secretUtilityProvider}_${secretType}`.toLowerCase(); // Ensure lowercase
     const parent = `projects/${projectId}`;
     const secretName = `${parent}/secrets/${secretId}`;
 
@@ -86,7 +64,6 @@ export async function storeSecret(storeSecretRequest: StoreSecretRequest, userId
           },
         });
 
-        console.log(`Updated secret ${secretId} with new version: ${version.name}`);
         return { success: true, data: 'Secret updated successfully' };
       }
     } catch (error) {
@@ -113,7 +90,6 @@ export async function storeSecret(storeSecretRequest: StoreSecretRequest, userId
       },
     });
 
-    console.log(`Created secret ${secretId} with version: ${version.name}`);
     return { success: true, data: 'Secret created successfully' };
   } catch (error) {
     console.error('Error storing secret:', error);
@@ -140,11 +116,10 @@ export async function checkSecretExists(request: CheckSecretRequest, userId: str
 
   try {
     // Destructure from the request object
-    const { userType, secretType } = request;
+    const { userType, secretUtilityProvider, secretType } = request;
 
     // Create the secret name based on user type, user id and secret type
-    const userTypeStr = getUserTypeString(userType); // Use helper function
-    const secretId = `${userTypeStr}_${userId}_${secretType}`.toLowerCase(); // Ensure lowercase
+    const secretId = `${userType}_${userId}_${secretUtilityProvider}_${secretType}`.toLowerCase(); // Ensure lowercase
     const name = `projects/${projectId}/secrets/${secretId}`;
 
     try {
@@ -192,11 +167,10 @@ export async function getSecret(request: GetSecretRequest, userId: string): Prom
 
   try {
     // Destructure from the request object
-    const { userType, secretType } = request;
+    const { userType, secretUtilityProvider, secretType } = request;
 
     // Create the secret name based on user type, user id and secret type
-    const userTypeStr = getUserTypeString(userType); // Use helper function
-    const secretId = `${userTypeStr}_${userId}_${secretType}`.toLowerCase(); // Ensure lowercase
+    const secretId = `${userType}_${userId}_${secretUtilityProvider}_${secretType}`.toLowerCase(); // Ensure lowercase
     const name = `projects/${projectId}/secrets/${secretId}/versions/latest`;
 
     // Access the secret version - wrap in try-catch for NOT_FOUND

@@ -21,40 +21,6 @@ import {
 } from '@agent-base/types'; // Import shared types
 import { getAuthHeaders } from '@agent-base/api-client';
 
-/**
- * Extracts User ID from the relevant request header based on UserType.
- * Assumes the corresponding header is correctly populated by an upstream service (e.g., API Gateway).
- * 
- * @param req Express Request object
- * @param userType The type of user ('platform' or 'client')
- * @returns The user ID string or null if not found or invalid userType
- */
-function getUserIdFromHeader(req: Request, userType: UserType): string | null {
-    let userIdHeader: string | undefined | string[];
-    // Select the correct header based on userType
-    if (userType === UserType.Platform) {
-        userIdHeader = req.headers['x-platform-user-id'];
-    } else if (userType === UserType.Client) {
-        userIdHeader = req.headers['x-client-user-id'];
-    } else {
-        // Invalid userType provided
-        console.warn(`Invalid userType received: ${userType}`);
-        return null;
-    }
-    
-    // Return the header value if it's a string, otherwise null
-    return typeof userIdHeader === 'string' ? userIdHeader : null;
-}
-
-/**
- * Validates the UserType enum.
- * 
- * @param userType The userType value to validate.
- * @returns True if valid, false otherwise.
- */
-function isValidUserType(userType: any): userType is UserType {
-    return userType === UserType.Platform || userType === UserType.Client;
-}
 
 /**
  * Handles POST /api/secrets
@@ -71,17 +37,8 @@ export async function storeSecretHandler(req: Request, res: Response, next: Next
           return;
         }
         const { platformUserId, clientUserId, platformApiKey } = serviceCredentialsResponse.data;
-        const { userType, secretType, secretValue } = storeRequest; // Destructure userId from body
+        const { userType, secretType, secretUtilityProvider, secretValue } = storeRequest; // Destructure userId from body
         const userId = userType === UserType.Platform ? platformUserId : clientUserId;
-
-        // --- Input Validation --- //
-        // Check for valid userType
-        if (!isValidUserType(userType)) {
-            console.error('Invalid userType provided:', userType);
-            const errorResponse: ErrorResponse = { success: false, error: 'Invalid userType provided' };
-            res.status(400).json(errorResponse);
-            return; 
-        }
 
         // Check for missing userId (now expected in body)
         if (!userId) {
@@ -107,12 +64,21 @@ export async function storeSecretHandler(req: Request, res: Response, next: Next
             return; 
         }
 
+        if (!secretUtilityProvider) {
+            console.error('Missing secretUtilityProvider in request body');
+            const errorResponse: ErrorResponse = { success: false, error: 'secretUtilityProvider is required' };
+            res.status(400).json(errorResponse);
+            return; 
+        }
+        
+
         // --- Call Library Function --- //
         // Pass the request object from the body
         const storeResponse: ServiceResponse<string> = await GsmLib.storeSecret(storeRequest, userId);
 
         // --- Handle Response --- //
         if (!storeResponse.success) {
+            console.error('Error storing secret:', storeResponse.error);
             const errorResponse: ErrorResponse = { success: false, error: storeResponse.error || 'Failed to store secret' };
             res.status(500).json(errorResponse);
             return; 
@@ -123,6 +89,7 @@ export async function storeSecretHandler(req: Request, res: Response, next: Next
         res.status(200).json(response);
 
     } catch (error) {
+        console.error('Error storing secret:', error);
         next(error);
     }
 }
@@ -249,6 +216,7 @@ export async function checkSecretExistsHandler(req: Request, res: Response, next
         res.status(200).json(response);
 
     } catch (error) {
+        console.error('Error checking secret existence:', error);
         next(error);
     }
 } 

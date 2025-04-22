@@ -7,7 +7,7 @@ import { Router } from 'express';
 import secretsRouter from './secrets.js'; // Import secrets-specific routes (add .js extension)
 
 // Initialize the main router
-const router = Router();
+const router: Router = Router();
 
 // Mount the secrets router under the /secrets path
 router.use('/secrets', secretsRouter);

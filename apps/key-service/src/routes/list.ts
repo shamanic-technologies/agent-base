@@ -17,17 +17,17 @@ router.get('/', async (req, res) => {
     const platformUserId = req.headers['x-platform-user-id'] as string;
     
     if (!platformUserId) {
+      console.error('Authentication required: x-platform-user-id header missing');
       return res.status(401).json({ success: false, error: 'Authentication required (x-platform-user-id header missing)' });
     }
 
-    console.log(`Fetching API key metadata for user: ${platformUserId}`);
     const keysResponse : ServiceResponse<ApiKey[]> = await dbService.getUserApiKeys(platformUserId);
     
     if (!keysResponse.success) {
+      console.error('Error retrieving user keys:', keysResponse.error);
       return res.status(400).json(keysResponse);
     }
 
-    console.log(`Found ${keysResponse.data.length} API keys for user ${platformUserId}`);
     return res.status(200).json(keysResponse);
   } catch (error) {
     console.error('Error listing API keys:', error instanceof Error ? error.message : error);

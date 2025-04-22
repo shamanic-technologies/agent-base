@@ -15,72 +15,60 @@ import {
   UtilityProvider,
   PlatformApiKeySecretType
 } from '@agent-base/types';
-import { makeWebAuthenticatedServiceRequest, storeSecretWebClient, makeWebAnonymousServiceRequest } from '@agent-base/api-client';
+import { makeWebAuthenticatedServiceRequest, storeSecretWebClient, makeWebAnonymousServiceRequest, createApiKeyMetadata } from '@agent-base/api-client';
 import { v4 as uuidv4 } from 'uuid';
 import { generateApiKey, getKeyPrefix, hashApiKey, isValidKeyFormat } from '../utils/apiKeyUtils.js';
 
-/**
- * Create a new API key
- * Generates key, stores secret, saves metadata to database
- */
-export async function createApiKey(name: string, platformUserId: string): Promise<ServiceResponse<string>> {
-  try {
-    // Generate new API key and ID
-    const apiKey: string = generateApiKey();
-    const keyId = uuidv4();
-    const keyPrefix = getKeyPrefix(apiKey);
+// /**
+//  * Create a new API key
+//  * Generates key, stores secret, saves metadata to database
+//  */
+// export async function createApiKey(name: string, platformUserId: string): Promise<ServiceResponse<string>> {
+//   try {
+//     // Generate new API key and ID
+//     const apiKey: string = generateApiKey();
+//     const keyId = uuidv4();
+//     const keyPrefix = getKeyPrefix(apiKey);
 
-    console.log(`Generated new key. ID: ${keyId}, Prefix: ${keyPrefix}, User: ${platformUserId}`);
+//     // Store secret
+//     const requestData: StoreSecretRequest = {
+//       userType: UserType.Platform,
+//       secretUtilityProvider: UtilityProvider.AGENT_BASE,
+//       secretType: `api_key_${keyId}` as PlatformApiKeySecretType,
+//       secretValue: apiKey,
+//     };
+//     const storeResponse = await storeSecretWebClient(platformUserId, requestData);
+//     if (!storeResponse.success) {
+//       console.error('Failed to store secret:', storeResponse.error);
+//       return storeResponse;
+//     }
 
-    // Store secret
-    const requestData: StoreSecretRequest = {
-      userType: UserType.Platform,
-      secretUtilityProvider: UtilityProvider.AGENT_BASE,
-      secretType: `api_key_${keyId}` as PlatformApiKeySecretType,
-      secretValue: apiKey,
-    };
-    const storeResponse = await storeSecretWebClient(platformUserId, requestData);
-    if (!storeResponse.success) {
-      console.error('Failed to store secret:', storeResponse.error);
-      return storeResponse;
-    }
-    console.log(`Successfully initiated secret storage for api_key_${keyId}`);
+//     // Prepare metadata payload
+//     const keyMetadataPayload: CreateApiKeyRequest = {
+//       keyId,
+//       name,
+//       keyPrefix,
+//       hashedKey: hashApiKey(apiKey),
+//     };
 
-    // Prepare metadata payload
-    const keyMetadataPayload: CreateApiKeyRequest = {
-      keyId,
-      name,
-      keyPrefix,
-      hashedKey: hashApiKey(apiKey),
-    };
+//     const dbResponse = await createApiKeyMetadata(keyMetadataPayload, platformUserId);
+    
 
-    // Save to database
-    console.log(`Saving metadata for key ${keyId} to database...`);
-    const dbResponse = await makeWebAuthenticatedServiceRequest<ApiKey>(
-      DB_SERVICE_URL,
-      'post',
-      '/api-keys',
-      platformUserId,
-      keyMetadataPayload
-    );
+//     if (!dbResponse.success) {
+//       console.error('Failed to store API key metadata:', dbResponse.error);
+//       throw new Error('Failed to store API key metadata');
+//     }
 
-    if (!dbResponse.success) {
-      console.error('Failed to store API key metadata:', dbResponse.error);
-      throw new Error('Failed to store API key metadata');
-    }
-
-    console.log(`Successfully stored metadata for key ${keyId}`);
-
-    // Prepare response
-    return {
-      success: true,
-      data: apiKey,
-    };
-  } catch (error) {
-    console.error('Error in createApiKey:', error);
-    return { success: false, error: 'Internal error during API key creation' } as ErrorResponse;
-  }
-}
+//     // Prepare response
+//     return {
+//       success: true,
+//       data: apiKey,
+//     };
+//   } catch (error) {
+//     console.error('Error in createApiKey:', error);
+//     return { success: false, error: 'Internal error during API key creation' } as ErrorResponse;
+//   }
+// }
 
 /**
  * Get all API keys for a user
