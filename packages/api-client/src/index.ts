@@ -29,3 +29,6 @@ export * from './utils/config.js';
 
 export * from './external-utility-tool-client.js';
 export * from './utility-tool-client.js';
+
+// Export agent service client functions
+export * from './agent-clients/conversation-client.js';
