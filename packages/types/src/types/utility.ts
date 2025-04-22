@@ -7,6 +7,30 @@ import { InternalUtilityInfo } from './internal-utility.js';
 import { OAuthProvider } from './oauth.js';
 
 // --- Enums and Core Records ---
+
+export enum UtilityProvider {
+    AGENT_BASE = 'agent-base',
+    CRISP = 'crisp',
+    STRIPE = 'stripe',
+    GMAIL = 'gmail',
+    CHARGEBEE = 'chargebee',
+    SLACK = 'slack',
+}
+export enum UtilityActionConfirmation {
+    WEBHOOK_URL_INPUTED = 'webhook_url_inputed', // Represents user confirmation of an action
+}
+
+export type PlatformApiKeySecretType = string;
+
+export enum UtilityInputSecret {
+    WEBSITE_ID = 'website_id',
+    API_SECRET_KEY = 'api_secret_key',
+    API_PUBLISHABLE_KEY = 'api_publishable_key',
+    API_IDENTIFIER = 'api_identifier',
+}
+
+export type UtilitySecretType = UtilityInputSecret | UtilityActionConfirmation | PlatformApiKeySecretType;
+
 /**
  * UtilityToolCredentials Interface
  * Standard credentials required by all utility tools.

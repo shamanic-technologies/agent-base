@@ -11,7 +11,9 @@ import {
   ApiKey,
   ValidateApiKeyRequest,
   UserType,
-  StoreSecretRequest
+  StoreSecretRequest,
+  UtilityProvider,
+  PlatformApiKeySecretType
 } from '@agent-base/types';
 import { makeWebAuthenticatedServiceRequest, storeSecretWebClient, makeWebAnonymousServiceRequest } from '@agent-base/api-client';
 import { v4 as uuidv4 } from 'uuid';
@@ -33,7 +35,8 @@ export async function createApiKey(name: string, platformUserId: string): Promis
     // Store secret
     const requestData: StoreSecretRequest = {
       userType: UserType.Platform,
-      secretType: `api_key_${keyId}`,
+      secretUtilityProvider: UtilityProvider.AGENT_BASE,
+      secretType: `api_key_${keyId}` as PlatformApiKeySecretType,
       secretValue: apiKey,
     };
     const storeResponse = await storeSecretWebClient(platformUserId, requestData);

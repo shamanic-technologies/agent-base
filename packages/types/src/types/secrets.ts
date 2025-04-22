@@ -3,25 +3,27 @@
  */
 import { BaseResponse } from './common.js';
 import { UserType } from './user.js';
-
+import { UtilityProvider, UtilitySecretType, UtilityActionConfirmation } from './utility.js';
 
 /**
  * Request to store a secret
  */
 export interface StoreSecretRequest {
   userType: UserType;
-  secretType: string;
-  secretValue: string | object;
+  secretType: UtilitySecretType;
+  secretUtilityProvider: UtilityProvider;
+  secretValue: string;
 }
 
 export interface StoreActionConfirmationRequest extends StoreSecretRequest {
-  secretType: string;
+  secretType: UtilityActionConfirmation;
   secretValue: 'true' | 'false';
 }
 
 export interface CheckSecretRequest {
   userType: UserType;
-  secretType: string;
+  secretType: UtilitySecretType;
+  secretUtilityProvider: UtilityProvider;
 }
 
 /**
@@ -29,7 +31,8 @@ export interface CheckSecretRequest {
  */
 export interface GetSecretRequest {
   userType: UserType;
-  secretType: string;
+  secretType: UtilitySecretType;
+  secretUtilityProvider: UtilityProvider;
 }
 
 export type SecretExists = {

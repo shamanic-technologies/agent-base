@@ -104,7 +104,7 @@ export async function getSecretWebClient(
   platformUserId: string, // This ID value will be placed in the header determined by getSecretRequest.userType
   getSecretRequest: GetSecretRequest
 ): Promise<ServiceResponse<SecretValue>> {
-  const { userType, secretType } = getSecretRequest; // Include userId
+  const { userType, secretUtilityProvider, secretType } = getSecretRequest; // Include userId
 
   // GET requests use path params and query params. userType goes in query. userId is implicit via header.
   return await makeWebAuthenticatedServiceRequest<SecretValue>(
@@ -113,7 +113,7 @@ export async function getSecretWebClient(
     `/api/secrets/${secretType}`, // Endpoint with path param
     platformUserId, // ID value for header (x-platform-user-id)
     undefined, // No request body (data) for GET
-    { userType } // Query parameters (params)
+    { userType, secretUtilityProvider } // Query parameters (params)
   );
 }
 
@@ -132,8 +132,7 @@ export async function getSecretApiClient(
   platformApiKey: string,
   clientUserId: string
 ): Promise<ServiceResponse<SecretValue>> {
-  const { userType, secretType } = getSecretRequest; // Include userId
-  const userTypeStr = userType === UserType.Platform ? 'platform' : 'client';
+  const { userType, secretUtilityProvider, secretType } = getSecretRequest; // Include userId
 
   // GET requests use path params and query params. userType goes in query. userId is implicit via headers.
   return await makeInternalAPIServiceRequest<SecretValue>(
@@ -144,7 +143,7 @@ export async function getSecretApiClient(
     clientUserId,   // ID value for x-client-user-id header
     platformApiKey, // API key for x-platform-api-key header
     undefined,      // No request body (data) for GET
-    { userType: userTypeStr } // Query parameters (params)
+    { userType, secretUtilityProvider } // Query parameters (params)
   );
 }
 
@@ -159,8 +158,7 @@ export async function checkSecretExistsWebClient(
   platformUserId: string, // This ID value will be placed in the header determined by checkSecretRequest.userType
   checkSecretRequest: CheckSecretRequest
 ): Promise<ServiceResponse<SecretExists>> {
-  const { userType, secretType } = checkSecretRequest; // Include userId
-  const userTypeStr = userType === UserType.Platform ? 'platform' : 'client';
+  const { userType, secretUtilityProvider, secretType } = checkSecretRequest; // Include userId
 
   // GET requests use path params and query params. userType goes in query. userId is implicit via header.
   return await makeWebAuthenticatedServiceRequest<SecretExists>(
@@ -169,7 +167,7 @@ export async function checkSecretExistsWebClient(
     `/api/secrets/exists/${secretType}`, // Endpoint with path param
     platformUserId, // ID value for header (x-platform-user-id)
     undefined, // No request body (data) for GET
-    { userType: userTypeStr } // Query parameters (params)
+    { userType, secretUtilityProvider } // Query parameters (params)
   );
 } 
 
@@ -188,8 +186,7 @@ export async function checkSecretExistsApiClient(
   platformApiKey: string,
   clientUserId: string
 ): Promise<ServiceResponse<SecretExists>> {
-  const { userType, secretType } = checkSecretRequest; // Include userId
-  const userTypeStr = userType === UserType.Platform ? 'platform' : 'client';
+  const { userType, secretUtilityProvider, secretType } = checkSecretRequest; // Include userId
 
   // GET requests use path params and query params. userType goes in query. userId is implicit via headers.
   return await makeInternalAPIServiceRequest<SecretExists>(
@@ -200,6 +197,6 @@ export async function checkSecretExistsApiClient(
     clientUserId,   // ID value for x-client-user-id header
     platformApiKey, // API key for x-platform-api-key header
     undefined,      // No request body (data) for GET
-    { userType: userTypeStr } // Query parameters (params)
+    { userType, secretUtilityProvider } // Query parameters (params)
   );
 } 

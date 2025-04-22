@@ -4,14 +4,9 @@ import {
 import {InternalUtilityTool, InternalUtilityInfo } from "./internal-utility.js";
 import {OAuthProvider} from "./oauth.js";
 import { SuccessResponse, ErrorResponse, ServiceResponse } from "./common.js";
+import { UtilityProvider, UtilityInputSecret, UtilitySecretType, UtilityActionConfirmation } from "./utility.js";
 
-export enum UtilityProvider {
-    CRISP = 'crisp',
-    STRIPE = 'stripe',
-    GMAIL = 'gmail',
-    CHARGEBEE = 'chargebee',
-    SLACK = 'slack',
-}
+
 /**
  * Standard HTTP methods
  */
@@ -50,11 +45,11 @@ export enum ApiKeyAuthScheme {
 export interface ExternalUtilityTool extends InternalUtilityTool{
     utilityProvider: UtilityProvider;     /** The provider enum (e.g., UtilityProvider.GMAIL) */
     authMethod: AuthMethod;    /** Authentication method required */
-    requiredSecrets: UtilitySecret[];     /** Secrets required from secret-service (includes action confirmations like WEBHOOK_URL_INPUTED) */
+    requiredSecrets: UtilitySecretType[];     /** Secrets required from secret-service (includes action confirmations like WEBHOOK_URL_INPUTED) */
     requiredScopes?: string[];     /** OAuth scopes required (only if authMethod is OAUTH) */
     
     apiKeyDetails?: {     /** Details on how to use the API key (only if authMethod is API_KEY) */
-        secretName: UtilitySecret; // Which secret holds the key
+        secretName: UtilitySecretType; // Which secret holds the key
         scheme: ApiKeyAuthScheme;
         headerName?: string;      // Required only if scheme is HEADER
     };
@@ -103,10 +98,10 @@ export type ExternalUtilityExecutionResponse =
 export interface ExternalUtilityInfo extends InternalUtilityInfo {
     utilityProvider: UtilityProvider;
     authMethod: AuthMethod;
-    requiredSecrets: UtilitySecret[];
+    requiredSecrets: UtilitySecretType[];
     requiredScopes?: string[];
     apiKeyDetails?: {
-        secretName: UtilitySecret; // Which secret holds the key
+        secretName: UtilitySecretType; // Which secret holds the key
         scheme: ApiKeyAuthScheme;
         headerName?: string;      // Required only if scheme is HEADER
     };
@@ -119,18 +114,6 @@ export interface ExternalUtilityInfo extends InternalUtilityInfo {
     schema: Record<string, JsonSchema>; 
 };
 
-export enum UtilityActionConfirmation {
-    WEBHOOK_URL_INPUTED = 'webhook_url_inputed', // Represents user confirmation of an action
-}
-
-export enum UtilityInputSecret {
-    WEBSITE_ID = 'website_id',
-    API_SECRET_KEY = 'api_secret_key',
-    API_PUBLISHABLE_KEY = 'api_publishable_key',
-    API_IDENTIFIER = 'api_identifier',
-}
-
-export type UtilitySecret = UtilityInputSecret | UtilityActionConfirmation;
 
 
 /**
