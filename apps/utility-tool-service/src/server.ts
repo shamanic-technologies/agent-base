@@ -31,7 +31,7 @@ import {
     ExecuteToolPayload,
     InternalUtilityTool,
     AgentServiceCredentials,
-    ServiceCredentials,
+    InternalServiceCredentials,
     ExecuteToolResult
 } from '@agent-base/types';
 

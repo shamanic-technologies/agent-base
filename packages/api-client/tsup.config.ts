@@ -8,8 +8,5 @@ export default defineConfig((options: Options) => ({
   sourcemap: true,
   clean: true,             // Clean the dist folder before building
   minify: !options.watch,  // Minify code when not in watch mode
-  banner: {
-    js: '"use client"', // Add 'use client' directive for Next.js compatibility if needed
-  },
   ...options,
 })); 

@@ -85,7 +85,6 @@ app.use((req, res, next) => {
       return; // Explicitly return to end execution here
     }
     req.clientUserId = clientUserId;
-    console.log(`[Agent Service Auth] Client User ID: ${clientUserId}`);
 
     if (!platformUserIdHeader) {
        console.warn('[Agent Service Auth] Missing x-platform-user-id header.');
@@ -95,7 +94,6 @@ app.use((req, res, next) => {
     }
     // Store platform user ID separately for downstream calls
     req.platformUserId = platformUserIdHeader;
-    console.log(`[Agent Service Auth] Platform User ID: ${platformUserIdHeader}`);
     
     next(); // Continue to the next middleware/route
   } catch (error) {

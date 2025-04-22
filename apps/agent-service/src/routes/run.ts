@@ -54,7 +54,6 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
     let platformApiKey: string | undefined; // Renamed from apiKey
 
     try {
-      console.log(`[Agent Service /run] Received request body: ${JSON.stringify(req.body, null, 2)}`);
       // --- Extraction & Validation --- 
       ({ message: currentMessage, conversationId: conversationId } = req.body);
       // Extract from augmented request object
@@ -64,20 +63,24 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
 
       if (!clientUserId) {
         // Use the extracted clientUserId for checks
+        console.error('[Agent Service /run] Missing x-client-user-id header.');
         res.status(401).json({ success: false, error: 'User authentication required (Missing x-client-user-id)' });
         return;
       }
       if (!platformUserId) {
         // Check for platformUserId from augmented request
+        console.error('[Agent Service /run] Missing x-platform-user-id header.');
         res.status(401).json({ success: false, error: 'Platform user context required (Missing x-platform-user-id)' });
         return;
       }
       if (!platformApiKey) {
         // Check for the platformApiKey variable
+        console.error('[Agent Service /run] Missing x-platform-api-key header.');
         res.status(401).json({ success: false, error: 'API Key required (Missing x-platform-api-key header)' });
         return;
       }
       if (!currentMessage || !conversationId) {
+        console.error('[Agent Service /run] Missing required fields: message, conversationId');
         res.status(400).json({ success: false, error: 'Missing required fields: message, conversationId' });
         return;
       }
@@ -97,7 +100,6 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
           return;
       }
       const agent: Agent = agentResponse.data; // Assign agent data
-      console.log(`[Agent Service /run] Fetched agent details for conversation: ${conversationId}, using model: ${agent.modelId}`);
       // --- End Get Agent Details ---
 
       // --- Initialize Tools (Requires Agent to be fetched first) ---
@@ -127,7 +129,6 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       // Now check the success field of the ServiceResponse
       if (conversationResponse.success && conversationResponse.data?.messages) {
           historyMessages = conversationResponse.data.messages;
-          console.log(`[Agent Service /run] Fetched ${historyMessages.length} history messages for conv: ${conversationId}`);
       } else {
           // Log warning if fetching failed or conversation has no messages
           console.warn(`[Agent Service /run] Conversation ${conversationId} not found, error fetching, or no messages present. Starting with empty history. Error: ${conversationResponse.error}`);
@@ -143,8 +144,6 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
 
       // --- Construct System Prompt --- 
       const systemPrompt = buildSystemPrompt(agent); // Pass the whole agent object
-      console.log(`[Agent Service /run] Constructed System Prompt length: ${systemPrompt.length}`); // Log length for debugging
-      console.log(`[Agent Service /run] System Prompt: ${systemPrompt}`); // Log the prompt for debugging
       // --- End Construct System Prompt --- 
 
       // --- Call AI Model --- 
@@ -163,15 +162,12 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
             size: 16,
         }),
         async onFinish({ response }) { // Destructure response directly
-            console.log(`[Agent Service /run] Stream finished via onFinish... Saving messages...`);
             try {
-                console.log(`[Agent Service /run] onFinish... Appending response messages...`);
                 // Construct the final list including the latest assistant/tool responses
                 const finalMessages: Message[] = appendResponseMessages({
                   messages: allMessages, 
                   responseMessages: response.messages
                 });
-                console.log(`[Agent Service /run] finalMessages count to save: ${finalMessages.length}`);
                 
                 // Save the complete, updated message list back to the database service
                 // Use API Client function - updateConversation
@@ -185,8 +181,6 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
                 if (!saveResult.success) {
                     // Log the error returned from the service function
                     console.error("[Agent Service /run] Error saving messages to DB in onFinish:", saveResult.error);
-                } else {
-                    console.log("[Agent Service /run] Messages saved successfully via onFinish.");
                 }
                 
             } catch (dbError) {
