@@ -5,7 +5,7 @@
 import { Router } from 'express';
 import { getUserApiKeys, createApiKey } from '../services/dbService.js';
 import { getSecretWebClient } from '@agent-base/api-client';
-import { GetSecretRequest, SecretValue, ServiceResponse, UserType } from '@agent-base/types';
+import { GetSecretRequest, PlatformApiKeySecretType, SecretValue, ServiceResponse, UserType, UtilityProvider, UtilitySecretType } from '@agent-base/types';
 
 
 const router = Router();
@@ -68,7 +68,8 @@ router.get('/by-name', async (req, res) => {
       console.log(`Retrieving API key secret for key ${key.keyId}`);
       const getSecretRequest: GetSecretRequest = {
         userType: UserType.Platform,
-        secretType: `api_key_${key.keyId}`
+        secretUtilityProvider: UtilityProvider.AGENT_BASE,
+        secretType: `api_key_${key.keyId}` as PlatformApiKeySecretType
       };
       const secretValueResponse: ServiceResponse<SecretValue> = await getSecretWebClient(platformUserId, getSecretRequest);
       
@@ -140,7 +141,8 @@ router.get('/:keyId', async (req, res) => {
     console.log(`Retrieving API key secret for key ${keyId}`);
     const getSecretRequest: GetSecretRequest = {
       userType: UserType.Platform,
-      secretType: `api_key_${keyId}`
+      secretUtilityProvider: UtilityProvider.AGENT_BASE,
+      secretType: `api_key_${keyId}` as PlatformApiKeySecretType
     };
     const secretValueResponse: ServiceResponse<SecretValue> = await getSecretWebClient(platformUserId, getSecretRequest);
     
