@@ -1,6 +1,5 @@
 import {
     ExternalUtilityTool,
-    UtilitySecret,
     AuthMethod,
     SuccessResponse,
     SetupNeeded,
@@ -11,7 +10,9 @@ import {
     SecretValue,
     GetSecretRequest,
     UserType,
-    AgentServiceCredentials
+    AgentServiceCredentials,
+    UtilityProvider,
+    UtilitySecretType
 } from '@agent-base/types';
 
 // Import client functions
@@ -49,7 +50,8 @@ export const checkPrerequisites = async (
             for (const secretKey of externalUtilityTool.requiredSecrets) {
                 const getSecretRequest : GetSecretRequest ={
                     userType: UserType.Client,
-                    secretType: secretKey
+                    secretUtilityProvider: externalUtilityTool.utilityProvider,
+                    secretType: secretKey as UtilitySecretType
                 };
                 const secretValueResponse : ServiceResponse<SecretValue> = await getSecretApiClient(
                     getSecretRequest,

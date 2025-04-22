@@ -10,7 +10,7 @@ import { Router } from 'express';
 import * as secretsController from '../controllers/secretsController'; // Import controller functions
 
 // Initialize the secrets router
-const router = Router();
+const router: Router = Router();
 
 /**
  * @route POST /api/secrets

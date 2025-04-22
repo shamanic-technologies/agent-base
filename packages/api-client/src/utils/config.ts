@@ -96,3 +96,17 @@ export function getApiGatewayServiceUrl(): string {
     }
     return url;
   } 
+
+/**
+ * Retrieves the Agent Service URL from environment variables or defaults.
+ * Includes a warning if the environment variable is not set.
+ * @returns The Agent Service URL string.
+ */
+export function getAgentServiceUrl(): string {
+  // Assuming default port 3001 for agent-service
+  const url = process.env.AGENT_SERVICE_URL || 'http://localhost:3001'; 
+  if (!process.env.AGENT_SERVICE_URL) {
+    console.warn('[api-client/config] AGENT_SERVICE_URL environment variable not set. Defaulting to ' + url);
+  }
+  return url;
+} 

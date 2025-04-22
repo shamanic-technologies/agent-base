@@ -49,7 +49,7 @@ router.get('/get-or-create-conversations-from-agent', async (req: Request, res: 
         try {
             // Call the correct API client function with required params and auth details
             const conversationsResponse = await getOrCreateConversationsFromAgentApiClient(
-                { agentId: agentId }, // Params object
+                { agentId }, // Params object
                 clientUserId,
                 platformUserId,
                 platformApiKey

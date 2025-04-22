@@ -3,10 +3,11 @@
  * Retrieves the API key from the secret service for a specific user and key id
  */
 import { Router } from 'express';
-import { getUserApiKeys, createApiKey } from '../services/dbService.js';
-import { getSecretWebClient } from '@agent-base/api-client';
-import { GetSecretRequest, PlatformApiKeySecretType, SecretValue, ServiceResponse, UserType, UtilityProvider, UtilitySecretType } from '@agent-base/types';
-
+import { getUserApiKeys } from '../services/dbService.js';
+import { createApiKeyMetadata, getSecretWebClient, storeSecretWebClient } from '@agent-base/api-client';
+import { CreateApiKeyRequest, GetSecretRequest, PlatformApiKeySecretType, SecretValue, ServiceResponse, StoreSecretRequest, UserType, UtilityProvider, UtilitySecretType } from '@agent-base/types';
+import { generateApiKey, getKeyPrefix, hashApiKey } from '../utils/apiKeyUtils.js';
+import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();
 
@@ -31,8 +32,11 @@ router.get('/by-name', async (req, res) => {
   try {
     const keyName = req.query.name as string;
     const platformUserId = req.headers['x-platform-user-id'] as string;
+    let platformApiKey: string | null = null;
+    let keyId: string | null = null;
 
     if (!platformUserId) {
+      console.error('User authentication required: x-platform-user-id header missing');
       return res.status(401).json({
         success: false,
         error: 'User authentication required: x-platform-user-id header missing'
@@ -40,6 +44,7 @@ router.get('/by-name', async (req, res) => {
     }
 
     if (!keyName) {
+      console.error('Key name is required as a query parameter');
       return res.status(400).json({
         success: false,
         error: 'Key name is required as a query parameter'
@@ -47,10 +52,10 @@ router.get('/by-name', async (req, res) => {
     }
 
     // Get all user keys and filter by name
-    console.log(`Finding key with name "${keyName}" for user ${platformUserId}`);
     const userKeys = await getUserApiKeys(platformUserId);
     
     if (!userKeys.success) {
+      console.error('Error retrieving user keys:', userKeys.error);
       return res.status(500).json({
         success: false,
         error: 'Failed to retrieve user keys'
@@ -59,39 +64,67 @@ router.get('/by-name', async (req, res) => {
     
     // Find the key with the matching name
     const key = userKeys.data.find(key => key.name === keyName);
-    
-    // If key exists, return it
+
     if (key) {
-      console.log(`Found existing key "${keyName}" with ID ${key.keyId}`);
-      
-      // Get the full API key from the secret service
-      console.log(`Retrieving API key secret for key ${key.keyId}`);
+      keyId = key.keyId;
+      // Get API Key from secret service
       const getSecretRequest: GetSecretRequest = {
         userType: UserType.Platform,
         secretUtilityProvider: UtilityProvider.AGENT_BASE,
-        secretType: `api_key_${key.keyId}` as PlatformApiKeySecretType
+        secretType: `api_key_${keyId}` as PlatformApiKeySecretType
       };
       const secretValueResponse: ServiceResponse<SecretValue> = await getSecretWebClient(platformUserId, getSecretRequest);
       
       if (!secretValueResponse.success) {
-          return res.status(404).json(secretValueResponse);
+        console.error('Error retrieving API key secret:', secretValueResponse.error);
+        return res.status(404).json(secretValueResponse);
       }
-      const platformApiKey = secretValueResponse.data.value;
-      // Return just the secret value
-      return res.status(200).json(platformApiKey);
+      platformApiKey = secretValueResponse.data.value;
+
+      // Check if the retrieved key value is valid
+      if (platformApiKey) {
+
+        // Return just the secret value (as raw text, Content-Type will be set automatically)
+        // The client expects raw text for 200 OK status
+        res.setHeader('Content-Type', 'text/plain'); 
+
+        return res.status(200).json(platformApiKey);
+      } 
+    } 
+    // Generate new API key
+    platformApiKey = generateApiKey();
+    keyId = uuidv4();
+    const keyPrefix = getKeyPrefix(platformApiKey);
+    // Prepare metadata payload
+    const keyMetadataPayload: CreateApiKeyRequest = {
+      keyId,
+      name: keyName,
+      keyPrefix,
+      hashedKey: hashApiKey(platformApiKey),
+    };
+
+    const dbResponse = await createApiKeyMetadata(keyMetadataPayload, platformUserId);
+
+    if (!dbResponse.success) {
+      console.error('Error creating API key:', dbResponse.error);
+      return res.status(500).json(dbResponse);
     }
-    
-    // If key doesn't exist, create a new one
-    console.log(`No key found with name "${keyName}", creating new key`);
-    const newKeyResponse : ServiceResponse<string> = await createApiKey(keyName, platformUserId);
-    
-    if (!newKeyResponse.success) {
-      return res.status(500).json(newKeyResponse);
+
+    //In any case store secret
+    const requestData: StoreSecretRequest = {
+      userType: UserType.Platform,
+      secretUtilityProvider: UtilityProvider.AGENT_BASE,
+      secretType: `api_key_${keyId}` as PlatformApiKeySecretType,
+      secretValue: platformApiKey,
+    };
+    const storeResponse = await storeSecretWebClient(platformUserId, requestData);
+    if (!storeResponse.success) {
+      console.error('Failed to store secret:', storeResponse.error);
+      return storeResponse;
     }
-    
-    // Return the newly created key with 201 Created status
-    return res.status(201).json(newKeyResponse);
-    
+
+    return res.status(201).json(platformApiKey);
+  
   } catch (error) {
     console.error('Error retrieving or creating API key by name:', error);
     return res.status(500).json({
@@ -150,8 +183,18 @@ router.get('/:keyId', async (req, res) => {
       return res.status(404).json(secretValueResponse);
     }
     const platformApiKey = secretValueResponse.data.value;
-    // Return the secret value
-    return res.status(200).json(platformApiKey);
+
+    // Check if the retrieved key value is valid
+    if (!platformApiKey) {
+      console.error('Retrieved API key secret value is empty for key:', keyId);
+      return res.status(404).json({
+        success: false,
+        error: 'API key secret not found or empty'
+      });
+    }
+    // Return the secret value (as raw text)
+    res.setHeader('Content-Type', 'text/plain');
+    return res.status(200).send(platformApiKey);
     
   } catch (error) {
     console.error('Error retrieving API key:', error);

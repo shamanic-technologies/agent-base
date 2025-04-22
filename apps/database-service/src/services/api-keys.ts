@@ -18,12 +18,13 @@ import { ApiKeyRecord,
 const PLATFORM_USER_API_KEY_TABLE = 'platform_user_api_keys';
 
 /**
- * Creates API key metadata in the database
- * @param keyData - The API key data to insert
+ * Creates or updates API key metadata in the database (Upsert)
+ * If a key with the same key_id exists, it updates the name and hashed_key.
+ * @param keyData - The API key data to insert or update
  * @param userId - The user ID who owns the key
- * @returns A response with the created API key metadata
+ * @returns A response with the created or updated API key metadata
  */
-export async function createApiKey(keyData: CreateApiKeyRequest, userId: string):
+export async function upsertApiKey(keyData: CreateApiKeyRequest, userId: string):
 Promise<ServiceResponse<ApiKey>> {
   let client: PoolClient | null = null;
   
@@ -49,6 +50,10 @@ Promise<ServiceResponse<ApiKey>> {
     const query = `
       INSERT INTO "${PLATFORM_USER_API_KEY_TABLE}" (${columns.map(c => `"${c}"`).join(', ')})
       VALUES (${placeholders})
+      ON CONFLICT (platform_user_id, name) DO UPDATE SET
+        key_id = EXCLUDED.key_id,
+        key_prefix = EXCLUDED.key_prefix,
+        hashed_key = EXCLUDED.hashed_key
       RETURNING *;
     `;
 

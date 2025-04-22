@@ -105,7 +105,6 @@ export async function getSecretWebClient(
   getSecretRequest: GetSecretRequest
 ): Promise<ServiceResponse<SecretValue>> {
   const { userType, secretUtilityProvider, secretType } = getSecretRequest; // Include userId
-
   // GET requests use path params and query params. userType goes in query. userId is implicit via header.
   return await makeWebAuthenticatedServiceRequest<SecretValue>(
     getSecretServiceUrl(), // Use dynamic getter

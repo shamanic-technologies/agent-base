@@ -3,7 +3,7 @@
  */
 import { Router, Request, Response } from 'express';
 import { CreateApiKeyRequest, ValidateApiKeyRequest } from '@agent-base/types';
-import { createApiKey, getApiKeys, validateApiKey } from '../services/api-keys.js';
+import { upsertApiKey, getApiKeys, validateApiKey } from '../services/api-keys.js';
 
 const router = Router();
 
@@ -37,7 +37,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     console.log(`Creating API key metadata for user: ${platformUserId}, keyId: ${keyId}`);
 
     // Call service to create API key
-    const createResponse = await createApiKey({ keyId, name, keyPrefix, hashedKey }, platformUserId);
+    const createResponse = await upsertApiKey({ keyId, name, keyPrefix, hashedKey }, platformUserId);
 
     if (!createResponse.success) {
       if (createResponse.error?.includes('already exists')) {
