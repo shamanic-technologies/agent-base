@@ -6,14 +6,11 @@
  */
 import { 
     ServiceResponse,
-    PlatformUser,             // For platform user operations
-    GetOrCreatePlatformUserInput,
     ClientUser, // For platform user creation
-    UpsertClientUserInput,    // Input type for upserting client users
     // Import only necessary types from @agent-base/types
     // Add specific record/input types here if they become available and are needed
 } from '@agent-base/types';
-import { makeAPIServiceRequest, makeClientUserValidationRequest, makeWebAuthenticatedServiceRequest } from '../utils/service-client.js';
+import { makeClientUserValidationRequest } from '../utils/service-client.js';
 import { getDatabaseServiceUrl } from '../utils/config'; // Import the centralized getter
 import { Method } from 'axios';
 

@@ -12,7 +12,7 @@ import {
   GetWebhookAgentRequest,
   GetCrispUsersParams
 } from '@agent-base/types';
-import { makeAPIServiceRequest } from '../utils/service-client';
+import { makeInternalAPIServiceRequest } from '../utils/service-client';
 import { getDatabaseServiceUrl } from '../utils/config'; // Import the centralized getter
 
 // ==============================================================================
@@ -35,7 +35,7 @@ export const createOrUpdateWebhookConfig = async (
   clientUserId: string
 ): Promise<ServiceResponse<Webhook>> => {
   const endpoint = '/webhooks/';
-  return makeAPIServiceRequest<Webhook>(
+  return makeInternalAPIServiceRequest<Webhook>(
     getDatabaseServiceUrl(),
     'POST',
     endpoint,
@@ -68,7 +68,7 @@ export const mapAgentToWebhook = async (
     throw new Error('[api-client:mapAgentToWebhook] Input data must include agentId, webhookProviderId, and clientUserId.');
   }
   const endpoint = '/webhooks/map-agent';
-  return makeAPIServiceRequest<MapAgentToWebhookRequest>(
+  return makeInternalAPIServiceRequest<MapAgentToWebhookRequest>(
     getDatabaseServiceUrl(),
     'POST',
     endpoint,
@@ -103,7 +103,7 @@ export const getWebhookAgentMapping = async (
   const endpoint = `/webhooks/${params.webhookProviderId}/agent`;
   // Pass clientUserId as query parameter
   const queryParams = { clientUserId: params.clientUserId }; 
-  return makeAPIServiceRequest<string>(
+  return makeInternalAPIServiceRequest<string>(
     getDatabaseServiceUrl(),
     'GET',
     endpoint,
@@ -137,7 +137,7 @@ export const createWebhookEvent = async (
     throw new Error('[api-client:createWebhookEvent] Input data must include webhookProviderId, clientUserId, and webhookEventPayload.');
   }
   const endpoint = '/webhooks/events';
-  return makeAPIServiceRequest<WebhookEvent>(
+  return makeInternalAPIServiceRequest<WebhookEvent>(
     getDatabaseServiceUrl(),
     'POST',
     endpoint,
@@ -165,7 +165,7 @@ export const getCrispWebsiteUserIds = async (
 ): Promise<ServiceResponse<CrispUsersResponse>> => {
 
   const endpoint = `/webhooks/crisp/users/${params.websiteId}`;
-  return makeAPIServiceRequest<CrispUsersResponse>(
+  return makeInternalAPIServiceRequest<CrispUsersResponse>(
     getDatabaseServiceUrl(),
     'GET',
     endpoint,

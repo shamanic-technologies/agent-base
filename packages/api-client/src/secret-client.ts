@@ -8,10 +8,11 @@ import {
   GetSecretRequest,
   SecretExists,
   CheckSecretRequest,
-  UserType // Import UserType
+  UserType,
+  ExternalApiServiceCredentials // Import UserType
 } from '@agent-base/types';
-import { makeWebAuthenticatedServiceRequest, makeAPIServiceRequest } from './utils/service-client.js';
-import { getSecretServiceUrl } from './utils/config'; // Import the centralized getter
+import { makeWebAuthenticatedServiceRequest, makeInternalAPIServiceRequest, makeExternalAPIServiceRequest } from './utils/service-client.js';
+import { getApiGatewayServiceUrl, getSecretServiceUrl } from './utils/config'; // Import the centralized getter
 
 // Determine the correct URL for the secret-service
 // Removed top-level constant: const SECRET_SERVICE_URL = ...
@@ -47,7 +48,7 @@ export async function storeSecretWebClient(
  * @param clientUserId The client user ID (for x-client-user-id header).
  * @returns ServiceResponse containing a success message or error.
  */
-export async function storeSecretApiClient(
+export async function storeSecretInternalApiClient(
   storeSecretRequest: StoreSecretRequest,
   platformUserId: string,
   platformApiKey: string,
@@ -55,7 +56,7 @@ export async function storeSecretApiClient(
 ): Promise<ServiceResponse<string>> {
 
   // POST requests send data in the body.
-  return await makeAPIServiceRequest<string>(
+  return await makeInternalAPIServiceRequest<string>(
     getSecretServiceUrl(), // Use dynamic getter
     'post',
     '/api/secrets', // Endpoint for storing secrets
@@ -64,6 +65,31 @@ export async function storeSecretApiClient(
     platformApiKey, // API key for x-platform-api-key header
     storeSecretRequest, // Request body (data)
     undefined // No query parameters (params)
+  );
+}
+
+/**
+ * Calls a specific utility tool via the API Gateway using makeAPIServiceRequest.
+ * 
+ * @param config - API client configuration (URL, credentials).
+ * @param utilityId - The ID of the utility to call.
+ * @param executeToolPayload - Input parameters for the utility.
+ * @returns The ServiceResponse from the API Gateway.
+ * @throws Throws AxiosError if the request fails (handled by makeAPIServiceRequest, returning ErrorResponse).
+ */
+export async function storeSecretExternalApiClient(
+  storeSecretRequest: StoreSecretRequest,
+  externalApiServiceCredentials: ExternalApiServiceCredentials,
+): Promise<ServiceResponse<string>> {
+
+  // Use makeAPIServiceRequest, passing conversationId in data and agentId for header
+  return await makeExternalAPIServiceRequest<string>(
+      getApiGatewayServiceUrl(),
+      'post',
+      'secret/api/secrets', // Endpoint for storing secrets
+      externalApiServiceCredentials,
+      storeSecretRequest, // Request body (data)
+      undefined // No query parameters (params)
   );
 }
 
@@ -110,7 +136,7 @@ export async function getSecretApiClient(
   const userTypeStr = userType === UserType.Platform ? 'platform' : 'client';
 
   // GET requests use path params and query params. userType goes in query. userId is implicit via headers.
-  return await makeAPIServiceRequest<SecretValue>(
+  return await makeInternalAPIServiceRequest<SecretValue>(
     getSecretServiceUrl(), // Use dynamic getter
     'get',
     `/api/secrets/${secretType}`, // Endpoint with path param
@@ -166,7 +192,7 @@ export async function checkSecretExistsApiClient(
   const userTypeStr = userType === UserType.Platform ? 'platform' : 'client';
 
   // GET requests use path params and query params. userType goes in query. userId is implicit via headers.
-  return await makeAPIServiceRequest<SecretExists>(
+  return await makeInternalAPIServiceRequest<SecretExists>(
     getSecretServiceUrl(), // Use dynamic getter
     'get',
     `/api/secrets/exists/${secretType}`, // Endpoint with path param
