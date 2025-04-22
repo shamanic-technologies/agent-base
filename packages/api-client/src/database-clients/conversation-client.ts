@@ -60,7 +60,7 @@ export const createConversation = async (
  * @param platformUserId - The platform user ID making the request (for headers).
  * @returns A ServiceResponse containing an array of Conversation objects or an error.
  */
-export const getConversationsFromAgent = async (
+export const getConversationsInternalApiService = async (
   params: AgentId,
   platformUserId: string,
   platformApiKey: string,
@@ -89,7 +89,7 @@ export const getConversationsFromAgent = async (
  * Retrieves conversations for an agent, or creates a default one.
  * GET /conversations/get-or-create-conversations-from-agent
  */
-export const getOrCreateConversationsFromAgentApiClient = async (
+export const getOrCreateConversationsInternalApiService = async (
     params: AgentId,
     clientUserId: string, // Required for header
     platformUserId: string, // Required for header
@@ -112,7 +112,7 @@ export const getOrCreateConversationsFromAgentApiClient = async (
  * Retrieves a single conversation by its ID.
  * GET /conversations/get-conversation/:conversationId
  */
-export const getConversationByIdApiClient = async (
+export const getConversationByIdInternalApiService = async (
     params: AgentId,
     clientUserId: string, // Required for header
     platformUserId: string, // Required for header
@@ -135,7 +135,7 @@ export const getConversationByIdApiClient = async (
  * Updates the messages array for a specific conversation.
  * POST /conversations/update-conversation
  */
-export const updateConversationMessagesApiClient = async (
+export const updateConversationMessagesInternalApiService = async (
     body: UpdateConversationInput,
     clientUserId: string, // Required for header
     platformUserId: string, // Required for header
@@ -158,7 +158,7 @@ export const updateConversationMessagesApiClient = async (
  * Creates a new conversation.
  * POST /conversations/create-conversation
  */
-export const createConversationApiClient = async (
+export const createConversationInternalApiService = async (
     body: CreateConversationInput, // Use shared type
     clientUserId: string, // Required for header
     platformUserId: string, // Required for header
@@ -186,7 +186,7 @@ export const createConversationApiClient = async (
  * @param platformUserId - The platform user ID making the request (for headers).
  * @returns A ServiceResponse containing the Conversation object or an error.
  */
-export const getConversation = async (
+export const getConversationInternalApiService = async (
   params: ConversationId,
   platformUserId: string,
   platformApiKey: string,
@@ -216,7 +216,7 @@ export const getConversation = async (
  * @param platformUserId - The platform user ID making the request (for headers).
  * @returns A ServiceResponse containing the updated Conversation object or an error.
  */
-export const updateConversation = async (
+export const updateConversationInternalApiService = async (
   data: UpdateConversationInput,
   platformUserId: string,
   platformApiKey: string,

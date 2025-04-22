@@ -22,7 +22,7 @@ const AGENT_SERVICE_ROUTE_PREFIX = '/agent'; // Assuming API Gateway prefixes ag
  * @param externalApiServiceCredentials - Credentials containing platformClientUserId and platformApiKey.
  * @returns A promise resolving to the ServiceResponse containing the list of conversations.
  */
-export const getOrCreateConversationsFromAgentApiClient = async (
+export const getOrCreateConversationsExternalApiService = async (
     params: { agentId: string }, 
     externalApiServiceCredentials: ExternalApiServiceCredentials
 ): Promise<ServiceResponse<Conversation[]>> => {
@@ -51,7 +51,7 @@ export const getOrCreateConversationsFromAgentApiClient = async (
  * @param externalApiServiceCredentials - Credentials containing platformClientUserId and platformApiKey.
  * @returns A promise resolving to the ServiceResponse containing the ID of the created conversation.
  */
-export const createConversationApiClient = async (
+export const createConversationExternalApiService = async (
     body: CreateConversationInput,
     externalApiServiceCredentials: ExternalApiServiceCredentials
 ): Promise<ServiceResponse<ConversationId>> => {
