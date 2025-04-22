@@ -19,8 +19,8 @@ import { Message } from 'ai';
 // Import necessary API client functions - Use versions without ApiClient suffix where available
 import { 
     getAgentFromConversation,
-    getConversation, // Use this instead of getConversationByIdApiClient
-    updateConversation, // Use this instead of updateConversationMessagesApiClient
+    getConversationInternalApiService, // Use this instead of getConversationByIdApiClient
+    updateConversationInternalApiService, // Use this instead of updateConversationMessagesApiClient
 } from '@agent-base/api-client';
 
 // Tool Creator Imports
@@ -120,7 +120,7 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       // --- Get Conversation & History --- 
       let historyMessages: Message[] = [];
       // Use API Client function - getConversation
-      const conversationResponse = await getConversation( // Changed function name
+      const conversationResponse = await getConversationInternalApiService( // Changed function name
         { conversationId }, // Pass params object with conversationId
         platformUserId, // Pass platformUserId for header (assuming order based on getConversation signature)
         platformApiKey, // Pass platformApiKey for header
@@ -171,7 +171,7 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
                 
                 // Save the complete, updated message list back to the database service
                 // Use API Client function - updateConversation
-                const saveResult = await updateConversation( // Changed function name
+                const saveResult = await updateConversationInternalApiService( // Changed function name
                   { conversationId: conversationId, messages: finalMessages }, // Pass data object with camelCase conversationId
                   platformUserId, // Pass platformUserId for header
                   platformApiKey, // Pass platformApiKey for header

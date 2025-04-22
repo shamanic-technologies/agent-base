@@ -14,8 +14,8 @@ import {
 } from '@agent-base/types';
 // Import the new service function
 import { 
-    getOrCreateConversationsFromAgentApiClient, 
-    createConversationApiClient
+    getOrCreateConversationsInternalApiService, 
+    createConversationInternalApiService
 } from '@agent-base/api-client';
 
 const router = Router();
@@ -48,7 +48,7 @@ router.get('/get-or-create-conversations-from-agent', async (req: Request, res: 
         // Call the database service wrapper function
         try {
             // Call the correct API client function with required params and auth details
-            const conversationsResponse = await getOrCreateConversationsFromAgentApiClient(
+            const conversationsResponse = await getOrCreateConversationsInternalApiService(
                 { agentId }, // Params object
                 clientUserId,
                 platformUserId,
@@ -124,7 +124,7 @@ router.post('/create-conversation', async (req: Request, res: Response, next: Ne
             };
             
             // Call the correct API client function with the input object and auth details
-            const response = await createConversationApiClient(
+            const response = await createConversationInternalApiService(
                 input, 
                 clientUserId, 
                 platformUserId, 
