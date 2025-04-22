@@ -44,7 +44,7 @@ export interface ServiceCredentialsForPlatformUserTokenValidation {
   platformUserToken: string;
 }
 
-export interface ServiceCredentialsForPlatformKeyValidation {
+export interface ExternalApiServiceCredentials {
   platformApiKey: string;
   platformClientUserId: string;
 }

@@ -10,7 +10,7 @@ import {
   UpdateAgentInput,
   Agent
 } from '@agent-base/types';
-import { makeAPIServiceRequest } from '../utils/service-client';
+import { makeInternalAPIServiceRequest } from '../utils/service-client';
 import { getDatabaseServiceUrl } from '../utils/config'; // Import the centralized getter
 import { Method } from 'axios';
 
@@ -44,7 +44,7 @@ export const createUserAgent = async (
     platformApiKey: platformApiKey,
     data: data
   };
-  return makeAPIServiceRequest<Agent>( // Expect AgentRecord in data
+  return makeInternalAPIServiceRequest<Agent>( // Expect AgentRecord in data
     input.serviceUrl,
     input.method as Method,
     input.endpoint,
@@ -67,7 +67,7 @@ export const updateUserAgent = async (
   clientUserId: string
 ): Promise<ServiceResponse<Agent>> => { // Revert to generic response type
 
-  return makeAPIServiceRequest<Agent>( // Expect AgentRecord in data
+  return makeInternalAPIServiceRequest<Agent>( // Expect AgentRecord in data
     getDatabaseServiceUrl(), // Use dynamic getter
     'POST',
     '/agents/update-user-agent',
@@ -90,7 +90,7 @@ export const listUserAgents = async (
   clientUserId: string
 ): Promise<ServiceResponse<Agent[]>> => { // Revert to generic response type
   
-  return makeAPIServiceRequest<Agent[]>( // Expect AgentRecord[] in data
+  return makeInternalAPIServiceRequest<Agent[]>( // Expect AgentRecord[] in data
     getDatabaseServiceUrl(), // Use dynamic getter
     'GET',
     '/agents/list-user-agents',
@@ -114,7 +114,7 @@ export const getUserAgentApiClient = async (
   clientUserId: string
 ): Promise<ServiceResponse<Agent>> => { // Revert to generic response type
 
-  return makeAPIServiceRequest<Agent>( // Expect AgentRecord in data
+  return makeInternalAPIServiceRequest<Agent>( // Expect AgentRecord in data
     getDatabaseServiceUrl(), // Use dynamic getter
     'GET',
     '/agents/get-user-agent',
@@ -138,7 +138,7 @@ export const getAgentFromConversation = async (
   platformApiKey: string
 ): Promise<ServiceResponse<Agent>> => { // Revert to generic response type
 
-  return makeAPIServiceRequest<Agent>( // Expect AgentRecord in data
+  return makeInternalAPIServiceRequest<Agent>( // Expect AgentRecord in data
     getDatabaseServiceUrl(), // Use dynamic getter
     'GET',
     '/agents/get-conversation-agent',

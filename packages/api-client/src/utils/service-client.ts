@@ -2,7 +2,7 @@
  * HTTP client utility for service-to-service communication
  */
 import axios, { AxiosRequestConfig, Method } from 'axios';
-import { ServiceResponse } from '@agent-base/types';
+import { ServiceResponse, ExternalApiServiceCredentials } from '@agent-base/types';
 
 /**
  * Base logic for making service requests and handling responses/errors.
@@ -108,7 +108,7 @@ export async function makeWebAuthenticatedServiceRequest<T>(
  * @returns Promise<ServiceResponse<T>>.
  * @template T - Expected data payload type.
  */
-export async function makeAPIServiceRequest<T>(
+export async function makeInternalAPIServiceRequest<T>(
   serviceUrl: string,
   method: Method,
   endpoint: string,
@@ -152,6 +152,62 @@ export async function makeAPIServiceRequest<T>(
 
   return _makeServiceRequest<T>(fullUrl, config, logContext);
 }
+
+
+/**
+ * Makes an API Authenticated HTTP request (platformClientUserId, platformApiKey).
+ * Includes x-platform-client-user-id and x-platform-api-key headers.
+ * All two auth identifiers are required.
+ * 
+ * @param serviceUrl - Base URL of the target service.
+ * @param method - HTTP method.
+ * @param endpoint - API endpoint path.
+ * @param externalApiServiceCredentials - Required platform client user ID and platform API key.
+ * @param data - Optional request body.
+ * @param params - Optional URL query parameters.
+ * @returns Promise<ServiceResponse<T>>.
+ * @template T - Expected data payload type.
+ */
+export async function makeExternalAPIServiceRequest<T>(
+  serviceUrl: string,
+  method: Method,
+  endpoint: string,
+  externalApiServiceCredentials: ExternalApiServiceCredentials,
+  data?: any,
+  params?: any
+): Promise<ServiceResponse<T>> {
+  const { platformClientUserId, platformApiKey } = externalApiServiceCredentials;
+  const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const fullUrl = `${serviceUrl}${formattedEndpoint}`;
+  const logContext = `[httpClient:ApiAuth] PlatformClient ${externalApiServiceCredentials.platformClientUserId}`;
+
+  // Validate required parameters
+  if (!platformClientUserId || !platformApiKey) {
+    const missing = [
+        !platformClientUserId ? 'platformClientUserId' : null,
+        !platformApiKey ? 'platformApiKey' : null
+    ].filter(Boolean).join(', ');
+    console.error(`${logContext} Missing required parameters for API authenticated request to ${fullUrl}: ${missing}.`);
+    return {
+      success: false,
+      error: `Internal error: Missing required parameter(s) for API authenticated service request: ${missing}`
+    };
+  }
+
+  const config: AxiosRequestConfig = {
+    method,
+    url: fullUrl,
+    params,
+    headers: {
+      'x-platform-client-user-id': platformClientUserId,
+      'x-platform-api-key': platformApiKey,
+    },
+    data
+  };
+
+  return _makeServiceRequest<T>(fullUrl, config, logContext);
+}
+
 
 /**
  * Makes an API Authenticated HTTP request (platformUserId, clientUserId, platformApiKey).

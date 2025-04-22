@@ -2,7 +2,7 @@
  * API Client functions for interacting with the External Utility Tool Service.
  */
 import { AgentServiceCredentials, ExecuteToolPayload, ExecuteToolResult, ExternalUtilityTool, ServiceCredentials, ServiceResponse } from '@agent-base/types';
-import { makeAPIServiceRequest } from './utils/service-client.js';
+import { makeInternalAPIServiceRequest } from './utils/service-client.js';
 import { getExternalUtilityToolServiceUrl } from './utils/config.js'; // Import the config getter
 import { Method } from 'axios';
 
@@ -39,7 +39,7 @@ export async function listExternalToolsFromAgent(
       conversationId
     }
   };
-  return makeAPIServiceRequest<ExternalUtilityTool[]>(
+  return makeInternalAPIServiceRequest<ExternalUtilityTool[]>(
     input.url,
     input.method,
     input.endpoint,
@@ -85,7 +85,7 @@ export async function getExternalToolInfoFromAgent(
       conversationId
     }
   };
-  return makeAPIServiceRequest<ExternalUtilityTool>(
+  return makeInternalAPIServiceRequest<ExternalUtilityTool>(
     input.url,
     input.method,
     input.endpoint,
@@ -131,7 +131,7 @@ export async function createExternalToolFromAgent(
       conversationId
     }
   };
-  return makeAPIServiceRequest<ExecuteToolResult>(
+  return makeInternalAPIServiceRequest<ExecuteToolResult>(
     input.url,
     input.method,
     input.endpoint,
@@ -175,7 +175,7 @@ export async function executeExternalToolFromAgent(
     agentId: agentId,
     params: null
   };
-  return makeAPIServiceRequest<ExecuteToolResult>(
+  return makeInternalAPIServiceRequest<ExecuteToolResult>(
     input.url,
     input.method,
     input.endpoint,

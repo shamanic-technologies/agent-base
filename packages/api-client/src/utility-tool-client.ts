@@ -13,7 +13,7 @@ import {
     ListUtilities,
     ExecuteToolPayload
 } from '@agent-base/types';
-import { makeAPIServiceRequest } from './utils/service-client.js'; // Import the shared helper
+import { makeInternalAPIServiceRequest } from './utils/service-client.js'; // Import the shared helper
 import { getApiGatewayServiceUrl } from './utils/config.js';
 
 
@@ -38,7 +38,7 @@ export async function callUtilityFromAgent(
     console.log(`[ApiGatewayClient] Calling utility ${utilityId} via gateway: POST ${endpoint}`);
 
     // Use makeAPIServiceRequest, passing conversationId in data and agentId for header
-    return await makeAPIServiceRequest<ExecuteToolResult>(
+    return await makeInternalAPIServiceRequest<ExecuteToolResult>(
         getApiGatewayServiceUrl(),
         'post',
         endpoint,
@@ -70,7 +70,7 @@ export async function getUtilityInfoFromAgent(
     console.log(`[ApiGatewayClient] Getting info for utility ${utilityId} via gateway: GET ${endpoint}`);
 
 
-    return await makeAPIServiceRequest<UtilityInfo>(
+    return await makeInternalAPIServiceRequest<UtilityInfo>(
         getApiGatewayServiceUrl(),
         'get',
         endpoint,
@@ -102,7 +102,7 @@ export async function listUtilitiesFromAgent(
     console.log(`[ApiGatewayClient] Config: ${JSON.stringify(agentServiceCredentials)}`);
 
     // Use makeAPIServiceRequest, passing agentId for header and conversationId as query param
-    return await makeAPIServiceRequest<ListUtilities>(
+    return await makeInternalAPIServiceRequest<ListUtilities>(
         getApiGatewayServiceUrl(),
         'get',
         endpoint,
