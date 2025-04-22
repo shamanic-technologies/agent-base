@@ -14,8 +14,8 @@ import {
 } from '@agent-base/types';
 // Import the database service functions
 import { 
-    getConversation,
-    getOrCreateConversationsFromAgentApiClient
+    getConversationInternalApiService,
+    getOrCreateConversationsInternalApiService
 } from '@agent-base/api-client';
 
 const router = Router();
@@ -44,7 +44,7 @@ router.get('/get-messages-from-conversation', async (req: Request, res: Response
 
     try {
         console.log(`${logPrefix} Calling getConversation service`);
-        const conversationResponse = await getConversation(
+        const conversationResponse = await getConversationInternalApiService(
             { conversationId: conversationId },
             platformUserId,
             platformApiKey,
@@ -91,7 +91,7 @@ router.get('/get-messages-from-agent', async (req: Request, res: Response, next:
 
     try {
         console.log(`${logPrefix} Calling getOrCreateConversationsFromAgentApiClient service`);
-        const conversationsResponse = await getOrCreateConversationsFromAgentApiClient(
+        const conversationsResponse = await getOrCreateConversationsInternalApiService(
             { agentId: agentId },
             clientUserId,
             platformUserId,
