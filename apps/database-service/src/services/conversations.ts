@@ -46,11 +46,11 @@ export async function createConversation(input: CreateConversationInput): Promis
       '[]' // Empty JSON array for messages
     ]);
     console.log(`[DB Service] Result: ${JSON.stringify(result)}`);
-    if (result.rowCount === 1 && result.rows[0]?.conversationId) {
-      console.log(`[DB Service] Conversation created with ID: ${result.rows[0].conversationId}`);
+    if (result.rowCount === 1 && result.rows[0]?.conversation_id) {
+      console.log(`[DB Service] Conversation created with ID: ${result.rows[0].conversation_id}`);
       return { 
         success: true, 
-        data: { conversationId: result.rows[0].conversationId }
+        data: { conversationId: result.rows[0].conversation_id }
       };
     } else if (result.rowCount === 0) {
       console.log(`[DB Service] Conversation with ID ${conversationId} already exists.`);
