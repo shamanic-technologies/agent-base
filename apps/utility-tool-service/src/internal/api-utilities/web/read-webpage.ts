@@ -97,10 +97,9 @@ const readWebPage: InternalUtilityTool = {
         },
         body: JSON.stringify({
           url: url,
-          pageOptions: { // Use pageOptions as per Firecrawl docs
-            onlyMainContent: onlyMainContent,
-            formats: ["markdown"] // Keep if markdown is specifically needed
-          },
+          // V1 Structure: move options to top level
+          onlyMainContent: onlyMainContent,
+          formats: ["markdown"] // Request markdown format
         })
       });
 

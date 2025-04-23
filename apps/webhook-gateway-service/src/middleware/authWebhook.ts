@@ -5,33 +5,33 @@ import { Request, Response, NextFunction } from 'express';
 import axios from 'axios';
 import { WebhookEventPayloadCrisp } from '@agent-base/types'; // Assuming this type exists and includes nested data structure
 
-// Mock function - Replace with actual Key Service call later
-/**
- * Mocks the retrieval or creation of an API key for a given user and provider.
- * In a real scenario, this would interact with a dedicated Key Management Service.
- * @param {string} userId - The ID of the user.
- * @param {string} providerId - The ID of the webhook provider (e.g., 'crisp').
- * @returns {Promise<string>} A dummy API key.
- */
-async function getOrCreateWebhookApiKey(userId: string, providerId: string): Promise<string> {
-    const keyName = `Webhook ${providerId}`;
-    console.log(`[WebhookGatewayService] Getting or creating API key for user: ${userId} and provider: ${providerId}`);
-    const keyResponse = await axios.get(`${process.env.KEY_SERVICE_URL}/keys/by-name?name=${encodeURIComponent(keyName)}`,
-      {
-        headers: {
-          'x-user-id': userId,
-        }
-      }
-    );
-    console.log(`[WebhookGatewayService] Key response: ${JSON.stringify(keyResponse.data)}`);
-    if (!keyResponse.data.success) {
-      throw new Error(`Failed to get or create API key for user ${userId}: ${keyResponse.data.error || 'Unknown error'}`);
-    }
+// // Mock function - Replace with actual Key Service call later
+// /**
+//  * Mocks the retrieval or creation of an API key for a given user and provider.
+//  * In a real scenario, this would interact with a dedicated Key Management Service.
+//  * @param {string} userId - The ID of the user.
+//  * @param {string} providerId - The ID of the webhook provider (e.g., 'crisp').
+//  * @returns {Promise<string>} A dummy API key.
+//  */
+// async function getOrCreateWebhookApiKey(userId: string, providerId: string): Promise<string> {
+//     const keyName = `Webhook ${providerId}`;
+//     console.log(`[WebhookGatewayService] Getting or creating API key for user: ${userId} and provider: ${providerId}`);
+//     const keyResponse = await axios.get(`${process.env.KEY_SERVICE_URL}/keys/by-name?name=${encodeURIComponent(keyName)}`,
+//       {
+//         headers: {
+//           'x-user-id': userId,
+//         }
+//       }
+//     );
+//     console.log(`[WebhookGatewayService] Key response: ${JSON.stringify(keyResponse.data)}`);
+//     if (!keyResponse.data.success) {
+//       throw new Error(`Failed to get or create API key for user ${userId}: ${keyResponse.data.error || 'Unknown error'}`);
+//     }
     
-    const api_key = keyResponse.data.apiKey;
-    console.log(`[WebhookGatewayService] Successfully retrieved API key for user: ${userId}`);
-    return api_key;
-}
+//     const api_key = keyResponse.data.apiKey;
+//     console.log(`[WebhookGatewayService] Successfully retrieved API key for user: ${userId}`);
+//     return api_key;
+// }
 
 /**
  * Express middleware to handle authentication and authorization for webhook endpoints.

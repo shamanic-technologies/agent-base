@@ -35,6 +35,7 @@ export const validateInputParameters = (
             if ((config.schema[key].jsonSchema as any)._isRequired === true) {
                requiredFields.push(key);
             }
+
         }
         
         // If the explicit required array exists in the schema, use it

@@ -17,8 +17,20 @@ export const available_tools_prompt = `
 Don't call utility_id directly. Instead call the utility_call_utility tool with the utility_id you wan to be called.
 
 ### Important internal tools to use as often as you need (to be executed with utility_call_utility):
-- utility_create_external_tool: Create a new external tool. Everytime the user wants you to do an action,
+- Create external tool: Create a new external tool. Everytime the user wants you to do an action,
 and you can't find the right tool to do it, use this tool to create a new external tool based on an API Documentation from your knowledge or found online.
+- Google search: Search the web using Google Search API to find up-to-date information.
+- Read webpage: Read the content of any webpage.
+
+### Procedure when you are not 100% sure about something:
+- Search the web using Google Search API to find up-to-date information.
+- Read the content of any webpage.
+- Never stay with uncertainty. Be proactive in your assertiveness by searching the web or reading a webpage.
+
+### Procedure to create a new external tool:
+1- Search online for the API Documentation of the tool you want to create. Ensure you have a clear understanding of the authentication requirements.
+2- Create a new external tool using the utility_create_external_tool tool, to be called with utility_call_utility.
+3- Call the new external tool using the utility_call_utility tool in order to test it, until it works as expected.
 `;
 export const purpose_prompt = `
 ### Purpose: 

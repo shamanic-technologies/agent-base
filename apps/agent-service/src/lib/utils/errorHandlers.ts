@@ -49,6 +49,13 @@ export function handleAxiosError(error: any, apiUrl: string = 'API'): UtilityErr
 export function handleToolError(error: any): string {
   console.error(`[Tool Error] Formatting error for stream pipe:`, error);
 
+  // Check specifically for AI_NoSuchToolError structure (based on observed properties)
+  if (typeof error === 'object' && error !== null && 'toolName' in error && 'availableTools' in error && Array.isArray(error.availableTools)) {
+    const toolName = error.toolName;
+    const availableToolsString = error.availableTools.join(', ');
+    return `Model tried to call unavailable tool '${toolName}'. Available tools: ${availableToolsString}.`;
+  }
+
   if (error == null) return 'unknown error';
   if (typeof error === 'string') return error;
   if (error instanceof Error) return error.message;
