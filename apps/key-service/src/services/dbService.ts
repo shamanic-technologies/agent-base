@@ -104,11 +104,11 @@ export async function getUserApiKeys(platformUserId: string): Promise<ServiceRes
 export async function validateApiKey(apiKey: string): Promise<ServiceResponse<ApiKey>> {
   try {
     if (!apiKey || !isValidKeyFormat(apiKey)) {
+      console.log(`Invalid API key format: ${apiKey.substring(0, 5)}...`);
       return { success: false, error: 'Invalid API key format' } as ErrorResponse;
     }
 
     const keyPrefix = getKeyPrefix(apiKey);
-    console.log(`Attempting validation for key prefix: ${keyPrefix}`);
 
     // Hash the key for secure storage comparison
     const hashedKey = hashApiKey(apiKey);
@@ -137,8 +137,6 @@ export async function validateApiKey(apiKey: string): Promise<ServiceResponse<Ap
         console.error(`Key validation succeeded for prefix ${keyPrefix} but response missing data or platformUserId.`);
         return { success: false, error: 'Internal validation error: Incomplete data from database service.' };
     }
-
-    console.log(`Key validation successful for key ${validateResponse.data.keyId}, user ${validateResponse.data.platformUserId}`);
     
     return validateResponse;
   } catch (error) {

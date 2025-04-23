@@ -39,6 +39,5 @@ export const injectCustomHeaders: express.RequestHandler = (req, res, next) => {
   if (platformApiKey) req.headers['x-platform-api-key'] = platformApiKey;
   if (clientUserId) req.headers['x-client-user-id'] = clientUserId;
 
-  console.log('[HeaderInjectMiddleware] Injected custom headers from request properties.');
   next(); // Pass control to the next middleware in the chain
 }; 

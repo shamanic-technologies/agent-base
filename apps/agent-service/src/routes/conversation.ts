@@ -87,7 +87,7 @@ router.get('/get-or-create-conversations-from-agent', async (req: Request, res: 
  */
 router.post('/create-conversation', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-        const { agentId, channelId, conversationId } = req.body;
+        const { agentId, channelId, conversationId }: CreateConversationInput = req.body;
         // Extract auth details from augmented request
         const clientUserId = req.clientUserId as string;
         const platformUserId = req.platformUserId as string;
@@ -116,16 +116,10 @@ router.post('/create-conversation', async (req: Request, res: Response, next: Ne
         }
 
         try {
-            // Create the input object using the CreateConversationInput type
-            const input: CreateConversationInput = {
-                agentId,
-                channelId,
-                conversationId
-            };
-            
+
             // Call the correct API client function with the input object and auth details
             const response = await createConversationInternalApiService(
-                input, 
+                req.body, 
                 clientUserId, 
                 platformUserId, 
                 platformApiKey

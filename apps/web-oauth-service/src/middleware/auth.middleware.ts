@@ -20,6 +20,7 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
     }
     
     if (!user) {
+      console.log('User is missing from authentication middleware');
       return res.status(401).json({
         success: false,
         error: 'Not authenticated'

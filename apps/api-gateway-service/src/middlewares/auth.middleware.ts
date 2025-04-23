@@ -22,12 +22,10 @@ import { apiCache } from '../utils/api-cache.js'; // Import the API cache
 export const authMiddleware = () => { 
   return async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     try {
-      console.log(`[Auth Middleware] Entering auth middleware for ${req.path}`);
       
       // 1. Platform API Key Validation
       const platformApiKey = req.headers['x-platform-api-key'] as string;
       (req as any).platformApiKey = platformApiKey; 
-      console.log(`[Auth Middleware] API key snippet: ${platformApiKey ? platformApiKey.substring(0, 5) + '...' : 'Not provided'}`);
       
       if (!platformApiKey) {
         console.log(`[Auth Middleware] No API key provided`);
@@ -56,20 +54,17 @@ export const authMiddleware = () => {
         platformUserId = validationResponse.data.platformUserId;
         // Cache the successful result
         apiCache.setPlatformUserId(platformApiKey, platformUserId);
-        console.log(`[Auth Middleware] API Key validated via service. User ID: ${platformUserId}`);
 
       }
       
       // Assign platformUserId to request and headers
       (req as any).platformUserId = platformUserId; 
       req.headers['x-platform-user-id'] = platformUserId;
-      console.log(`[Auth Middleware] Authenticated platform user ${platformUserId}`);
 
       // 2. Platform Client User ID Validation (Optional)
       const platformClientUserId = req.headers['x-platform-client-user-id'] as string;
       
       if (platformClientUserId) {
-        console.log(`[Auth Middleware] Found x-platform-client-user-id: ${platformClientUserId}. Checking cache/validating...`);
 
         let clientUserId: string | undefined = apiCache.getClientUserId(platformUserId, platformClientUserId);
 
@@ -90,21 +85,16 @@ export const authMiddleware = () => {
           clientUserId = clientUserResponse.data.id;
           // Cache the successful result
           apiCache.setClientUserId(platformUserId, platformClientUserId, clientUserId);
-          console.log(`[Auth Middleware] Client user validated/upserted via service. Internal ID: ${clientUserId}`);
         
-        } else {
-            console.log(`[Auth Middleware] Client User Cache HIT. Internal ID: ${clientUserId}`);
         }
 
         // Assign clientUserId to request and headers
         (req as any).clientUserId = clientUserId; 
         req.headers['x-client-user-id'] = clientUserId;
-        console.log(`[Auth Middleware] Authenticated client user. Internal ID: ${clientUserId}`);
 
       }
 
       // Proceed to next middleware/route handler
-      console.log(`[Auth Middleware] Authentication successful for ${req.path}`);
       next();
     } catch (error) {
       console.error(`[Auth Middleware] Unexpected error in middleware execution:`, error); 
