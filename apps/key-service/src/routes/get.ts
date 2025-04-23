@@ -171,7 +171,6 @@ router.get('/:keyId', async (req, res) => {
     }
     
     // Get the API key from the secret service
-    console.log(`Retrieving API key secret for key ${keyId}`);
     const getSecretRequest: GetSecretRequest = {
       userType: UserType.Platform,
       secretUtilityProvider: UtilityProvider.AGENT_BASE,

@@ -21,7 +21,6 @@ export const validateTokenHandler: AsyncRequestHandler = async (req, res) => {
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     token = authHeader.substring(7); // Extract token after 'Bearer '
-    console.log('[Auth Service] Token validation attempt via Authorization header');
   }
   // Removed cookie check logic
 
@@ -33,9 +32,6 @@ export const validateTokenHandler: AsyncRequestHandler = async (req, res) => {
       error: 'No token provided' // Keep error message generic
     });
   }
-  
-  // Log token length for debugging (optional)
-  console.log('[Auth Service] Token found, length:', token.length);
   
   // Validate token using a verification function (replace verifyToken if needed)
   // This function should handle verification against your secret/public key
@@ -66,7 +62,6 @@ export const validateTokenHandler: AsyncRequestHandler = async (req, res) => {
     }
 
     // User is fully authenticated and data retrieved
-    console.log(`[Auth Service] User ${userData.userId} validated successfully.`);
     return res.json({
       success: true,
       data: dbResponse.data // Return the full PlatformUser object
@@ -89,6 +84,7 @@ export const refreshTokenHandler: AsyncRequestHandler = async (req, res) => {
     const token = req.cookies['auth-token'];
     
     if (!token) {
+      console.log('[Auth Service] No token found in cookies');
       return res.status(401).json({
         success: false,
         error: 'No token'
@@ -99,6 +95,7 @@ export const refreshTokenHandler: AsyncRequestHandler = async (req, res) => {
     const userData = verifyToken(token);
     
     if (!userData) {
+      console.log('[Auth Service] Token validation failed (likely expired or invalid)');
       return res.status(401).json({
         success: false,
         error: 'Invalid token'

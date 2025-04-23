@@ -12,7 +12,7 @@ declare global {
     interface User extends ProviderUser {}
     
     interface Request {
-      user?: ProviderUser;
+      providerUser?: ProviderUser;
     }
   }
 }

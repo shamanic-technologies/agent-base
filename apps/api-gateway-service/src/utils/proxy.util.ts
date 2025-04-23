@@ -22,7 +22,6 @@ export const createApiProxy = (
   targetServiceUrl: string,
   serviceName: string
 ) => {
-  console.log(`🟢[ApiProxy] Creating proxy for ${serviceName} targeting ${targetServiceUrl}`);
   // --- Validation ---
   // Ensure a valid target URL is provided during application setup.
   if (!targetServiceUrl) {
@@ -50,9 +49,6 @@ export const createApiProxy = (
     pathRewrite: {},
     // Headers and logging will be handled outside this basic configuration.
   };
-
-  // Log the final configuration being used.
-  console.log(`[ApiProxy] Initializing proxy for ${serviceName} targeting ${targetServiceUrl}`);
 
   // Create and return the proxy middleware instance with the defined options.
   return createProxyMiddleware(proxyOptions);

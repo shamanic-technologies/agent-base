@@ -24,19 +24,14 @@ export const configureAgentRoutes = (
   authMiddleware: express.RequestHandler
 ) => {
 
-  console.log(`1️⃣🟢[API Gateway Service /agent] Configuring agent routes`);
   // Apply authentication middleware to all agent routes.
   router.use(authMiddleware);
-  console.log(`2️⃣🟢[API Gateway Service /agent] Applying authentication middleware`);
   // Apply the middleware to inject custom headers before proxying.
   router.use(injectCustomHeaders);
-  console.log(`3️⃣🟢[API Gateway Service /agent] Applying custom headers middleware`);
   // Create the proxy middleware instance for the Agent Service.
   const agentProxy = createApiProxy(targetServiceUrl, 'Agent Service');
-  console.log(`4️⃣🟢[API Gateway Service /agent] Creating proxy middleware instance`);
   // Apply the proxy middleware. This will forward all requests matching the router's path.
   router.use(agentProxy);
-  console.log(`5️⃣🟢[API Gateway Service /agent] Applying proxy middleware`);
   // The router is implicitly returned by Express when configured this way,
   // but returning explicitly for clarity might be preferred by some.
   return router;

@@ -17,9 +17,7 @@ import { ProviderUser, PlatformUser, ServiceResponse, JWTPayload } from '@agent-
 export const authSuccessHandler: AsyncRequestHandler = async (req, res) => {
   try {
     const userFromProvider = req.user as ProviderUser;
-    
-    console.log('[Auth Service] Auth Success Handler - User profile from provider:', userFromProvider);
-    
+        
     if (!userFromProvider) {
       console.error('[Auth Service] No user data found in request after OAuth callback');
       return res.redirect(`${config.clientAppUrl}?error=auth_failed`);
@@ -35,7 +33,6 @@ export const authSuccessHandler: AsyncRequestHandler = async (req, res) => {
          return res.redirect(`${config.clientAppUrl}?error=database_error&details=no_db_uuid`);
       }
       platformUser = dbResponse.data;
-      console.log('[Auth Service] User record retrieved/saved from database:', platformUser);
     } catch (dbError) {
       console.error('[Auth Service] Failed to save/retrieve user from database:', dbError);
       // Don't fail auth, but log potentially critical error
@@ -48,7 +45,6 @@ export const authSuccessHandler: AsyncRequestHandler = async (req, res) => {
     const tokenPayload: JWTPayload = {
       userId: platformUser.id, // Use database UUID for the 'id' field
     };
-    console.log('[Auth Service] Payload for JWT generation:', tokenPayload);
 
     if (!tokenPayload.userId) { // Check the 'id' field now
         console.error('[Auth Service] CRITICAL: Missing database UUID (id) before generating token.');
@@ -57,20 +53,11 @@ export const authSuccessHandler: AsyncRequestHandler = async (req, res) => {
 
     // Generate JWT token using the payload with the database UUID as 'id'
     const token : string = generateToken(tokenPayload); // Pass UserProfile object with DB UUID as id
-    console.log('[Auth Service] Auth Success Handler - Generated JWT token (truncated):', token.substring(0, 15) + '...');
     
-    // Use cookie settings directly from config/env
-    // These settings correctly handle secure and sameSite based on environment
-    console.log('[Auth Service] Auth Success Handler - Setting cookie with options:', {
-      ...cookieSettings,
-      tokenLength: token.length
-    });
     
     // Set the auth token cookie
     res.cookie('auth-token', token, cookieSettings); // Use cookieSettings directly
     
-    // Log all response headers for debugging
-    console.log('[Auth Service] Auth Success Handler - Response headers set:', res.getHeaders());
     
     // Get the origin from the state parameter
     const state = req.query.state as string;
@@ -95,10 +82,6 @@ export const authSuccessHandler: AsyncRequestHandler = async (req, res) => {
       
       // Always append the /auth/callback path to the origin
       const redirectUrl = `${originUrl.origin}/auth/callback?token=${encodeURIComponent(token)}`;
-      console.log('[Auth Service] Auth Success Handler - Using origin from state for redirect:', redirectUrl);
-      
-      // Additional debug log before redirect
-      console.log('[Auth Service] Auth Success Handler - Final redirect URL:', redirectUrl);
       
       // Redirect to client app
       return res.redirect(redirectUrl);
