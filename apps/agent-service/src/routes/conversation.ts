@@ -27,7 +27,7 @@ const router = Router();
  */
 router.get('/get-or-create-conversations-from-agent', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-        const agentId = req.query.agent_id as string;
+        const agentId = req.query.agentId as string;
         // Extract auth details from augmented request
         const clientUserId = req.clientUserId as string;
         const platformUserId = req.platformUserId as string;

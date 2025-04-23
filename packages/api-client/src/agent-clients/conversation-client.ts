@@ -27,7 +27,6 @@ export const getOrCreateConversationsExternalApiService = async (
     externalApiServiceCredentials: ExternalApiServiceCredentials
 ): Promise<ServiceResponse<Conversation[]>> => {
     const { agentId } = params;
-    // The agent-service route (and likely gateway) expects 'agent_id' as the query parameter
     const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/conversation/get-or-create-conversations-from-agent`;
     const queryParams = { agentId }; 
 
