@@ -559,5 +559,34 @@
       "https://www.googleapis.com/auth/gmail.send"
     ],
     "apiDetails": null
+  },
+  {
+    "id": "crisp_message_sender",
+    "utilityProvider": "crisp",
+    "description": "Send messages to Crisp chat conversations",
+    "schema": {
+      "session_id": {
+        "jsonSchema": {
+          "type": "string",
+          "description": "The Crisp conversation session ID"
+        }
+      },
+      "message": {
+        "jsonSchema": {
+          "type": "string",
+          "description": "The message content to send"
+        }
+      }
+    },
+    "authMethod": "API_KEY",
+    "requiredSecrets": [
+      "website_id",
+      "api_identifier"
+    ],
+    "apiKeyDetails": {
+      "scheme": "Header",
+      "headerName": "X-Crisp-Key",
+      "secretName": "api_identifier"
+    }
   }
 ]

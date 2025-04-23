@@ -33,9 +33,11 @@ async function _makeServiceRequest<T>(
       const specificError = responseData?.error || error.message; // Prefer specific error from response body
       console.error(`${logContext} Axios error details: Status=${status}, Response=${JSON.stringify(responseData)}`);
       
+      // Include details if they exist in the response data
       return {
         success: false,
-        error: specificError || `Service communication error (Status: ${status})`
+        error: specificError || `Service communication error (Status: ${status})`,
+        details: responseData?.details // Pass through the details array
       };
     } else {
       // Handle non-Axios errors (e.g., network issues before request sends)

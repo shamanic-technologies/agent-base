@@ -71,7 +71,7 @@ export async function getExternalToolInfoFromAgent(
   const { platformUserId, clientUserId, platformApiKey, agentId } = agentServiceCredentials;
   const baseUrl = getExternalUtilityToolServiceUrl(); // Use the config getter
   const input = {
-    url: `${baseUrl}/${toolId}`,
+    url: `${baseUrl}`,
     method: 'GET' as Method,
     endpoint: `/${toolId}`,
     headers: {
@@ -117,7 +117,7 @@ export async function createExternalToolFromAgent(
   const { platformUserId, clientUserId, platformApiKey, agentId } = agentServiceCredentials;
   const baseUrl = getExternalUtilityToolServiceUrl(); // Use the config getter
   const input = {
-    url: `${baseUrl}/`,
+    url: `${baseUrl}`,
     method: 'POST' as Method,
     endpoint: '/',
     headers: {

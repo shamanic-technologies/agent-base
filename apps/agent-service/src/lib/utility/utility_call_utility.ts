@@ -55,12 +55,14 @@ export function createCallUtilityTool(agentServiceCredentials: AgentServiceCrede
         // Check the ServiceResponse from the client
         if (!resultResponse.success) {
             console.error(`[Utility Tool] Gateway client reported failure for ${utilityId}: ${resultResponse.error}`, resultResponse.details);
+            // Return a more specific error, including details if available
             return {
               error: true,
-              message: 'Error in calling utility',
+              message: resultResponse.error || 'Error in calling utility',
+              details: resultResponse.details, // Pass through details
               status: 'error',
               code: 'EXECUTION_FAILED'
-            } as UtilityError;;
+            } as UtilityError;
         }
         return resultResponse.data;
 
