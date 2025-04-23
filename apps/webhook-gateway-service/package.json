@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@agent-base/types": "workspace:^",
-    "@helloworld/database-service": "workspace:^",
+    "@agent-base/api-client": "workspace:^",
     "axios": "^1.8.4",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",

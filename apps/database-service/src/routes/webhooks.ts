@@ -14,10 +14,9 @@ import {
 import { 
   CreateWebhookRequest, 
   ErrorResponse, 
-  WebhookEventPayload,
-  MapAgentToWebhookRequest,
-  CreateWebhookEventRequest,
-  GetWebhookAgentRequest
+  CreateWebhookAgentLinkRequest,
+  GetWebhookAgentLinkRequest,
+  CreateWebhookEventRequest
 } from '@agent-base/types';
 
 const router = Router();
@@ -75,7 +74,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 router.post('/map-agent', async (req: Request, res: Response): Promise<void> => {
   try {
     // Extract parameters from the request body.
-    const { agentId, webhookProviderId, clientUserId } : MapAgentToWebhookRequest = req.body;
+    const { agentId, webhookProviderId, clientUserId } : CreateWebhookAgentLinkRequest = req.body;
     
     // Validate required parameters.
     if (!agentId || !webhookProviderId || !clientUserId) {
@@ -129,7 +128,7 @@ router.post('/map-agent', async (req: Request, res: Response): Promise<void> => 
  * @param {Request} req - Express request object, containing webhook_provider_id in params and user_id in query.
  * @param {Response} res - Express response object.
  */
-router.get('/:webhook_provider_id/agent', async (req: Request, res: Response): Promise<void> => {
+router.get('/:webhookProviderId/agent', async (req: Request, res: Response): Promise<void> => {
   try {
     // Extract webhook provider ID from route parameters.
     const { webhookProviderId } = req.params;
@@ -140,7 +139,7 @@ router.get('/:webhook_provider_id/agent', async (req: Request, res: Response): P
     if (!webhookProviderId || !clientUserId) {
       res.status(400).json({
         success: false,
-        error: 'webhook_provider_id (in path) and user_id (in query) are required'
+        error: 'webhookProviderId (in path) and clientUserId (in query) are required'
       } as ErrorResponse);
       return;
     }
@@ -158,7 +157,7 @@ router.get('/:webhook_provider_id/agent', async (req: Request, res: Response): P
     res.status(200).json(getResponse);
   } catch (error) {
     // Log the error.
-    console.error(`Error in GET /webhooks/:webhook_provider_id/agent route:`, error);
+    console.error(`Error in GET /webhooks/:webhookProviderId/agent route:`, error);
     // Send a generic 500 error response.
     res.status(500).json({
       success: false,
@@ -184,7 +183,7 @@ router.post('/events', async (req: Request, res: Response): Promise<void> => {
     if (!webhookProviderId || !clientUserId || !webhookEventPayload) {
       res.status(400).json({
         success: false,
-        error: 'webhook_provider_id, user_id, and webhook_event_payload are required'
+        error: 'webhookProviderId, clientUserId, and webhookEventPayload are required'
       } as ErrorResponse);
       return;
     }
@@ -218,10 +217,10 @@ router.post('/events', async (req: Request, res: Response): Promise<void> => {
  * @param {Request} req - Express request object with website_id as a route parameter
  * @param {Response} res - Express response object
  */
-router.get('/crisp/users/:website_id', async (req: Request, res: Response): Promise<void> => {
+router.get('/crisp/users/:websiteId', async (req: Request, res: Response): Promise<void> => {
   try {
     // Extract website_id from route parameters
-    const { website_id: websiteId  } = req.params;
+    const { websiteId  } = req.params;
     
     // Validate required parameter
     if (!websiteId) {
@@ -265,7 +264,7 @@ router.get('/crisp/users/:website_id', async (req: Request, res: Response): Prom
 router.post('/get-agent', async (req: Request, res: Response): Promise<void> => {
   try {
     // Extract parameters from the request body
-    const { clientUserId, webhookProviderId } : GetWebhookAgentRequest = req.body;
+    const { clientUserId, webhookProviderId } : GetWebhookAgentLinkRequest = req.body;
     
     // Validate required parameters
     if (!clientUserId || !webhookProviderId) {

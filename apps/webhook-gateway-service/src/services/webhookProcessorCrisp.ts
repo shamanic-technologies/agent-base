@@ -2,7 +2,7 @@
  * Handler for webhook message:send events from Crisp provider.
  * Assumes authentication and user identification have been handled by middleware.
  */
-import { WebhookProvider, WebhookEventPayloadCrisp, WebhookResponse, WebhookEventPayload } from '@agent-base/types';
+import { WebhookProviderId, WebhookEventPayload, ErrorResponse, ServiceResponse } from '@agent-base/types';
 import { Request, Response } from 'express';
 import { storeWebhookEvent } from './databaseService.js';
 import axios from 'axios';
@@ -18,7 +18,7 @@ import { get } from 'http';
  * @returns {Promise<void>}
  */
 export async function processWebhookCrisp(req: Request, res: Response): Promise<void> {
-  const payload: WebhookEventPayloadCrisp = req.body;
+  const payload: WebhookEventPayload = req.body;
   const user_id = req.headers['x-user-id'] as string;
   const api_key = req.headers['x-api-key'] as string;
 
@@ -31,19 +31,19 @@ export async function processWebhookCrisp(req: Request, res: Response): Promise<
     res.status(400).json({
       success: false,
       error: `Only message:send events are supported`
-    } as WebhookResponse);
+    } as ErrorResponse);
     return;
   }
   
   try {    
     // Store the webhook event in the database
-    await storeWebhookEvent(WebhookProvider.CRISP, user_id, payload);
+    await storeWebhookEvent(WebhookProviderId.CRISP, user_id, payload);
     console.log(`[WebhookGatewayService] Stored webhook event in database for user: ${user_id}`);
     
     // Get the agent_id associated with this user and Crisp webhook provider
     const agentResponse = await axios.post(`${process.env.DATABASE_SERVICE_URL}/webhooks/get-agent`, {
       user_id,
-      webhook_provider_id: WebhookProvider.CRISP
+      webhook_provider_id: WebhookProviderId.CRISP
     },
     {
       headers: {
@@ -54,7 +54,7 @@ export async function processWebhookCrisp(req: Request, res: Response): Promise<
     
     if (!agentResponse.data.success) {
       // Provide more specific error context
-      throw new Error(`Failed to get agent for user ${user_id}, provider ${WebhookProvider.CRISP}: ${agentResponse.data.error || 'Unknown database service error'}`);
+      throw new Error(`Failed to get agent for user ${user_id}, provider ${WebhookProviderId.CRISP}: ${agentResponse.data.error || 'Unknown database service error'}`);
     }
     
     // Extract the agent_id from the response
@@ -73,7 +73,7 @@ export async function processWebhookCrisp(req: Request, res: Response): Promise<
       {
         conversation_id: session_id,
         agent_id: agent_id,
-        channel_id: WebhookProvider.CRISP
+        channel_id: WebhookProviderId.CRISP
       },
       {
         headers: {
@@ -92,7 +92,7 @@ export async function processWebhookCrisp(req: Request, res: Response): Promise<
         
     // Create the message to send to the agent
     const formattedMessage = `
-    You received this payload from ${WebhookProvider.CRISP} via webhook subscription: ${JSON.stringify(payload)}.
+    You received this payload from ${WebhookProviderId.CRISP} via webhook subscription: ${JSON.stringify(payload)}.
     To reply search for the utility whom id is 'crisp_send_message'`;
     
     const message: Message = {
@@ -122,14 +122,14 @@ export async function processWebhookCrisp(req: Request, res: Response): Promise<
     res.status(200).json({
       success: true,
       message: `Webhook processed successfully`
-    } as WebhookResponse);
+    } as ServiceResponse<boolean>);
   } catch (error) {
     // Send error response if database storage fails
     console.error(`[WebhookGatewayService] Error processing Crisp webhook for user ${user_id}:`, error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error processing webhook'
-    } as WebhookResponse);
+    } as ErrorResponse);
   }
 } 
 

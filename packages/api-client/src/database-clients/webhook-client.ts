@@ -5,12 +5,11 @@ import {
   ServiceResponse,
   Webhook, // Use camelCase type
   WebhookEvent,
-  CrispUsersResponse,
   CreateWebhookRequest,
-  MapAgentToWebhookRequest,
+  CreateWebhookAgentLinkRequest,
+  GetWebhookAgentLinkRequest,
+  WebhookAgentLink,
   CreateWebhookEventRequest,
-  GetWebhookAgentRequest,
-  GetCrispUsersParams
 } from '@agent-base/types';
 import { makeInternalAPIServiceRequest } from '../utils/service-client';
 import { getDatabaseServiceUrl } from '../utils/config'; // Import the centralized getter
@@ -28,7 +27,7 @@ import { getDatabaseServiceUrl } from '../utils/config'; // Import the centraliz
  * @param platformUserId - The platform user ID making the request (for headers).
  * @returns A ServiceResponse containing the Webhook object or an error.
  */
-export const createOrUpdateWebhookConfig = async (
+export const createOrUpdateWebhookInternalApiService = async (
   data: CreateWebhookRequest,
   platformUserId: string,
   platformApiKey: string,
@@ -53,22 +52,19 @@ export const createOrUpdateWebhookConfig = async (
  * 
  * @param data - Input data containing agentId, webhookProviderId, clientUserId.
  * @param platformUserId - The platform user ID making the request (for headers).
- * @returns A ServiceResponse containing WebhookAgentMapping or an error.
+ * @param platformApiKey - The platform API key for the request (for headers).
+ * @param clientUserId - The client user ID (for headers and context).
+ * @returns A ServiceResponse containing WebhookAgentLink or an error.
  */
-export const mapAgentToWebhook = async (
-  data: MapAgentToWebhookRequest,
+export const CreateWebhookAgentLinkInternalApiService = async (
+  data: CreateWebhookAgentLinkRequest,
   platformUserId: string,
   platformApiKey: string,
   clientUserId: string
-): Promise<ServiceResponse<MapAgentToWebhookRequest>> => {
-  if (!platformUserId) {
-    throw new Error('[api-client:mapAgentToWebhook] platformUserId is required for request header.');
-  }
-  if (!data || !data.agentId || !data.webhookProviderId || !data.clientUserId) {
-    throw new Error('[api-client:mapAgentToWebhook] Input data must include agentId, webhookProviderId, and clientUserId.');
-  }
+): Promise<ServiceResponse<WebhookAgentLink>> => {
+
   const endpoint = '/webhooks/map-agent';
-  return makeInternalAPIServiceRequest<MapAgentToWebhookRequest>(
+  return makeInternalAPIServiceRequest<WebhookAgentLink>(
     getDatabaseServiceUrl(),
     'POST',
     endpoint,
@@ -88,18 +84,13 @@ export const mapAgentToWebhook = async (
  * @param platformUserId - The platform user ID making the request (for headers).
  * @returns A ServiceResponse containing WebhookAgentMapping or an error.
  */
-export const getWebhookAgentMapping = async (
-  params: GetWebhookAgentRequest,
+export const getWebhookAgentLinkInternalApiService = async (
+  params: GetWebhookAgentLinkRequest,
   platformUserId: string,
   platformApiKey: string,
   clientUserId: string
 ): Promise<ServiceResponse<string>> => {
-  if (!platformUserId) {
-    throw new Error('[api-client:getWebhookAgentMapping] platformUserId is required for request header.');
-  }
-  if (!params || !params.webhookProviderId || !params.clientUserId) {
-    throw new Error('[api-client:getWebhookAgentMapping] Parameters must include webhookProviderId and clientUserId.');
-  }
+
   const endpoint = `/webhooks/${params.webhookProviderId}/agent`;
   // Pass clientUserId as query parameter
   const queryParams = { clientUserId: params.clientUserId }; 
@@ -124,18 +115,13 @@ export const getWebhookAgentMapping = async (
  * @param platformUserId - The platform user ID making the request (for headers).
  * @returns A ServiceResponse containing the created WebhookEvent object or an error.
  */
-export const createWebhookEvent = async (
+export const createWebhookEventInternalApiService = async (
   data: CreateWebhookEventRequest,
   platformUserId: string,
   platformApiKey: string,
   clientUserId: string
 ): Promise<ServiceResponse<WebhookEvent>> => {
-  if (!platformUserId) {
-    throw new Error('[api-client:createWebhookEvent] platformUserId is required for request header.');
-  }
-  if (!data || !data.webhookProviderId || !data.clientUserId || !data.webhookEventPayload) {
-    throw new Error('[api-client:createWebhookEvent] Input data must include webhookProviderId, clientUserId, and webhookEventPayload.');
-  }
+
   const endpoint = '/webhooks/events';
   return makeInternalAPIServiceRequest<WebhookEvent>(
     getDatabaseServiceUrl(),
@@ -148,31 +134,31 @@ export const createWebhookEvent = async (
   );
 };
 
-/**
- * Retrieves user IDs associated with a specific Crisp website ID.
- * 
- * Corresponds to: GET /webhooks/crisp/users/:website_id
- * 
- * @param params - Path parameters containing websiteId.
- * @param platformUserId - The platform user ID making the request (for headers).
- * @returns A ServiceResponse containing CrispUsersResponse (with userIds array) or an error.
- */
-export const getCrispWebsiteUserIds = async (
-  params: GetCrispUsersParams,
-  platformUserId: string,
-  platformApiKey: string,
-  clientUserId: string
-): Promise<ServiceResponse<CrispUsersResponse>> => {
+// /**
+//  * Retrieves user IDs associated with a specific Crisp website ID.
+//  * 
+//  * Corresponds to: GET /webhooks/crisp/users/:website_id
+//  * 
+//  * @param params - Path parameters containing websiteId.
+//  * @param platformUserId - The platform user ID making the request (for headers).
+//  * @returns A ServiceResponse containing CrispUsersResponse (with userIds array) or an error.
+//  */
+// export const getCrispWebsiteUserIds = async (
+//   params: GetCrispUsersParams,
+//   platformUserId: string,
+//   platformApiKey: string,
+//   clientUserId: string
+// ): Promise<ServiceResponse<CrispUsersResponse>> => {
 
-  const endpoint = `/webhooks/crisp/users/${params.websiteId}`;
-  return makeInternalAPIServiceRequest<CrispUsersResponse>(
-    getDatabaseServiceUrl(),
-    'GET',
-    endpoint,
-    platformUserId,
-    clientUserId,
-    platformApiKey,
-    undefined, // No body
-    undefined // No query params
-  );
-}; 
+//   const endpoint = `/webhooks/crisp/users/${params.websiteId}`;
+//   return makeInternalAPIServiceRequest<CrispUsersResponse>(
+//     getDatabaseServiceUrl(),
+//     'GET',
+//     endpoint,
+//     platformUserId,
+//     clientUserId,
+//     platformApiKey,
+//     undefined, // No body
+//     undefined // No query params
+//   );
+// }; 

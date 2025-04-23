@@ -5,7 +5,12 @@
  */
 import { PoolClient } from 'pg';
 import { getClient } from '../db.js';
-import { WebhookEventPayload, CreateWebhookRequest, WebhookEventRecord, ServiceResponse, GetClientUserAgentInput, MapAgentToWebhookRequest, CreateWebhookEventRequest } from '@agent-base/types';
+import { WebhookEventPayload,
+  CreateWebhookRequest,
+  ServiceResponse,
+  CreateWebhookEventRequest,
+  CreateWebhookAgentLinkRequest,
+} from '@agent-base/types';
 import { GetAgentIdForWebhookRequest, GetUserIdsByWebsiteIdRequest } from '../routes/types/webhooks.js';
 /**
  * Retrieves the agent ID mapped to a specific webhook provider for a given user.
@@ -122,7 +127,7 @@ export async function createWebhook(input: CreateWebhookRequest): Promise<Servic
  * @returns {Promise<boolean>} A promise that resolves to true if the mapping was successful.
  * @throws {Error} Throws an error if the database operation fails or the prerequisite webhook cannot be ensured.
  */
-export async function mapAgentToWebhook(input: MapAgentToWebhookRequest): Promise<ServiceResponse<string>> {
+export async function mapAgentToWebhook(input: CreateWebhookAgentLinkRequest): Promise<ServiceResponse<string>> {
   let client: PoolClient | null = null;
   try {
     // Obtain a database client.
