@@ -98,11 +98,13 @@ export interface WebhookSetupNeeded extends SetupNeeded {
 
 export interface WebhookAgentLink {
   webhookId: string;
+  clientUserId: string;
   agentId: string;
 };
 
 export interface CreateWebhookAgentLinkRequest {
   webhookId: string;
+  clientUserId: string;
   agentId: string;
 };
 
