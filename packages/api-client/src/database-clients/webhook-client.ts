@@ -93,7 +93,6 @@ export const getWebhookAgentLinkInternalApiService = async (
 
   const endpoint = `/webhooks/${params.webhookProviderId}/agent`;
   // Pass clientUserId as query parameter
-  const queryParams = { clientUserId: params.clientUserId }; 
   return makeInternalAPIServiceRequest<string>(
     getDatabaseServiceUrl(),
     'GET',
@@ -102,7 +101,7 @@ export const getWebhookAgentLinkInternalApiService = async (
     clientUserId,
     platformApiKey,
     undefined, // No body
-    queryParams
+    params
   );
 };
 
