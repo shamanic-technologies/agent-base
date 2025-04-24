@@ -24,16 +24,16 @@ export enum WebhookStatus {
 // }
 
 
-/**
- * User webhook record in database
- */
-export interface UserWebhookRecord {
-  webhook_id: string;
-  client_user_id: string;
-  status: WebhookStatus;
-  created_at?: Date;
-  updated_at?: Date;
-}
+// /**
+//  * User webhook record in database
+//  */
+// export interface UserWebhookRecord {
+//   webhook_id: string;
+//   client_user_id: string;
+//   status: WebhookStatus;
+//   created_at?: Date;
+//   updated_at?: Date;
+// }
 
 /**
  * User webhook
@@ -50,18 +50,18 @@ export interface CreateUserWebhookRequest {
 }
 
 
-/**
-   * Standard interface for all utility tools in the system
-   */
-export interface WebhookRecord {
-  id: string;   /** Unique identifier for the utility */
-  description: string;  /** Human-readable description of what the utility does */
-  webhook_provider_id: WebhookProviderId;     /** The provider enum (e.g., UtilityProvider.GMAIL) */
-  subscribed_event_id: string; // Id of the subscribed event in the utility provider
-  required_secrets: UtilitySecretType[];     /** Secrets required from secret-service (includes action confirmations like WEBHOOK_URL_INPUTED) */
-  user_identification_mapping: Record<UtilitySecretType, string>; // Mapping of user identification fields to the user's secrets
-  event_payload_schema: Record<string, unknown>; // Schema defining the input parameters for the utility
-}
+// /**
+//    * Standard interface for all utility tools in the system
+//    */
+// export interface WebhookRecord {
+//   id: string;   /** Unique identifier for the utility */
+//   description: string;  /** Human-readable description of what the utility does */
+//   webhook_provider_id: WebhookProviderId;     /** The provider enum (e.g., UtilityProvider.GMAIL) */
+//   subscribed_event_id: string; // Id of the subscribed event in the utility provider
+//   required_secrets: UtilitySecretType[];     /** Secrets required from secret-service (includes action confirmations like WEBHOOK_URL_INPUTED) */
+//   user_identification_mapping: Record<UtilitySecretType, string>; // Mapping of user identification fields to the user's secrets
+//   event_payload_schema: Record<string, unknown>; // Schema defining the input parameters for the utility
+// }
 
 export interface WebhookData {
   name: string;
@@ -86,37 +86,36 @@ export interface WebhookSetupNeeded extends SetupNeeded {
   webhookProviderId: WebhookProviderId;
   webhookUrlToInput?: string; // Webhook URL to input in the provider dashboard
 }
-/**
- * Webhook agent mapping in database
- */
-export interface WebhookAgentLinkRecord {
-  agent_id: string;
-  webhook_provider_id: WebhookProviderId;
-  client_user_id: string;
-  created_at?: Date;
-}
+// /**
+//  * Webhook agent mapping in database
+//  */
+// export interface WebhookAgentLinkRecord {
+//   agent_id: string;
+//   webhook_provider_id: WebhookProviderId;
+//   client_user_id: string;
+//   created_at?: Date;
+// }
 
 export interface WebhookAgentLink {
+  webhookId: string;
   agentId: string;
-  webhookProviderId: WebhookProviderId;
-  clientUserId: string;
 };
 
 export interface CreateWebhookAgentLinkRequest {
-  agentId: string;
   webhookId: string;
+  agentId: string;
 };
 
-/**
- * Webhook event record in database
- */
-export interface WebhookEventRecord {
-  webhook_id: string;
-  client_user_id: string;
-  webhook_event_payload: WebhookEventPayload;
-  created_at?: Date;
-  updated_at?: Date;
-}
+// /**
+//  * Webhook event record in database
+//  */
+// export interface WebhookEventRecord {
+//   webhook_id: string;
+//   client_user_id: string;
+//   webhook_event_payload: WebhookEventPayload;
+//   created_at?: Date;
+//   updated_at?: Date;
+// }
 
 
 /**
@@ -140,9 +139,9 @@ export interface CreateWebhookEventRequest {
   webhookEventPayload: WebhookEventPayload;
 }
 
-export interface GetAgentFromWebhookAgentLinkRequest {
-  webhookId: string;
-}
+// export interface GetAgentFromWebhookAgentLinkRequest {
+//   webhookId: string;
+// }
 
 /**
  * Webhook message event data base interface
