@@ -3,7 +3,7 @@
  */
 import { BaseResponse } from './common.js';
 import { UserType } from './user.js';
-import { UtilityProvider, UtilitySecretType, UtilityActionConfirmation } from './utility.js';
+import { UtilityProvider, UtilitySecretType, WebhookInputSecret } from './utility.js';
 
 /**
  * Request to store a secret
@@ -16,7 +16,7 @@ export interface StoreSecretRequest {
 }
 
 export interface StoreActionConfirmationRequest extends StoreSecretRequest {
-  secretType: UtilityActionConfirmation;
+  secretType: WebhookInputSecret;
   secretValue: 'true' | 'false';
 }
 

@@ -20,6 +20,11 @@ const router = Router();
  */
 router.post('/api/setup-webhook', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
+    // Extract required data from the request body.
+    const { webhookProviderId, agentId, webhookCredentials } : SetupWebhookRequest = req.body;
+    const setupWebhookRequest = req.body;
+
+    // Get the service credentials from the request headers.
     const serviceCredentialsResponse : ServiceResponse<ServiceCredentials> = getAuthHeaders(req);
     if (!serviceCredentialsResponse.success) {
       console.error(`[WebhookService][Route] Error in GET /api/setup-webhook: ${serviceCredentialsResponse.error}`);
@@ -27,9 +32,7 @@ router.post('/api/setup-webhook', async (req: Request, res: Response, next: Next
       return;
     }
     const serviceCredentials = serviceCredentialsResponse.data;
-    // Extract required data from the request body.
-    const { webhookProviderId, agentId, webhookCredentials } : SetupWebhookRequest = req.body;
-    const setupWebhookRequest = req.body;
+
 
     // --- Input Validation ---
     if (!webhookProviderId) {

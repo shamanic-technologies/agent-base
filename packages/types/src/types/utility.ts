@@ -50,7 +50,16 @@ export type JsonSchema = Record<string, any> & {
     examples?: any[];
     // Add other common JSON Schema keywords as needed
 };
-  
+
+export interface SetupNeeded {
+    needsSetup: true;
+    message: string; // General message
+    title: string; // Title for UI prompt
+    description: string; // Description for UI prompt
+    requiredSecretInputs?: UtilityInputSecret[];     /** List of secret keys requiring user text input */
+    requiredActionConfirmations?: UtilityActionConfirmation[];    /** List of secrets representing actions that require user confirmation */
+}
+
   /**
    * Core request structure
    */
