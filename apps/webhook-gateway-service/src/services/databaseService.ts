@@ -84,7 +84,7 @@ export async function storeWebhookEvent(
  * @param {WebhookProviderId} webhookProviderId - The identifier of the webhook provider (e.g., 'slack').
  * @param {string} clientUserId - The UUID of the user.
  * @param {string} agentId - The UUID of the agent to map.
- * @param {Record<string, any>} [webhookCredentials={}] - Optional credentials associated with the webhook configuration.
+ * @param {clientUserIdentificationMapping<string, any>} [webhookCredentials={}] - Optional credentials associated with the webhook configuration.
  * @returns {Promise<WebhookAgentMapping>} A promise that resolves with the data returned by the successful map-agent call.
  * @throws {Error} Throws an error if the DATABASE_SERVICE_URL is not set, if either API call fails (network or non-OK status), or if parsing the response fails.
  */

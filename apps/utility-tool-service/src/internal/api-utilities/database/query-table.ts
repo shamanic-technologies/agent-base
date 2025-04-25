@@ -21,7 +21,7 @@ import { parseSQL } from './sql-parser.js'; // Import with .js extension (correc
 export interface QueryTableRequest {
   table: string;
   query: string;
-  params?: Record<string, any>;
+  params?: clientUserIdentificationMapping<string, any>;
 }
 
 // Define Success Response structures for different query types
@@ -30,7 +30,7 @@ interface QuerySelectSuccessResponse {
   data: {
     message: string;
     query_type: 'SELECT';
-    rows: Record<string, any>[];
+    rows: clientUserIdentificationMapping<string, any>[];
     count: number;
   }
 }
@@ -176,7 +176,7 @@ const queryTableUtility: InternalUtilityTool = {
       if (type === 'SELECT') {
         console.log(`${logPrefix} Executing SELECT with filters:`, filters);
         // Execute the query using Xata API
-        const xataPayload: Record<string, any> = {};
+        const xataPayload: clientUserIdentificationMapping<string, any> = {};
         if (filters && Object.keys(filters).length > 0) {
           xataPayload.filter = filters;
         }

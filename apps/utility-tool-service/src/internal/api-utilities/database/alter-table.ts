@@ -50,7 +50,7 @@ interface AlterTableSuccessResponse {
         new_name?: string; 
         status: string; 
       }[];
-      updated_schema: Record<string, string>;
+      updated_schema: clientUserIdentificationMapping<string, string>;
       updated_at: string;
     }
   }
@@ -237,7 +237,7 @@ const alterTableUtility: InternalUtilityTool = {
         }
       );
       
-      let updatedSchema: Record<string, string> = {};
+      let updatedSchema: clientUserIdentificationMapping<string, string> = {};
       if (getTableResponse.ok) {
         const tableSchemaData = await getTableResponse.json();
         if (tableSchemaData.columns) {

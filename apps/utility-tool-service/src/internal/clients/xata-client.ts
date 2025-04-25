@@ -65,7 +65,7 @@ export interface TableInfo {
   id: string; // Consistent ID format, e.g., table_${tableName}
   name: string;
   description?: string; // Optional description
-  schema: Record<string, string>; // Column name -> Xata type
+  schema: clientUserIdentificationMapping<string, string>; // Column name -> Xata type
 }
 
 /**
@@ -376,7 +376,7 @@ export async function getXataDatabaseInfo(databaseId: string): Promise<{ databas
           // Type definition for schema response
           type XataSchemaResponse = { columns?: Array<{ name: string; type: string; [key: string]: any }> };
           const tableSchemaData = await tableSchemaResponse.json() as XataSchemaResponse;
-          const schema: Record<string, string> = {};
+          const schema: clientUserIdentificationMapping<string, string> = {};
           
           // Convert Xata schema columns to simple key-value format
           if (tableSchemaData.columns) {

@@ -32,8 +32,8 @@ interface GetTableSuccessResponse {
       id: string;
       name: string;
       description?: string;
-      schema: Record<string, string>; // Column name -> Xata type
-      data?: Record<string, any>[] | null; // Array of records or null
+      schema: clientUserIdentificationMapping<string, string>; // Column name -> Xata type
+      data?: clientUserIdentificationMapping<string, any>[] | null; // Array of records or null
     }
   }
 }

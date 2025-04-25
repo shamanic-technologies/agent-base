@@ -21,7 +21,7 @@ import {
 export interface CreateTableRequest {
   name: string;
   description: string;
-  schema: Record<string, string>; // Key: col name, Value: col type
+  schema: clientUserIdentificationMapping<string, string>; // Key: col name, Value: col type
 }
 
 // Define valid Xata column types for schema validation
@@ -39,7 +39,7 @@ interface CreateTableSuccessResponse {
       id: string;
       name: string;
       description: string;
-      schema: Record<string, string>;
+      schema: clientUserIdentificationMapping<string, string>;
       created_at: string;
     }
   }
