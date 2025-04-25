@@ -2,10 +2,8 @@
  * Types related to Utility.
  */
 import { AgentServiceCredentials, ErrorResponse, ServiceResponse, SuccessResponse } from './common.js';
-import { ExternalUtilityInfo, UtilitySetupNeeded } from './external-utility.js';
+import { ExternalUtilityInfo } from './external-utility.js';
 import { InternalUtilityInfo } from './internal-utility.js';
-import { OAuthProvider } from './oauth.js';
-import { WebhookProviderId, WebhookSetupNeeded } from './webhook.js';
 
 // --- Enums and Core Records ---
 

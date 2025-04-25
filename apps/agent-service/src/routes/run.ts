@@ -165,7 +165,6 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
         // @ts-ignore - system is supported by Vercel AI SDK but might not be in inferred type
         system: systemPrompt, // Use the dynamic prompt
         tools: tools,
-        // @ts-ignore - maxSteps is a valid property
         maxSteps: 25, 
         providerOptions: { temperature: 0.1, sendReasoning: true },
            // id format for server-side messages:

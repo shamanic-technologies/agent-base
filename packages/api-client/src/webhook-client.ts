@@ -6,7 +6,7 @@ import {
     WebhookData,
     Webhook,
     UserWebhook,
-    WebhookSetupNeeded,
+    SetupNeeded,
     WebhookAgentLink,
     ServiceResponse,
     InternalServiceCredentials 
@@ -82,9 +82,9 @@ export async function searchWebhooks(
 export async function linkUserToWebhook(
     webhookId: string,
     credentials: InternalServiceCredentials
-): Promise<ServiceResponse<UserWebhook | WebhookSetupNeeded>> {
+): Promise<ServiceResponse<UserWebhook | SetupNeeded>> {
     const { platformUserId, clientUserId, platformApiKey, agentId: credentialsAgentId } = credentials;
-    return makeInternalAPIServiceRequest<UserWebhook | WebhookSetupNeeded>(
+    return makeInternalAPIServiceRequest<UserWebhook | SetupNeeded>(
         getWebhookStoreServiceUrl(),
         'POST' as Method,
         `/webhooks/${webhookId}/link-user`,

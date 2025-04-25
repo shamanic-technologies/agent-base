@@ -1,7 +1,7 @@
 import {
     JsonSchema,
     SetupNeeded,
-    SetupNeededCore
+
  } from "./utility.js";
 import {InternalUtilityTool, InternalUtilityInfo } from "./internal-utility.js";
 import {OAuthProvider} from "./oauth.js";
@@ -72,22 +72,13 @@ export interface ExternalUtilityTool extends InternalUtilityTool{
     };
 }
 
-/**
- * Standardized response when setup (OAuth, secrets, actions) is needed.
- */
-export interface UtilitySetupNeeded extends SetupNeededCore {
-    setupType: 'utility';
-    utilityProvider: UtilityProvider;
-    oauthProvider?: OAuthProvider;
-    buttonText?: string; // Suggested main action button text
-    requiredOauth?: string; // For OAuth flow initiation
-}
+
 
 /**
  * Represents any possible valid response from executing an external utility
  */
 export type ExternalUtilityExecutionResponse =
-    SuccessResponse<UtilitySetupNeeded> |
+    SuccessResponse<SetupNeeded> |
     ErrorResponse |
     SuccessResponse<any>;
 
