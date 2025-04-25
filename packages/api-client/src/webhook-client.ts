@@ -9,7 +9,11 @@ import {
     SetupNeeded,
     WebhookAgentLink,
     ServiceResponse,
-    InternalServiceCredentials 
+    InternalServiceCredentials,
+    WebhookProviderId,
+    WebhookEventPayload,
+    WebhookResolutionResult,
+    WebhookResolutionRequest
 } from '@agent-base/types';
 import { makeInternalAPIServiceRequest } from './utils/service-client.js';
 import { getWebhookStoreServiceUrl } from './utils/config.js';
@@ -121,5 +125,31 @@ export async function linkAgentToWebhook(
         { agentId }, // request body
         undefined, // params
         credentialsAgentId
+    );
+}
+
+/**
+ * Resolves webhook identification information (platformUserId, clientUserId, agentId, conversationId).
+ * @param webhookProviderId - The ID of the webhook provider.
+ * @param payload - The incoming webhook event payload.
+ * @param internalServicecredentials - Internal service credentials (used for auth between services, though might not be strictly needed by the resolve endpoint itself).
+ * @returns ServiceResponse containing the WebhookResolutionResult or an error.
+ */
+export async function resolveWebhook(
+    webhookResolutionRequest: WebhookResolutionRequest,
+    internalServiceCredentials: InternalServiceCredentials
+): Promise<ServiceResponse<WebhookResolutionResult>> {
+    // Extract credentials needed for the internal request helper, even if not used by endpoint
+    const { platformUserId, clientUserId, platformApiKey, agentId: credentialsAgentId } = internalServiceCredentials;
+    return makeInternalAPIServiceRequest<WebhookResolutionResult>(
+        getWebhookStoreServiceUrl(),
+        'POST' as Method,
+        '/resolve', // Assuming this is the correct path
+        platformUserId, // Required by helper, might not be used by endpoint
+        clientUserId, // Required by helper, might not be used by endpoint
+        platformApiKey, // Required by helper, might not be used by endpoint
+        webhookResolutionRequest, // Request body
+        undefined, // params
+        credentialsAgentId // Required by helper, might not be used by endpoint
     );
 } 

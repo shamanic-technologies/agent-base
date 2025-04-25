@@ -1,6 +1,6 @@
 {
   "name": "@agent-base/api-client",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Typed API clients for inter-service communication",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",

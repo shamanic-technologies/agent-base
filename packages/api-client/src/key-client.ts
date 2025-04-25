@@ -109,16 +109,11 @@ export const getPlatformApiKeySecretById = async (
  * @param input - Object containing platformUserId and keyName.
  * @returns A promise resolving to ServiceResponse<SecretValue>.
  */
-export const getPlatformApiKeySecretByName = async (
+export const getOrCreatePlatformApiKeySecretByName = async (
   input: GetApiKeyByNameRequest
 ): Promise<ServiceResponse<SecretValue>> => {
   const { platformUserId, keyName } = input;
-  if (!platformUserId) {
-    return { success: false, error: 'platformUserId is required for getApiKeyByName.' };
-  }
-  if (!keyName) {
-    return { success: false, error: 'Key name query parameter is required.' };
-  }
+
   const queryParams = { name: keyName };
   return await makeWebAuthenticatedServiceRequest<SecretValue>(
     getKeyServiceUrl(), // Use dynamic getter
