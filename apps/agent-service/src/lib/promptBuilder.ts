@@ -53,6 +53,7 @@ export function buildSystemPrompt(
     // Append agent identity
     prompt += `
     ### Your identity
+    Your ID: ${agent.id}
     Your name: ${agent.firstName} ${agent.lastName}
     Your job title: ${agent.jobTitle}
     Your profile picture: ${agent.profilePicture}

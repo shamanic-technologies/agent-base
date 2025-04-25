@@ -46,3 +46,6 @@ yarn-error.log*
 
 # contentlayer
 .contentlayer/
+
+# Generated code
+packages/api-client/src/generated/

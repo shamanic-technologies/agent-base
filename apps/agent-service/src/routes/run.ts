@@ -39,6 +39,12 @@ import { buildSystemPrompt } from '../lib/promptBuilder.js';
 
 // Import error handler
 import { handleToolError } from '../lib/utils/errorHandlers.js'; // Import the modified handler
+import {
+  createCreateWebhookTool,
+  createSearchWebhooksTool,
+  createLinkUserToWebhookTool,
+  createLinkAgentToWebhookTool 
+} from '../lib/utility/webhook/index.js';
 
 const runRouter = Router(); // Use a specific router for this file
 
@@ -110,9 +116,15 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
         agentId: agent.id
       };
       const tools = {
-          utility_list_utilities: createListUtilitiesTool(agentServiceCredentials, conversationId),
-          utility_get_utility_info: createGetUtilityInfoTool(agentServiceCredentials, conversationId),
-          utility_call_utility: createCallUtilityTool(agentServiceCredentials, conversationId)
+        // core tools
+        utility_list_utilities: createListUtilitiesTool(agentServiceCredentials, conversationId),
+        utility_get_utility_info: createGetUtilityInfoTool(agentServiceCredentials, conversationId),
+        utility_call_utility: createCallUtilityTool(agentServiceCredentials, conversationId),
+        // webhook tools
+        webhook_create_webhook: createCreateWebhookTool(agentServiceCredentials, conversationId),
+        webhook_search_webhooks: createSearchWebhooksTool(agentServiceCredentials, conversationId),
+        webhook_link_user: createLinkUserToWebhookTool(agentServiceCredentials, conversationId),
+        webhook_link_agent: createLinkAgentToWebhookTool(agentServiceCredentials, conversationId)
       };
       // --- End Initialize Tools ---
       

@@ -10,7 +10,7 @@ export * from './database-clients/platform-user.js';
 export * from './database-clients/conversation-client.js';
 export * from './database-clients/api-key-client.js';
 export * from './database-clients/oauth-client.js';
-export * from './database-clients/webhook-client.js';
+// export * from './database-clients/webhook-client.js';
 export * from './database-clients/client-user.js'; // Ensure this is present
 
 // Export functions from web OAuth service client files
@@ -32,3 +32,12 @@ export * from './utility-tool-client.js';
 
 // Export agent service client functions
 export * from './agent-clients/conversation-client.js';
+
+// Export shared utilities or functions if any
+// export * from './utils';
+
+// Re-export everything from the generated client
+// export * from './generated/index.js';
+
+// Export the new manual webhook client
+export * from './webhook-client.js';

@@ -15,19 +15,10 @@ export interface UtilityError {
   status: string; // Consider using specific statuses like 'error', 'success', 'not_found'
   code: string;
   statusCode?: number;
+  details?: string; // Add optional details field
 }
 
-/**
- * UtilityToolCredentials Interface
- * Standard credentials required by all utility tools.
- */
-export interface UtilityToolCredentials {
-  clientUserId: string;
-  platformUserId: string;
-  platformApiKey: string;
-  conversationId: string;
-  agentId: string;
-}
+
 
 // Removed local User interface
 // Removed local ServiceResponse interface
