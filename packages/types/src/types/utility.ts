@@ -2,9 +2,10 @@
  * Types related to Utility.
  */
 import { AgentServiceCredentials, ErrorResponse, ServiceResponse, SuccessResponse } from './common.js';
-import { ExternalUtilityInfo } from './external-utility.js';
+import { ExternalUtilityInfo, UtilitySetupNeeded } from './external-utility.js';
 import { InternalUtilityInfo } from './internal-utility.js';
 import { OAuthProvider } from './oauth.js';
+import { WebhookProviderId, WebhookSetupNeeded } from './webhook.js';
 
 // --- Enums and Core Records ---
 
@@ -16,11 +17,13 @@ export enum UtilityProvider {
     CHARGEBEE = 'chargebee',
     SLACK = 'slack',
 }
-export enum UtilityActionConfirmation {
-    WEBHOOK_URL_INPUTED = 'webhook_url_inputed', // Represents user confirmation of an action
-}
 
 export type PlatformApiKeySecretType = string;
+
+export enum UtilityActionConfirmation {
+    WEBHOOK_URL_INPUTED = 'webhook_url_inputed', // Represents user confirmation of an action
+    OAUTH_DONE = 'oauth_done', // Represents user confirmation of an action
+}
 
 export enum UtilityInputSecret {
     WEBSITE_ID = 'website_id',
@@ -51,14 +54,41 @@ export type JsonSchema = Record<string, any> & {
     // Add other common JSON Schema keywords as needed
 };
 
+// export type SetupNeeded = UtilitySetupNeeded | WebhookSetupNeeded;
+
 export interface SetupNeeded {
     needsSetup: true;
+    utilityProvider: UtilityProvider;
     message: string; // General message
     title: string; // Title for UI prompt
     description: string; // Description for UI prompt
     requiredSecretInputs?: UtilityInputSecret[];     /** List of secret keys requiring user text input */
     requiredActionConfirmations?: UtilityActionConfirmation[];    /** List of secrets representing actions that require user confirmation */
+    // For webhook url to input
+    webhookUrlToInput?: string; // Webhook URL to input in the provider dashboard
+    // For oauth to do
+    oauthUrl?: string; // For OAuth flow initiation
 }
+
+// /**
+//  * Standardized response when setup (OAuth, secrets, actions) is needed.
+//  */
+// export interface UtilitySetupNeeded extends SetupNeededCore {
+//     setupType: 'utility';
+//     utilityProvider: UtilityProvider;
+//     oauthProvider?: OAuthProvider;
+//     buttonText?: string; // Suggested main action button text
+//     requiredOauth?: string; // For OAuth flow initiation
+// }
+// /**
+//  * Standardized response when setup (OAuth, secrets, actions) is needed.
+//  */
+// export interface WebhookSetupNeeded extends SetupNeededCore {
+//     setupType: 'webhook';
+//     webhookProviderId: WebhookProviderId;
+//     webhookUrlToInput?: string; // Webhook URL to input in the provider dashboard
+//   }
+
 
   /**
    * Core request structure
