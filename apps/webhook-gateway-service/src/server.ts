@@ -15,7 +15,7 @@ import morgan from 'morgan';
 import { authWebhookMiddleware } from './middleware/authWebhook.js';
 
 // Import routes
-import setupWebhookRouter from './routes/setupWebhookRoute.js';
+// import setupWebhookRouter from './routes/setupWebhookRoute.js';
 import webhookRoutes from './routes/webhookRoutes.js';
 
 // Load environment variables based on NODE_ENV
@@ -60,7 +60,7 @@ app.get('/health', (req: express.Request, res: express.Response) => {
 });
 
 // Register routes
-app.use('/', setupWebhookRouter);
+// app.use('/', setupWebhookRouter);
 app.use('/', webhookRoutes);
 
 // Default 404 handler

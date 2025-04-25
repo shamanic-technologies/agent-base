@@ -2,7 +2,6 @@
 /**
  * Types for webhook integrations
  */
-import { JsonSchema, SetupNeeded, SetupNeededCore, UtilityActionConfirmation } from "./utility.js";
 import { UtilityProvider, UtilitySecretType } from "./utility.js";
 
 export type WebhookProviderId = UtilityProvider;
@@ -19,6 +18,7 @@ export enum WebhookStatus {
 export interface UserWebhook {
   webhookId: string;
   clientUserId: string;
+  platformUserId: string;
   status: WebhookStatus;
   createdAt?: Date;
 }
@@ -44,25 +44,18 @@ export interface Webhook extends WebhookData {
 
 export type CreateWebhookRequest = WebhookData;
 
-/**
- * Standardized response when setup (OAuth, secrets, actions) is needed.
- */
-export interface WebhookSetupNeeded extends SetupNeededCore {
-  setupType: 'webhook';
-  webhookProviderId: WebhookProviderId;
-  webhookUrlToInput?: string; // Webhook URL to input in the provider dashboard
-}
+
 
 
 export interface WebhookAgentLink {
   webhookId: string;
   clientUserId: string;
+  platformUserId: string;
   agentId: string;
 };
 
 export interface CreateWebhookAgentLinkRequest {
   webhookId: string;
-  clientUserId: string;
   agentId: string;
 };
 
@@ -72,6 +65,7 @@ export interface CreateWebhookAgentLinkRequest {
 export interface WebhookEvent {
   webhookId: string;
   clientUserId: string;
+  platformUserId: string;
   webhookEventPayload: WebhookEventPayload;
   createdAt?: Date;
   updatedAt?: Date;
