@@ -1,4 +1,3 @@
-
 /**
  * Types for webhook integrations
  */
@@ -20,6 +19,7 @@ export interface UserWebhook {
   clientUserId: string;
   platformUserId: string;
   status: WebhookStatus;
+  clientUserIdentificationHash: string; // Hash of identifiers linking webhook event to client user
   createdAt?: Date;
 }
 
@@ -34,7 +34,8 @@ export interface WebhookData {
   webhookProviderId: WebhookProviderId;
   subscribedEventId: string;
   requiredSecrets: UtilitySecretType[];
-  userIdentificationMapping: Record<UtilitySecretType, string>;
+  clientUserIdentificationMapping: Record<UtilitySecretType, string>;
+  conversationIdIdentificationMapping: string;
   eventPayloadSchema: Record<string, unknown>;
 }
 
