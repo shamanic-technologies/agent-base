@@ -19,37 +19,28 @@ import { getDatabaseServiceUrl } from '../utils/config'; // Import the centraliz
 // ==============================================================================
 
 /**
- * Creates a new conversation record.
- * 
- * Corresponds to: POST /conversations/create-conversation
- * 
- * @param data - Input data containing conversationId, agentId, channelId.
- * @param platformUserId - The platform user ID making the request (for headers).
- * @returns A ServiceResponse containing the created/found Conversation object or an error.
+ * Creates a new conversation.
+ * POST /conversations/create-conversation
  */
-export const createConversation = async (
-  data: CreateConversationInput,
-  platformUserId: string,
-  platformApiKey: string,
-  clientUserId: string
-): Promise<ServiceResponse<Conversation>> => {
-  if (!platformUserId) {
-    throw new Error('[api-client:createConversation] platformUserId is required for request header.');
-  }
-  if (!data || !data.conversationId || !data.agentId || !data.channelId) {
-    throw new Error('[api-client:createConversation] Input data must include conversationId, agentId, and channelId.');
-  }
-  const endpoint = '/conversations/create-conversation';
-  return makeInternalAPIServiceRequest<Conversation>(
-    getDatabaseServiceUrl(),
-    'POST',
-    endpoint,
-    platformUserId,
-    clientUserId,
-    platformApiKey,
-    data
+export const createConversationInternalApiService = async (
+  body: CreateConversationInput, // Use shared type
+  clientUserId: string, // Required for header
+  platformUserId: string, // Required for header
+  platformApiKey: string
+): Promise<ServiceResponse<Conversation>> => { // Expect created record
+
+  return makeInternalAPIServiceRequest<Conversation>( // Expect created record
+      getDatabaseServiceUrl(),
+      'POST',
+      '/conversations/create-conversation',
+      platformUserId,
+      clientUserId,
+      platformApiKey,
+      body,      // Pass body
+      undefined // No Query Params
   );
 };
+
 
 /**
  * Gets all conversations associated with a specific agent ID.
@@ -113,7 +104,7 @@ export const getOrCreateConversationsInternalApiService = async (
  * GET /conversations/get-conversation/:conversationId
  */
 export const getConversationByIdInternalApiService = async (
-    params: AgentId,
+    params: ConversationId,
     clientUserId: string, // Required for header
     platformUserId: string, // Required for header
     platformApiKey: string
@@ -122,7 +113,7 @@ export const getConversationByIdInternalApiService = async (
     return makeInternalAPIServiceRequest<Conversation>(
         getDatabaseServiceUrl(),
         'GET',
-        `/conversations/get-conversation/${params.agentId}`,
+        `/conversations/get-conversation/${params.conversationId}`,
         platformUserId,
         clientUserId,
         platformApiKey,
@@ -131,81 +122,7 @@ export const getConversationByIdInternalApiService = async (
     );
 };
 
-/**
- * Updates the messages array for a specific conversation.
- * POST /conversations/update-conversation
- */
-export const updateConversationMessagesInternalApiService = async (
-    body: UpdateConversationInput,
-    clientUserId: string, // Required for header
-    platformUserId: string, // Required for header
-    platformApiKey: string
-): Promise<BaseResponse> => { // Expect BaseResponse (success/error)
 
-    return makeInternalAPIServiceRequest<BaseResponse>( // Specify BaseResponse
-        getDatabaseServiceUrl(),
-        'POST',
-        '/conversations/update-conversation',
-        platformUserId,
-        clientUserId,
-        platformApiKey,
-        body,      // Pass body
-        undefined // No Query Params
-    );
-};
-
-/**
- * Creates a new conversation.
- * POST /conversations/create-conversation
- */
-export const createConversationInternalApiService = async (
-    body: CreateConversationInput, // Use shared type
-    clientUserId: string, // Required for header
-    platformUserId: string, // Required for header
-    platformApiKey: string
-): Promise<ServiceResponse<Conversation>> => { // Expect created record
- 
-    return makeInternalAPIServiceRequest<Conversation>( // Expect created record
-        getDatabaseServiceUrl(),
-        'POST',
-        '/conversations/create-conversation',
-        platformUserId,
-        clientUserId,
-        platformApiKey,
-        body,      // Pass body
-        undefined // No Query Params
-    );
-};
-
-/**
- * Gets a specific conversation by its ID.
- * 
- * Corresponds to: GET /conversations/get-conversation/:conversation_id
- * 
- * @param params - Path parameters containing conversationId.
- * @param platformUserId - The platform user ID making the request (for headers).
- * @returns A ServiceResponse containing the Conversation object or an error.
- */
-export const getConversationInternalApiService = async (
-  params: ConversationId,
-  platformUserId: string,
-  platformApiKey: string,
-  clientUserId: string
-): Promise<ServiceResponse<Conversation>> => {
-  // Construct endpoint with path parameter
-  const endpoint = `/conversations/get-conversation/${params.conversationId}`;
-  console.log(`[api-client:getConversation] Calling endpoint: ${endpoint}`);
-  return makeInternalAPIServiceRequest<Conversation>(
-    getDatabaseServiceUrl(),
-    'GET',
-    endpoint,
-    platformUserId,
-    clientUserId,
-    platformApiKey,
-    undefined, // No Body
-    undefined // No Query Params
-  );
-};
 
 /**
  * Updates the messages array for a specific conversation.
@@ -234,3 +151,6 @@ export const updateConversationInternalApiService = async (
     undefined // No Query Params
   );
 }; 
+
+
+

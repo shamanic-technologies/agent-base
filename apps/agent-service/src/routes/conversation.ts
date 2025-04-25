@@ -10,12 +10,16 @@ import {
     // ConversationRecord,
     // CreateConversationResponse,
     CreateConversationInput,
+    Conversation,
+    ServiceResponse,
+    ConversationId,
     BaseResponse
 } from '@agent-base/types';
 // Import the new service function
 import { 
     getOrCreateConversationsInternalApiService, 
-    createConversationInternalApiService
+    createConversationInternalApiService,
+    getConversationByIdInternalApiService
 } from '@agent-base/api-client';
 
 const router = Router();
@@ -142,6 +146,83 @@ router.post('/create-conversation', async (req: Request, res: Response, next: Ne
                 error: error instanceof Error ? error.message : 'Unknown error creating conversation'
             });
         }
+    }
+});
+
+/**
+ * Get a conversation by ID, or create it if it doesn't exist.
+ * POST /get-or-create-conversation
+ */
+router.post('/get-or-create-conversation', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const { agentId, channelId, conversationId }: CreateConversationInput = req.body;
+        const clientUserId = req.clientUserId as string;
+        const platformUserId = req.platformUserId as string;
+        const platformApiKey = req.headers['x-platform-api-key'] as string;
+
+        // Validate auth details first
+        if (!clientUserId || !platformUserId || !platformApiKey) {
+            console.log(`[Agent Service] Authentication details missing from request headers/context`);
+            res.status(401).json({ success: false, error: 'Authentication details missing from request headers/context' });
+            return;
+        }
+
+        // Validate required parameters
+        if (!agentId) {
+            console.log(`[Agent Service] Attempting to get conversation ${conversationId}`);
+            res.status(400).json({ success: false, error: 'agentId is required in request body' });
+            return;
+        }
+        if (!channelId) {
+            console.log(`[Agent Service] Attempting to get conversation ${conversationId}`);
+            res.status(400).json({ success: false, error: 'channelId is required in request body' });
+            return;
+        }
+        if (!conversationId) {
+            console.log(`[Agent Service] Attempting to get conversation ${conversationId}`);
+            res.status(400).json({ success: false, error: 'conversationId is required in request body' });
+            return;
+        }
+
+        // 1. Try to get the conversation by ID
+        const getResponse : ServiceResponse<Conversation> = await getConversationByIdInternalApiService(
+            { conversationId },
+            clientUserId,
+            platformUserId,
+            platformApiKey
+        );
+
+        if (!getResponse.success) {
+            console.log(`[Agent Service] Conversation ${conversationId} not found.`);
+            res.status(404).json(getResponse);
+            return;
+        }
+        if (!!getResponse.data) {
+            // If data is found, return the found conversation
+            res.status(200).json(getResponse);
+        }
+        // 2. If get failed (assumed not found), try to create it
+        const createResponse = await createConversationInternalApiService(
+            req.body, // Contains agentId, channelId, conversationId
+            clientUserId,
+            platformUserId,
+            platformApiKey
+        );
+        if (!createResponse.success) {
+            console.log(`[Agent Service] Failed to create conversation ${conversationId}: ${createResponse.error}`);
+            res.status(500).json(createResponse);
+            return;
+        }
+
+        // If creation is successful, return the new conversation (status 201 Created)
+        res.status(201).json(createResponse);
+
+    } catch (error) {
+        console.error('[Agent Service] Unexpected error in get-or-create-conversation:', error);
+        res.status(500).json({
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error processing get-or-create conversation'
+        });
     }
 });
 

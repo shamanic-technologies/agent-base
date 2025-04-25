@@ -6,10 +6,11 @@ import {
     Conversation, 
     CreateConversationInput, 
     ConversationId,
+    InternalServiceCredentials,
     ExternalApiServiceCredentials // Import credentials type
 } from '@agent-base/types';
-import { makeExternalAPIServiceRequest } from '../utils/service-client'; // Use the external request helper
-import { getApiGatewayServiceUrl } from '../utils/config'; // Target API Gateway
+import { makeExternalAPIServiceRequest, makeInternalAPIServiceRequest } from '../utils/service-client'; // Use the external request helper
+import { getAgentServiceUrl, getApiGatewayServiceUrl } from '../utils/config'; // Target API Gateway
 
 const API_GATEWAY_URL = getApiGatewayServiceUrl();
 const AGENT_SERVICE_ROUTE_PREFIX = '/agent'; // Assuming API Gateway prefixes agent routes with /agent
@@ -67,3 +68,32 @@ export const createConversationExternalApiService = async (
         undefined // No query params for POST
     );
 };
+
+/**
+ * Creates a new conversation record via the API Gateway.
+ * Corresponds to POST /agent/conversations/create-conversation in API Gateway
+ * 
+ * @param body - The input data for creating the conversation (agentId, channelId, conversationId).
+ * @param internalApiServiceCredentials - Credentials containing platformClientUserId and platformApiKey.
+ * @returns A promise resolving to the ServiceResponse containing the ID of the created conversation.
+ */
+export const getOrCreateConversationInternalApiService = async (
+    body: CreateConversationInput,
+    internalServiceCredentials: InternalServiceCredentials
+): Promise<ServiceResponse<ConversationId>> => {
+    const { platformUserId, clientUserId, platformApiKey } = internalServiceCredentials;
+    const endpoint = `/conversation/get-or-create-conversation`;
+    
+    return makeInternalAPIServiceRequest<ConversationId>( 
+        getAgentServiceUrl(),
+        'POST',
+        endpoint,
+        platformUserId, // Required
+        clientUserId,   // Required
+        platformApiKey, // Required
+        body,
+        undefined,
+        undefined
+    );
+};
+

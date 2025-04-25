@@ -86,3 +86,18 @@ export interface WebhookEventPayload {
   [key: string]: any;
 }
 
+/**
+ * Defines the expected result from resolving webhook identification information.
+ */
+export interface WebhookResolutionResult {
+  platformUserId: string;
+  clientUserId: string;
+  agentId: string;
+  conversationId: string;
+}
+
+export interface WebhookResolutionRequest {
+  webhookProviderId: WebhookProviderId;
+  subscribedEventId: string;
+  payload: WebhookEventPayload;
+}

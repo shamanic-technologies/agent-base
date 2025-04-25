@@ -32,6 +32,7 @@ export * from './utility-tool-client.js';
 
 // Export agent service client functions
 export * from './agent-clients/conversation-client.js';
+export * from './agent-clients/run-client.js';
 
 // Export shared utilities or functions if any
 // export * from './utils';
