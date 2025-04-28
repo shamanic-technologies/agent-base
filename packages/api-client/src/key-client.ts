@@ -42,7 +42,7 @@ export const validatePlatformApiKeySecret = async (
     endpoint: endpoint,
     platformApiKey: platformApiKeySecret.value as string,
   };
-  console.log('platformApiKey', JSON.stringify(input.platformApiKey, null, 2));
+  console.log('platformApiKey in validatePlatformApiKeySecret:', JSON.stringify(input.platformApiKey, null, 2));
   // Use the helper function, passing the key in the body
   return await makePlatformUserValidationRequest<PlatformUserId>(
     input.serviceUrl,
