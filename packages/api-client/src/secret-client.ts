@@ -9,9 +9,9 @@ import {
   SecretExists,
   CheckSecretRequest,
   UserType,
-  ExternalApiServiceCredentials // Import UserType
+  PlatformUserApiServiceCredentials // Import UserType
 } from '@agent-base/types';
-import { makeWebAuthenticatedServiceRequest, makeInternalAPIServiceRequest, makeExternalAPIServiceRequest } from './utils/service-client.js';
+import { makeWebAuthenticatedServiceRequest, makeInternalAPIServiceRequest, makePlatformUserApiServiceRequest } from './utils/service-client.js';
 import { getApiGatewayServiceUrl, getSecretServiceUrl } from './utils/config'; // Import the centralized getter
 
 // Determine the correct URL for the secret-service
@@ -79,11 +79,11 @@ export async function storeSecretInternalApiClient(
  */
 export async function storeSecretExternalApiClient(
   storeSecretRequest: StoreSecretRequest,
-  externalApiServiceCredentials: ExternalApiServiceCredentials,
+  externalApiServiceCredentials: PlatformUserApiServiceCredentials,
 ): Promise<ServiceResponse<string>> {
 
   // Use makeAPIServiceRequest, passing conversationId in data and agentId for header
-  return await makeExternalAPIServiceRequest<string>(
+  return await makePlatformUserApiServiceRequest<string>(
       getApiGatewayServiceUrl(),
       'post',
       'secret/api/secrets', // Endpoint for storing secrets

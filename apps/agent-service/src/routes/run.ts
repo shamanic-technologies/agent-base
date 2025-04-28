@@ -19,7 +19,7 @@ import { Message } from 'ai';
 // Import necessary API client functions - Use versions without ApiClient suffix where available
 import { 
     getAgentFromConversation,
-    getConversationInternalApiService, // Use this instead of getConversationByIdApiClient
+    getConversationByIdInternalApiService, // Use this instead of getConversationByIdApiClient
     updateConversationInternalApiService, // Use this instead of updateConversationMessagesApiClient
 } from '@agent-base/api-client';
 
@@ -132,7 +132,7 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       // --- Get Conversation & History --- 
       let historyMessages: Message[] = [];
       // Use API Client function - getConversation
-      const conversationResponse = await getConversationInternalApiService( // Changed function name
+      const conversationResponse = await getConversationByIdInternalApiService( // Changed function name
         { conversationId }, // Pass params object with conversationId
         platformUserId, // Pass platformUserId for header (assuming order based on getConversation signature)
         platformApiKey, // Pass platformApiKey for header

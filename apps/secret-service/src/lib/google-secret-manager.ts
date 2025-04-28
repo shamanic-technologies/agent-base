@@ -60,7 +60,7 @@ export async function storeSecret(storeSecretRequest: StoreSecretRequest, userId
         const [version] = await client.addSecretVersion({
           parent: secretName,
           payload: {
-            data: Buffer.from(JSON.stringify(secretValue)),
+            data: Buffer.from(secretValue),
           },
         });
 
@@ -86,7 +86,7 @@ export async function storeSecret(storeSecretRequest: StoreSecretRequest, userId
     const [version] = await client.addSecretVersion({
       parent: secretName,
       payload: {
-        data: Buffer.from(JSON.stringify(secretValue)),
+        data: Buffer.from(secretValue),
       },
     });
 
@@ -189,7 +189,7 @@ export async function getSecret(request: GetSecretRequest, userId: string): Prom
         // Decode and parse the secret data
         const payload = version.payload.data.toString();
         try {
-            const parsedValue = JSON.parse(payload);
+            const parsedValue = payload;
              // Wrap the parsed value in the SecretValue structure
             return { success: true, data: { value: parsedValue } };
         } catch (parseError) {

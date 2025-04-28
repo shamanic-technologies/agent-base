@@ -10,7 +10,10 @@ import { UtilityProvider,
   BaseResponse,
   WebhookEventPayload,
   InternalServiceCredentials,
-  CreateConversationInput
+  CreateConversationInput,
+  WebhookResolutionRequest,
+  SecretValue,
+  ServiceResponse
 } from '@agent-base/types';
 
 // Import Message type directly from Vercel AI SDK
@@ -29,7 +32,7 @@ import { nanoid } from 'nanoid';
 const router = Router();
 
 /**
- * @route POST /webhook/:webhookProviderId
+ * @route POST /:webhookProviderId/:subscribedEventId
  * @description Receives webhook payloads, resolves identifiers, and triggers the appropriate agent run.
  *              Assumes authentication/authorization middleware has run and populated platformApiKey,
  *              platformUserId, and potentially a default clientUserId if applicable.
@@ -37,7 +40,7 @@ const router = Router();
  * @param {Response} res - Express response object
  * @param {NextFunction} next - Express next middleware function
  */
-router.post('/webhook/:webhookProviderId/:subscribedEventId', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+router.post('/:webhookProviderId/:subscribedEventId', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     // --- 1. Extract and Validate Input --- 
   const webhookProviderId = req.params.webhookProviderId as WebhookProviderId;
   const subscribedEventId = req.params.subscribedEventId as string;
@@ -53,8 +56,12 @@ router.post('/webhook/:webhookProviderId/:subscribedEventId', async (req: Reques
       return;
     }
     // --- 2. Resolve IDs via Webhook Store --- 
-
-    const resolveResponse = await resolveWebhook(webhookProviderId, subscribedEventId, payload);
+    const webhookResolutionRequest: WebhookResolutionRequest = {
+      webhookProviderId,
+      subscribedEventId,
+      payload
+    };
+    const resolveResponse = await resolveWebhook(webhookResolutionRequest);
 
     if (!resolveResponse.success) {
         console.error(`[Webhook Gateway] Failed to resolve webhook IDs for ${webhookProviderId}:`, resolveResponse.error);
@@ -67,10 +74,11 @@ router.post('/webhook/:webhookProviderId/:subscribedEventId', async (req: Reques
 
     // --- 3. Get or Create Platform API Key for Webhook --- 
 
-    const platformApiKeyResponse = await getOrCreatePlatformApiKeySecretByName({
+    const platformApiKeyResponse: ServiceResponse<SecretValue> = await getOrCreatePlatformApiKeySecretByName({
       platformUserId,
       keyName: 'Webhook'
     });
+    console.log('platformApiKeyResponse', JSON.stringify(platformApiKeyResponse, null, 2));
 
     if (!platformApiKeyResponse.success) {
       console.error(`[Webhook Gateway] Failed to get or create platform API key for user ${platformUserId}:`, platformApiKeyResponse.error);

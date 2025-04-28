@@ -5,7 +5,7 @@
 import { Router } from 'express';
 import { getUserApiKeys } from '../services/dbService.js';
 import { createApiKeyMetadata, getSecretWebClient, storeSecretWebClient } from '@agent-base/api-client';
-import { CreateApiKeyRequest, GetSecretRequest, PlatformApiKeySecretType, SecretValue, ServiceResponse, StoreSecretRequest, UserType, UtilityProvider, UtilitySecretType } from '@agent-base/types';
+import { ApiKey, CreateApiKeyRequest, GetSecretRequest, PlatformApiKeySecretType, SecretValue, ServiceResponse, StoreSecretRequest, UserType, UtilityProvider, UtilitySecretType } from '@agent-base/types';
 import { generateApiKey, getKeyPrefix, hashApiKey } from '../utils/apiKeyUtils.js';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -84,11 +84,18 @@ router.get('/by-name', async (req, res) => {
       // Check if the retrieved key value is valid
       if (platformApiKey) {
 
+        const serviceResponse : ServiceResponse<SecretValue> = {
+          success: true,
+          data: {
+            value: platformApiKey,
+          },
+        };
+
         // Return just the secret value (as raw text, Content-Type will be set automatically)
         // The client expects raw text for 200 OK status
         res.setHeader('Content-Type', 'text/plain'); 
 
-        return res.status(200).json(platformApiKey);
+        return res.status(200).json(serviceResponse);
       } 
     } 
     // Generate new API key
@@ -103,11 +110,11 @@ router.get('/by-name', async (req, res) => {
       hashedKey: hashApiKey(platformApiKey),
     };
 
-    const dbResponse = await createApiKeyMetadata(keyMetadataPayload, platformUserId);
+    const createResponse : ServiceResponse<ApiKey> = await createApiKeyMetadata(keyMetadataPayload, platformUserId);
 
-    if (!dbResponse.success) {
-      console.error('Error creating API key:', dbResponse.error);
-      return res.status(500).json(dbResponse);
+    if (!createResponse.success) {
+      console.error('Error creating API key:', createResponse.error);
+      return res.status(500).json(createResponse);
     }
 
     //In any case store secret
@@ -117,13 +124,18 @@ router.get('/by-name', async (req, res) => {
       secretType: `api_key_${keyId}` as PlatformApiKeySecretType,
       secretValue: platformApiKey,
     };
-    const storeResponse = await storeSecretWebClient(platformUserId, requestData);
+    const storeResponse : ServiceResponse<string> = await storeSecretWebClient(platformUserId, requestData);
     if (!storeResponse.success) {
       console.error('Failed to store secret:', storeResponse.error);
       return storeResponse;
     }
-
-    return res.status(201).json(platformApiKey);
+    const serviceResponse : ServiceResponse<SecretValue> = {
+      success: true,
+      data: {
+        value: platformApiKey,
+      },
+    };
+    return res.status(201).json(serviceResponse);
   
   } catch (error) {
     console.error('Error retrieving or creating API key by name:', error);

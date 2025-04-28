@@ -7,9 +7,9 @@ import {
     CreateConversationInput, 
     ConversationId,
     InternalServiceCredentials,
-    ExternalApiServiceCredentials // Import credentials type
+    PlatformUserApiServiceCredentials // Import credentials type
 } from '@agent-base/types';
-import { makeExternalAPIServiceRequest, makeInternalAPIServiceRequest } from '../utils/service-client'; // Use the external request helper
+import { makePlatformUserApiServiceRequest, makeInternalAPIServiceRequest } from '../utils/service-client'; // Use the external request helper
 import { getAgentServiceUrl, getApiGatewayServiceUrl } from '../utils/config'; // Target API Gateway
 
 const API_GATEWAY_URL = getApiGatewayServiceUrl();
@@ -25,7 +25,7 @@ const AGENT_SERVICE_ROUTE_PREFIX = '/agent'; // Assuming API Gateway prefixes ag
  */
 export const getOrCreateConversationsExternalApiService = async (
     params: { agentId: string }, 
-    externalApiServiceCredentials: ExternalApiServiceCredentials
+    externalApiServiceCredentials: PlatformUserApiServiceCredentials
 ): Promise<ServiceResponse<Conversation[]>> => {
     const { agentId } = params;
     const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/conversation/get-or-create-conversations-from-agent`;
@@ -33,7 +33,7 @@ export const getOrCreateConversationsExternalApiService = async (
 
     console.log(`[API Client] Calling API Gateway: GET ${API_GATEWAY_URL}${endpoint}`);
 
-    return makeExternalAPIServiceRequest<Conversation[]>( 
+    return makePlatformUserApiServiceRequest<Conversation[]>( 
         API_GATEWAY_URL,
         'GET',
         endpoint,
@@ -53,13 +53,10 @@ export const getOrCreateConversationsExternalApiService = async (
  */
 export const createConversationExternalApiService = async (
     body: CreateConversationInput,
-    externalApiServiceCredentials: ExternalApiServiceCredentials
+    externalApiServiceCredentials: PlatformUserApiServiceCredentials
 ): Promise<ServiceResponse<ConversationId>> => {
-    const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/conversation/create-conversation`;
-
-    console.log(`[API Client] Calling API Gateway: POST ${API_GATEWAY_URL}${endpoint}`);
-    
-    return makeExternalAPIServiceRequest<ConversationId>( 
+    const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/conversation/create-conversation`;    
+    return makePlatformUserApiServiceRequest<ConversationId>( 
         API_GATEWAY_URL,
         'POST',
         endpoint,

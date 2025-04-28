@@ -11,9 +11,6 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 
-// Import middleware
-import { authWebhookMiddleware } from './middleware/authWebhook.js';
-
 // Import routes
 // import setupWebhookRouter from './routes/setupWebhookRoute.js';
 import webhookRoutes from './routes/webhookRoutes.js';
@@ -44,9 +41,6 @@ app.use(express.json());
 app.use(helmet({ contentSecurityPolicy: false })); // Disable CSP for webhook endpoints
 app.use(morgan('dev'));
 
-// Apply webhook authentication/authorization middleware
-// This middleware internally checks paths and only acts on relevant webhook routes
-app.use(authWebhookMiddleware);
 
 // Health check endpoint
 app.get('/health', (req: express.Request, res: express.Response) => {
