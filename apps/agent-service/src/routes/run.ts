@@ -44,7 +44,7 @@ import {
   createSearchWebhooksTool,
   createLinkUserToWebhookTool,
   createLinkAgentToWebhookTool 
-} from '../lib/utility/webhook/index.js';
+} from '../lib/utility/webhook-tools/index.js';
 
 const runRouter = Router(); // Use a specific router for this file
 
