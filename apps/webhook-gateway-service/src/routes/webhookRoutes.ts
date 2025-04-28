@@ -114,12 +114,14 @@ router.post('/:webhookProviderId/:subscribedEventId', async (req: Request, res: 
     }
     
     // --- 5. Prepare and Trigger Agent Run --- 
+    const messageContent = 'You received this webhook event:\n```json\n' + JSON.stringify(payload, null, 2) + '\n```';
+
 
     // Construct the message payload for the agent
     const webhookMessage: Message = {
         id: nanoid(), // Generate a unique message ID
         role: 'user', 
-        content: JSON.stringify(payload, null, 2),
+        content: messageContent,
         createdAt: new Date(),
     };
 
