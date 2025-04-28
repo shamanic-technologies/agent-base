@@ -187,13 +187,11 @@ router.get('/get-conversation/:conversationId', (async (req: Request, res: Respo
     const getResponse = await getConversation(conversationId);
 
     if (!getResponse.success) {
-      const statusCode = getResponse.error?.toLowerCase().includes('not found') ? 404 : 500;
       console.error(`[DB Route /conversations] Service error getting conversation ${conversationId}:`, getResponse.error);
-      return res.status(statusCode).json(getResponse);
+      return res.status(500).json(getResponse);
     }
 
     // Success case
-    console.log(`[DB Route /conversations] Successfully retrieved conversation ${conversationId}`);
     res.status(200).json(getResponse);
     return;
 

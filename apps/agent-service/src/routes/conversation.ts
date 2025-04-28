@@ -200,6 +200,7 @@ router.post('/get-or-create-conversation', async (req: Request, res: Response, n
         if (!!getResponse.data) {
             // If data is found, return the found conversation
             res.status(200).json(getResponse);
+            return;
         }
         // 2. If get failed (assumed not found), try to create it
         const createResponse = await createConversationInternalApiService(

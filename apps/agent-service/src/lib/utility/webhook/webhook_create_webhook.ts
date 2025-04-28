@@ -26,14 +26,14 @@ import { createWebhook as createWebhookApiClient } from '@agent-base/api-client'
 
 // Zod schema for the WebhookData input, derived from openapi.json
 const webhookDataSchema = z.object({
-  name: z.string().describe('Human-readable name for the webhook (e.g., \'Gmail Handler\').'),
-  description: z.string().describe('Description of what the webhook does (e.g., \'Processes new emails\').'),
-  webhookProviderId: z.nativeEnum(UtilityProvider).describe('Identifier for the provider (e.g., GMAIL).'),
-  subscribedEventId: z.string().describe('Provider-specific event ID (e.g., \'new_email\').'),
-  // Ensure UtilityInputSecret includes action confirmations if needed, or adjust type
-  requiredSecrets: z.array(z.union([z.nativeEnum(UtilityInputSecret), z.string()])).describe('List of secret types needed (e.g., [\"GMAIL_API_CREDENTIALS\", \"action_confirmation\"]).'), 
-  userIdentificationMapping: z.record(z.string()).describe('Mapping of required secret types to user identification field names within the payload schema (e.g., { \"GMAIL_API_CREDENTIALS\": \"userId\", \"action_confirmation\": \"WEBHOOK_URL_INPUTED\" }).'),
-  eventPayloadSchema: z.record(z.any()).describe('JSON schema object defining the expected payload for this webhook event.') // Using z.any() for simplicity
+  name: z.string().describe('Human-readable name for the webhook (e.g., "gmail handler").'),
+  description: z.string().describe('Description of what the webhook does (e.g., "Processes new emails").'),
+  webhookProviderId: z.nativeEnum(UtilityProvider).describe('Identifier for the provider (e.g., "gmail").'),
+  subscribedEventId: z.string().describe('Provider-specific event ID (e.g., "new_email").'),
+  eventPayloadSchema: z.record(z.any()).describe('JSON schema object defining the expected structure and properties of the incoming webhook payload for this event.'),
+  requiredSecrets: z.array(z.union([z.nativeEnum(UtilityInputSecret), z.string()])).describe('List of secret types the system needs to look up to identify the user associated with this webhook (e.g., ["api_client_id", "website_id"]). Every key in `clientUserIdentificationMapping` must be included here.'), 
+  clientUserIdentificationMapping: z.record(z.string()).describe('An object mapping keys from `requiredSecrets` to their corresponding **dot-notation paths** within the `eventPayloadSchema`. This tells the system where to find user-identifying values in the incoming webhook payload. Example: If `requiredSecrets` contains `\'user_email\'`, and the email is located at `payload.data.user.email`, the mapping would be `{ \"user_email\": \"data.user.email\" }`. Ensure every key here exists in `requiredSecrets` and every value (path) points to a valid location within the `eventPayloadSchema`.'),
+  conversationIdIdentificationMapping: z.string().describe('A **dot-notation path** string indicating where to find the conversation identifier within the `eventPayloadSchema`. Example: If the conversation ID is in `payload.sessionDetails.conversationId`, provide `\'sessionDetails.conversationId\'`. Ensure this path points to a valid location within the `eventPayloadSchema`.')
 }).describe('Data required to create a new webhook definition.');
 
 

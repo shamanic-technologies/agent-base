@@ -7,7 +7,6 @@ import {
   ApiKey,
   SecretValue,
   PlatformUserId,
-  PlatformAPIKeySecret,
   GetApiKeyByIdRequest,
   GetApiKeyByNameRequest
 } from '@agent-base/types';
@@ -15,14 +14,11 @@ import {
 // Import the shared request helpers
 import { 
   makeWebAuthenticatedServiceRequest, 
-  makeWebAnonymousServiceRequest,
   makePlatformUserValidationRequest
 } from './utils/service-client.js';
+
 import { getKeyServiceUrl } from './utils/config'; // Import the centralized getter
 import { Method } from 'axios';
-
-
-
 
 // --- Endpoint Client Functions --- //
 
@@ -36,7 +32,7 @@ import { Method } from 'axios';
  * @returns A promise resolving to ServiceResponse<PlatformUserId>.
  */
 export const validatePlatformApiKeySecret = async (
-  platformApiKeySecret: PlatformAPIKeySecret
+  platformApiKeySecret: SecretValue
 ): Promise<ServiceResponse<PlatformUserId>> => {
 
   const endpoint = '/validate'; // Endpoint path
@@ -44,8 +40,9 @@ export const validatePlatformApiKeySecret = async (
     serviceUrl: getKeyServiceUrl(),
     method: 'post',
     endpoint: endpoint,
-    platformApiKey: platformApiKeySecret.platformAPIKeySecret,
+    platformApiKey: platformApiKeySecret.value as string,
   };
+  console.log('platformApiKey', JSON.stringify(input.platformApiKey, null, 2));
   // Use the helper function, passing the key in the body
   return await makePlatformUserValidationRequest<PlatformUserId>(
     input.serviceUrl,

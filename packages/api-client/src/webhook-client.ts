@@ -15,7 +15,7 @@ import {
     WebhookResolutionResult,
     WebhookResolutionRequest
 } from '@agent-base/types';
-import { makeInternalAPIServiceRequest } from './utils/service-client.js';
+import { makeExternalApiServiceRequest, makeInternalAPIServiceRequest } from './utils/service-client.js';
 import { getWebhookStoreServiceUrl } from './utils/config.js';
 
 // --- Define specific credential types needed by this client ---
@@ -40,7 +40,7 @@ export async function createWebhook(
     return makeInternalAPIServiceRequest<Webhook>(
         getWebhookStoreServiceUrl(),
         'POST' as Method,
-        '/webhooks',
+        '/',
         platformUserId, 
         clientUserId, 
         platformApiKey,
@@ -66,7 +66,7 @@ export async function searchWebhooks(
     return makeInternalAPIServiceRequest<Webhook[]>(
         getWebhookStoreServiceUrl(),
         'POST' as Method,
-        '/webhooks/search',
+        '/search',
         platformUserId,
         clientUserId,
         platformApiKey,
@@ -91,7 +91,7 @@ export async function linkUserToWebhook(
     return makeInternalAPIServiceRequest<UserWebhook | SetupNeeded>(
         getWebhookStoreServiceUrl(),
         'POST' as Method,
-        `/webhooks/${webhookId}/link-user`,
+        `/${webhookId}/link-user`,
         platformUserId,
         clientUserId,
         platformApiKey,
@@ -118,7 +118,7 @@ export async function linkAgentToWebhook(
     return makeInternalAPIServiceRequest<WebhookAgentLink>(
         getWebhookStoreServiceUrl(),
         'POST' as Method,
-        `/webhooks/${webhookId}/link-agent`,
+        `/${webhookId}/link-agent`,
         platformUserId,
         clientUserId,
         platformApiKey,
@@ -136,20 +136,13 @@ export async function linkAgentToWebhook(
  * @returns ServiceResponse containing the WebhookResolutionResult or an error.
  */
 export async function resolveWebhook(
-    webhookResolutionRequest: WebhookResolutionRequest,
-    internalServiceCredentials: InternalServiceCredentials
+    webhookResolutionRequest: WebhookResolutionRequest
 ): Promise<ServiceResponse<WebhookResolutionResult>> {
-    // Extract credentials needed for the internal request helper, even if not used by endpoint
-    const { platformUserId, clientUserId, platformApiKey, agentId: credentialsAgentId } = internalServiceCredentials;
-    return makeInternalAPIServiceRequest<WebhookResolutionResult>(
+    return makeExternalApiServiceRequest<WebhookResolutionResult>(
         getWebhookStoreServiceUrl(),
         'POST' as Method,
         '/resolve', // Assuming this is the correct path
-        platformUserId, // Required by helper, might not be used by endpoint
-        clientUserId, // Required by helper, might not be used by endpoint
-        platformApiKey, // Required by helper, might not be used by endpoint
         webhookResolutionRequest, // Request body
         undefined, // params
-        credentialsAgentId // Required by helper, might not be used by endpoint
     );
 } 

@@ -10,7 +10,7 @@ import {
   validatePlatformApiKeySecret, 
   upsertClientUserApiClient,
 } from '@agent-base/api-client'; 
-import { ServiceResponse, ClientUser, PlatformUserId, PlatformAPIKeySecret } from '@agent-base/types';
+import { ServiceResponse, ClientUser, PlatformUserId, SecretValue } from '@agent-base/types';
 import { apiCache } from '../utils/api-cache.js'; // Import the API cache
 
 /**
@@ -39,9 +39,10 @@ export const authMiddleware = () => {
 
       if (!platformUserId) {
 
-        const platformApiKeySecret: PlatformAPIKeySecret = {
-          platformAPIKeySecret: platformApiKey
+        const platformApiKeySecret: SecretValue = {
+          value: platformApiKey
         };
+        console.log('platformApiKeySecret in authMiddleware:', JSON.stringify(platformApiKeySecret, null, 2));
         // Define the expected success data shape locally if not exported correctly
         const validationResponse: ServiceResponse<PlatformUserId> = await validatePlatformApiKeySecret(platformApiKeySecret);
 

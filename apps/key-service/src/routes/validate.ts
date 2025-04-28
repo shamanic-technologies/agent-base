@@ -16,6 +16,7 @@ router.post('/', async (req, res) => {
   try {
     // Extract API key from the request headers
     const platformApiKey = req.headers['x-platform-api-key'];
+    console.log('platformApiKey', JSON.stringify(platformApiKey, null, 2));
 
     // Validate the key structure/presence
     if (!platformApiKey || typeof platformApiKey !== 'string') {

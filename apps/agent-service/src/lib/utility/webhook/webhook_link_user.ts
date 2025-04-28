@@ -16,15 +16,15 @@ import {
   ServiceResponse, 
   AgentServiceCredentials, 
   UserWebhook, // Use this type now
-  WebhookSetupNeeded, // Use this type now
-  InternalServiceCredentials // Import this
+  InternalServiceCredentials, // Import this
+  SetupNeeded
 } from '@agent-base/types';
 
 // Import the new manual API client function
 import { linkUserToWebhook as linkUserToWebhookApiClient } from '@agent-base/api-client'; // Use aliased import
 
 // Define the expected success data type
-type LinkUserSuccessData = UserWebhook | WebhookSetupNeeded;
+type LinkUserSuccessData = UserWebhook | SetupNeeded;
 
 /**
  * Creates the link user to webhook tool with the given credentials.

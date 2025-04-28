@@ -120,7 +120,7 @@ export async function updateConversationMessages(
  */
 export async function getConversation(
   conversationId: string
-): Promise<ServiceResponse<Conversation>> {
+): Promise<ServiceResponse<Conversation | null>> {
   console.log(`[DB Service] Getting conversation: ${conversationId}`);
 
   const query = `
@@ -147,7 +147,7 @@ export async function getConversation(
       };
     } else {
       console.error(`[DB Service] Conversation ${conversationId} not found.`);
-      return { success: false, error: 'Conversation not found' };
+      return { success: true, data: null };
     }
   } catch (error) {
     console.error(`[DB Service] Error getting conversation ${conversationId}:`, error);
