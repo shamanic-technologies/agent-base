@@ -7,23 +7,29 @@
 import { registry } from './registry/registry.js';
 
 // Import all utilities to ensure they register themselves
-import './internal/api-utilities/database/get-database.js';
-import './internal/api-utilities/database/create-table.js';
-import './internal/api-utilities/database/get-table.js';
-import './internal/api-utilities/database/query-table.js';
-import './internal/api-utilities/database/alter-table.js';
-import './internal/api-utilities/database/delete-table.js';
+import './internal/basic-utilities/database/get-database.js';
+import './internal/basic-utilities/database/create-table.js';
+import './internal/basic-utilities/database/get-table.js';
+import './internal/basic-utilities/database/query-table.js';
+import './internal/basic-utilities/database/alter-table.js';
+import './internal/basic-utilities/database/delete-table.js';
 
-import './internal/api-utilities/google/search.js';
-import './internal/api-utilities/google/maps.js';
-import './internal/api-utilities/google/flights.js';
+import './internal/basic-utilities/google/search.js';
+import './internal/basic-utilities/google/maps.js';
+import './internal/basic-utilities/google/flights.js';
 
-import './internal/api-utilities/web/read-webpage.js';
+import './internal/basic-utilities/web/read-webpage.js';
 
 import './internal/basic-utilities/get-current-datetime.js';
 
 // Import internal utility for managing external tools
-import './internal/internal-utilities/create-external-tool.js';
+import './internal/api-utilities/create-external-tool.js';
+
+// Import internal webhook utilities
+import './internal/webhook-utilities/webhook_create_webhook.js';
+import './internal/webhook-utilities/webhook_search_webhooks.js';
+import './internal/webhook-utilities/webhook_link_user.js';
+import './internal/webhook-utilities/webhook_link_agent.js';
 
 // Re-export everything from the registry
 export * from './registry/registry.js';

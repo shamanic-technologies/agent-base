@@ -42,3 +42,6 @@ export * from './agent-clients/run-client.js';
 
 // Export the new manual webhook client
 export * from './webhook-client.js';
+
+// Export tool creators
+export * from './tools/tool-creators.js';

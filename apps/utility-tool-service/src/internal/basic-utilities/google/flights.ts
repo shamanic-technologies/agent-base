@@ -86,68 +86,56 @@ const googleFlightsUtility: InternalUtilityTool = {
   id: 'utility_google_flights',
   description: 'Search for flights using Google Flights (via SerpAPI) to find routes, prices, and travel options.',
   schema: {
-    origin: { 
-      jsonSchema: {
+    type: 'object',
+    properties: {
+      origin: { 
         type: 'string',
         description: 'Origin airport code or city (e.g., "NYC", "New York", "JFK")',
         examples: ['JFK', 'London']
-      } satisfies JsonSchema,
-    },
-    destination: { 
-      jsonSchema: {
+      },
+      destination: { 
         type: 'string',
         description: 'Destination airport code or city (e.g., "LAX", "Tokyo", "CDG")',
         examples: ['LAX', 'Paris']
-      } satisfies JsonSchema,
-    },
-    departure_date: { 
-      jsonSchema: {
+      },
+      departure_date: { 
         type: 'string',
         description: 'Departure date in YYYY-MM-DD format.',
         pattern: '^\\d{4}-\\d{2}-\\d{2}$',
         examples: ['2024-12-20']
-      } satisfies JsonSchema,
-    },
-    return_date: { 
-      jsonSchema: {
+      },
+      return_date: { 
         type: 'string',
         description: 'Return date in YYYY-MM-DD format for round trips.',
         pattern: '^\\d{4}-\\d{2}-\\d{2}$',
         examples: ['2025-01-05']
-      } satisfies JsonSchema,
-    },
-    adults: { 
-      jsonSchema: {
+      },
+      adults: { 
         type: 'integer',
         description: 'Number of adult passengers (default: 1).',
         minimum: 1,
         examples: [1, 2]
-      } satisfies JsonSchema,
-    },
-    children: { 
-      jsonSchema: {
+      },
+      children: { 
         type: 'integer',
         description: 'Number of child passengers (default: 0).',
         minimum: 0,
         examples: [0, 1]
-      } satisfies JsonSchema,
-    },
-    infants: { 
-      jsonSchema: {
+      },
+      infants: { 
         type: 'integer',
         description: 'Number of infant passengers (default: 0).',
         minimum: 0,
         examples: [0]
-      } satisfies JsonSchema,
-    },
-    cabin_class: { 
-      jsonSchema: {
+      },
+      cabin_class: { 
         type: 'string',
         description: 'Cabin class preference.',
         enum: cabinClasses,
         examples: ['economy', 'business']
-      } satisfies JsonSchema,
-    }
+      }
+    },
+    required: ['origin', 'destination', 'departure_date']
   },
   
   execute: async (clientUserId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: GoogleFlightsRequest): Promise<GoogleFlightsResponse> => {

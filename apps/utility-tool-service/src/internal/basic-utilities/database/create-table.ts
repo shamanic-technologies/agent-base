@@ -21,7 +21,7 @@ import {
 export interface CreateTableRequest {
   name: string;
   description: string;
-  schema: clientUserIdentificationMapping<string, string>; // Key: col name, Value: col type
+  schema: Record<string, string>; // Key: col name, Value: col type. Changed from clientUserIdentificationMapping
 }
 
 // Define valid Xata column types for schema validation
@@ -39,7 +39,7 @@ interface CreateTableSuccessResponse {
       id: string;
       name: string;
       description: string;
-      schema: clientUserIdentificationMapping<string, string>;
+      schema: Record<string, string>; // Changed from clientUserIdentificationMapping
       created_at: string;
     }
   }
@@ -56,22 +56,24 @@ const createTableUtility: InternalUtilityTool = {
   id: 'utility_create_table',
   description: "Create a new table in the user's dedicated database (via Xata API).",
   schema: {
-    name: { 
-      jsonSchema: {
+    type: 'object', // Added
+    properties: { // Added
+      name: { 
+        // Removed jsonSchema: { 
         type: 'string',
         description: 'The name of the table to create (alphanumeric, underscores allowed).',
         examples: ['users', 'product_catalog']
-      } satisfies JsonSchema,
-    },
-    description: { 
-      jsonSchema: {
+        // Removed } satisfies JsonSchema 
+      },
+      description: { 
+        // Removed jsonSchema: { 
         type: 'string',
         description: "A brief description of the table's purpose.",
         examples: ['Stores user profile information.']
-      } satisfies JsonSchema,
-    },
-    schema: { 
-      jsonSchema: {
+        // Removed } satisfies JsonSchema 
+      },
+      schema: { 
+        // Removed jsonSchema: { 
         type: 'object',
         description: 'The schema definition: keys are column names, values are Xata data types.',
         additionalProperties: { 
@@ -84,8 +86,10 @@ const createTableUtility: InternalUtilityTool = {
           "age": "int",
           "is_active": "bool"
         }]
-      } satisfies JsonSchema,
-    }
+        // Removed } satisfies JsonSchema 
+      }
+    }, // Added closing brace for properties
+    required: ['name', 'description', 'schema'] // Added required fields
   },
   
   execute: async (clientUserId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: CreateTableRequest): Promise<CreateTableResponse> => {

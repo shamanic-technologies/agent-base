@@ -44,24 +44,22 @@ const readWebPage: InternalUtilityTool = {
   id: 'utility_read_webpage',
   description: 'Read the content of a webpage using Firecrawl API',
   schema: {
-    url: { 
-      jsonSchema: {
+    type: 'object',
+    properties: {
+      url: { 
         type: 'string',
         description: 'The URL to fetch content from (must include http:// or https://)',
-        format: 'uri', // JSON Schema format for URL
-        examples: ['https://example.com', 'http://blog.example.com/article'] // Move examples inside
-      } satisfies JsonSchema,
-      // examples: ['https://example.com', 'http://blog.example.com/article'] // Remove from here
-    },
-    onlyMainContent: { 
-      jsonSchema: {
+        format: 'uri',
+        examples: ['https://example.com', 'http://blog.example.com/article']
+      },
+      onlyMainContent: { 
         type: 'boolean',
         description: 'Whether to extract only the main content without navigation, headers, footers, etc. (default: true)',
         default: true,
-        examples: [true, false] // Move examples inside
-      } satisfies JsonSchema,
-      // examples: [true, false] // Remove from here
-    }
+        examples: [true, false]
+      }
+    },
+    required: ['url']
   },
   
   execute: async (clientUserId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: FireCrawlExtractContentRequest): Promise<ReadWebPageResponse> => {

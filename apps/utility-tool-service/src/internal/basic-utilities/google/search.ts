@@ -50,22 +50,22 @@ const googleSearchUtility: InternalUtilityTool = {
   id: 'utility_google_search',
   description: 'Search the web using Google Search API (via SerpAPI) to find up-to-date information',
   schema: {
-    query: { 
-      jsonSchema: {
+    type: 'object',
+    properties: {
+      query: {
         type: 'string',
         description: 'The search query to send to Google Search.',
         examples: ['latest AI news', 'weather in London']
-      } satisfies JsonSchema,
-    },
-    limit: { 
-      jsonSchema: {
-        type: 'integer', // Zod .number().int()
+      },
+      limit: {
+        type: 'integer',
         description: 'Maximum number of results to return (default: 5, max: 10).',
         minimum: 1,
         maximum: 10,
         examples: [5, 10]
-      } satisfies JsonSchema,
-    }
+      }
+    },
+    required: ['query']
   },
   
   execute: async (clientUserId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: GoogleSearchRequest): Promise<GoogleSearchResponse> => {

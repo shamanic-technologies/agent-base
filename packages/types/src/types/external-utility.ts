@@ -1,5 +1,4 @@
 import {
-    JsonSchema,
     SetupNeeded,
 
  } from "./utility.js";
@@ -98,8 +97,6 @@ export interface ExternalUtilityInfo extends InternalUtilityInfo {
         baseUrl: string;           // Base URL (e.g., 'https://api.stripe.com/v1')
         pathTemplate: string;      // Path with {placeholders} (e.g., '/customers/{customerId}')
     };
-    // Re-declare schema here to ensure the override uses the updated UtilityToolParamSchema
-    schema: Record<string, JsonSchema>; 
 };
 
 

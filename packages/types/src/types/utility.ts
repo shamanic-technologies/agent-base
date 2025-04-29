@@ -40,18 +40,6 @@ export interface UtilityToolCredentials extends AgentServiceCredentials {
     conversationId: string;
   }
 
-// Update UtilityToolParamSchema to represent a JSON Schema object
-// Using a basic type for now, can be refined with more specific JSON Schema types if needed
-export type JsonSchema = Record<string, any> & { 
-    type?: string | string[];
-    properties?: Record<string, JsonSchema>;
-    items?: JsonSchema | JsonSchema[];
-    required?: string[];
-    description?: string;
-    examples?: any[];
-    // Add other common JSON Schema keywords as needed
-};
-
 // export type SetupNeeded = UtilitySetupNeeded | WebhookSetupNeeded;
 
 export interface SetupNeeded {

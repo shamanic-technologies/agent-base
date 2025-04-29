@@ -59,37 +59,28 @@ type GoogleMapsResponse = GoogleMapsSuccessResponse | ErrorResponse;
 const googleMapsUtility: InternalUtilityTool = {
   id: 'utility_google_maps',
   description: 'Search for locations, businesses, and places using Google Maps (via SerpAPI).',
-  // Update schema to use jsonSchema with examples inside
   schema: {
-    query: { // Parameter name
-      jsonSchema: {
+    type: 'object',
+    properties: {
+      query: {
         type: 'string',
         description: 'The search query for places/locations (e.g., "pizza", "coffee shops near Eiffel Tower")',
-        examples: ['coffee shops', 'Eiffel Tower'] // Move examples inside
-      } satisfies JsonSchema, // Add satisfies for type checking
-      // Not optional - required status handled by execute logic
-      // examples: ['coffee shops', 'Eiffel Tower'] // Remove from here
-    },
-    location: { // Parameter name
-      jsonSchema: {
+        examples: ['coffee shops', 'Eiffel Tower']
+      },
+      location: {
         type: 'string',
         description: 'Optional specific location context to search within (e.g., "New York, NY", "Paris, France")',
-        examples: ['San Francisco, CA'] // Move examples inside
-      } satisfies JsonSchema, // Add satisfies for type checking
-      // Optional - handled by execute logic
-      // examples: ['San Francisco, CA'] // Remove from here
-    },
-    limit: { // Parameter name
-      jsonSchema: {
-        type: 'integer', // Use 'integer' for whole numbers
+        examples: ['San Francisco, CA']
+      },
+      limit: {
+        type: 'integer',
         description: 'Maximum number of results to return (default: 5, max: 20).',
-        minimum: 1, // Zod .min(1)
-        maximum: 20, // Zod .max(20)
-        examples: [5, 10] // Move examples inside
-      } satisfies JsonSchema, // Add satisfies for type checking
-      // Optional - handled by execute logic / default value
-      // examples: [5, 10] // Remove from here
-    }
+        minimum: 1,
+        maximum: 20,
+        examples: [5, 10]
+      }
+    },
+    required: ['query']
   },
   
   execute: async (clientUserId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: GoogleMapsRequest): Promise<GoogleMapsResponse> => {

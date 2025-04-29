@@ -24,13 +24,14 @@ const getCurrentDateTimeUtility: InternalUtilityTool = {
   id: 'utility_get_current_datetime',
   description: 'Get current date and time in various formats',
   schema: {
-    format: { 
-      jsonSchema: {
+    type: 'object',
+    properties: {
+      format: { 
         type: 'string',
         description: 'Optional date format. Can be ISO, UTC, Locale, Date, Time, Unix/Timestamp, or a custom format string like YYYY-MM-DD HH:mm:ss',
-        default: 'ISO', // Add default here if desired
-        examples: ['ISO', 'UTC', 'YYYY-MM-DD', 'HH:mm'] // Move examples inside
-      } satisfies JsonSchema,
+        default: 'ISO',
+        examples: ['ISO', 'UTC', 'YYYY-MM-DD', 'HH:mm']
+      }
     }
   },
   

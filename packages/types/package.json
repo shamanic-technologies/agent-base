@@ -1,6 +1,6 @@
 {
   "name": "@agent-base/types",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "description": "Shared agent types and utilities",
   "type": "module",
   "main": "dist/index.js",
@@ -14,6 +14,7 @@
     "axios": "^1.8.4"
   },
   "devDependencies": {
+    "@types/json-schema": "^7.0.15",
     "typescript": "^5.0.4"
   }
 }

@@ -15,6 +15,8 @@ async function _makeServiceRequest<T>(
 ): Promise<ServiceResponse<T>> {
   try {
     const response = await axios.request<ServiceResponse<T>>(config);
+    console.log(`🟢✨${logContext} Service request response to ${fullUrl}:`, response);
+
 
     // Check if the response looks like a standard ServiceResponse
     if (typeof response.data === 'object' && response.data !== null && 'success' in response.data) {
@@ -25,12 +27,15 @@ async function _makeServiceRequest<T>(
        return { success: true, data: response.data as T };
     }
   } catch (error) {
-    console.error(`${logContext} Service request error to ${fullUrl}:`, error);
+    console.error(`🟢✨${logContext} Service request error to ${fullUrl}:`, error);
     
     if (axios.isAxiosError(error)) {
       const status = error.response?.status || 'unknown';
       const responseData = error.response?.data;
-      const specificError = responseData?.error || error.message; // Prefer specific error from response body
+      
+      console.log(`${logContext} Raw error response data received:`, JSON.stringify(responseData)); 
+      
+      const specificError = responseData?.error || error.message; // Prefers error field from body
       console.error(`${logContext} Axios error details: Status=${status}, Response=${JSON.stringify(responseData)}`);
       
       // Include details if they exist in the response data

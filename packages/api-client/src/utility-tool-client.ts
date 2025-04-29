@@ -35,7 +35,6 @@ export async function callUtilityFromAgent(
 ): Promise<ServiceResponse<ExecuteToolResult>> {
     const { clientUserId, platformUserId, platformApiKey, agentId } = agentServiceCredentials;
     const endpoint = `utility-tool/call-tool/${utilityId}`;
-    console.log(`[ApiGatewayClient] Calling utility ${utilityId} via gateway: POST ${endpoint}`);
 
     // Use makeAPIServiceRequest, passing conversationId in data and agentId for header
     return await makeInternalAPIServiceRequest<ExecuteToolResult>(

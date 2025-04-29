@@ -241,7 +241,10 @@ async function getUserDatabase(userId: string): Promise<GetDatabaseSuccessRespon
 const getDatabaseUtility: InternalUtilityTool = {
   id: 'utility_get_database',
   description: 'Get information about the user\'s dedicated database, including tables and schemas. If no database exists for the user, one will be created.',
-  schema: {},
+  schema: {
+    type: 'object',
+    properties: {}
+  },
   
   execute: async (userId: string, conversationId: string): Promise<GetDatabaseResponse> => {
     const logPrefix = '📊 [DB_GET_DATABASE]';
