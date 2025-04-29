@@ -1,5 +1,5 @@
 import { ServiceResponse } from "./common.js";
-import { JsonSchema } from "./utility.js";
+import type { JSONSchema7 } from 'json-schema'; // Import JSONSchema7
 
 /**
    * Standard interface for all utility tools in the system
@@ -7,7 +7,7 @@ import { JsonSchema } from "./utility.js";
 export interface InternalUtilityTool {
     id: string;   /** Unique identifier for the utility */
     description: string;  /** Human-readable description of what the utility does */
-    schema: Record<string, JsonSchema>; // Schema defining the input parameters for the utility
+    schema: JSONSchema7; // Schema defining the input parameters for the utility
     /**
      * The execution function for the utility
      * @param clientUserId ID of the user making the request
@@ -33,6 +33,6 @@ export interface InternalUtilityTool {
   export interface InternalUtilityInfo {
     id: string;
     description: string;
-    schema: Record<string, JsonSchema>;
+    schema: JSONSchema7;
   };
 

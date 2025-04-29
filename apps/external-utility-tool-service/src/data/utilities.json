@@ -1,1 +1,444 @@
-[]
+[
+  {
+    "id": "stripe_list_refunds",
+    "utilityProvider": "stripe",
+    "description": "Lists refunds from a Stripe account, with optional filtering parameters.",
+    "schema": {
+      "properties": {
+        "limit": {
+          "type": "number",
+          "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100, and the default is 10.",
+          "examples": [
+            10,
+            25
+          ]
+        },
+        "starting_after": {
+          "type": "string",
+          "description": "A cursor for use in pagination. starting_after is an object ID that defines your place in the list.",
+          "examples": [
+            "re_1234567890"
+          ]
+        },
+        "ending_before": {
+          "type": "string",
+          "description": "A cursor for use in pagination. ending_before is an object ID that defines your place in the list.",
+          "examples": [
+            "re_1234567890"
+          ]
+        },
+        "charge": {
+          "type": "string",
+          "description": "Only return refunds for the charge specified by this charge ID.",
+          "examples": [
+            "ch_1234567890"
+          ]
+        },
+        "payment_intent": {
+          "type": "string",
+          "description": "Only return refunds for the payment intent specified by this payment intent ID.",
+          "examples": [
+            "pi_1234567890"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "authMethod": "API_KEY",
+    "requiredSecrets": [
+      "api_secret_key"
+    ],
+    "apiKeyDetails": {
+      "secretName": "api_secret_key",
+      "scheme": "Bearer"
+    },
+    "apiDetails": {
+      "baseUrl": "https://api.stripe.com/v1",
+      "method": "GET",
+      "pathTemplate": "/refunds",
+      "paramMappings": {
+        "query": {
+          "limit": "limit",
+          "starting_after": "starting_after",
+          "ending_before": "ending_before",
+          "charge": "charge",
+          "payment_intent": "payment_intent"
+        }
+      },
+      "staticHeaders": {
+        "Content-Type": "application/x-www-form-urlencoded"
+      }
+    }
+  },
+  {
+    "id": "stripe_get_refunds",
+    "utilityProvider": "stripe",
+    "description": "Retrieves a list of refunds from Stripe",
+    "schema": {
+      "type": "object",
+      "properties": {}
+    },
+    "authMethod": "API_KEY",
+    "requiredSecrets": [
+      "api_secret_key"
+    ],
+    "apiKeyDetails": {
+      "secretName": "api_secret_key",
+      "scheme": "Bearer"
+    },
+    "apiDetails": {
+      "baseUrl": "https://api.stripe.com/v1",
+      "method": "GET",
+      "pathTemplate": "/refunds",
+      "staticHeaders": {
+        "Content-Type": "application/x-www-form-urlencoded"
+      }
+    }
+  },
+  {
+    "id": "stripe_api",
+    "utilityProvider": "stripe",
+    "description": "Makes requests to the Stripe API",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "endpoint": {
+          "type": "string",
+          "description": "The Stripe API endpoint to call (e.g., /refunds, /charges)",
+          "examples": [
+            "/refunds"
+          ]
+        },
+        "method": {
+          "type": "string",
+          "description": "HTTP method to use",
+          "enum": [
+            "GET",
+            "POST"
+          ],
+          "examples": [
+            "GET"
+          ]
+        },
+        "params": {
+          "type": "object",
+          "description": "Query parameters to include in the request",
+          "examples": [
+            {
+              "limit": 10
+            }
+          ]
+        }
+      }
+    },
+    "authMethod": "API_KEY",
+    "requiredSecrets": [
+      "api_secret_key"
+    ],
+    "apiKeyDetails": {
+      "secretName": "api_secret_key",
+      "scheme": "Bearer"
+    },
+    "apiDetails": {
+      "baseUrl": "https://api.stripe.com/v1",
+      "method": "GET",
+      "pathTemplate": "{endpoint}",
+      "paramMappings": {
+        "path": {
+          "endpoint": "endpoint"
+        },
+        "query": {
+          "params": "params"
+        }
+      },
+      "staticHeaders": {
+        "Content-Type": "application/x-www-form-urlencoded"
+      }
+    }
+  },
+  {
+    "id": "stripe_list_refunds_new",
+    "utilityProvider": "stripe",
+    "description": "Lists refunds from a Stripe account",
+    "schema": {
+      "type": "object",
+      "properties": {}
+    },
+    "authMethod": "API_KEY",
+    "requiredSecrets": [
+      "api_secret_key"
+    ],
+    "apiKeyDetails": {
+      "secretName": "api_secret_key",
+      "scheme": "Bearer"
+    },
+    "apiDetails": {
+      "baseUrl": "https://api.stripe.com/v1",
+      "method": "GET",
+      "pathTemplate": "/refunds",
+      "staticHeaders": {
+        "Content-Type": "application/x-www-form-urlencoded"
+      }
+    }
+  },
+  {
+    "id": "stripe_get_refunds_custom",
+    "utilityProvider": "stripe",
+    "description": "Retrieves a list of refunds from a Stripe account",
+    "schema": {
+      "type": "object",
+      "properties": {}
+    },
+    "authMethod": "API_KEY",
+    "requiredSecrets": [
+      "api_secret_key"
+    ],
+    "apiKeyDetails": {
+      "secretName": "api_secret_key",
+      "scheme": "Bearer"
+    },
+    "apiDetails": {
+      "baseUrl": "https://api.stripe.com/v1",
+      "method": "GET",
+      "pathTemplate": "/refunds",
+      "staticHeaders": {
+        "Content-Type": "application/x-www-form-urlencoded"
+      }
+    }
+  },
+  {
+    "id": "stripe_refunds_list",
+    "utilityProvider": "stripe",
+    "description": "Lists all refunds from a Stripe account",
+    "schema": {
+      "type": "object",
+      "properties": {}
+    },
+    "authMethod": "API_KEY",
+    "requiredSecrets": [
+      "api_secret_key"
+    ],
+    "apiKeyDetails": {
+      "secretName": "api_secret_key",
+      "scheme": "Bearer"
+    },
+    "apiDetails": {
+      "baseUrl": "https://api.stripe.com/v1",
+      "method": "GET",
+      "pathTemplate": "/refunds",
+      "staticHeaders": {
+        "Content-Type": "application/x-www-form-urlencoded"
+      }
+    }
+  },
+  {
+    "id": "stripe_fetch_refunds",
+    "utilityProvider": "stripe",
+    "description": "Fetches a list of refunds from a Stripe account",
+    "schema": {
+      "type": "object",
+      "properties": {}
+    },
+    "authMethod": "API_KEY",
+    "requiredSecrets": [
+      "api_secret_key"
+    ],
+    "apiKeyDetails": {
+      "secretName": "api_secret_key",
+      "scheme": "Bearer"
+    },
+    "apiDetails": {
+      "baseUrl": "https://api.stripe.com/v1",
+      "method": "GET",
+      "pathTemplate": "/refunds",
+      "staticHeaders": {
+        "Content-Type": "application/x-www-form-urlencoded"
+      }
+    }
+  },
+  {
+    "id": "stripe_fetch_refunds_new",
+    "utilityProvider": "stripe",
+    "description": "Fetches a list of refunds from a Stripe account",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "type": "integer",
+          "description": "Maximum number of refunds to return",
+          "examples": [
+            10
+          ]
+        }
+      }
+    },
+    "authMethod": "API_KEY",
+    "requiredSecrets": [
+      "api_secret_key"
+    ],
+    "apiKeyDetails": {
+      "secretName": "api_secret_key",
+      "scheme": "Bearer"
+    },
+    "apiDetails": {
+      "baseUrl": "https://api.stripe.com/v1",
+      "method": "GET",
+      "pathTemplate": "/refunds",
+      "paramMappings": {
+        "query": {
+          "limit": "limit"
+        }
+      },
+      "staticHeaders": {
+        "Content-Type": "application/x-www-form-urlencoded"
+      }
+    }
+  },
+  {
+    "id": "stripe_api_request",
+    "utilityProvider": "stripe",
+    "description": "Makes a request to the Stripe API with a specified endpoint path and optional parameters.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "endpoint": {
+          "type": "string",
+          "description": "The Stripe API endpoint path (e.g., '/refunds', '/charges', '/customers').",
+          "examples": [
+            "/refunds"
+          ]
+        },
+        "method": {
+          "type": "string",
+          "description": "HTTP method for the request.",
+          "enum": [
+            "GET",
+            "POST",
+            "DELETE"
+          ],
+          "examples": [
+            "GET"
+          ]
+        },
+        "params": {
+          "type": "object",
+          "description": "Optional parameters to include in the request.",
+          "examples": [
+            {
+              "limit": 10
+            }
+          ]
+        }
+      }
+    },
+    "required": [
+      "endpoint",
+      "method"
+    ],
+    "authMethod": "API_KEY",
+    "requiredSecrets": [
+      "api_secret_key"
+    ],
+    "apiKeyDetails": {
+      "secretName": "api_secret_key",
+      "scheme": "Bearer"
+    },
+    "apiDetails": {
+      "baseUrl": "https://api.stripe.com/v1",
+      "method": "GET",
+      "pathTemplate": "{endpoint}",
+      "paramMappings": {
+        "path": {
+          "endpoint": "endpoint"
+        },
+        "query": {
+          "params": "params"
+        }
+      },
+      "staticHeaders": {
+        "Content-Type": "application/x-www-form-urlencoded"
+      }
+    }
+  },
+  {
+    "id": "stripe_refunds_simple",
+    "utilityProvider": "stripe",
+    "description": "Gets a list of refunds from Stripe",
+    "schema": {
+      "type": "object",
+      "properties": {}
+    },
+    "authMethod": "API_KEY",
+    "requiredSecrets": [
+      "api_secret_key"
+    ],
+    "apiKeyDetails": {
+      "secretName": "api_secret_key",
+      "scheme": "Bearer"
+    },
+    "apiDetails": {
+      "baseUrl": "https://api.stripe.com/v1",
+      "method": "GET",
+      "pathTemplate": "/refunds",
+      "staticHeaders": {
+        "Content-Type": "application/x-www-form-urlencoded"
+      }
+    }
+  },
+  {
+    "id": "stripe_get_refunds_basic",
+    "utilityProvider": "stripe",
+    "description": "Gets a list of refunds from Stripe",
+    "schema": {
+      "type": "object",
+      "properties": {}
+    },
+    "authMethod": "API_KEY",
+    "requiredSecrets": [
+      "api_secret_key"
+    ],
+    "apiKeyDetails": {
+      "secretName": "api_secret_key",
+      "scheme": "Bearer"
+    },
+    "apiDetails": {
+      "baseUrl": "https://api.stripe.com/v1",
+      "method": "GET",
+      "pathTemplate": "/refunds",
+      "staticHeaders": {
+        "Content-Type": "application/x-www-form-urlencoded"
+      }
+    }
+  },
+  {
+    "id": "stripe_list_refunds_explicit",
+    "utilityProvider": "stripe",
+    "description": "Lists refunds from a Stripe account",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "dummy": {
+          "type": "boolean",
+          "description": "Dummy parameter (not used)",
+          "default": true
+        }
+      }
+    },
+    "authMethod": "API_KEY",
+    "requiredSecrets": [
+      "api_secret_key"
+    ],
+    "apiKeyDetails": {
+      "secretName": "api_secret_key",
+      "scheme": "Bearer"
+    },
+    "apiDetails": {
+      "baseUrl": "https://api.stripe.com/v1",
+      "method": "GET",
+      "pathTemplate": "/refunds",
+      "staticHeaders": {
+        "Content-Type": "application/x-www-form-urlencoded"
+      }
+    }
+  }
+]

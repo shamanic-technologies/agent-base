@@ -21,7 +21,7 @@ import { parseSQL } from './sql-parser.js'; // Import with .js extension (correc
 export interface QueryTableRequest {
   table: string;
   query: string;
-  params?: clientUserIdentificationMapping<string, any>;
+  params?: Record<string, any>;
 }
 
 // Define Success Response structures for different query types
@@ -30,7 +30,7 @@ interface QuerySelectSuccessResponse {
   data: {
     message: string;
     query_type: 'SELECT';
-    rows: clientUserIdentificationMapping<string, any>[];
+    rows: Record<string, any>[];
     count: number;
   }
 }
@@ -82,16 +82,15 @@ const queryTableUtility: InternalUtilityTool = {
   id: 'utility_query_table',
   description: 'Execute SQL-like queries (SELECT, INSERT, UPDATE, DELETE) on a specific database table and return results.',
   schema: {
-    table: { 
-      jsonSchema: {
+    type: 'object',
+    properties: {
+      table: { 
         type: 'string',
         description: 'The name of the table to query.',
         minLength: 1,
         examples: ['users', 'orders']
-      } satisfies JsonSchema,
-    },
-    query: { 
-      jsonSchema: {
+      },
+      query: { 
         type: 'string',
         description: 'The SQL-like query (SELECT, INSERT, UPDATE, DELETE). Use :param syntax for parameters.',
         minLength: 1,
@@ -101,10 +100,8 @@ const queryTableUtility: InternalUtilityTool = {
           'UPDATE users SET name = :newName WHERE id = :userId',
           'DELETE FROM logs WHERE timestamp < :cutoff'
         ]
-      } satisfies JsonSchema,
-    },
-    params: { 
-      jsonSchema: {
+      },
+      params: { 
         type: 'object',
         description: 'Optional key-value pairs for parameters used in the query (e.g., { email: \'test@example.com\' }).',
         additionalProperties: true,
@@ -114,8 +111,9 @@ const queryTableUtility: InternalUtilityTool = {
           "userId": "user_123",
           "newName": "Jane Smith"
         }]
-      } satisfies JsonSchema,
-    }
+      }
+    },
+    required: ['table', 'query']
   },
   
   execute: async (clientUserId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: QueryTableRequest): Promise<QueryTableResponse> => {
@@ -176,7 +174,7 @@ const queryTableUtility: InternalUtilityTool = {
       if (type === 'SELECT') {
         console.log(`${logPrefix} Executing SELECT with filters:`, filters);
         // Execute the query using Xata API
-        const xataPayload: clientUserIdentificationMapping<string, any> = {};
+        const xataPayload: Record<string, any> = {};
         if (filters && Object.keys(filters).length > 0) {
           xataPayload.filter = filters;
         }

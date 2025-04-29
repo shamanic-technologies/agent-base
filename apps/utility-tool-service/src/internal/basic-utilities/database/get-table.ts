@@ -32,8 +32,8 @@ interface GetTableSuccessResponse {
       id: string;
       name: string;
       description?: string;
-      schema: clientUserIdentificationMapping<string, string>; // Column name -> Xata type
-      data?: clientUserIdentificationMapping<string, any>[] | null; // Array of records or null
+      schema: Record<string, string>; // Column name -> Xata type. Changed from clientUserIdentificationMapping
+      data?: Record<string, any>[] | null; // Array of records or null. Changed from clientUserIdentificationMapping
     }
   }
 }
@@ -49,32 +49,36 @@ const getTableUtility: InternalUtilityTool = {
   id: 'utility_get_table',
   description: 'Get information about a database table, including schema and optionally data.',
   schema: {
-    table: { 
-      jsonSchema: {
+    type: 'object', // Added
+    properties: { // Added
+      table: { 
+        // Removed jsonSchema: { 
         type: 'string',
         description: 'The name of the table to retrieve.',
-        minLength: 1, // Zod .min(1)
-        examples: ['users', 'products'] // Move examples inside
-      } satisfies JsonSchema,
-    },
-    includeData: { 
-      jsonSchema: {
+        minLength: 1, 
+        examples: ['users', 'products'] 
+        // Removed } satisfies JsonSchema 
+      },
+      includeData: { 
+        // Removed jsonSchema: { 
         type: 'boolean',
         description: 'Whether to include table data rows in the response (default: true).',
-        default: true, // JSON Schema default
-        examples: [false, true] // Move examples inside
-      } satisfies JsonSchema,
-    },
-    limit: { 
-      jsonSchema: {
-        type: 'integer', // Zod .number().int()
+        default: true, 
+        examples: [false, true] 
+        // Removed } satisfies JsonSchema 
+      },
+      limit: { 
+        // Removed jsonSchema: { 
+        type: 'integer', 
         description: 'Maximum number of data rows to return if includeData is true (default: 10, max: 100).',
-        default: 10, // JSON Schema default
-        minimum: 1, // Zod .positive() implies minimum 1
-        maximum: 100, // Zod .refine() check
-        examples: [5, 50, 100] // Move examples inside
-      } satisfies JsonSchema,
-    }
+        default: 10, 
+        minimum: 1, 
+        maximum: 100, 
+        examples: [5, 50, 100] 
+        // Removed } satisfies JsonSchema 
+      }
+    }, // Added closing brace for properties
+    required: ['table'] // Added required field
   },
   
   execute: async (clientUserId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: GetTableRequest): Promise<GetTableResponse> => {

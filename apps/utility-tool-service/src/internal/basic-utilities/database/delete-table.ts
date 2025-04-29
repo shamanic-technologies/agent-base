@@ -42,20 +42,20 @@ const deleteTableUtility: InternalUtilityTool = {
   id: 'utility_delete_table',
   description: 'Delete a table from the user\'s database',
   schema: {
-    table: { 
-      jsonSchema: {
+    type: 'object',
+    properties: {
+      table: { 
         type: 'string',
         description: 'The name of the table to delete.',
         examples: ['orders', 'inventory']
-      } satisfies JsonSchema,
-    },
-    confirm: { 
-      jsonSchema: {
+      },
+      confirm: { 
         type: 'boolean',
         description: 'Confirmation that you want to delete the table (default: false). Required to proceed with deletion.',
         examples: [true]
-      } satisfies JsonSchema,
-    }
+      }
+    },
+    required: ['table', 'confirm']
   },
   
   execute: async (clientUserId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: DeleteTableRequest): Promise<DeleteTableResponse> => {

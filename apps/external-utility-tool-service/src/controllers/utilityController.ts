@@ -54,16 +54,18 @@ export const createTool = async (req: Request, res: Response, next: NextFunction
 
             // 2. Schema structure validation
             if (newConfig.schema) {
-                if (typeof newConfig.schema !== 'object' || Array.isArray(newConfig.schema) || Object.keys(newConfig.schema).length === 0) {
-                    validationErrors.push('Field schema must be a non-empty object.');
-                } else {
-                    for (const key in newConfig.schema) {
-                        if (typeof newConfig.schema[key] !== 'object' || !newConfig.schema[key].jsonSchema) {
-                             validationErrors.push(`Invalid schema definition for key '${key}': must be an object with a 'jsonSchema' property.`);
-                        }
-                        // Further validation of the zod object itself is complex here, skipped for now.
-                    }
-                }
+                // Check if the schema object itself conforms to the basic JSON Schema structure
+                if (typeof newConfig.schema !== 'object' || 
+                    Array.isArray(newConfig.schema) || 
+                    newConfig.schema.type !== 'object' || // Check for top-level type: 'object'
+                    typeof newConfig.schema.properties !== 'object') { // Check for properties object
+                    // Enhance the error message for clarity
+                    validationErrors.push(
+                        "Invalid 'schema' field: It MUST be a standard JSON Schema object defining the tool's input parameters. " + 
+                        "It requires a top-level `type` set to `'object'` and a `properties` object containing the parameter definitions. " + 
+                        "Example structure: `{ \"type\": \"object\", \"properties\": { \"param1\": { \"type\": \"string\", ... }, \"param2\": { ... } } }`"
+                    );
+                } 
             }
 
             // 3. AuthMethod specific validation

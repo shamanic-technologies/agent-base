@@ -2,7 +2,6 @@ import {
     ExternalUtilityTool,
     AuthMethod,
     SuccessResponse,
-    UtilitySetupNeeded,
     UtilityActionConfirmation,
     UtilityInputSecret,
     mapUtilityProviderToOAuthProvider,
@@ -12,7 +11,8 @@ import {
     UserType,
     AgentServiceCredentials,
     UtilityProvider,
-    UtilitySecretType
+    UtilitySecretType,
+    SetupNeeded
 } from '@agent-base/types';
 
 // Import client functions
@@ -31,7 +31,7 @@ export const checkPrerequisites = async (
     agentServiceCredentials: AgentServiceCredentials,
 ): Promise<{ 
     prerequisitesMet: boolean; 
-    setupNeededResponse?: SuccessResponse<UtilitySetupNeeded>; 
+    setupNeededResponse?: SuccessResponse<SetupNeeded>; 
     credentials?: { apiKey?: string | null; oauthToken?: string | null };
 }> => {
     const logPrefix = '[PrerequisiteService]';
@@ -75,12 +75,15 @@ export const checkPrerequisites = async (
                         console.log(`${logPrefix} API key secret found but value is not a string or is null.`);
                     }
                 }
-                // --- END CHANGE ---
-
+                if (secretKey === UtilityActionConfirmation.OAUTH_DONE && secretValue !== 'true') {
+                    console.log(`${logPrefix} Missing or invalid confirmation action: ${secretKey}`);
+                    allSecretsAvailable = false;
+                    requiredActionConfirmations.push(secretKey as UtilityActionConfirmation);
+                } 
                 if (secretKey === UtilityActionConfirmation.WEBHOOK_URL_INPUTED && secretValue !== 'true') {
                     console.log(`${logPrefix} Missing or invalid confirmation action: ${secretKey}`);
                     allSecretsAvailable = false;
-                    requiredActionConfirmations.push(secretKey);
+                    requiredActionConfirmations.push(secretKey as UtilityActionConfirmation);
                 } else if (!secretValue) {
                     console.log(`${logPrefix} Missing or invalid secret: ${secretKey}`);
                     allSecretsAvailable = false;
@@ -117,18 +120,17 @@ export const checkPrerequisites = async (
                     console.error(`${logPrefix} OAuth requires setup, but no authUrl provided by auth service.`);
                     throw new Error('OAuth setup required, but authorization URL is missing.');
                 }
-                const setupResponse: SuccessResponse<UtilitySetupNeeded> = {
+                const setupResponse: SuccessResponse<SetupNeeded> = {
                     success: true,
                     data: {
-                        needs_setup: true,
-                        utility_provider: externalUtilityTool.utilityProvider,
-                        oauth_provider: oauthProvider,
+                        needsSetup: true,
+                        utilityProvider: externalUtilityTool.utilityProvider,
                         message: `Authentication required for ${externalUtilityTool.utilityProvider}.`, 
                         title: `Connect ${externalUtilityTool.utilityProvider}`, 
                         description: externalUtilityTool.description,
-                        required_secret_inputs: [], 
-                        required_action_confirmations: [],
-                        required_oauth: authUrl
+                        requiredSecretInputs: [], 
+                        requiredActionConfirmations: [UtilityActionConfirmation.OAUTH_DONE],
+                        oauthUrl: authUrl
                     }
                 };
                 return { prerequisitesMet: false, setupNeededResponse: setupResponse }; 
@@ -148,16 +150,16 @@ export const checkPrerequisites = async (
     const prerequisitesMet = allSecretsAvailable && oauthAuthorized;
 
     if (!prerequisitesMet) {
-        const setupResponse: SuccessResponse<UtilitySetupNeeded> = {
+        const setupResponse: SuccessResponse<SetupNeeded> = {
             success: true,
             data: {
-                needs_setup: true,
-                utility_provider: externalUtilityTool.utilityProvider,
+                needsSetup: true,
+                utilityProvider: externalUtilityTool.utilityProvider,
                 message: `Configuration required for ${externalUtilityTool.utilityProvider}. Please provide the following details or confirm actions.`, 
                 title: `Configure ${externalUtilityTool.utilityProvider}`, 
                 description: externalUtilityTool.description,
-                required_secret_inputs: requiredSecretInputs,
-                required_action_confirmations: requiredActionConfirmations
+                requiredSecretInputs: requiredSecretInputs,
+                requiredActionConfirmations: requiredActionConfirmations
             }
         };
         return { prerequisitesMet: false, setupNeededResponse: setupResponse };

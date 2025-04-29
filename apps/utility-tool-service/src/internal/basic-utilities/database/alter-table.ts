@@ -50,7 +50,7 @@ interface AlterTableSuccessResponse {
         new_name?: string; 
         status: string; 
       }[];
-      updated_schema: clientUserIdentificationMapping<string, string>;
+      updated_schema: Record<string, string>;
       updated_at: string;
     }
   }
@@ -67,15 +67,14 @@ const alterTableUtility: InternalUtilityTool = {
   id: 'utility_alter_table',
   description: 'Modify the structure of existing database tables (add, remove, rename columns).',
   schema: {
-    table: { 
-      jsonSchema: {
+    type: 'object',
+    properties: {
+      table: { 
         type: 'string',
         description: 'The name of the table to modify.',
         examples: ['users', 'products']
-      } satisfies JsonSchema,
-    },
-    addColumn: { 
-      jsonSchema: {
+      },
+      addColumn: { 
         type: 'object',
         properties: {
           name: { type: 'string', description: 'Name of the new column.' },
@@ -84,17 +83,13 @@ const alterTableUtility: InternalUtilityTool = {
         required: ['name', 'type'],
         description: 'Definition of a column to add to the table.',
         examples: [{ name: 'description', type: 'text' }, { name: 'isAdmin', type: 'bool' }]
-      } satisfies JsonSchema,
-    },
-    removeColumn: { 
-      jsonSchema: {
+      },
+      removeColumn: { 
         type: 'string',
         description: 'Name of a column to remove from the table.',
         examples: ['old_status']
-      } satisfies JsonSchema,
-    },
-    renameColumn: { 
-      jsonSchema: {
+      },
+      renameColumn: { 
         type: 'object',
         properties: {
           oldName: { type: 'string', description: 'Current name of the column.' },
@@ -103,8 +98,9 @@ const alterTableUtility: InternalUtilityTool = {
         required: ['oldName', 'newName'],
         description: 'Definition for renaming a column in the table.',
         examples: [{ oldName: 'status', newName: 'current_status' }]
-      } satisfies JsonSchema,
-    }
+      }
+    },
+    required: ['table'],
   },
   
   execute: async (clientUserId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: AlterTableRequest): Promise<AlterTableResponse> => {
@@ -237,7 +233,7 @@ const alterTableUtility: InternalUtilityTool = {
         }
       );
       
-      let updatedSchema: clientUserIdentificationMapping<string, string> = {};
+      let updatedSchema: Record<string, string> = {};
       if (getTableResponse.ok) {
         const tableSchemaData = await getTableResponse.json();
         if (tableSchemaData.columns) {
