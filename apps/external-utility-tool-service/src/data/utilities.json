@@ -1,444 +1,286 @@
 [
   {
-    "id": "stripe_list_refunds",
-    "utilityProvider": "stripe",
-    "description": "Lists refunds from a Stripe account, with optional filtering parameters.",
-    "schema": {
-      "properties": {
-        "limit": {
-          "type": "number",
-          "description": "A limit on the number of objects to be returned. Limit can range between 1 and 100, and the default is 10.",
-          "examples": [
-            10,
-            25
-          ]
-        },
-        "starting_after": {
-          "type": "string",
-          "description": "A cursor for use in pagination. starting_after is an object ID that defines your place in the list.",
-          "examples": [
-            "re_1234567890"
-          ]
-        },
-        "ending_before": {
-          "type": "string",
-          "description": "A cursor for use in pagination. ending_before is an object ID that defines your place in the list.",
-          "examples": [
-            "re_1234567890"
-          ]
-        },
-        "charge": {
-          "type": "string",
-          "description": "Only return refunds for the charge specified by this charge ID.",
-          "examples": [
-            "ch_1234567890"
-          ]
-        },
-        "payment_intent": {
-          "type": "string",
-          "description": "Only return refunds for the payment intent specified by this payment intent ID.",
-          "examples": [
-            "pi_1234567890"
-          ]
-        }
-      },
-      "type": "object"
-    },
+    "id": "crisp_send_message",
+    "utilityProvider": "crisp",
+    "description": "Envoie un message à une conversation Crisp existante",
     "authMethod": "API_KEY",
     "requiredSecrets": [
+      "api_identifier",
       "api_secret_key"
     ],
     "apiKeyDetails": {
       "secretName": "api_secret_key",
-      "scheme": "Bearer"
+      "scheme": "BasicUser"
     },
     "apiDetails": {
-      "baseUrl": "https://api.stripe.com/v1",
-      "method": "GET",
-      "pathTemplate": "/refunds",
-      "paramMappings": {
-        "query": {
-          "limit": "limit",
-          "starting_after": "starting_after",
-          "ending_before": "ending_before",
-          "charge": "charge",
-          "payment_intent": "payment_intent"
-        }
-      },
-      "staticHeaders": {
-        "Content-Type": "application/x-www-form-urlencoded"
-      }
-    }
-  },
-  {
-    "id": "stripe_get_refunds",
-    "utilityProvider": "stripe",
-    "description": "Retrieves a list of refunds from Stripe",
-    "schema": {
-      "type": "object",
-      "properties": {}
-    },
-    "authMethod": "API_KEY",
-    "requiredSecrets": [
-      "api_secret_key"
-    ],
-    "apiKeyDetails": {
-      "secretName": "api_secret_key",
-      "scheme": "Bearer"
-    },
-    "apiDetails": {
-      "baseUrl": "https://api.stripe.com/v1",
-      "method": "GET",
-      "pathTemplate": "/refunds",
-      "staticHeaders": {
-        "Content-Type": "application/x-www-form-urlencoded"
-      }
-    }
-  },
-  {
-    "id": "stripe_api",
-    "utilityProvider": "stripe",
-    "description": "Makes requests to the Stripe API",
-    "schema": {
-      "type": "object",
-      "properties": {
-        "endpoint": {
-          "type": "string",
-          "description": "The Stripe API endpoint to call (e.g., /refunds, /charges)",
-          "examples": [
-            "/refunds"
-          ]
-        },
-        "method": {
-          "type": "string",
-          "description": "HTTP method to use",
-          "enum": [
-            "GET",
-            "POST"
-          ],
-          "examples": [
-            "GET"
-          ]
-        },
-        "params": {
-          "type": "object",
-          "description": "Query parameters to include in the request",
-          "examples": [
-            {
-              "limit": 10
-            }
-          ]
-        }
-      }
-    },
-    "authMethod": "API_KEY",
-    "requiredSecrets": [
-      "api_secret_key"
-    ],
-    "apiKeyDetails": {
-      "secretName": "api_secret_key",
-      "scheme": "Bearer"
-    },
-    "apiDetails": {
-      "baseUrl": "https://api.stripe.com/v1",
-      "method": "GET",
-      "pathTemplate": "{endpoint}",
+      "baseUrl": "https://api.crisp.chat/v1",
+      "method": "POST",
+      "pathTemplate": "/website/{website_id}/conversation/{session_id}/message",
       "paramMappings": {
         "path": {
-          "endpoint": "endpoint"
+          "website_id": "website_id",
+          "session_id": "session_id"
         },
-        "query": {
-          "params": "params"
+        "body": {
+          "type": "type",
+          "from": "from",
+          "origin": "origin",
+          "content": "content"
         }
       },
       "staticHeaders": {
-        "Content-Type": "application/x-www-form-urlencoded"
+        "Content-Type": "application/json",
+        "X-Crisp-Tier": "plugin"
       }
-    }
-  },
-  {
-    "id": "stripe_list_refunds_new",
-    "utilityProvider": "stripe",
-    "description": "Lists refunds from a Stripe account",
-    "schema": {
-      "type": "object",
-      "properties": {}
     },
-    "authMethod": "API_KEY",
-    "requiredSecrets": [
-      "api_secret_key"
-    ],
-    "apiKeyDetails": {
-      "secretName": "api_secret_key",
-      "scheme": "Bearer"
-    },
-    "apiDetails": {
-      "baseUrl": "https://api.stripe.com/v1",
-      "method": "GET",
-      "pathTemplate": "/refunds",
-      "staticHeaders": {
-        "Content-Type": "application/x-www-form-urlencoded"
-      }
-    }
-  },
-  {
-    "id": "stripe_get_refunds_custom",
-    "utilityProvider": "stripe",
-    "description": "Retrieves a list of refunds from a Stripe account",
-    "schema": {
-      "type": "object",
-      "properties": {}
-    },
-    "authMethod": "API_KEY",
-    "requiredSecrets": [
-      "api_secret_key"
-    ],
-    "apiKeyDetails": {
-      "secretName": "api_secret_key",
-      "scheme": "Bearer"
-    },
-    "apiDetails": {
-      "baseUrl": "https://api.stripe.com/v1",
-      "method": "GET",
-      "pathTemplate": "/refunds",
-      "staticHeaders": {
-        "Content-Type": "application/x-www-form-urlencoded"
-      }
-    }
-  },
-  {
-    "id": "stripe_refunds_list",
-    "utilityProvider": "stripe",
-    "description": "Lists all refunds from a Stripe account",
-    "schema": {
-      "type": "object",
-      "properties": {}
-    },
-    "authMethod": "API_KEY",
-    "requiredSecrets": [
-      "api_secret_key"
-    ],
-    "apiKeyDetails": {
-      "secretName": "api_secret_key",
-      "scheme": "Bearer"
-    },
-    "apiDetails": {
-      "baseUrl": "https://api.stripe.com/v1",
-      "method": "GET",
-      "pathTemplate": "/refunds",
-      "staticHeaders": {
-        "Content-Type": "application/x-www-form-urlencoded"
-      }
-    }
-  },
-  {
-    "id": "stripe_fetch_refunds",
-    "utilityProvider": "stripe",
-    "description": "Fetches a list of refunds from a Stripe account",
-    "schema": {
-      "type": "object",
-      "properties": {}
-    },
-    "authMethod": "API_KEY",
-    "requiredSecrets": [
-      "api_secret_key"
-    ],
-    "apiKeyDetails": {
-      "secretName": "api_secret_key",
-      "scheme": "Bearer"
-    },
-    "apiDetails": {
-      "baseUrl": "https://api.stripe.com/v1",
-      "method": "GET",
-      "pathTemplate": "/refunds",
-      "staticHeaders": {
-        "Content-Type": "application/x-www-form-urlencoded"
-      }
-    }
-  },
-  {
-    "id": "stripe_fetch_refunds_new",
-    "utilityProvider": "stripe",
-    "description": "Fetches a list of refunds from a Stripe account",
     "schema": {
       "type": "object",
       "properties": {
-        "limit": {
-          "type": "integer",
-          "description": "Maximum number of refunds to return",
-          "examples": [
-            10
-          ]
-        }
-      }
-    },
-    "authMethod": "API_KEY",
-    "requiredSecrets": [
-      "api_secret_key"
-    ],
-    "apiKeyDetails": {
-      "secretName": "api_secret_key",
-      "scheme": "Bearer"
-    },
-    "apiDetails": {
-      "baseUrl": "https://api.stripe.com/v1",
-      "method": "GET",
-      "pathTemplate": "/refunds",
-      "paramMappings": {
-        "query": {
-          "limit": "limit"
-        }
-      },
-      "staticHeaders": {
-        "Content-Type": "application/x-www-form-urlencoded"
-      }
-    }
-  },
-  {
-    "id": "stripe_api_request",
-    "utilityProvider": "stripe",
-    "description": "Makes a request to the Stripe API with a specified endpoint path and optional parameters.",
-    "schema": {
-      "type": "object",
-      "properties": {
-        "endpoint": {
+        "website_id": {
           "type": "string",
-          "description": "The Stripe API endpoint path (e.g., '/refunds', '/charges', '/customers').",
+          "description": "L'identifiant du site web Crisp",
           "examples": [
-            "/refunds"
+            "7c86c257-92a1-4d61-9818-7a4b0e0f9b8f"
           ]
         },
-        "method": {
+        "session_id": {
           "type": "string",
-          "description": "HTTP method for the request.",
-          "enum": [
-            "GET",
-            "POST",
-            "DELETE"
+          "description": "L'identifiant de la session de conversation",
+          "examples": [
+            "session_36ba3566-9651-4790-afc8-ffedbccc317f"
+          ]
+        },
+        "type": {
+          "type": "string",
+          "description": "Le type de message à envoyer",
+          "examples": [
+            "text"
           ],
-          "examples": [
-            "GET"
+          "enum": [
+            "text",
+            "note",
+            "file",
+            "animation",
+            "audio",
+            "picker",
+            "field",
+            "carousel",
+            "event"
           ]
         },
-        "params": {
-          "type": "object",
-          "description": "Optional parameters to include in the request.",
+        "from": {
+          "type": "string",
+          "description": "L'expéditeur du message",
           "examples": [
-            {
-              "limit": 10
-            }
+            "operator"
+          ],
+          "enum": [
+            "user",
+            "operator"
+          ]
+        },
+        "origin": {
+          "type": "string",
+          "description": "L'origine du message",
+          "examples": [
+            "chat"
+          ],
+          "enum": [
+            "chat",
+            "email"
+          ]
+        },
+        "content": {
+          "type": "string",
+          "description": "Le contenu du message à envoyer",
+          "examples": [
+            "Bonjour, comment puis-je vous aider ?"
           ]
         }
       }
-    },
-    "required": [
-      "endpoint",
-      "method"
-    ],
-    "authMethod": "API_KEY",
-    "requiredSecrets": [
-      "api_secret_key"
-    ],
-    "apiKeyDetails": {
-      "secretName": "api_secret_key",
-      "scheme": "Bearer"
+    }
+  },
+  {
+    "id": "crisp_list_messages",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "api_key": {
+          "type": "string",
+          "description": "Your Crisp API key"
+        },
+        "session_id": {
+          "type": "string",
+          "description": "The Crisp session ID"
+        },
+        "website_id": {
+          "type": "string",
+          "description": "The Crisp website ID"
+        },
+        "api_identifier": {
+          "type": "string",
+          "description": "Your Crisp API identifier"
+        }
+      }
     },
     "apiDetails": {
-      "baseUrl": "https://api.stripe.com/v1",
       "method": "GET",
-      "pathTemplate": "{endpoint}",
+      "baseUrl": "https://api.crisp.chat/v1",
+      "pathTemplate": "/website/{website_id}/conversation/{session_id}/messages",
       "paramMappings": {
         "path": {
-          "endpoint": "endpoint"
-        },
-        "query": {
-          "params": "params"
+          "session_id": "session_id",
+          "website_id": "website_id"
         }
       },
       "staticHeaders": {
-        "Content-Type": "application/x-www-form-urlencoded"
+        "Content-Type": "application/json",
+        "X-Crisp-API-Key": "{api_key}",
+        "X-Crisp-API-Identifier": "{api_identifier}"
       }
-    }
+    },
+    "authMethod": "NONE",
+    "description": "Lists messages from a Crisp chat conversation",
+    "requiredSecrets": [],
+    "utilityProvider": "crisp"
   },
   {
-    "id": "stripe_refunds_simple",
-    "utilityProvider": "stripe",
-    "description": "Gets a list of refunds from Stripe",
-    "schema": {
-      "type": "object",
-      "properties": {}
-    },
-    "authMethod": "API_KEY",
-    "requiredSecrets": [
-      "api_secret_key"
-    ],
-    "apiKeyDetails": {
-      "secretName": "api_secret_key",
-      "scheme": "Bearer"
-    },
-    "apiDetails": {
-      "baseUrl": "https://api.stripe.com/v1",
-      "method": "GET",
-      "pathTemplate": "/refunds",
-      "staticHeaders": {
-        "Content-Type": "application/x-www-form-urlencoded"
-      }
-    }
-  },
-  {
-    "id": "stripe_get_refunds_basic",
-    "utilityProvider": "stripe",
-    "description": "Gets a list of refunds from Stripe",
-    "schema": {
-      "type": "object",
-      "properties": {}
-    },
-    "authMethod": "API_KEY",
-    "requiredSecrets": [
-      "api_secret_key"
-    ],
-    "apiKeyDetails": {
-      "secretName": "api_secret_key",
-      "scheme": "Bearer"
-    },
-    "apiDetails": {
-      "baseUrl": "https://api.stripe.com/v1",
-      "method": "GET",
-      "pathTemplate": "/refunds",
-      "staticHeaders": {
-        "Content-Type": "application/x-www-form-urlencoded"
-      }
-    }
-  },
-  {
-    "id": "stripe_list_refunds_explicit",
-    "utilityProvider": "stripe",
-    "description": "Lists refunds from a Stripe account",
+    "id": "crisp_get_messages",
     "schema": {
       "type": "object",
       "properties": {
-        "dummy": {
-          "type": "boolean",
-          "description": "Dummy parameter (not used)",
-          "default": true
+        "username": {
+          "type": "string",
+          "description": "Your Crisp API identifier"
+        },
+        "password": {
+          "type": "string",
+          "description": "Your Crisp API key"
+        },
+        "session_id": {
+          "type": "string",
+          "description": "The Crisp session ID"
+        },
+        "website_id": {
+          "type": "string",
+          "description": "The Crisp website ID"
+        }
+      }
+    },
+    "apiDetails": {
+      "method": "GET",
+      "baseUrl": "https://api.crisp.chat/v1",
+      "pathTemplate": "/website/{website_id}/conversation/{session_id}/messages",
+      "paramMappings": {
+        "path": {
+          "session_id": "session_id",
+          "website_id": "website_id"
         }
       }
     },
     "authMethod": "API_KEY",
-    "requiredSecrets": [
-      "api_secret_key"
-    ],
+    "description": "Lists messages from a Crisp chat conversation using Basic Authentication",
     "apiKeyDetails": {
-      "secretName": "api_secret_key",
-      "scheme": "Bearer"
+      "scheme": "BasicUser",
+      "secretName": "username"
+    },
+    "requiredSecrets": [
+      "username",
+      "password"
+    ],
+    "utilityProvider": "crisp"
+  },
+  {
+    "id": "crisp_basic_messages",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string",
+          "description": "Your Crisp API identifier"
+        },
+        "password": {
+          "type": "string",
+          "description": "Your Crisp API key"
+        },
+        "session_id": {
+          "type": "string",
+          "description": "The Crisp session ID"
+        },
+        "website_id": {
+          "type": "string",
+          "description": "The Crisp website ID"
+        }
+      }
     },
     "apiDetails": {
-      "baseUrl": "https://api.stripe.com/v1",
       "method": "GET",
-      "pathTemplate": "/refunds",
+      "baseUrl": "https://api.crisp.chat/v1",
+      "pathTemplate": "/website/{website_id}/conversation/{session_id}/messages",
+      "paramMappings": {
+        "path": {
+          "session_id": "session_id",
+          "website_id": "website_id"
+        }
+      },
       "staticHeaders": {
-        "Content-Type": "application/x-www-form-urlencoded"
+        "Content-Type": "application/json"
       }
-    }
+    },
+    "authMethod": "API_KEY",
+    "description": "Lists messages from a Crisp chat conversation using Basic Authentication",
+    "apiKeyDetails": {
+      "scheme": "BasicUser",
+      "secretName": "username"
+    },
+    "requiredSecrets": [
+      "username",
+      "password"
+    ],
+    "utilityProvider": "crisp"
+  },
+  {
+    "id": "crisp_header_messages",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "api_key": {
+          "type": "string",
+          "description": "Your Crisp API key"
+        },
+        "api_identifier": {
+          "type": "string",
+          "description": "Your Crisp API identifier"
+        },
+        "session_id": {
+          "type": "string",
+          "description": "The Crisp session ID"
+        },
+        "website_id": {
+          "type": "string",
+          "description": "The Crisp website ID"
+        }
+      }
+    },
+    "apiDetails": {
+      "method": "GET",
+      "baseUrl": "https://api.crisp.chat/v1",
+      "pathTemplate": "/website/{website_id}/conversation/{session_id}/messages",
+      "paramMappings": {
+        "path": {
+          "session_id": "session_id",
+          "website_id": "website_id"
+        }
+      },
+      "staticHeaders": {
+        "Content-Type": "application/json",
+        "X-Crisp-API-Key": "{api_key}",
+        "X-Crisp-API-Identifier": "{api_identifier}"
+      }
+    },
+    "authMethod": "NONE",
+    "description": "Lists messages from a Crisp chat conversation using header authentication",
+    "requiredSecrets": [],
+    "utilityProvider": "crisp"
   }
 ]
