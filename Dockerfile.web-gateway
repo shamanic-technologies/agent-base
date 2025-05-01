@@ -32,7 +32,7 @@ RUN pnpm store prune
 
 # Install ALL monorepo dependencies (using --frozen-lockfile)
 # Reverted from filtered install
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --shamefully-hoist
 
 # Explicitly build the 'types' package first to isolate potential issues
 RUN pnpm --filter @agent-base/types build

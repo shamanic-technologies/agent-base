@@ -24,9 +24,9 @@
     }
   },
   "scripts": {
-    "build": "rimraf dist && tsc",
+    "build": "npx rimraf dist && tsc",
     "dev": "tsc --watch",
-    "clean": "rimraf dist .turbo node_modules",
+    "clean": "npx rimraf dist .turbo node_modules",
     "lint": "eslint . --ext .ts,.tsx",
     "typecheck": "tsc --noEmit"
   },
