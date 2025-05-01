@@ -29,7 +29,7 @@ domains = ["gateway.agent-base.ai"] # The public domain for this service
 PORT = "8080"
 NODE_ENV = "production"
 ALLOWED_ORIGINS = "https://www.agent-base.ai,https://agent-base.ai"
-WEB_GATEWAY_API_KEY=g4t3way-k3y-e5e821f89a2d4c3b
+WEB_GATEWAY_API_KEY="g4t3way-k3y-e5e821f89a2d4c3b"
 
 # Internal service URLs
 DATABASE_SERVICE_URL = "http://database-service.railway.internal:8080"
