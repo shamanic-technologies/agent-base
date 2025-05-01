@@ -50,9 +50,6 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
-      credentials:
-        specifier: link:../../packages/credentials
-        version: link:../../packages/credentials
       google-auth-library:
         specifier: ^9.15.1
         version: 9.15.1
