@@ -10,7 +10,7 @@ import apiLogsRoutes from './api-logs.js';
 import oauthRoutes from './oauth.js';
 import agentsRoutes from './agents.js';
 import conversationsRoutes from './conversations.js';
-import webhooksRoutes from './webhooks.js';
+// import webhooksRoutes from './webhooks.js';
 import clientUsersRoutes from './client-users.js';
 
 const router = Router();
@@ -23,7 +23,7 @@ router.use('/api-logs', apiLogsRoutes);
 router.use('/oauth', oauthRoutes);
 router.use('/agents', agentsRoutes);
 router.use('/conversations', conversationsRoutes);
-router.use('/webhooks', webhooksRoutes);
+// router.use('/webhooks', webhooksRoutes);
 router.use('/client-users', clientUsersRoutes);
 
 export default router; 
