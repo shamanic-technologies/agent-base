@@ -1,5 +1,4 @@
 import { ServiceResponse } from "./common.js";
-// @ts-ignore
 import type { JSONSchema7 } from 'json-schema'; // Import JSONSchema7
 
 /**

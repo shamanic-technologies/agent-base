@@ -10,12 +10,12 @@
     "dev": "tsc -w"
   },
   "dependencies": {
+    "@types/json-schema": "^7.0.15",
     "ai": "^4.3.2",
     "axios": "^1.8.4",
     "json-schema": "^0.4.0"
   },
   "devDependencies": {
-    "@types/json-schema": "^7.0.15",
     "typescript": "^5.0.4"
   }
 }
