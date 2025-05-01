@@ -1,0 +1,12 @@
+# Ignore node_modules to prevent conflicts during COPY
+node_modules
+
+# Ignore build outputs / logs / IDE files if not already in .gitignore
+.turbo
+dist
+.next
+*.log
+
+# Ignore OS-specific files
+.DS_Store
+thumbs.db 
