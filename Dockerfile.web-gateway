@@ -43,8 +43,8 @@ RUN chown -R node:node /app
 # Switch back to the node user for subsequent operations
 USER node
 
-# Install ALL monorepo dependencies (using --frozen-lockfile)
-RUN pnpm install --frozen-lockfile
+# Install ALL monorepo dependencies (using --frozen-lockfile and BuildKit cache)
+RUN --mount=type=cache,id=pnpm,target=~/.pnpm-store pnpm install --frozen-lockfile
 
 # Build only the target service (web-gateway-service) and its dependencies
 # Explicitly add node_modules/.bin to PATH for the build command
