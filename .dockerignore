@@ -9,4 +9,10 @@ dist
 
 # Ignore OS-specific files
 .DS_Store
-thumbs.db 
+thumbs.db
+
+# Ignore local environment files
+.env*.local
+
+# Ignore IDE/OS files
+.vscode/ 

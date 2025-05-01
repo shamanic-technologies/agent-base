@@ -23,7 +23,8 @@ COPY . .
 
 # Install ALL monorepo dependencies (using --frozen-lockfile)
 # Reverted from filtered install
-RUN pnpm install --frozen-lockfile
+# Temporarily removing --frozen-lockfile for debugging
+RUN pnpm install
 
 # Build only the target service (web-gateway-service) and its dependencies
 RUN pnpm --filter web-gateway-service... build
