@@ -6,6 +6,7 @@ import {
     ServiceResponse,
     InternalServiceCredentials, // Use this type which includes platformApiKey
 } from '@agent-base/types';
+//@ts-ignore
 import { Message } from 'ai';
 import { makeInternalAPIServiceRequest } from '../utils/service-client.js';
 import { getAgentServiceUrl } from '../utils/config.js'; // Assuming this function exists or will be created
