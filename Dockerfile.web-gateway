@@ -43,8 +43,8 @@ RUN chown -R node:node /app
 # Switch back to the node user for subsequent operations
 USER node
 
-# Install ALL monorepo dependencies (using --frozen-lockfile if possible later)
-RUN pnpm install
+# Install ALL monorepo dependencies (using --frozen-lockfile)
+RUN pnpm install --frozen-lockfile
 
 # Build only the target service (web-gateway-service) and its dependencies
 RUN pnpm --filter web-gateway-service... build
