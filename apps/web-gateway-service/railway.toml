@@ -9,9 +9,9 @@ builder = "NIXPACKS"
 buildCommand = "turbo run build --force --filter=@helloworld/web-gateway-service..." # Make sure this filter matches your actual package name
 NO_CACHE = "1" # Disable build cache
 # Nixpacks specific configurations (attempting to set via railway.toml)
-NIXPACKS_INSTALL_CMD = "pnpm install --frozen-lockfile --prod=false --shamefully-hoist"
-NIXPACKS_NODE_VERSION = "20"
-NIXPACKS_PKG_MANAGER = "pnpm"
+# NIXPACKS_INSTALL_CMD = "pnpm install --frozen-lockfile --prod=false --shamefully-hoist" # Removed: Handled by packageManager
+# NIXPACKS_NODE_VERSION = "20" # Removed: Handled by [nix] section
+# NIXPACKS_PKG_MANAGER = "pnpm" # Removed: Handled by packageManager
 
 [deploy]
 # Command to start the service after deployment
