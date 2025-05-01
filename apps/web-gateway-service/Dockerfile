@@ -11,10 +11,11 @@ WORKDIR /app
 
 # Copy root dependency manifests
 # These are needed for pnpm to understand the workspace structure.
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+# Paths are relative to the Dockerfile location, assuming build context might not be root.
+COPY ../../package.json ../../pnpm-lock.yaml ../../pnpm-workspace.yaml ./
 
 # Optional: Uncomment and use if you have a .npmrc file for private packages
-# COPY .npmrc ./
+# COPY ../../.npmrc ./
 
 # Install all dependencies using the lockfile
 # We install all dependencies first, as the build process might need devDeps
@@ -23,9 +24,9 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile --shamefully-hoist
 
 # Copy the entire source code from the monorepo root
-# This is simpler for setup but less optimized for image size than copying only necessary packages.
-# Consider a multi-stage build for optimization later.
-COPY . .
+# Assuming build context is the monorepo root despite Dockerfile location
+# This copies everything from agent-base-backend into /app
+COPY ../../ .
 
 # Build the target service (web-gateway-service)
 # Assumes the build script is named 'build' in the service's package.json
