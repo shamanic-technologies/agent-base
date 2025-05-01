@@ -9,7 +9,6 @@ fi
 mkdir -p ./dist
 
 # Build TypeScript files
-# Use pnpm exec for consistency
-pnpm exec tsc
+npx tsc
 
 echo "Build completed successfully!" 
