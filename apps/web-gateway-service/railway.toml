@@ -5,10 +5,9 @@ pkgs = ["nodejs_20", "pnpm_9"] # Assuming pnpm version 9, adjust if needed
 [build]
 # Use Nixpacks builder
 builder = "NIXPACKS"
-# Command to install dependencies using pnpm
-installCommand = "pnpm install --frozen-lockfile --prod=false --shamefully-hoist"
 # Command to build the specific service using Turborepo filter
 buildCommand = "turbo run build --force --filter=@helloworld/web-gateway-service..." # Make sure this filter matches your actual package name
+NO_CACHE = "1" # Disable build cache
 
 [deploy]
 # Command to start the service after deployment
@@ -39,3 +38,4 @@ MODEL_SERVICE_URL = "http://model-service.railway.internal:8080"
 PAYMENT_SERVICE_URL = "http://payment-service.railway.internal:80" # Note: Port 80 from screenshot
 SECRET_SERVICE_URL = "http://secret-service.railway.internal:8080" # Assuming internal URL
 WEB_OAUTH_SERVICE_URL = "http://web-oauth-service.railway.internal:8080" # Assuming port 8080
+# Add other necessary non-secret variables here
