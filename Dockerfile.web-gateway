@@ -47,6 +47,8 @@ USER node
 RUN pnpm install --frozen-lockfile
 
 # Build only the target service (web-gateway-service) and its dependencies
+# Explicitly add node_modules/.bin to PATH for the build command
+ENV PATH=$PWD/node_modules/.bin:$PATH
 RUN pnpm --filter web-gateway-service... build
 
 # Prepare deployment bundle in the builder stage
