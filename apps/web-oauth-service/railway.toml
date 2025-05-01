@@ -3,6 +3,8 @@ pkgs = ["nodejs_20", "pnpm_9"]
 
 [build]
 builder = "NIXPACKS"
+installCommand = "pnpm install --frozen-lockfile --prod=false --shamefully-hoist"
+buildCommand = "pnpm run build"
 
 [deploy]
 numReplicas = 1

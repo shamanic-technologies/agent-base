@@ -1,0 +1,41 @@
+[nix]
+# Specify Node.js and pnpm versions for the build environment
+pkgs = ["nodejs_20", "pnpm_9"] # Assuming pnpm version 9, adjust if needed
+
+[build]
+# Use Nixpacks builder
+builder = "NIXPACKS"
+# Command to install dependencies using pnpm
+installCommand = "pnpm install --frozen-lockfile --prod=false --shamefully-hoist"
+# Command to build the specific service using Turborepo filter
+buildCommand = "turbo run build --force --filter=@helloworld/web-gateway-service..." # Make sure this filter matches your actual package name
+
+[deploy]
+# Command to start the service after deployment
+startCommand = "cd apps/web-gateway-service && node dist/index.js"
+# Healthcheck path (optional but recommended)
+# healthcheckPath = "/health"
+# healthcheckTimeout = 10
+# Restart policy (optional)
+# restartPolicyType = "ON_FAILURE"
+# restartPolicyMaxRetries = 5
+
+[service] # Service-specific settings
+name = "web-gateway-service"
+internalPort = 8080 # Ensure this matches the PORT variable
+domains = ["gateway.agent-base.ai"] # The public domain for this service
+
+[variables] # Application-specific variables managed here (non-secret)
+PORT = "8080"
+NODE_ENV = "production"
+ALLOWED_ORIGINS = "https://www.agent-base.ai,https://agent-base.ai"
+WEB_GATEWAY_API_KEY=g4t3way-k3y-e5e821f89a2d4c3b
+
+# Internal service URLs
+DATABASE_SERVICE_URL = "http://database-service.railway.internal:8080"
+KEY_SERVICE_URL = "http://key-service.railway.internal:8080"
+LOGGING_SERVICE_URL = "http://logging-service.railway.internal:8080"
+MODEL_SERVICE_URL = "http://model-service.railway.internal:8080"
+PAYMENT_SERVICE_URL = "http://payment-service.railway.internal:80" # Note: Port 80 from screenshot
+SECRET_SERVICE_URL = "http://secret-service.railway.internal:8080" # Assuming internal URL
+WEB_OAUTH_SERVICE_URL = "http://web-oauth-service.railway.internal:8080" # Assuming port 8080
