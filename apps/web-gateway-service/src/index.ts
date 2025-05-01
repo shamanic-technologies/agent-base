@@ -17,13 +17,13 @@ if (fs.existsSync(envFile)) {
  * A central entry point for web applications to access all microservices.
  * Handles routing, authentication, and request forwarding to appropriate services.
  */
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { rateLimit } from 'express-rate-limit';
-import { authMiddleware } from './middleware/auth-middleware';
-import { tokenCache } from './utils/token-cache';
-import { forwardRequest } from './utils/forward-request';
+import { authMiddleware } from './middleware/auth-middleware.js';
+import { tokenCache } from './utils/token-cache.js';
+import { forwardRequest } from './utils/forward-request.js';
 
 // Check required environment variables
 const requiredEnvVars = [

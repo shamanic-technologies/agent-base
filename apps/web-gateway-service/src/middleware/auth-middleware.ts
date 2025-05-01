@@ -8,7 +8,9 @@ import { Request, Response, NextFunction } from 'express';
 // Assuming types are exported from the shared package
 import { PlatformUser, ServiceResponse, OAuthProvider } from '@agent-base/types'; 
 // Assuming httpClient is exported from the shared package
-import { tokenCache } from '../utils/token-cache'; 
+import { tokenCache } from '../utils/token-cache.js'; 
+import jwt from 'jsonwebtoken';
+import axios from 'axios';
 
 import { validateAuthToken } from '@agent-base/api-client'; // Import the new client function
 // Removed fs and path as manual env loading is removed

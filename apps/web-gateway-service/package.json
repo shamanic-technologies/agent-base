@@ -1,6 +1,7 @@
 {
   "name": "@helloworld/web-gateway-service",
   "version": "1.0.0",
+  "type": "module",
   "description": "Web Gateway Service for Agent Base microservices",
   "main": "dist/index.js",
   "scripts": {
