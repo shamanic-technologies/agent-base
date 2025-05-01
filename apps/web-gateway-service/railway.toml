@@ -8,6 +8,10 @@ builder = "NIXPACKS"
 # Command to build the specific service using Turborepo filter
 buildCommand = "turbo run build --force --filter=@helloworld/web-gateway-service..." # Make sure this filter matches your actual package name
 NO_CACHE = "1" # Disable build cache
+# Nixpacks specific configurations (attempting to set via railway.toml)
+NIXPACKS_INSTALL_CMD = "pnpm install --frozen-lockfile --prod=false --shamefully-hoist"
+NIXPACKS_NODE_VERSION = "20"
+NIXPACKS_PKG_MANAGER = "pnpm"
 
 [deploy]
 # Command to start the service after deployment
@@ -39,3 +43,4 @@ PAYMENT_SERVICE_URL = "http://payment-service.railway.internal:80" # Note: Port 
 SECRET_SERVICE_URL = "http://secret-service.railway.internal:8080" # Assuming internal URL
 WEB_OAUTH_SERVICE_URL = "http://web-oauth-service.railway.internal:8080" # Assuming port 8080
 # Add other necessary non-secret variables here
+
