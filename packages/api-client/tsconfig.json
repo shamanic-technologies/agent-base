@@ -6,6 +6,9 @@
     "paths": {
       "@/*": ["./src/*"]
     },
+    "module": "ES2020",
+    "moduleResolution": "Node",
+    "target": "ES2020",
     "noEmit": false,
     "declaration": true,
     "declarationMap": true,
