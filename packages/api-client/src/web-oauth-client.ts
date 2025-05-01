@@ -5,11 +5,12 @@
  */
 import { 
     ServiceResponse,
-    PlatformUser
-  } from '@agent-base/types';
+    PlatformUser,
+} from '@agent-base/types';
 import axios, { AxiosError } from 'axios';
-import { makeWebAnonymousServiceRequest } from './utils/service-client';
-import { getWebOauthServiceUrl } from './utils/config';
+import { makeWebAnonymousServiceRequest } from './utils/service-client.js';
+import { getWebOauthServiceUrl } from './utils/config.js';
+import { Method } from 'axios';
 
   // ==============================================================================
   // Web OAuth Service - Auth Client Functions

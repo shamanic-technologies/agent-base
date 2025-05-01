@@ -10,8 +10,8 @@ import {
   UpdateAgentInput,
   Agent
 } from '@agent-base/types';
-import { makeInternalAPIServiceRequest } from '../utils/service-client';
-import { getDatabaseServiceUrl } from '../utils/config'; // Import the centralized getter
+import { makeInternalAPIServiceRequest } from '../utils/service-client.js';
+import { getDatabaseServiceUrl } from '../utils/config.js'; // Import the centralized getter
 import { Method } from 'axios';
 
 // Define clearer input types if not already in @agent-base/types

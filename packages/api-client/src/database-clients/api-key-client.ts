@@ -6,10 +6,12 @@ import {
   ApiKey, // Use camelCase type for client consistency
   CreateApiKeyRequest,
   ValidateApiKeyRequest,
-  ValidateApiKeyResponse // Response type for validation endpoint
+  ValidateApiKeyResponse, // Response type for validation endpoint
+  ApiKeyRecord
 } from '@agent-base/types';
-import { makeWebAuthenticatedServiceRequest } from '../utils/service-client';
-import { getDatabaseServiceUrl } from '../utils/config'; // Import the centralized getter
+import { makeWebAuthenticatedServiceRequest } from '../utils/service-client.js';
+import { getDatabaseServiceUrl } from '../utils/config.js'; // Import the centralized getter
+import { Method } from 'axios';
 
 // ==============================================================================
 // API Key Client Functions

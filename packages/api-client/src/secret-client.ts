@@ -12,7 +12,8 @@ import {
   PlatformUserApiServiceCredentials // Import UserType
 } from '@agent-base/types';
 import { makeWebAuthenticatedServiceRequest, makeInternalAPIServiceRequest, makePlatformUserApiServiceRequest } from './utils/service-client.js';
-import { getApiGatewayServiceUrl, getSecretServiceUrl } from './utils/config'; // Import the centralized getter
+import { getApiGatewayServiceUrl, getSecretServiceUrl } from './utils/config.js'; // Import the centralized getter
+import { Method } from 'axios';
 
 // Determine the correct URL for the secret-service
 // Removed top-level constant: const SECRET_SERVICE_URL = ...

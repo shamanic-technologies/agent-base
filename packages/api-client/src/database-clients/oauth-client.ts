@@ -5,10 +5,11 @@ import {
   ServiceResponse,
   OAuth, // Use camelCase type for client consistency
   CreateOrUpdateOAuthInput,
-  GetUserOAuthInput
+  GetUserOAuthInput,
 } from '@agent-base/types';
-import { makeWebAuthenticatedServiceRequest } from '../utils/service-client';
-import { getDatabaseServiceUrl } from '../utils/config'; // Import the centralized getter
+import { makeWebAuthenticatedServiceRequest } from '../utils/service-client.js';
+import { getDatabaseServiceUrl } from '../utils/config.js'; // Import the centralized getter
+import { Method } from 'axios';
 
 // ==============================================================================
 // OAuth Client Functions

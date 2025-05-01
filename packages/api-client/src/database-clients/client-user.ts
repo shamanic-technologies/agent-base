@@ -7,11 +7,12 @@
 import { 
     ServiceResponse,
     ClientUser, // For platform user creation
+    ClientUserRecord,
     // Import only necessary types from @agent-base/types
     // Add specific record/input types here if they become available and are needed
 } from '@agent-base/types';
-import { makeClientUserValidationRequest } from '../utils/service-client.js';
-import { getDatabaseServiceUrl } from '../utils/config'; // Import the centralized getter
+import { makeClientUserValidationRequest } from '../utils/service-client.js'; // Reverted import, added .js
+import { getDatabaseServiceUrl } from '../utils/config.js'; // Added .js
 import { Method } from 'axios';
 
 // Ensure the URL points to the correct database service
@@ -43,12 +44,13 @@ export const upsertClientUserApiClient = async (
     platformClientUserId: platformClientUserId, // Required
     platformUserId: platformUserId, // Required
   }
-  return makeClientUserValidationRequest<ClientUser>(
+  return makeClientUserValidationRequest<ClientUser>( // Reverted function call
     input.serviceUrl,
     input.method as Method,
     input.endpoint,
-    input.platformClientUserId,
-    input.platformUserId,
+    input.platformClientUserId, // Required
+    input.platformUserId // Required
+    // data and params are undefined for this GET request
   );
 };
   

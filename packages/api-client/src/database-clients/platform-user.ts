@@ -8,11 +8,13 @@ import {
     ServiceResponse,
     PlatformUser,             // For platform user operations
     GetOrCreatePlatformUserInput, // For platform user creation
+    PlatformUserRecord,
     // Import only necessary types from @agent-base/types
     // Add specific record/input types here if they become available and are needed
 } from '@agent-base/types';
-import { makeWebAuthenticatedServiceRequest, makeWebAnonymousServiceRequest } from '../utils/service-client';
-import { getDatabaseServiceUrl } from '../utils/config'; // Import the centralized getter
+import { makeWebAuthenticatedServiceRequest, makeWebAnonymousServiceRequest } from '../utils/service-client.js';
+import { getDatabaseServiceUrl } from '../utils/config.js'; // Import the centralized getter
+import { Method } from 'axios';
 
 // Ensure the URL points to the correct database service
 

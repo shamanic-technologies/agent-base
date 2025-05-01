@@ -7,10 +7,14 @@ import {
     CreateConversationInput, 
     ConversationId,
     InternalServiceCredentials,
-    PlatformUserApiServiceCredentials // Import credentials type
+    PlatformUserApiServiceCredentials, // Import credentials type
+    ConversationRecord,
 } from '@agent-base/types';
-import { makePlatformUserApiServiceRequest, makeInternalAPIServiceRequest } from '../utils/service-client'; // Use the external request helper
-import { getAgentServiceUrl, getApiGatewayServiceUrl } from '../utils/config'; // Target API Gateway
+//@ts-ignore
+import { Message } from 'ai'; // Import Message from 'ai'
+import { makePlatformUserApiServiceRequest, makeInternalAPIServiceRequest } from '../utils/service-client.js'; // Added .js
+import { getAgentServiceUrl, getApiGatewayServiceUrl } from '../utils/config.js'; // Added .js
+import { Method } from 'axios';
 
 const API_GATEWAY_URL = getApiGatewayServiceUrl();
 const AGENT_SERVICE_ROUTE_PREFIX = '/agent'; // Assuming API Gateway prefixes agent routes with /agent

@@ -8,16 +8,18 @@ import {
   SecretValue,
   PlatformUserId,
   GetApiKeyByIdRequest,
-  GetApiKeyByNameRequest
+  GetApiKeyByNameRequest,
+  InternalServiceCredentials
 } from '@agent-base/types';
 
 // Import the shared request helpers
 import { 
   makeWebAuthenticatedServiceRequest, 
-  makePlatformUserValidationRequest
+  makePlatformUserValidationRequest,
+  makeInternalAPIServiceRequest
 } from './utils/service-client.js';
 
-import { getKeyServiceUrl } from './utils/config'; // Import the centralized getter
+import { getKeyServiceUrl } from './utils/config.js'; // Added .js
 import { Method } from 'axios';
 
 // --- Endpoint Client Functions --- //
