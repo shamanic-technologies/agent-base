@@ -6,7 +6,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "sh ./build.sh",
+    "build": "pnpm exec tsc",
     "dev": "tsc -w"
   },
   "dependencies": {
