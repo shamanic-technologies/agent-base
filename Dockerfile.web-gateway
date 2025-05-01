@@ -3,33 +3,55 @@
 # Stage 1: Base Dependencies - Use Node.js 20
 FROM node:20-slim AS base
 
+# Create app directory
+WORKDIR /app
+
+# Create a non-root user and group
+RUN groupadd --gid 1001 node && \
+    useradd --uid 1001 --gid node --shell /bin/bash --create-home node
+
+# Set ownership of the app directory
+RUN chown -R node:node /app
+
 # Install pnpm globally (consistent with packageManager field in root package.json)
 RUN npm install -g pnpm
+
+# Switch to non-root user
+USER node
 
 # Stage 2: Build - Build the specific service within the monorepo context
 FROM base AS builder_stage
 
-# Set working directory
+# Set working directory (already owned by node from base stage)
 WORKDIR /app
 
+# Switch back to root temporarily for copying files owned by root
+USER root
+
 # Copy root dependency manifests
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY --chown=node:node package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 # Optional: Copy .npmrc if needed for private packages
-# COPY .npmrc ./
+# COPY --chown=node:node .npmrc ./
 
 # Copy the entire monorepo source code FIRST
+# Copy as root first to avoid potential permission issues with source files
 COPY . .
+# Change ownership of all copied files to the node user
+RUN chown -R node:node /app
 
-# Install ALL monorepo dependencies (using --frozen-lockfile)
-# Reverted from filtered install
-# Temporarily removing --frozen-lockfile for debugging
+# Switch back to the node user for subsequent operations
+USER node
+
+# Install ALL monorepo dependencies (using --frozen-lockfile if possible later)
 RUN pnpm install
 
 # Build only the target service (web-gateway-service) and its dependencies
 RUN pnpm --filter web-gateway-service... build
 
 # Prepare deployment bundle in the builder stage
+# Ensure the target directory exists and is writable by node user (redundant if /app owned)
+# RUN mkdir ./deploy_temp && chown node:node ./deploy_temp
 RUN pnpm --filter web-gateway-service --prod deploy --legacy ./deploy_temp
 
 # Stage 3: Production Runner - Create a smaller final image using pnpm deploy
@@ -37,8 +59,15 @@ FROM base AS runner
 
 WORKDIR /app
 
+# Switch back to root temporarily for copying from builder stage
+USER root
+
 # Copy the pre-built deployment bundle from the builder stage
-COPY --from=builder_stage /app/deploy_temp .
+# Ensure the source path in builder_stage is correct
+COPY --from=builder_stage --chown=node:node /app/deploy_temp .
+
+# Switch to non-root user for running the application
+USER node
 
 # Expose the port the service listens on (ensure this matches your service)
 EXPOSE 8080
