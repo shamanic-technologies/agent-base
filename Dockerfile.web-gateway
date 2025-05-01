@@ -1,0 +1,57 @@
+# Dockerfile for web-gateway-service (located at monorepo root)
+
+# Stage 1: Base Dependencies - Use Node.js 20
+FROM node:20-slim AS base
+
+# Install pnpm globally (consistent with packageManager field in root package.json)
+# Consider pinning the version if strict consistency is needed: npm install -g pnpm@10.6.2
+RUN npm install -g pnpm
+
+# Stage 2: Build - Build the specific service within the monorepo context
+FROM base AS builder
+
+# Set working directory
+WORKDIR /app
+
+# Copy root dependency manifests
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+
+# Optional: Copy .npmrc if needed for private packages
+# COPY .npmrc ./
+
+# Install ALL monorepo dependencies (using --frozen-lockfile)
+# Using --shamefully-hoist based on previous logs; remove if not strictly needed.
+RUN pnpm install --frozen-lockfile --shamefully-hoist
+
+# Copy the entire monorepo source code
+# Necessary for pnpm to build workspace dependencies correctly
+COPY . .
+
+# Build only the target service (web-gateway-service) and its dependencies
+RUN pnpm --filter web-gateway-service... build
+
+# Stage 3: Production Runner - Create a smaller final image
+FROM base AS runner
+
+WORKDIR /app
+
+# Copy necessary root configs (package.json might be needed by the running app)
+COPY package.json ./
+
+# Copy production node_modules from the builder stage
+# The prune command removes devDependencies based on the root package.json
+# --prod ensures only production dependencies are included for the target service
+COPY --from=builder /app/node_modules ./node_modules
+RUN pnpm prune --prod
+
+# Copy the built application code for web-gateway-service from the builder stage
+COPY --from=builder /app/apps/web-gateway-service/dist ./apps/web-gateway-service/dist
+
+# Set the working directory to the service directory for running
+WORKDIR /app/apps/web-gateway-service
+
+# Expose the port the service listens on (ensure this matches your service)
+EXPOSE 8080
+
+# Define the command to run the built service
+CMD ["node", "dist/index.js"] 
