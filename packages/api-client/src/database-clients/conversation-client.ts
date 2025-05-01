@@ -1,18 +1,18 @@
 /**
  * Typed API client functions for interacting with the Database Service Conversation Endpoints.
  */
-import { 
-  ServiceResponse,
-  Conversation, // Use camelCase type for client consistency
-  CreateConversationInput,
-  UpdateConversationInput,
-  AgentId,
-  ConversationId,
-  ConversationRecord,
-  BaseResponse
+import {
+    ServiceResponse,
+    Conversation, // Use camelCase type for client consistency
+    ConversationId,
+    ConversationRecord,
+    BaseResponse,
+    CreateConversationInput,
+    AgentId,
+    UpdateConversationInput
 } from '@agent-base/types';
-import { makeInternalAPIServiceRequest } from '../utils/service-client';
-import { getDatabaseServiceUrl } from '../utils/config'; // Import the centralized getter
+import { makeInternalAPIServiceRequest } from '../utils/service-client.js';
+import { getDatabaseServiceUrl } from '../utils/config.js';
 
 // ==============================================================================
 // Conversation Client Functions

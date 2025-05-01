@@ -6,6 +6,7 @@
  */
 import { z } from 'zod';
 import type { Tool } from 'ai'; // Use type import for clarity
+// @ts-ignore
 import { jsonSchema } from 'ai'; // Import the jsonSchema helper
 import {
     AgentServiceCredentials,

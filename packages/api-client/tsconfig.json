@@ -1,8 +1,6 @@
 {
   "extends": "@kit/tsconfig/base.json",
   "compilerOptions": {
-    "moduleResolution": "nodenext",
-    "module": "nodenext",
     "outDir": "./dist",
     "baseUrl": ".",
     "paths": {
