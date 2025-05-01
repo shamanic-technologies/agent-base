@@ -1,5 +1,7 @@
 [build]
 builder = "NIXPACKS"
+# Explicitly tell Nixpacks to use pnpm
+pkgManager = "pnpm"
 buildCommand = "pnpm install --frozen-lockfile --prod=false && pnpm --filter=web-gateway-service... build"
 
 [deploy]
