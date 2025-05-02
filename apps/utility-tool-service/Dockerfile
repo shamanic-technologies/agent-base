@@ -41,7 +41,7 @@ RUN pnpm --filter @agent-base/types build
 RUN pnpm --filter utility-tool-service... build
 
 # Prepare deployment bundle in the builder stage
-RUN pnpm --filter utility-tool-service --prod deploy --legacy ./deploy_temp
+RUN pnpm --filter utility-tool-service --prod deploy ./deploy_temp
 
 # Stage 3: Production Runner - Create a smaller final image using pnpm deploy
 FROM base AS runner
@@ -55,5 +55,5 @@ COPY --from=builder_stage /app/deploy_temp .
 EXPOSE 8080
 
 # Define the command to run the built service from the root of the runner stage
-# Assumes the main entry point is dist/index.js, adjust if necessary
-CMD ["node", "dist/index.js"] 
+# Changed entry point from index.js to server.js
+CMD ["node", "dist/server.js"] 
