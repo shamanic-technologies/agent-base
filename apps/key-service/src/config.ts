@@ -24,7 +24,7 @@ if (NODE_ENV === 'development') {
 
 // Export configuration constants
 export const PORT = process.env.PORT || 3003;
-export const DB_SERVICE_URL = process.env.DB_SERVICE_URL || 'http://localhost:3006';
+export const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL || 'http://localhost:3006';
 export const SECRET_SERVICE_URL = process.env.SECRET_SERVICE_URL || 'http://localhost:3007';
 
 // Validate essential configuration
@@ -33,4 +33,4 @@ if (!SECRET_SERVICE_URL) {
     process.exit(1);
 }
 
-console.log(`Configuration loaded: Port=${PORT}, DB_URL=${DB_SERVICE_URL}, SecretSvc=${SECRET_SERVICE_URL}`); 
+console.log(`Configuration loaded: Port=${PORT}, DB_URL=${DATABASE_SERVICE_URL}, SecretSvc=${SECRET_SERVICE_URL}`); 
