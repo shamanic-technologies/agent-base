@@ -41,7 +41,7 @@ RUN pnpm --filter @agent-base/types build
 RUN pnpm --filter utility-tool-service... build
 
 # Prepare deployment bundle in the builder stage
-RUN pnpm --filter utility-tool-service --prod deploy ./deploy_temp
+RUN pnpm --filter utility-tool-service --prod deploy --legacy ./deploy_temp
 
 # Stage 3: Production Runner - Create a smaller final image using pnpm deploy
 FROM base AS runner
