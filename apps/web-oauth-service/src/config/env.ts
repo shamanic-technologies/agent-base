@@ -27,8 +27,8 @@ if (NODE_ENV === 'development') {
 const requiredEnvVars = [
   'PORT',
   'CLIENT_APP_URL',
-  'AUTH_SERVICE_URL',
-  'WEB_GATEWAY_URL',
+  // 'AUTH_SERVICE_URL',
+  // 'WEB_GATEWAY_URL',
   'DATABASE_SERVICE_URL',
   'JWT_SECRET',
   'SESSION_SECRET',
@@ -36,7 +36,7 @@ const requiredEnvVars = [
   'GOOGLE_CLIENT_SECRET',
   'GOOGLE_REDIRECT_URI',
   'ALLOWED_REDIRECT_DOMAINS',
-  'COOKIE_DOMAIN'
+  // 'COOKIE_DOMAIN'
 ];
 
 const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
@@ -52,10 +52,10 @@ export const config = {
   clientAppUrl: process.env.CLIENT_APP_URL!,
   
   // Auth service URL (direct)
-  authServiceUrl: process.env.AUTH_SERVICE_URL!,
+  // authServiceUrl: process.env.AUTH_SERVICE_URL!,
   
   // Web gateway URL (for callbacks)
-  webGatewayUrl: process.env.WEB_GATEWAY_URL!,
+  // webGatewayUrl: process.env.WEB_GATEWAY_URL!,
   
   // Database service URL
   databaseServiceUrl: process.env.DATABASE_SERVICE_URL!,
@@ -90,15 +90,15 @@ export const config = {
 export const logConfig = () => {
   console.log('Environment configuration:');
   console.log(`- PORT: ${config.port}`);
-  console.log(`- AUTH_SERVICE_URL: ${config.authServiceUrl}`);
-  console.log(`- WEB_GATEWAY_URL: ${config.webGatewayUrl}`);
+  // console.log(`- AUTH_SERVICE_URL: ${config.authServiceUrl}`);
+  // console.log(`- WEB_GATEWAY_URL: ${config.webGatewayUrl}`);
   console.log(`- GOOGLE_CLIENT_ID: ${config.google.clientId ? `${config.google.clientId.substring(0, 10)}...` : 'not set'}`);
   console.log(`- GOOGLE_CLIENT_SECRET: ${config.google.clientSecret ? `${config.google.clientSecret.substring(0, 5)}...` : 'not set'}`);
   console.log(`- GOOGLE_REDIRECT_URI: ${config.google.redirectUri}`);
   console.log(`- JWT_SECRET: ${config.jwt.secret ? 'set (hidden)' : 'not set'}`);
   console.log(`- SESSION_SECRET: ${config.session.secret ? 'set (hidden)' : 'not set'}`);
   console.log(`- ALLOWED_REDIRECT_DOMAINS: ${config.allowedRedirectDomains.join(', ')}`);
-  console.log(`- COOKIE_DOMAIN: ${process.env.COOKIE_DOMAIN}`);
+  // console.log(`- COOKIE_DOMAIN: ${process.env.COOKIE_DOMAIN}`);
 };
 
 // Cookie settings
