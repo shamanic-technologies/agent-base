@@ -40,6 +40,7 @@ RUN pnpm --filter @agent-base/types build
 # Build only the target service (database-service) and its dependencies
 RUN pnpm --filter database-service... build
 
+
 # Prepare deployment bundle in the builder stage
 RUN pnpm --filter database-service --prod deploy --legacy ./deploy_temp
 
