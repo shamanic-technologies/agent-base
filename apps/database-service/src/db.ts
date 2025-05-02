@@ -31,7 +31,7 @@ export function initDbPool(connectionString: string): void {
   console.log('Initializing database pool...');
   pgPool = new Pool({
     connectionString: connectionString,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    ssl: process.env.NODE_ENV === 'production' ? true : false,
     max: 20,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 10000,
