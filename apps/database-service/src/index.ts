@@ -41,9 +41,9 @@ async function startServer() {
 
   // Check required environment variables
   // Ensure DATABASE_SERVICE_URL is defined before calling
-  const databaseUrl = process.env.DATABASE_SERVICE_URL;
+  const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
-    console.error('FATAL: DATABASE_SERVICE_URL is not defined in the environment. Cannot start server.');
+    console.error('FATAL: DATABASE_URL is not defined in the environment. Cannot start server.');
     process.exit(1); // Exit if the database URL is not configured
   }
 

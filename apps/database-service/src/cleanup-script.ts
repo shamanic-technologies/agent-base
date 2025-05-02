@@ -38,11 +38,12 @@ async function main() {
   
   // Get database URL from environment
   // Use DATABASE_SERVICE_URL instead of DATABASE_URL
-  const databaseUrl = process.env.DATABASE_SERVICE_URL;
+  // const databaseUrl = process.env.DATABASE_SERVICE_URL;
+  const databaseUrl = process.env.DATABASE_URL; // Use standard Railway variable
 
   // Check if DATABASE_SERVICE_URL is defined
   if (!databaseUrl) {
-    console.error('FATAL: DATABASE_SERVICE_URL is not defined in the environment.');
+    console.error('FATAL: DATABASE_URL is not defined in the environment.'); // Updated error message
     process.exit(1);
   }
   
