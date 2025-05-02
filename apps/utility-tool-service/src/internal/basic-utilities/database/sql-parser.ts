@@ -9,11 +9,11 @@
 /**
  * Parses a simple SQL-like query string.
  * @param {string} sql - The SQL-like query string.
- * @param {clientUserIdentificationMapping<string, any>} [params={}] - Optional parameters to substitute.
+ * @param {Record<string, any>} [params={}] - Optional parameters to substitute.
  * @returns {object} - An object containing the parsed components or an error.
  *                     { success: boolean, type?: string, columns?: string[], values?: object, filters?: object, recordId?: string, error?: string }
  */
-export function parseSQL(sql: string, params: clientUserIdentificationMapping<string, any> = {}) {
+export function parseSQL(sql: string, params: Record<string, any> = {}) {
     const normalizedSQL = sql.trim().toLowerCase();
     // Initialize result as any to allow dynamic property assignment
     let result: any = { 

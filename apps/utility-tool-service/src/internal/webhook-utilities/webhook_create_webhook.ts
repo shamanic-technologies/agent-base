@@ -5,7 +5,7 @@
  */
 import { 
     InternalUtilityTool,
-    JsonSchema,
+    ErrorResponse,
     ServiceResponse,
     InternalServiceCredentials, // Use this type for credentials
     Webhook,              // Type for the result of createWebhook

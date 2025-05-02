@@ -7,7 +7,6 @@
 import { 
   InternalUtilityTool,
   ExternalUtilityTool, // Type for the tool configuration object
-  JsonSchema,
   ServiceResponse,
   UtilityProvider,
   AuthMethod,

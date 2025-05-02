@@ -8,7 +8,8 @@ import axios from 'axios';
 import { 
   InternalUtilityTool,
   ErrorResponse, // Import if needed
-  JsonSchema // Import JsonSchema type
+  ServiceResponse,
+  UtilityProvider
 } from '@agent-base/types'; // Corrected path relative to api-utilities/google/
 import { registry } from '../../../registry/registry.js'; // Corrected path
 

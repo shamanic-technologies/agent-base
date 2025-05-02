@@ -5,7 +5,7 @@
  */
 import { 
     InternalUtilityTool,
-    JsonSchema,
+    ErrorResponse,
     ServiceResponse,
     InternalServiceCredentials,
     UserWebhook,

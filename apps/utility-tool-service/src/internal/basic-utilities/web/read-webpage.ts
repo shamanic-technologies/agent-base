@@ -8,7 +8,8 @@
 import { 
   InternalUtilityTool, 
   ErrorResponse,
-  JsonSchema
+  ServiceResponse,
+  UtilityProvider
 } from '@agent-base/types';
 import { registry } from '../../../registry/registry.js';
 

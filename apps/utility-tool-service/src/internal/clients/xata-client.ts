@@ -14,10 +14,20 @@ import { v4 as uuidv4 } from 'uuid';
  * @returns A configured Xata client
  */
 export function getXataClient() {
-  // Create a client for the default database
-  return new BaseClient({
-    databaseURL: process.env.XATA_DATABASE_URL,
-    apiKey: process.env.XATA_API_KEY,
+  const apiKey = process.env.XATA_API_KEY;
+  const databaseURL = process.env.XATA_DATABASE_URL;
+  
+  if (!apiKey) {
+    throw new Error("Xata API Key not configured in environment variables (XATA_API_KEY).");
+  }
+  if (!databaseURL) {
+    throw new Error("Xata Database URL not configured in environment variables (XATA_DATABASE_URL).");
+  }
+  
+  // Return a new instance of the client with the required configuration
+  return new BaseClient({ 
+    apiKey: apiKey,
+    databaseURL: databaseURL,
     branch: process.env.XATA_BRANCH || 'main'
   });
 }
@@ -65,7 +75,7 @@ export interface TableInfo {
   id: string; // Consistent ID format, e.g., table_${tableName}
   name: string;
   description?: string; // Optional description
-  schema: clientUserIdentificationMapping<string, string>; // Column name -> Xata type
+  schema: Record<string, string>; // Column name -> Xata type
 }
 
 /**
@@ -376,7 +386,7 @@ export async function getXataDatabaseInfo(databaseId: string): Promise<{ databas
           // Type definition for schema response
           type XataSchemaResponse = { columns?: Array<{ name: string; type: string; [key: string]: any }> };
           const tableSchemaData = await tableSchemaResponse.json() as XataSchemaResponse;
-          const schema: clientUserIdentificationMapping<string, string> = {};
+          const schema: Record<string, string> = {};
           
           // Convert Xata schema columns to simple key-value format
           if (tableSchemaData.columns) {

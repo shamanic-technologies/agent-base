@@ -6,7 +6,7 @@
 import { 
   InternalUtilityTool, 
   ErrorResponse,
-  JsonSchema
+  UtilityProvider
 } from '@agent-base/types';
 import { registry } from '../../../registry/registry.js';
 import {
@@ -78,7 +78,7 @@ const alterTableUtility: InternalUtilityTool = {
         type: 'object',
         properties: {
           name: { type: 'string', description: 'Name of the new column.' },
-          type: { type: 'string', description: 'Type of the new column.', enum: xataColumnTypes }
+          type: { type: 'string', description: 'Type of the new column.', enum: [...xataColumnTypes] }
         },
         required: ['name', 'type'],
         description: 'Definition of a column to add to the table.',

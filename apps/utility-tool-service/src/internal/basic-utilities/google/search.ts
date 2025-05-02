@@ -9,7 +9,8 @@
 import { 
   InternalUtilityTool, 
   ErrorResponse,
-  JsonSchema
+  ServiceResponse,
+  UtilityProvider
 } from '@agent-base/types'; // Corrected path relative to api-utilities/google/
 import { registry } from '../../../registry/registry.js'; // Corrected path
 
