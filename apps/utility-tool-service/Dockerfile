@@ -54,6 +54,7 @@ COPY --from=builder_stage /app/deploy_temp .
 # Expose the port the service listens on (ensure this matches your service, 8080 from railway.toml)
 EXPOSE 8080
 
+
 # Define the command to run the built service from the root of the runner stage
 # Changed entry point from index.js to server.js
 CMD ["node", "dist/server.js"] 
