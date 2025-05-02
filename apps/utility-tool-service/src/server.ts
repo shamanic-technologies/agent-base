@@ -1,3 +1,5 @@
+console.log('🔵 [UTILITY SERVICE] Script starting...');
+
 /**
  * Utility Tool Service API Server
  * 
@@ -62,6 +64,7 @@ const PORT = process.env.PORT || 3050;
 app.use(cors());
 app.use(express.json());
 
+console.log('🟢 [UTILITY SERVICE] Middleware configured.');
 
 // Centralized Error Handler
 const handleServiceError = (res: Response, error: any, prefix: string) => {
@@ -75,24 +78,12 @@ const handleServiceError = (res: Response, error: any, prefix: string) => {
     res.status(statusCode).json(response);
 };
 
-// Health check endpoint
+// Health check endpoint (Simplified)
 app.get('/health', (req, res) => {
-  console.log(`📡 [UTILITY SERVICE] Health check request received from ${req.ip}`);
-  let addressInfo = null;
-  try {
-    // @ts-ignore - Server info object access
-    const serverObj = req.socket?.server || req.connection?.server;
-    if (serverObj && typeof serverObj.address === 'function') {
-      addressInfo = serverObj.address();
-    }
-  } catch (error) {
-    console.error(`⚠️ [UTILITY SERVICE] Error getting server info:`, error);
-  }
+  console.log(`📡 [UTILITY SERVICE] Health check request received from ${req.ip}. Responding OK.`);
   res.status(200).json({
     status: 'healthy',
     environment: nodeEnv,
-    version: process.env.npm_package_version,
-    serverInfo: { address: addressInfo }
   });
 });
 
@@ -235,9 +226,11 @@ app.post('/call-tool/:id', async (req, res) => {
   }
 });
 
+console.log(`🟡 [UTILITY SERVICE] Attempting to listen on port: ${PORT}`);
+
 // Start the server
 app.listen(PORT, () => {
-  console.log(`🛠️ [UTILITY SERVICE] Utility Service running on port ${PORT}`);
+  console.log(`✅ [UTILITY SERVICE] Successfully listening on port ${PORT}`);
   console.log(`🌐 [UTILITY SERVICE] Environment: ${nodeEnv}`);
   console.log(`📦 [UTILITY SERVICE] Available internal utilities: ${registry.getInternalUtilityIds().join(', ')}`);
 });
