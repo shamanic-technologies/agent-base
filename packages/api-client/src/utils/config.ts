@@ -118,9 +118,10 @@ export function getAgentServiceUrl(): string {
  */
 export function getWebhookStoreServiceUrl(): string {
   // Default port 4000 based on openapi.json
-  const url = process.env.WEBHOOK_STORE_INTERNAL_API_URL || 'http://localhost:4000/api/v1/webhooks'; 
-  if (!process.env.WEBHOOK_STORE_INTERNAL_API_URL) {
-    console.warn('[api-client/config] WEBHOOK_STORE_SERVICE_URL environment variable not set. Defaulting to ' + url);
+  const url = process.env.WEBHOOK_STORE_API_URL || 'http://localhost:4000/api/v1/webhooks';
+  if (!process.env.WEBHOOK_STORE_API_URL) {
+    // Using logger instead of console.warn for consistency if logger exists
+    console.warn('[api-client/config] WEBHOOK_STORE_API_URL environment variable not set. Defaulting to ' + url);
   }
   return url;
 } 
