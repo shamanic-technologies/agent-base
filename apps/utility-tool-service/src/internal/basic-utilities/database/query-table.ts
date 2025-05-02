@@ -6,8 +6,7 @@
  */
 import { 
   InternalUtilityTool, 
-  ErrorResponse,
-  JsonSchema
+  ErrorResponse
 } from '@agent-base/types';
 import { registry } from '../../../registry/registry.js';
 import {

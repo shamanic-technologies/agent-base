@@ -4,10 +4,9 @@
  * Returns the current date and time in various formats
  */
 import { format } from 'date-fns';
-import { 
+import {
   InternalUtilityTool,
-  ErrorResponse,
-  JsonSchema // Import necessary types
+  ErrorResponse
 } from '@agent-base/types';
 import { registry } from '../../registry/registry.js';
 

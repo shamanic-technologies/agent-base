@@ -7,8 +7,7 @@
 import axios from 'axios';
 import { 
   InternalUtilityTool,
-  ErrorResponse,
-  JsonSchema
+  ErrorResponse
 } from '@agent-base/types';  
 import { registry } from '../../../registry/registry.js';
 
@@ -131,7 +130,7 @@ const googleFlightsUtility: InternalUtilityTool = {
       cabin_class: { 
         type: 'string',
         description: 'Cabin class preference.',
-        enum: cabinClasses,
+        enum: [...cabinClasses],
         examples: ['economy', 'business']
       }
     },

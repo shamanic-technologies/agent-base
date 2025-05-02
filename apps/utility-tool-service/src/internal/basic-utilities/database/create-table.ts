@@ -5,8 +5,7 @@
  */
 import { 
     InternalUtilityTool, 
-    ErrorResponse,
-    JsonSchema
+    ErrorResponse
 } from '@agent-base/types';
 import { registry } from '../../../registry/registry.js';
 import { 
@@ -78,7 +77,7 @@ const createTableUtility: InternalUtilityTool = {
         description: 'The schema definition: keys are column names, values are Xata data types.',
         additionalProperties: { 
           type: 'string',
-          enum: xataColumnTypes
+          enum: [...xataColumnTypes]
         },
         examples: [{
           "email": "email",
