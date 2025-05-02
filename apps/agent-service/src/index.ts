@@ -73,6 +73,11 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
  */
 app.use((req, res, next) => {
   try {
+    // Bypass authentication check for the health endpoint
+    if (req.path === '/health') {
+      return next(); // Skip header checks for /health
+    }
+
     // Get user IDs from headers set by API gateway middleware
     const clientUserId = req.headers['x-client-user-id'] as string;
     const platformUserIdHeader = req.headers['x-platform-user-id'] as string;
