@@ -2,7 +2,7 @@
  * Database service for interacting with the DB service
  * Handles all API calls to the database service and API key management
  */
-import { DB_SERVICE_URL } from '../config.js';
+import { DATABASE_SERVICE_URL } from '../config.js';
 import { 
   CreateApiKeyRequest,
   ValidateApiKeyResponse,
@@ -77,7 +77,7 @@ export async function getUserApiKeys(platformUserId: string): Promise<ServiceRes
   try {
     console.log(`Fetching API keys for user: ${platformUserId}`);
     const response = await makeWebAuthenticatedServiceRequest<ApiKey[]>(
-      DB_SERVICE_URL, 
+      DATABASE_SERVICE_URL, 
       'get', 
       '/api-keys', 
       platformUserId
@@ -121,7 +121,7 @@ export async function validateApiKey(apiKey: string): Promise<ServiceResponse<Ap
 
     // Use anonymous request: DB service validates the key and returns the associated user info (including platformUserId)
     const validateResponse = await makeWebAnonymousServiceRequest<ApiKey>(
-      DB_SERVICE_URL,
+      DATABASE_SERVICE_URL,
       'post',
       '/api-keys/validate',
       validatePayload
