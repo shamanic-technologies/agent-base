@@ -36,10 +36,13 @@ const WHITELIST_TABLES: string[] = [
 async function main() {
   console.log("Starting database cleanup...");
   
-  // Initialize database connection
-  const databaseUrl = process.env.DATABASE_URL;
+  // Get database URL from environment
+  // Use DATABASE_SERVICE_URL instead of DATABASE_URL
+  const databaseUrl = process.env.DATABASE_SERVICE_URL;
+
+  // Check if DATABASE_SERVICE_URL is defined
   if (!databaseUrl) {
-    console.error('FATAL: DATABASE_URL is not defined in the environment.');
+    console.error('FATAL: DATABASE_SERVICE_URL is not defined in the environment.');
     process.exit(1);
   }
   

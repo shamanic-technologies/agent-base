@@ -39,13 +39,16 @@ import { initializeAllSchemas } from './utils/schema-initializer.js';
 async function startServer() {
   console.log('Starting server process...');
 
-  // Initialize the database pool with the connection string from environment variables
-  // Ensure DATABASE_URL is defined before calling
-  const databaseUrl = process.env.DATABASE_URL;
+  // Check required environment variables
+  // Ensure DATABASE_SERVICE_URL is defined before calling
+  const databaseUrl = process.env.DATABASE_SERVICE_URL;
   if (!databaseUrl) {
-    console.error('FATAL: DATABASE_URL is not defined in the environment. Cannot start server.');
-    process.exit(1);
+    console.error('FATAL: DATABASE_SERVICE_URL is not defined in the environment. Cannot start server.');
+    process.exit(1); // Exit if the database URL is not configured
   }
+
+  // Initialize the database pool with the correct connection string
+  console.log('🔑 Initializing Database Pool...');
   initDbPool(databaseUrl);
 
   // Test database connection AFTER initializing the pool
