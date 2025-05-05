@@ -145,4 +145,31 @@ export async function resolveWebhook(
         webhookResolutionRequest, // Request body
         undefined, // params
     );
+}
+
+/**
+ * Fetches all webhook definitions created by the specified user.
+ * @param baseUrl - Base URL of the webhook-store service.
+ * @param credentials - Internal service credentials containing platformApiKey, platformUserId, clientUserId.
+ * @returns ServiceResponse containing an array of Webhooks or an error.
+ */
+export async function getUserCreatedWebhooks(
+    credentials: InternalServiceCredentials
+): Promise<ServiceResponse<Webhook[]>> {
+    const { platformUserId, clientUserId, platformApiKey, agentId: credentialsAgentId } = credentials;
+    // Ensure clientUserId is provided as it's essential for this endpoint
+    if (!clientUserId) {
+        return { success: false, error: 'Client Error', message: 'clientUserId is required for getUserCreatedWebhooks.' };
+    }
+    return makeInternalAPIServiceRequest<Webhook[]>(
+        getWebhookStoreServiceUrl(),
+        'POST' as Method,
+        '/get-user-created-webhooks', // The new endpoint path
+        platformUserId,
+        clientUserId,
+        platformApiKey,
+        {}, // No request body needed for this endpoint
+        undefined, // No params
+        credentialsAgentId
+    );
 } 

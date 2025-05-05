@@ -282,5 +282,222 @@
     "description": "Lists messages from a Crisp chat conversation using header authentication",
     "requiredSecrets": [],
     "utilityProvider": "crisp"
+  },
+  {
+    "id": "gmail_list_messages",
+    "utilityProvider": "gmail",
+    "description": "Liste les messages récents dans la boîte de réception Gmail de l'utilisateur.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "maxResults": {
+          "type": "integer",
+          "description": "Nombre maximum de messages à récupérer (max: 500).",
+          "examples": [
+            10
+          ]
+        },
+        "q": {
+          "type": "string",
+          "description": "Requête de recherche optionnelle au format Gmail (ex: 'from:example@gmail.com').",
+          "examples": [
+            "is:unread"
+          ]
+        },
+        "includeSpamTrash": {
+          "type": "boolean",
+          "description": "Inclure les messages du dossier Spam et Corbeille.",
+          "examples": [
+            false
+          ]
+        }
+      }
+    },
+    "authMethod": "OAUTH",
+    "requiredScopes": [
+      "https://www.googleapis.com/auth/gmail.readonly"
+    ],
+    "requiredSecrets": [],
+    "apiDetails": {
+      "method": "GET",
+      "baseUrl": "https://gmail.googleapis.com/gmail/v1",
+      "pathTemplate": "/users/me/messages",
+      "paramMappings": {
+        "query": {
+          "maxResults": "maxResults",
+          "q": "q",
+          "includeSpamTrash": "includeSpamTrash"
+        }
+      }
+    }
+  },
+  {
+    "id": "gmail_get_message",
+    "utilityProvider": "gmail",
+    "description": "Récupère le contenu d'un message Gmail spécifique.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "L'ID du message à récupérer.",
+          "examples": [
+            "1234567890abcdef"
+          ]
+        },
+        "format": {
+          "type": "string",
+          "description": "Format de retour du message (FULL, MINIMAL, RAW, METADATA).",
+          "examples": [
+            "FULL"
+          ],
+          "enum": [
+            "FULL",
+            "MINIMAL",
+            "RAW",
+            "METADATA"
+          ]
+        }
+      }
+    },
+    "authMethod": "OAUTH",
+    "requiredScopes": [
+      "https://www.googleapis.com/auth/gmail.readonly"
+    ],
+    "requiredSecrets": [],
+    "apiDetails": {
+      "method": "GET",
+      "baseUrl": "https://gmail.googleapis.com/gmail/v1",
+      "pathTemplate": "/users/me/messages/{id}",
+      "paramMappings": {
+        "path": {
+          "id": "id"
+        },
+        "query": {
+          "format": "format"
+        }
+      }
+    }
+  },
+  {
+    "id": "stripe_list_refunds",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "type": "integer",
+          "examples": [
+            10
+          ],
+          "description": "Nombre maximum de remboursements à récupérer (max: 100)."
+        },
+        "starting_after": {
+          "type": "string",
+          "examples": [
+            "re_1Nispe2eZvKYlo2Cd31jOCgZ"
+          ],
+          "description": "ID du remboursement après lequel commencer la liste."
+        },
+        "ending_before": {
+          "type": "string",
+          "examples": [
+            "re_1Nispe2eZvKYlo2Cd31jOCgZ"
+          ],
+          "description": "ID du remboursement avant lequel terminer la liste."
+        }
+      }
+    },
+    "apiDetails": {
+      "method": "GET",
+      "baseUrl": "https://api.stripe.com/v1",
+      "pathTemplate": "/refunds",
+      "paramMappings": {
+        "query": {
+          "limit": "limit",
+          "starting_after": "starting_after",
+          "ending_before": "ending_before"
+        }
+      }
+    },
+    "authMethod": "API_KEY",
+    "description": "Liste les remboursements récents dans votre compte Stripe.",
+    "requiredSecrets": [
+      "api_secret_key"
+    ],
+    "apiKeyDetails": {
+      "secretName": "api_secret_key",
+      "scheme": "Bearer"
+    },
+    "utilityProvider": "stripe"
+  },
+  {
+    "id": "stripe_get_refund",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "examples": [
+            "re_1Nispe2eZvKYlo2Cd31jOCgZ"
+          ],
+          "description": "L'ID du remboursement à récupérer."
+        }
+      }
+    },
+    "apiDetails": {
+      "method": "GET",
+      "baseUrl": "https://api.stripe.com/v1",
+      "pathTemplate": "/refunds/{id}",
+      "paramMappings": {
+        "path": {
+          "id": "id"
+        }
+      }
+    },
+    "authMethod": "API_KEY",
+    "description": "Récupère les détails d'un remboursement spécifique dans votre compte Stripe.",
+    "requiredSecrets": [
+      "api_secret_key"
+    ],
+    "apiKeyDetails": {
+      "secretName": "api_secret_key",
+      "scheme": "Bearer"
+    },
+    "utilityProvider": "stripe"
+  },
+  {
+    "id": "stripe_get_charge",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "examples": [
+            "ch_3R5LCHGlVst8Q7tM0lGT1PYu"
+          ],
+          "description": "L'ID de la charge à récupérer."
+        }
+      }
+    },
+    "apiDetails": {
+      "method": "GET",
+      "baseUrl": "https://api.stripe.com/v1",
+      "pathTemplate": "/charges/{id}",
+      "paramMappings": {
+        "path": {
+          "id": "id"
+        }
+      }
+    },
+    "authMethod": "API_KEY",
+    "description": "Récupère les détails d'une charge spécifique dans votre compte Stripe.",
+    "apiKeyDetails": {
+      "scheme": "Bearer",
+      "secretName": "api_secret_key"
+    },
+    "requiredSecrets": [
+      "api_secret_key"
+    ],
+    "utilityProvider": "stripe"
   }
 ]
