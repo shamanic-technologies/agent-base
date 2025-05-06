@@ -20,7 +20,7 @@ export async function getOrCreateAgent(
 ): Promise<ServiceResponse<Agent>> { // Assuming the endpoint returns an Agent object
   const serviceUrl = getAgentBaseApiUrl(); // Use the API Gateway URL
   const endpoint = AGENT_SERVICE_ROUTE_PREFIX + '/get-or-create-user-agents'; // Assumed endpoint path
-  const method = 'POST'; // Assuming POST for get-or-create logic
+  const method = 'GET';
 
   // Validate that necessary credentials are provided
   if (!platformUserApiServiceCredentials || !platformUserApiServiceCredentials.platformClientUserId || !platformUserApiServiceCredentials.platformApiKey) {
