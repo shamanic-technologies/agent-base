@@ -72,6 +72,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
  * - x-platform-user-id: ID of the platform user (tenant/customer) owning the API key. Passed downstream.
  */
 app.use((req, res, next) => {
+  console.log('Request received:', req.path, req.params, req.body);
   try {
     // Bypass authentication check for the health endpoint
     if (req.path === '/health') {
