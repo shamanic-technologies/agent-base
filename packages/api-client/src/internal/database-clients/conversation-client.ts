@@ -11,8 +11,8 @@ import {
     AgentId,
     UpdateConversationInput
 } from '@agent-base/types';
-import { makeInternalAPIServiceRequest } from '../utils/service-client.js';
-import { getDatabaseServiceUrl } from '../utils/config.js';
+import { makeInternalAPIServiceRequest } from '../../utils/service-client.js';
+import { getDatabaseServiceUrl } from '../../utils/config.js';
 
 // ==============================================================================
 // Conversation Client Functions

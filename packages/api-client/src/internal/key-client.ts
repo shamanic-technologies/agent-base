@@ -17,9 +17,9 @@ import {
   makeWebAuthenticatedServiceRequest, 
   makePlatformUserValidationRequest,
   makeInternalAPIServiceRequest
-} from './utils/service-client.js';
+} from '../utils/service-client.js';
 
-import { getKeyServiceUrl } from './utils/config.js'; // Added .js
+import { getKeyServiceUrl } from '../utils/config.js'; // Added .js
 import { Method } from 'axios';
 
 // --- Endpoint Client Functions --- //

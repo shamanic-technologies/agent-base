@@ -9,8 +9,8 @@ import {
   ValidateApiKeyResponse, // Response type for validation endpoint
   ApiKeyRecord
 } from '@agent-base/types';
-import { makeWebAuthenticatedServiceRequest } from '../utils/service-client.js';
-import { getDatabaseServiceUrl } from '../utils/config.js'; // Import the centralized getter
+import { makeWebAuthenticatedServiceRequest } from '../../utils/service-client.js';
+import { getDatabaseServiceUrl } from '../../utils/config.js'; // Import the centralized getter
 import { Method } from 'axios';
 
 // ==============================================================================

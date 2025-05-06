@@ -8,8 +8,8 @@ import {
 } from '@agent-base/types';
 //@ts-ignore
 import { Message } from 'ai';
-import { makeInternalAPIServiceRequest } from '../utils/service-client.js';
-import { getAgentServiceUrl } from '../utils/config.js'; // Assuming this function exists or will be created
+import { makeInternalAPIServiceRequest } from '../../utils/service-client.js';
+import { getAgentServiceUrl } from '../../utils/config.js'; // Assuming this function exists or will be created
 
 /**
  * Triggers the agent run process for a given conversation and message.

@@ -15,8 +15,8 @@ import {
     WebhookResolutionResult,
     WebhookResolutionRequest
 } from '@agent-base/types';
-import { makeExternalApiServiceRequest, makeInternalAPIServiceRequest } from './utils/service-client.js';
-import { getApiGatewayServiceUrl } from './utils/config.js';
+import { makeExternalApiServiceRequest, makeInternalAPIServiceRequest } from '../utils/service-client.js';
+import { getApiGatewayServiceUrl } from '../utils/config.js';
 
 // --- Define specific credential types needed by this client ---
 

@@ -11,8 +11,8 @@ import {
     // Import only necessary types from @agent-base/types
     // Add specific record/input types here if they become available and are needed
 } from '@agent-base/types';
-import { makeClientUserValidationRequest } from '../utils/service-client.js'; // Reverted import, added .js
-import { getDatabaseServiceUrl } from '../utils/config.js'; // Added .js
+import { makeClientUserValidationRequest } from '../../utils/service-client.js'; // Reverted import, added .js
+import { getDatabaseServiceUrl } from '../../utils/config.js'; // Added .js
 import { Method } from 'axios';
 
 // Ensure the URL points to the correct database service

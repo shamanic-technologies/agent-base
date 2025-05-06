@@ -13,8 +13,8 @@ import {
     ListUtilities,
     ExecuteToolPayload
 } from '@agent-base/types';
-import { makeInternalAPIServiceRequest } from './utils/service-client.js'; // Import the shared helper
-import { getApiGatewayServiceUrl } from './utils/config.js';
+import { makeInternalAPIServiceRequest } from '../utils/service-client.js'; // Import the shared helper
+import { getApiGatewayServiceUrl } from '../utils/config.js';
 
 
 

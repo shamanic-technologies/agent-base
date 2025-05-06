@@ -12,8 +12,8 @@ import {
 } from '@agent-base/types';
 //@ts-ignore
 import { Message } from 'ai'; // Import Message from 'ai'
-import { makePlatformUserApiServiceRequest, makeInternalAPIServiceRequest } from '../utils/service-client.js'; // Added .js
-import { getAgentServiceUrl, getApiGatewayServiceUrl } from '../utils/config.js'; // Added .js
+import { makePlatformUserApiServiceRequest, makeInternalAPIServiceRequest } from '../../utils/service-client.js'; // Added .js
+import { getAgentServiceUrl, getApiGatewayServiceUrl } from '../../utils/config.js'; // Added .js
 import { Method } from 'axios';
 
 const API_GATEWAY_URL = getApiGatewayServiceUrl();

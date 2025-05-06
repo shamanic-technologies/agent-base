@@ -116,12 +116,27 @@ export function getAgentServiceUrl(): string {
  * Includes a warning if the environment variable is not set.
  * @returns The Webhook Store Service URL string.
  */
-export function getWebhookStoreServiceUrl(): string {
+export function getWebhookStoreApiUrl(): string {
   // Default port 4000 based on openapi.json
   const url = process.env.WEBHOOK_STORE_API_URL || 'http://localhost:4000/api/v1/webhooks';
   if (!process.env.WEBHOOK_STORE_API_URL) {
     // Using logger instead of console.warn for consistency if logger exists
     console.warn('[api-client/config] WEBHOOK_STORE_API_URL environment variable not set. Defaulting to ' + url);
+  }
+  return url;
+} 
+
+/**
+ * Retrieves the Webhook Store Service URL from environment variables or defaults.
+ * Includes a warning if the environment variable is not set.
+ * @returns The Webhook Store Service URL string.
+ */
+export function getAgentBaseApiUrl(): string {
+  // Default port 4000 based on openapi.json
+  const url = process.env.AGENT_BASE_API_URL || 'http://localhost:3002';
+  if (!process.env.AGENT_BASE_API_URL) {
+    // Using logger instead of console.warn for consistency if logger exists
+    console.warn('[api-client/config] AGENT_BASE_API_URL environment variable not set. Defaulting to ' + url);
   }
   return url;
 } 
