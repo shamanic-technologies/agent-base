@@ -16,7 +16,7 @@ import {
     WebhookResolutionRequest
 } from '@agent-base/types';
 import { makeExternalApiServiceRequest, makeInternalAPIServiceRequest } from './utils/service-client.js';
-import { getWebhookStoreServiceUrl } from './utils/config.js';
+import { getApiGatewayServiceUrl } from './utils/config.js';
 
 // --- Define specific credential types needed by this client ---
 
@@ -25,9 +25,8 @@ import { getWebhookStoreServiceUrl } from './utils/config.js';
 // --- API Wrapper Functions ---
 
 /**
- * Creates a new webhook definition.
+ * Creates a new webhook definition via the API Gateway.
  * Note: Uses InternalAPIServiceRequest which expects clientUserId, but it's not needed/used by the endpoint.
- * @param baseUrl - Base URL of the webhook-store service.
  * @param data - Webhook definition data.
  * @param credentials - Platform authentication credentials.
  * @returns ServiceResponse containing the created Webhook or an error.
@@ -38,22 +37,21 @@ export async function createWebhook(
 ): Promise<ServiceResponse<Webhook>> {
     const { platformUserId, clientUserId, platformApiKey, agentId: credentialsAgentId } = credentials;
     return makeInternalAPIServiceRequest<Webhook>(
-        getWebhookStoreServiceUrl(),
+        getApiGatewayServiceUrl(),
         'POST' as Method,
-        '/',
+        '/webhook/',
         platformUserId, 
         clientUserId, 
         platformApiKey,
-        data, // request body
-        undefined, // params
+        data,
+        undefined,
         credentialsAgentId
     );
 }
 
 /**
- * Searches for webhook definitions.
+ * Searches for webhook definitions via the API Gateway.
  * Note: Uses InternalAPIServiceRequest which expects clientUserId, but it's not needed/used by the endpoint.
- * @param baseUrl - Base URL of the webhook-store service.
  * @param searchParams - Search query and limit.
  * @param credentials - Platform authentication credentials.
  * @returns ServiceResponse containing an array of Webhooks or an error.
@@ -64,21 +62,20 @@ export async function searchWebhooks(
 ): Promise<ServiceResponse<Webhook[]>> {
     const { platformUserId, clientUserId, platformApiKey, agentId: credentialsAgentId } = credentials;
     return makeInternalAPIServiceRequest<Webhook[]>(
-        getWebhookStoreServiceUrl(),
+        getApiGatewayServiceUrl(),
         'POST' as Method,
-        '/search',
+        '/webhook/search',
         platformUserId,
         clientUserId,
         platformApiKey,
-        searchParams, // request body
-        undefined, // params
+        searchParams,
+        undefined,
         credentialsAgentId
     );
 }
 
 /**
- * Links a webhook to a user, potentially returning setup instructions.
- * @param baseUrl - Base URL of the webhook-store service.
+ * Links a webhook to a user via the API Gateway, potentially returning setup instructions.
  * @param webhookId - ID of the webhook to link.
  * @param credentials - Internal service credentials containing platformApiKey, platformUserId, clientUserId.
  * @returns ServiceResponse containing the UserWebhook, WebhookSetupNeeded, or an error.
@@ -89,23 +86,22 @@ export async function linkUserToWebhook(
 ): Promise<ServiceResponse<UserWebhook | SetupNeeded>> {
     const { platformUserId, clientUserId, platformApiKey, agentId: credentialsAgentId } = credentials;
     return makeInternalAPIServiceRequest<UserWebhook | SetupNeeded>(
-        getWebhookStoreServiceUrl(),
+        getApiGatewayServiceUrl(),
         'POST' as Method,
-        `/${webhookId}/link-user`,
+        `/webhook/${webhookId}/link-user`,
         platformUserId,
         clientUserId,
         platformApiKey,
-        {}, // No request body
-        undefined, // params
+        {},
+        undefined,
         credentialsAgentId
     );
 }
 
 /**
- * Links an agent to an active user-webhook link.
- * @param baseUrl - Base URL of the webhook-store service.
+ * Links an agent to an active user-webhook link via the API Gateway.
  * @param webhookId - ID of the webhook.
- * @param agentData - Object containing the agentId.
+ * @param agentId - ID of the agent to link.
  * @param credentials - Internal service credentials containing platformApiKey, platformUserId, clientUserId.
  * @returns ServiceResponse containing the WebhookAgentLink or an error.
  */
@@ -116,40 +112,44 @@ export async function linkAgentToWebhook(
 ): Promise<ServiceResponse<WebhookAgentLink>> {
     const { platformUserId, clientUserId, platformApiKey, agentId: credentialsAgentId } = credentials;
     return makeInternalAPIServiceRequest<WebhookAgentLink>(
-        getWebhookStoreServiceUrl(),
+        getApiGatewayServiceUrl(),
         'POST' as Method,
-        `/${webhookId}/link-agent`,
+        `/webhook/${webhookId}/link-agent`,
         platformUserId,
         clientUserId,
         platformApiKey,
-        { agentId }, // request body
-        undefined, // params
+        { agentId },
+        undefined,
         credentialsAgentId
     );
 }
 
 /**
- * Resolves webhook identification information (platformUserId, clientUserId, agentId, conversationId).
- * @param webhookProviderId - The ID of the webhook provider.
- * @param payload - The incoming webhook event payload.
- * @param internalServicecredentials - Internal service credentials (used for auth between services, though might not be strictly needed by the resolve endpoint itself).
+ * Resolves webhook identification information (platformUserId, clientUserId, agentId, conversationId) via the API Gateway.
+ * @param webhookResolutionRequest - The incoming webhook event payload and provider ID.
+ * @param credentials - Internal service credentials (platformUserId, clientUserId, platformApiKey).
  * @returns ServiceResponse containing the WebhookResolutionResult or an error.
  */
 export async function resolveWebhook(
-    webhookResolutionRequest: WebhookResolutionRequest
+    webhookResolutionRequest: WebhookResolutionRequest,
+    credentials: InternalServiceCredentials
 ): Promise<ServiceResponse<WebhookResolutionResult>> {
-    return makeExternalApiServiceRequest<WebhookResolutionResult>(
-        getWebhookStoreServiceUrl(),
+    const { platformUserId, clientUserId, platformApiKey, agentId: credentialsAgentId } = credentials;
+    return makeInternalAPIServiceRequest<WebhookResolutionResult>(
+        getApiGatewayServiceUrl(),
         'POST' as Method,
-        '/resolve', // Assuming this is the correct path
-        webhookResolutionRequest, // Request body
-        undefined, // params
+        '/webhook/resolve',
+        platformUserId,
+        clientUserId,
+        platformApiKey,
+        webhookResolutionRequest,
+        undefined,
+        credentialsAgentId
     );
 }
 
 /**
- * Fetches all webhook definitions created by the specified user.
- * @param baseUrl - Base URL of the webhook-store service.
+ * Fetches all webhook definitions created by the specified user via the API Gateway.
  * @param credentials - Internal service credentials containing platformApiKey, platformUserId, clientUserId.
  * @returns ServiceResponse containing an array of Webhooks or an error.
  */
@@ -157,19 +157,18 @@ export async function getUserCreatedWebhooks(
     credentials: InternalServiceCredentials
 ): Promise<ServiceResponse<Webhook[]>> {
     const { platformUserId, clientUserId, platformApiKey, agentId: credentialsAgentId } = credentials;
-    // Ensure clientUserId is provided as it's essential for this endpoint
     if (!clientUserId) {
         return { success: false, error: 'Client Error', message: 'clientUserId is required for getUserCreatedWebhooks.' };
     }
     return makeInternalAPIServiceRequest<Webhook[]>(
-        getWebhookStoreServiceUrl(),
+        getApiGatewayServiceUrl(),
         'POST' as Method,
-        '/get-user-created-webhooks', // The new endpoint path
+        '/webhook/get-user-created-webhooks',
         platformUserId,
         clientUserId,
         platformApiKey,
-        {}, // No request body needed for this endpoint
-        undefined, // No params
+        {},
+        undefined,
         credentialsAgentId
     );
 } 

@@ -8,6 +8,8 @@ import { configureHealthRoutes } from './health.routes.js';
 import { configureAgentRoutes } from './agent.routes.js';
 import { configureUtilityRoutes } from './utility.routes.js';
 import { configureSecretRoutes } from './secret.routes.js';
+// Import webhook routes config
+import { configureWebhookRoutes } from './webhook.routes.js';
 
 /**
  * Configure all routes for the API Gateway
@@ -24,6 +26,7 @@ export const configureRoutes = (
     key: string;
     logging: string;
     secret: string;
+    webhookTool: string;
   },
   authMiddleware: express.RequestHandler
 ) => {
@@ -62,5 +65,11 @@ export const configureRoutes = (
   const secretRouter = express.Router();
   configureSecretRoutes(secretRouter, serviceUrls.secret, authMiddleware);
   app.use('/secret', secretRouter);
+
+  // Webhook service routes
+  const webhookRouter = express.Router();
+  // Pass the renamed key from serviceUrls
+  configureWebhookRoutes(webhookRouter, serviceUrls.webhookTool, authMiddleware);
+  app.use('/webhook', webhookRouter);
 
 }; 
