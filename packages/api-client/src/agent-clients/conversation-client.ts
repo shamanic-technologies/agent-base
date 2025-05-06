@@ -35,8 +35,6 @@ export const getOrCreateConversationsExternalApiService = async (
     const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/conversation/get-or-create-conversations-from-agent`;
     const queryParams = { agentId }; 
 
-    console.log(`[API Client] Calling API Gateway: GET ${API_GATEWAY_URL}${endpoint}`);
-
     return makePlatformUserApiServiceRequest<Conversation[]>( 
         API_GATEWAY_URL,
         'GET',

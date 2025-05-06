@@ -32,7 +32,6 @@ import { Method } from 'axios';
     }
     const endpoint = '/validate';
     const url = `${getWebOauthServiceUrl()}${endpoint}`;
-    console.log(`[api-client] Validating token via POST to ${url}`);
 
     try {
       const response = await axios.post<ServiceResponse<PlatformUser>>(

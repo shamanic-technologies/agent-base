@@ -15,7 +15,6 @@
   "dependencies": {
     "@agent-base/api-client": "workspace:*",
     "@agent-base/types": "workspace:*",
-    "@types/http-proxy-middleware": "^1.0.0",
     "axios": "^1.6.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",

@@ -66,8 +66,6 @@ export async function getUtilityInfoFromAgent(
     const { clientUserId, platformUserId, platformApiKey, agentId } = agentServiceCredentials;
     const endpoint = `utility-tool/get-details/${utilityId}`;
 
-    console.log(`[ApiGatewayClient] Getting info for utility ${utilityId} via gateway: GET ${endpoint}`);
-
 
     return await makeInternalAPIServiceRequest<UtilityInfo>(
         getApiGatewayServiceUrl(),
@@ -96,11 +94,7 @@ export async function listUtilitiesFromAgent(
     const { clientUserId, platformUserId, platformApiKey, agentId } = agentServiceCredentials;
     // conversationId not needed for this endpoint
     const endpoint = 'utility-tool/get-list';
-
-    console.log(`[ApiGatewayClient] Listing utilities via gateway: GET ${endpoint}`);
-    console.log(`[ApiGatewayClient] Config: ${JSON.stringify(agentServiceCredentials)}`);
-
-    // Use makeAPIServiceRequest, passing agentId for header and conversationId as query param
+   // Use makeAPIServiceRequest, passing agentId for header and conversationId as query param
     return await makeInternalAPIServiceRequest<ListUtilities>(
         getApiGatewayServiceUrl(),
         'get',
