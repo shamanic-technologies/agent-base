@@ -8,8 +8,8 @@
 export interface BaseResponse {
   success: boolean;
   error?: string;
-  message?: string;
   details?: string;
+  hint?: string;
 }
 
 /**
