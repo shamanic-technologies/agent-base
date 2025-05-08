@@ -141,7 +141,7 @@ export async function resolveWebhookExternalApiService(
     return makeExternalApiServiceRequest<WebhookResolutionResult>(
         getWebhookToolApiUrl(),
         'POST' as Method,
-        '/webhook/resolve',
+        '/resolve',
         webhookResolutionRequest,
         undefined,
         authHeaders
