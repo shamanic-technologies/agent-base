@@ -27,7 +27,7 @@ export const getMessagesFromConversationExternalApiService = async (
     externalApiServiceCredentials: PlatformUserApiServiceCredentials
 ): Promise<ServiceResponse<Message[]>> => {
     const { conversationId } = params;
-    const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/conversation/get-messages-from-conversation`;
+    const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/message/get-messages-from-conversation`;
     const queryParams = { conversationId }; 
 
     return makePlatformUserApiServiceRequest<Message[]>( 
