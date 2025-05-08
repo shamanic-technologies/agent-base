@@ -36,7 +36,7 @@ export const getAuthHeaders = (req: RequestWithHeaders): ServiceResponse<Service
     
     // Access headers using bracket notation, allowed by IncomingHttpHeaders
     const platformUserId = req.headers['x-platform-user-id'] as string | undefined;
-    const clientUserId = req.headers['x-client-user-id'] as string | undefined;
+    const clientUserId = req.headers['x-client-user-id'] as string;
     const platformApiKey = req.headers['x-platform-api-key'] as string;
     const agentId = req.headers['x-agent-id'] as string | undefined; // Agent ID if provided
   

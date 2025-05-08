@@ -21,7 +21,7 @@ import { Message } from 'ai';
 // Import new API client functions
 import { getOrCreatePlatformApiKeySecretByName,
   getOrCreateConversationInternalApiService, 
-  resolveWebhook, 
+  resolveWebhookExternalApiService, 
   triggerAgentRun 
 } from '@agent-base/api-client';
 
@@ -61,7 +61,7 @@ router.post('/:webhookProviderId/:subscribedEventId', async (req: Request, res: 
       subscribedEventId,
       payload
     };
-    const resolveResponse = await resolveWebhook(webhookResolutionRequest);
+    const resolveResponse = await resolveWebhookExternalApiService(webhookResolutionRequest);
 
     if (!resolveResponse.success) {
         console.error(`[Webhook Gateway] Failed to resolve webhook IDs for ${webhookProviderId}:`, resolveResponse.error);

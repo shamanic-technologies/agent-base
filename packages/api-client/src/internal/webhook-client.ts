@@ -16,7 +16,7 @@ import {
     WebhookResolutionRequest
 } from '@agent-base/types';
 import { makeExternalApiServiceRequest, makeInternalAPIServiceRequest } from '../utils/service-client.js';
-import { getApiGatewayServiceUrl } from '../utils/config.js';
+import { getApiGatewayServiceUrl, getWebhookToolApiUrl } from '../utils/config.js';
 
 // --- Define specific credential types needed by this client ---
 
@@ -130,21 +130,21 @@ export async function linkAgentToWebhookInternalApiService(
  * @param credentials - Internal service credentials (platformUserId, clientUserId, platformApiKey).
  * @returns ServiceResponse containing the WebhookResolutionResult or an error.
  */
-export async function resolveWebhookInternalApiService(
-    webhookResolutionRequest: WebhookResolutionRequest,
-    credentials: InternalServiceCredentials
+export async function resolveWebhookExternalApiService(
+    webhookResolutionRequest: WebhookResolutionRequest
 ): Promise<ServiceResponse<WebhookResolutionResult>> {
-    const { platformUserId, clientUserId, platformApiKey, agentId: credentialsAgentId } = credentials;
-    return makeInternalAPIServiceRequest<WebhookResolutionResult>(
-        getApiGatewayServiceUrl(),
+    const webhookToolApiKey = process.env.WEBHOOK_TOOL_API_KEY;
+    let authHeaders = {
+        'Authorization': `Bearer ${webhookToolApiKey}`
+    };
+
+    return makeExternalApiServiceRequest<WebhookResolutionResult>(
+        getWebhookToolApiUrl(),
         'POST' as Method,
         '/webhook/resolve',
-        platformUserId,
-        clientUserId,
-        platformApiKey,
         webhookResolutionRequest,
         undefined,
-        credentialsAgentId
+        authHeaders
     );
 }
 

@@ -225,6 +225,7 @@ export async function makePlatformUserApiServiceRequest<T>(
  * @param platformUserApiServiceCredentials - Required platform client user ID and platform API key.
  * @param data - Optional request body.
  * @param params - Optional URL query parameters.
+ * @param customHeaders - Optional custom headers to include in the request.
  * @returns Promise<ServiceResponse<T>>.
  * @template T - Expected data payload type.
  */
@@ -233,18 +234,18 @@ export async function makeExternalApiServiceRequest<T>(
   method: Method,
   endpoint: string,
   data?: any,
-  params?: any
+  params?: any,
+  customHeaders?: Record<string, string> // Add optional customHeaders argument
 ): Promise<ServiceResponse<T>> {
   const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const fullUrl = `${externalUrl}${formattedEndpoint}`;
   const logContext = `[httpClient:ApiAuth] ExternalApi`;
 
-
   const config: AxiosRequestConfig = {
     method,
     url: fullUrl,
     params,
-    headers: {},
+    headers: { ...customHeaders }, // Spread customHeaders here
     data
   };
 
