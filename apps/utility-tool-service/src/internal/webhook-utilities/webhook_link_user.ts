@@ -11,7 +11,7 @@ import {
     UserWebhook,
     SetupNeeded
 } from '@agent-base/types';
-import { linkUserToWebhook } from '@agent-base/api-client'; // Import the client function
+import { linkUserToWebhookInternalApiService } from '@agent-base/api-client'; // Import the client function
 import { registry } from '../../registry/registry.js';
 
 // Define the expected parameter structure for the execute function
@@ -64,7 +64,7 @@ const webhookLinkUserUtility: InternalUtilityTool = {
             console.log(`${logPrefix} Attempting to link user ${clientUserId} to webhook: ${params.webhookId}`);
       
             // Call the client function from @agent-base/api-client
-            const resultResponse = await linkUserToWebhook(
+            const resultResponse = await linkUserToWebhookInternalApiService(
                 params.webhookId,
                 credentials
             );

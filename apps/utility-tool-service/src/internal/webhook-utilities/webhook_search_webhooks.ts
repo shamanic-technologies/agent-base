@@ -10,7 +10,7 @@ import {
     InternalServiceCredentials,
     Webhook
 } from '@agent-base/types';
-import { searchWebhooks } from '@agent-base/api-client'; // Import the client function
+import { searchWebhooksInternalApiService } from '@agent-base/api-client'; // Import the client function
 import { registry } from '../../registry/registry.js';
 
 // Define the expected parameter structure for the execute function
@@ -70,7 +70,7 @@ const webhookSearchWebhooksUtility: InternalUtilityTool = {
       
             // Call the client function from @agent-base/api-client
             // Ensure the parameter structure matches what searchWebhooks expects
-            const resultResponse = await searchWebhooks(
+            const resultResponse = await searchWebhooksInternalApiService(
                 { query: params.query, limit: params.limit }, 
                 credentials
             );

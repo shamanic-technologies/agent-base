@@ -11,7 +11,7 @@ import {
     Webhook,              // Type for the result of createWebhook
     WebhookData           // Type for the input payload of createWebhook
 } from '@agent-base/types';
-import { createWebhook } from '@agent-base/api-client'; // Import the client function
+import { createWebhookInternalApiService } from '@agent-base/api-client'; // Import the client function
 import { registry } from '../../registry/registry.js';
 
 const webhookCreateWebhookUtility: InternalUtilityTool = {
@@ -104,7 +104,7 @@ const webhookCreateWebhookUtility: InternalUtilityTool = {
             console.log(`${logPrefix} Attempting to create webhook: ${params.name}`);
       
             // Call the client function from @agent-base/api-client
-            const resultResponse = await createWebhook(
+            const resultResponse = await createWebhookInternalApiService(
                 params, // Pass the validated parameters payload
                 credentials
             );

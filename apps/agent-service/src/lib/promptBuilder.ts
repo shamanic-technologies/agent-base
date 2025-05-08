@@ -39,10 +39,10 @@ and you can't find the right tool to do it, use this tool to create a new extern
 - the webhook event payload schema
 - the secrets used by the provider to identify uniquely the user
 - the field of the payload that will be used to identify the conversation ID
-3- Create a new webhook using the webhook_create_webhook tool directly. Enter the
+3- Create a new webhook using the webhook_create_webhook tool directly.
 4- Link the new webhook to a user using the webhook_link_user tool.
 5- Link the new webhook to an agent using the webhook_link_agent tool.
-6- Test the webhook with curl or any other tool that can make HTTP requests.
+6- Test the webhook with curl (utility_curl_command) or any other tool that can make HTTP requests.
 
 `;
 export const purpose_prompt = `

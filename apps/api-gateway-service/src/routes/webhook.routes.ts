@@ -63,7 +63,9 @@ export const configureWebhookRoutes = (
         proxyReq.setHeader('Authorization', `Bearer ${webhookStoreApiKey}`);
         
         // Log the actual request being sent to the target service
-        console.log(`[WebhookProxy] Proxying request to ${webhookToolApiUrl}${proxyReq.path} (Method: ${req.method})`);
+        // Construct the full target URL for accurate logging
+        const targetUrl = new URL(proxyReq.path, webhookToolApiUrl);
+        console.log(`[WebhookProxy] Proxying request to ${targetUrl.href} (Method: ${req.method})`);
         // console.log('[WebhookProxy] Outgoing Headers:', proxyReq.getHeaders()); // Uncomment for deep debugging
       },
       error: (err, req, res, target) => {

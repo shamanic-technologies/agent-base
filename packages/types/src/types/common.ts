@@ -64,7 +64,7 @@ export interface InternalServiceCredentials {
 
 export interface ServiceCredentials {
   platformApiKey: string;
-  clientUserId?: string;
+  clientUserId: string;
   platformUserId?: string;
   agentId?: string;
 }

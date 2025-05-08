@@ -112,7 +112,8 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
           'utility_google_search',
           'utility_google_maps',
           'utility_get_current_datetime',
-          'utility_read_webpage'
+          'utility_read_webpage',
+          'utility_curl_command'
       ];
 
       // --- Fetch Functional Tools Concurrently ---

@@ -10,7 +10,7 @@ import {
     InternalServiceCredentials,
     WebhookAgentLink
 } from '@agent-base/types';
-import { linkAgentToWebhook } from '@agent-base/api-client'; // Import the client function
+import { linkAgentToWebhookInternalApiService } from '@agent-base/api-client'; // Import the client function
 import { registry } from '../../registry/registry.js';
 
 // Define the expected parameter structure for the execute function
@@ -69,7 +69,7 @@ const webhookLinkAgentUtility: InternalUtilityTool = {
             console.log(`${logPrefix} Attempting to link agent ${params.agentIdToLink} to webhook: ${params.webhookId}`);
       
             // Call the client function from @agent-base/api-client
-            const resultResponse = await linkAgentToWebhook(
+            const resultResponse = await linkAgentToWebhookInternalApiService(
                 params.webhookId,
                 params.agentIdToLink, // Pass the agent ID to be linked
                 credentials

@@ -21,6 +21,7 @@ import './internal/basic-utilities/google/flights.js';
 import './internal/basic-utilities/web/read-webpage.js';
 
 import './internal/basic-utilities/get-current-datetime.js';
+import './internal/basic-utilities/curl-command.js';
 
 // Import internal utility for managing external tools
 import './internal/api-utilities/create-external-tool.js';
