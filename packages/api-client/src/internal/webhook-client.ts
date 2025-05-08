@@ -31,7 +31,7 @@ import { getApiGatewayServiceUrl } from '../utils/config.js';
  * @param credentials - Platform authentication credentials.
  * @returns ServiceResponse containing the created Webhook or an error.
  */
-export async function createWebhook(
+export async function createWebhookInternalApiService(
     data: WebhookData,
     credentials: InternalServiceCredentials 
 ): Promise<ServiceResponse<Webhook>> {
@@ -56,7 +56,7 @@ export async function createWebhook(
  * @param credentials - Platform authentication credentials.
  * @returns ServiceResponse containing an array of Webhooks or an error.
  */
-export async function searchWebhooks(
+export async function searchWebhooksInternalApiService(
     searchParams: { query: string; limit?: number },
     credentials: InternalServiceCredentials
 ): Promise<ServiceResponse<Webhook[]>> {
@@ -80,7 +80,7 @@ export async function searchWebhooks(
  * @param credentials - Internal service credentials containing platformApiKey, platformUserId, clientUserId.
  * @returns ServiceResponse containing the UserWebhook, WebhookSetupNeeded, or an error.
  */
-export async function linkUserToWebhook(
+export async function linkUserToWebhookInternalApiService(
     webhookId: string,
     credentials: InternalServiceCredentials
 ): Promise<ServiceResponse<UserWebhook | SetupNeeded>> {
@@ -105,7 +105,7 @@ export async function linkUserToWebhook(
  * @param credentials - Internal service credentials containing platformApiKey, platformUserId, clientUserId.
  * @returns ServiceResponse containing the WebhookAgentLink or an error.
  */
-export async function linkAgentToWebhook(
+export async function linkAgentToWebhookInternalApiService(
     webhookId: string,
     agentId: string,
     credentials: InternalServiceCredentials
@@ -130,7 +130,7 @@ export async function linkAgentToWebhook(
  * @param credentials - Internal service credentials (platformUserId, clientUserId, platformApiKey).
  * @returns ServiceResponse containing the WebhookResolutionResult or an error.
  */
-export async function resolveWebhook(
+export async function resolveWebhookInternalApiService(
     webhookResolutionRequest: WebhookResolutionRequest,
     credentials: InternalServiceCredentials
 ): Promise<ServiceResponse<WebhookResolutionResult>> {
@@ -153,7 +153,7 @@ export async function resolveWebhook(
  * @param credentials - Internal service credentials containing platformApiKey, platformUserId, clientUserId.
  * @returns ServiceResponse containing an array of Webhooks or an error.
  */
-export async function getUserCreatedWebhooks(
+export async function getUserCreatedWebhooksInternalApiService(
     credentials: InternalServiceCredentials
 ): Promise<ServiceResponse<Webhook[]>> {
     const { platformUserId, clientUserId, platformApiKey, agentId: credentialsAgentId } = credentials;
