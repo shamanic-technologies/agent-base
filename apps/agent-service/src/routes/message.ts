@@ -26,7 +26,7 @@ const router = Router();
  * GET /get-messages-from-conversation?conversationId=...
  */
 router.get('/get-messages-from-conversation', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const conversationId = req.query.conversation_id as string;
+    const conversationId = req.query.conversationId as string;
     const clientUserId = req.clientUserId as string;
     const platformUserId = req.platformUserId as string;
     const platformApiKey = req.headers['x-platform-api-key'] as string;
@@ -43,7 +43,6 @@ router.get('/get-messages-from-conversation', async (req: Request, res: Response
     const logPrefix = `[Agent Service /msg/get-from-conv] User ${clientUserId}, Conv ${conversationId}:`;
 
     try {
-        console.log(`${logPrefix} Calling getConversation service`);
         const conversationResponse = await getConversationByIdInternalApiService(
             { conversationId },
             platformUserId,
@@ -54,7 +53,6 @@ router.get('/get-messages-from-conversation', async (req: Request, res: Response
         if (conversationResponse.success && conversationResponse.data) {
             // Access messages directly from conversationResponse.data (assuming it's ConversationRecord)
             const messages: Message[] = conversationResponse.data.messages || []; 
-            console.log(`${logPrefix} Found ${messages.length} messages.`);
             res.status(200).json({ success: true, data: messages });
         } else {
             console.error(`${logPrefix} Failed to get conversation from service:`, conversationResponse.error);
@@ -73,7 +71,7 @@ router.get('/get-messages-from-conversation', async (req: Request, res: Response
  * GET /get-messages-from-agent?agent_id=...
  */
 router.get('/get-messages-from-agent', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const agentId = req.query.agent_id as string;
+    const agentId = req.query.agentId as string;
     const clientUserId = req.clientUserId as string;
     const platformUserId = req.platformUserId as string;
     const platformApiKey = req.headers['x-platform-api-key'] as string;
@@ -90,7 +88,6 @@ router.get('/get-messages-from-agent', async (req: Request, res: Response, next:
     const logPrefix = `[Agent Service /msg/get-from-agent] User ${clientUserId}, Agent ${agentId}:`;
 
     try {
-        console.log(`${logPrefix} Calling getOrCreateConversationsFromAgentApiClient service`);
         const conversationsResponse = await getOrCreateConversationsInternalApiService(
             { agentId: agentId },
             clientUserId,
@@ -109,7 +106,6 @@ router.get('/get-messages-from-agent', async (req: Request, res: Response, next:
             // Sort messages by creation date ascending (optional, but good practice)
             allMessages.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
             
-            console.log(`${logPrefix} Found ${allMessages.length} messages across ${conversationsResponse.data.length} conversations.`);
             res.status(200).json({ success: true, data: allMessages });
         } else {
             console.error(`${logPrefix} Failed to get conversations from service:`, conversationsResponse.error);
