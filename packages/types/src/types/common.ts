@@ -9,7 +9,7 @@ export interface BaseResponse {
   success: boolean;
   error?: string;
   details?: string;
-  hint?: string;
+  hint?: string; // Concrete next steps for the agent to take
 }
 
 /**
