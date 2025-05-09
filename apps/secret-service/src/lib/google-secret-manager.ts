@@ -42,10 +42,14 @@ export async function storeSecret(storeSecretRequest: StoreSecretRequest, userId
 
   try {
     // Destructure directly from the request object
-    const { userType, secretUtilityProvider, secretType, secretValue } = storeSecretRequest;
-
-    // Create a secret ID based on user type, user id and secret type
-    const secretId = `${userType}_${userId}_${secretUtilityProvider}_${secretType}`.toLowerCase(); // Ensure lowercase
+    const { userType, secretUtilityProvider, secretUtilitySubProvider, secretType, secretValue } = storeSecretRequest;
+    // Check if secretUtilitySubProvider is defined, if not, dsimiss it
+    let secretId = '';
+    if (!secretUtilitySubProvider) {
+      secretId = `${userType}_${userId}_${secretUtilityProvider}_${secretType}`.toLowerCase(); // Ensure lowercase
+    } else {
+      secretId = `${userType}_${userId}_${secretUtilityProvider}_${secretUtilitySubProvider}_${secretType}`.toLowerCase(); // Ensure lowercase
+    }
     const parent = `projects/${projectId}`;
     const secretName = `${parent}/secrets/${secretId}`;
 
@@ -116,10 +120,15 @@ export async function checkSecretExists(request: CheckSecretRequest, userId: str
 
   try {
     // Destructure from the request object
-    const { userType, secretUtilityProvider, secretType } = request;
+    const { userType, secretUtilityProvider, secretUtilitySubProvider, secretType } = request;
 
     // Create the secret name based on user type, user id and secret type
-    const secretId = `${userType}_${userId}_${secretUtilityProvider}_${secretType}`.toLowerCase(); // Ensure lowercase
+    let secretId = '';
+    if (!secretUtilitySubProvider) {
+      secretId = `${userType}_${userId}_${secretUtilityProvider}_${secretType}`.toLowerCase(); // Ensure lowercase
+    } else {
+      secretId = `${userType}_${userId}_${secretUtilityProvider}_${secretUtilitySubProvider}_${secretType}`.toLowerCase(); // Ensure lowercase
+    }
     const name = `projects/${projectId}/secrets/${secretId}`;
 
     try {
@@ -167,10 +176,15 @@ export async function getSecret(request: GetSecretRequest, userId: string): Prom
 
   try {
     // Destructure from the request object
-    const { userType, secretUtilityProvider, secretType } = request;
+    const { userType, secretUtilityProvider, secretUtilitySubProvider, secretType } = request;
 
     // Create the secret name based on user type, user id and secret type
-    const secretId = `${userType}_${userId}_${secretUtilityProvider}_${secretType}`.toLowerCase(); // Ensure lowercase
+    let secretId = '';
+    if (!secretUtilitySubProvider) {
+      secretId = `${userType}_${userId}_${secretUtilityProvider}_${secretType}`.toLowerCase(); // Ensure lowercase
+    } else {
+      secretId = `${userType}_${userId}_${secretUtilityProvider}_${secretUtilitySubProvider}_${secretType}`.toLowerCase(); // Ensure lowercase
+    }
     const name = `projects/${projectId}/secrets/${secretId}/versions/latest`;
 
     // Access the secret version - wrap in try-catch for NOT_FOUND

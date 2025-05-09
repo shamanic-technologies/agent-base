@@ -37,7 +37,7 @@ export async function storeSecretHandler(req: Request, res: Response, next: Next
           return;
         }
         const { platformUserId, clientUserId, platformApiKey } = serviceCredentialsResponse.data;
-        const { userType, secretType, secretUtilityProvider, secretValue } = storeRequest; // Destructure userId from body
+        const { userType, secretType, secretUtilityProvider, secretUtilitySubProvider, secretValue } = storeRequest; // Destructure userId from body
         const userId = userType === UserType.Platform ? platformUserId : clientUserId;
 
         // Check for missing userId (now expected in body)
@@ -71,7 +71,6 @@ export async function storeSecretHandler(req: Request, res: Response, next: Next
             return; 
         }
         
-
         // --- Call Library Function --- //
         // Pass the request object from the body
         const storeResponse: ServiceResponse<string> = await GsmLib.storeSecret(storeRequest, userId);
@@ -106,7 +105,7 @@ export async function getSecretHandler(req: Request, res: Response, next: NextFu
         // Extract userType from query parameters
         const userType : UserType = req.query.userType as UserType;
         const secretUtilityProvider: UtilityProvider = req.query.secretUtilityProvider as UtilityProvider;
-        
+        const secretUtilitySubProvider: string = req.query.secretUtilitySubProvider as string;
         const serviceCredentialsResponse : ServiceResponse<ServiceCredentials> = await getAuthHeaders(req);
         if (!serviceCredentialsResponse.success) {
           console.error('Error getting service credentials:', serviceCredentialsResponse.error);
@@ -135,7 +134,7 @@ export async function getSecretHandler(req: Request, res: Response, next: NextFu
 
         // --- Prepare Request for Library --- //
         // Create request object conforming to GetSecretRequest type
-        const getRequest: GetSecretRequest = { userType, secretUtilityProvider, secretType };
+        const getRequest: GetSecretRequest = { userType, secretUtilityProvider, secretUtilitySubProvider, secretType };
 
         // --- Call Library Function --- //
         const getResponse: ServiceResponse<SecretValue> = await GsmLib.getSecret(getRequest, userId);
@@ -170,7 +169,7 @@ export async function checkSecretExistsHandler(req: Request, res: Response, next
         // Extract userType from query parameters
         const userType: UserType = req.query.userType as UserType;
         const secretUtilityProvider: UtilityProvider = req.query.secretUtilityProvider as UtilityProvider;
-        
+        const secretUtilitySubProvider: string = req.query.secretUtilitySubProvider as string;
         const serviceCredentialsResponse : ServiceResponse<ServiceCredentials> = await getAuthHeaders(req);
         if (!serviceCredentialsResponse.success) {
           console.error('Error getting service credentials:', serviceCredentialsResponse.error);
@@ -198,7 +197,7 @@ export async function checkSecretExistsHandler(req: Request, res: Response, next
 
         // --- Prepare Request for Library --- //
         // Create request object conforming to CheckSecretRequest type
-        const checkRequest: CheckSecretRequest = { userType, secretUtilityProvider, secretType };
+        const checkRequest: CheckSecretRequest = { userType, secretUtilityProvider, secretUtilitySubProvider, secretType };
 
         // --- Call Library Function --- //
         const checkResponse: ServiceResponse<SecretExists> = await GsmLib.checkSecretExists(checkRequest, userId);
