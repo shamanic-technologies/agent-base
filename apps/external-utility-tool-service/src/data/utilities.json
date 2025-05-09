@@ -902,5 +902,66 @@
         }
       }
     }
+  },
+  {
+    "id": "crisp_send_message_auth",
+    "utilityProvider": "crisp",
+    "description": "Sends a message to a Crisp conversation with proper authentication",
+    "authMethod": "API_KEY",
+    "requiredSecrets": [
+      "api_identifier",
+      "api_secret_key"
+    ],
+    "apiKeyDetails": {
+      "secretName": "api_secret_key",
+      "scheme": "BasicUser"
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "website_id": {
+          "type": "string",
+          "description": "The website ID for the Crisp account",
+          "examples": [
+            "b65cba08-5896-4142-b94b-d25fcf2bad90"
+          ]
+        },
+        "session_id": {
+          "type": "string",
+          "description": "The session ID for the conversation",
+          "examples": [
+            "session_a01ae9b5-c50a-457b-8e3e-8bb50f5d53c4"
+          ]
+        },
+        "message_content": {
+          "type": "string",
+          "description": "The message content to send",
+          "examples": [
+            "Hello! How can I help you today?"
+          ]
+        }
+      }
+    },
+    "apiDetails": {
+      "baseUrl": "https://api.crisp.chat/v1",
+      "method": "POST",
+      "pathTemplate": "/website/{website_id}/conversation/{session_id}/message",
+      "staticHeaders": {
+        "Content-Type": "application/json",
+        "X-Crisp-Tier": "plugin"
+      },
+      "paramMappings": {
+        "path": {
+          "website_id": "website_id",
+          "session_id": "session_id"
+        },
+        "body": {
+          "type": "'text'",
+          "from": "'operator'",
+          "origin": "'chat'",
+          "content": "message_content"
+        }
+      }
+    }
   }
 ]

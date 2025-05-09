@@ -158,7 +158,7 @@ export async function getUserCreatedWebhooksInternalApiService(
 ): Promise<ServiceResponse<Webhook[]>> {
     const { platformUserId, clientUserId, platformApiKey, agentId: credentialsAgentId } = credentials;
     if (!clientUserId) {
-        return { success: false, error: 'Client Error', message: 'clientUserId is required for getUserCreatedWebhooks.' };
+        return { success: false, error: 'Client Error', details: 'clientUserId is required for getUserCreatedWebhooks.' };
     }
     return makeInternalAPIServiceRequest<Webhook[]>(
         getApiGatewayServiceUrl(),

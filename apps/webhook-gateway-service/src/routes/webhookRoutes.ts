@@ -69,7 +69,6 @@ router.post('/:webhookProviderId/:subscribedEventId', async (req: Request, res: 
         res.status(500).json(resolveResponse);
         return;
     }
-    console.debug('resolveResponse', JSON.stringify(resolveResponse, null, 2));
 
     const { platformUserId, clientUserId, agentId, conversationId } = resolveResponse.data;
 
@@ -85,8 +84,6 @@ router.post('/:webhookProviderId/:subscribedEventId', async (req: Request, res: 
       res.status(500).json(platformApiKeyResponse);
       return;
     }
-    console.debug('platformApiKeyResponse', JSON.stringify(platformApiKeyResponse, null, 2));
-
 
     const platformApiKey = platformApiKeyResponse.data.value;
 
@@ -114,7 +111,6 @@ router.post('/:webhookProviderId/:subscribedEventId', async (req: Request, res: 
       res.status(500).json(getOrCreateConversationResponse);
       return;
     }
-    console.debug('getOrCreateConversationResponse', JSON.stringify(getOrCreateConversationResponse, null, 2));
 
     // --- 5. Prepare and Trigger Agent Run --- 
     const messageContent = 'You received this webhook event from ' + webhookProviderId +'/'+ subscribedEventId + ' with the following payload:\n```json\n' + JSON.stringify(payload, null, 2) + '\n```';
@@ -135,7 +131,6 @@ router.post('/:webhookProviderId/:subscribedEventId', async (req: Request, res: 
         res.status(500).json({ success: false, error: 'Failed to process webhook event.' } as BaseResponse);
         return;
     }
-    console.debug('runResponse', JSON.stringify(runResponse, null, 2));
 
     // --- 6. Respond to Webhook Sender --- 
 
@@ -143,10 +138,7 @@ router.post('/:webhookProviderId/:subscribedEventId', async (req: Request, res: 
 
   } catch (error: unknown) {
     console.error(`[Webhook Gateway] Error processing /webhook/${webhookProviderId}/${subscribedEventId}:`, error);
-    // Avoid leaking internal errors to the webhook sender
     res.status(500).json({ success: false, error: 'An internal error occurred.' } as BaseResponse);
-    // Pass to Express error handler for internal logging if needed
-    // next(error); 
   }
 });
 
