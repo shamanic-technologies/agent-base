@@ -45,6 +45,7 @@ export interface UtilityToolCredentials extends AgentServiceCredentials {
 export interface SetupNeeded {
     needsSetup: true;
     utilityProvider: UtilityProvider;
+    utilitySubProvider?: string;
     message: string; // General message
     title: string; // Title for UI prompt
     description: string; // Description for UI prompt

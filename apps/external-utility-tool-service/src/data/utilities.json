@@ -499,5 +499,74 @@
       "api_secret_key"
     ],
     "utilityProvider": "stripe"
+  },
+  {
+    "id": "crisp_list_conversations",
+    "utilityProvider": "crisp",
+    "description": "Liste les conversations Crisp d'un site web",
+    "authMethod": "API_KEY",
+    "requiredSecrets": [
+      "api_identifier",
+      "api_secret_key"
+    ],
+    "apiKeyDetails": {
+      "secretName": "api_secret_key",
+      "scheme": "BasicUser"
+    },
+    "apiDetails": {
+      "baseUrl": "https://api.crisp.chat/v1",
+      "method": "GET",
+      "pathTemplate": "/website/{website_id}/conversations/{page_number}",
+      "paramMappings": {
+        "query": {
+          "filter_unread": "filter_unread",
+          "filter_resolved": "filter_resolved",
+          "filter_not_resolved": "filter_not_resolved"
+        }
+      },
+      "staticHeaders": {
+        "Content-Type": "application/json"
+      }
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "website_id": {
+          "type": "string",
+          "description": "L'identifiant du site web Crisp",
+          "examples": [
+            "8c842203-7ed8-4e29-a608-7cf78a7d2fcc"
+          ]
+        },
+        "page_number": {
+          "type": "string",
+          "description": "Le numéro de page pour la pagination",
+          "examples": [
+            "1"
+          ]
+        },
+        "filter_unread": {
+          "type": "string",
+          "description": "Filtrer pour n'afficher que les conversations non lues (1 ou 0)",
+          "examples": [
+            "1"
+          ]
+        },
+        "filter_resolved": {
+          "type": "string",
+          "description": "Filtrer pour n'afficher que les conversations résolues (1 ou 0)",
+          "examples": [
+            "0"
+          ]
+        },
+        "filter_not_resolved": {
+          "type": "string",
+          "description": "Filtrer pour n'afficher que les conversations non résolues (1 ou 0)",
+          "examples": [
+            "1"
+          ]
+        }
+      }
+    }
   }
 ]
