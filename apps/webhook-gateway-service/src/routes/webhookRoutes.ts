@@ -69,6 +69,7 @@ router.post('/:webhookProviderId/:subscribedEventId', async (req: Request, res: 
         res.status(500).json(resolveResponse);
         return;
     }
+    console.debug('resolveResponse', JSON.stringify(resolveResponse, null, 2));
 
     const { platformUserId, clientUserId, agentId, conversationId } = resolveResponse.data;
 
@@ -78,13 +79,14 @@ router.post('/:webhookProviderId/:subscribedEventId', async (req: Request, res: 
       platformUserId,
       keyName: 'Webhook'
     });
-    console.log('platformApiKeyResponse', JSON.stringify(platformApiKeyResponse, null, 2));
 
     if (!platformApiKeyResponse.success) {
       console.error(`[Webhook Gateway] Failed to get or create platform API key for user ${platformUserId}:`, platformApiKeyResponse.error);
       res.status(500).json(platformApiKeyResponse);
       return;
     }
+    console.debug('platformApiKeyResponse', JSON.stringify(platformApiKeyResponse, null, 2));
+
 
     const platformApiKey = platformApiKeyResponse.data.value;
 
@@ -112,7 +114,8 @@ router.post('/:webhookProviderId/:subscribedEventId', async (req: Request, res: 
       res.status(500).json(getOrCreateConversationResponse);
       return;
     }
-    
+    console.debug('getOrCreateConversationResponse', JSON.stringify(getOrCreateConversationResponse, null, 2));
+
     // --- 5. Prepare and Trigger Agent Run --- 
     const messageContent = 'You received this webhook event from ' + webhookProviderId +'/'+ subscribedEventId + ' with the following payload:\n```json\n' + JSON.stringify(payload, null, 2) + '\n```';
 
@@ -132,6 +135,7 @@ router.post('/:webhookProviderId/:subscribedEventId', async (req: Request, res: 
         res.status(500).json({ success: false, error: 'Failed to process webhook event.' } as BaseResponse);
         return;
     }
+    console.debug('runResponse', JSON.stringify(runResponse, null, 2));
 
     // --- 6. Respond to Webhook Sender --- 
 

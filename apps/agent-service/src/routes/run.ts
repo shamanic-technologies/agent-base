@@ -174,6 +174,7 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
         // @ts-ignore - Restore system parameter as requested
         system: systemPrompt, 
         tools: allStartupTools, // Pass the combined tools object
+        maxTokens: 4096, // Set maximum output tokens for each generation step
         maxSteps: 25, 
         providerOptions: { temperature: 0.1, sendReasoning: true },
            // id format for server-side messages:

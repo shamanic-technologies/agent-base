@@ -2,7 +2,7 @@
   {
     "id": "crisp_send_message",
     "utilityProvider": "crisp",
-    "description": "Envoie un message à une conversation Crisp existante",
+    "description": "Envoie un message à un utilisateur dans une conversation Crisp",
     "authMethod": "API_KEY",
     "requiredSecrets": [
       "api_identifier",
@@ -40,14 +40,14 @@
           "type": "string",
           "description": "L'identifiant du site web Crisp",
           "examples": [
-            "7c86c257-92a1-4d61-9818-7a4b0e0f9b8f"
+            "7c842203-7ed8-4e29-a608-7cf78a7d2fcc"
           ]
         },
         "session_id": {
           "type": "string",
           "description": "L'identifiant de la session de conversation",
           "examples": [
-            "session_36ba3566-9651-4790-afc8-ffedbccc317f"
+            "session_0839e4c2-a059-445b-8de5-390d6417f893"
           ]
         },
         "type": {
@@ -75,8 +75,8 @@
             "operator"
           ],
           "enum": [
-            "user",
-            "operator"
+            "operator",
+            "user"
           ]
         },
         "origin": {
@@ -94,411 +94,69 @@
           "type": "string",
           "description": "Le contenu du message à envoyer",
           "examples": [
-            "Bonjour, comment puis-je vous aider ?"
+            "Bonjour, comment puis-je vous aider aujourd'hui?"
           ]
         }
       }
     }
-  },
-  {
-    "id": "crisp_list_messages",
-    "schema": {
-      "type": "object",
-      "properties": {
-        "api_key": {
-          "type": "string",
-          "description": "Your Crisp API key"
-        },
-        "session_id": {
-          "type": "string",
-          "description": "The Crisp session ID"
-        },
-        "website_id": {
-          "type": "string",
-          "description": "The Crisp website ID"
-        },
-        "api_identifier": {
-          "type": "string",
-          "description": "Your Crisp API identifier"
-        }
-      }
-    },
-    "apiDetails": {
-      "method": "GET",
-      "baseUrl": "https://api.crisp.chat/v1",
-      "pathTemplate": "/website/{website_id}/conversation/{session_id}/messages",
-      "paramMappings": {
-        "path": {
-          "session_id": "session_id",
-          "website_id": "website_id"
-        }
-      },
-      "staticHeaders": {
-        "Content-Type": "application/json",
-        "X-Crisp-API-Key": "{api_key}",
-        "X-Crisp-API-Identifier": "{api_identifier}"
-      }
-    },
-    "authMethod": "NONE",
-    "description": "Lists messages from a Crisp chat conversation",
-    "requiredSecrets": [],
-    "utilityProvider": "crisp"
   },
   {
     "id": "crisp_get_messages",
-    "schema": {
-      "type": "object",
-      "properties": {
-        "username": {
-          "type": "string",
-          "description": "Your Crisp API identifier"
-        },
-        "password": {
-          "type": "string",
-          "description": "Your Crisp API key"
-        },
-        "session_id": {
-          "type": "string",
-          "description": "The Crisp session ID"
-        },
-        "website_id": {
-          "type": "string",
-          "description": "The Crisp website ID"
-        }
-      }
-    },
-    "apiDetails": {
-      "method": "GET",
-      "baseUrl": "https://api.crisp.chat/v1",
-      "pathTemplate": "/website/{website_id}/conversation/{session_id}/messages",
-      "paramMappings": {
-        "path": {
-          "session_id": "session_id",
-          "website_id": "website_id"
-        }
-      }
-    },
+    "utilityProvider": "crisp",
+    "description": "Récupère les messages d'une conversation Crisp",
     "authMethod": "API_KEY",
-    "description": "Lists messages from a Crisp chat conversation using Basic Authentication",
-    "apiKeyDetails": {
-      "scheme": "BasicUser",
-      "secretName": "username"
-    },
     "requiredSecrets": [
-      "username",
-      "password"
+      "api_identifier",
+      "api_secret_key"
     ],
-    "utilityProvider": "crisp"
-  },
-  {
-    "id": "crisp_basic_messages",
-    "schema": {
-      "type": "object",
-      "properties": {
-        "username": {
-          "type": "string",
-          "description": "Your Crisp API identifier"
-        },
-        "password": {
-          "type": "string",
-          "description": "Your Crisp API key"
-        },
-        "session_id": {
-          "type": "string",
-          "description": "The Crisp session ID"
-        },
-        "website_id": {
-          "type": "string",
-          "description": "The Crisp website ID"
-        }
-      }
+    "apiKeyDetails": {
+      "secretName": "api_secret_key",
+      "scheme": "BasicUser"
     },
     "apiDetails": {
-      "method": "GET",
       "baseUrl": "https://api.crisp.chat/v1",
+      "method": "GET",
       "pathTemplate": "/website/{website_id}/conversation/{session_id}/messages",
       "paramMappings": {
         "path": {
-          "session_id": "session_id",
-          "website_id": "website_id"
-        }
-      },
-      "staticHeaders": {
-        "Content-Type": "application/json"
-      }
-    },
-    "authMethod": "API_KEY",
-    "description": "Lists messages from a Crisp chat conversation using Basic Authentication",
-    "apiKeyDetails": {
-      "scheme": "BasicUser",
-      "secretName": "username"
-    },
-    "requiredSecrets": [
-      "username",
-      "password"
-    ],
-    "utilityProvider": "crisp"
-  },
-  {
-    "id": "crisp_header_messages",
-    "schema": {
-      "type": "object",
-      "properties": {
-        "api_key": {
-          "type": "string",
-          "description": "Your Crisp API key"
+          "website_id": "website_id",
+          "session_id": "session_id"
         },
-        "api_identifier": {
-          "type": "string",
-          "description": "Your Crisp API identifier"
-        },
-        "session_id": {
-          "type": "string",
-          "description": "The Crisp session ID"
-        },
-        "website_id": {
-          "type": "string",
-          "description": "The Crisp website ID"
-        }
-      }
-    },
-    "apiDetails": {
-      "method": "GET",
-      "baseUrl": "https://api.crisp.chat/v1",
-      "pathTemplate": "/website/{website_id}/conversation/{session_id}/messages",
-      "paramMappings": {
-        "path": {
-          "session_id": "session_id",
-          "website_id": "website_id"
+        "query": {
+          "timestamp_before": "timestamp_before"
         }
       },
       "staticHeaders": {
         "Content-Type": "application/json",
-        "X-Crisp-API-Key": "{api_key}",
-        "X-Crisp-API-Identifier": "{api_identifier}"
+        "X-Crisp-Tier": "plugin"
       }
     },
-    "authMethod": "NONE",
-    "description": "Lists messages from a Crisp chat conversation using header authentication",
-    "requiredSecrets": [],
-    "utilityProvider": "crisp"
-  },
-  {
-    "id": "gmail_list_messages",
-    "utilityProvider": "gmail",
-    "description": "Liste les messages récents dans la boîte de réception Gmail de l'utilisateur.",
     "schema": {
       "type": "object",
       "properties": {
-        "maxResults": {
-          "type": "integer",
-          "description": "Nombre maximum de messages à récupérer (max: 500).",
-          "examples": [
-            10
-          ]
-        },
-        "q": {
+        "website_id": {
           "type": "string",
-          "description": "Requête de recherche optionnelle au format Gmail (ex: 'from:example@gmail.com').",
+          "description": "L'identifiant du site web Crisp",
           "examples": [
-            "is:unread"
+            "7c842203-7ed8-4e29-a608-7cf78a7d2fcc"
           ]
         },
-        "includeSpamTrash": {
-          "type": "boolean",
-          "description": "Inclure les messages du dossier Spam et Corbeille.",
+        "session_id": {
+          "type": "string",
+          "description": "L'identifiant de la session de conversation",
           "examples": [
-            false
+            "session_0839e4c2-a059-445b-8de5-390d6417f893"
           ]
-        }
-      }
-    },
-    "authMethod": "OAUTH",
-    "requiredScopes": [
-      "https://www.googleapis.com/auth/gmail.readonly"
-    ],
-    "requiredSecrets": [],
-    "apiDetails": {
-      "method": "GET",
-      "baseUrl": "https://gmail.googleapis.com/gmail/v1",
-      "pathTemplate": "/users/me/messages",
-      "paramMappings": {
-        "query": {
-          "maxResults": "maxResults",
-          "q": "q",
-          "includeSpamTrash": "includeSpamTrash"
+        },
+        "timestamp_before": {
+          "type": "string",
+          "description": "Timestamp avant lequel récupérer les messages (pour la pagination)",
+          "examples": [
+            "1506985696616"
+          ]
         }
       }
     }
-  },
-  {
-    "id": "gmail_get_message",
-    "utilityProvider": "gmail",
-    "description": "Récupère le contenu d'un message Gmail spécifique.",
-    "schema": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "L'ID du message à récupérer.",
-          "examples": [
-            "1234567890abcdef"
-          ]
-        },
-        "format": {
-          "type": "string",
-          "description": "Format de retour du message (FULL, MINIMAL, RAW, METADATA).",
-          "examples": [
-            "FULL"
-          ],
-          "enum": [
-            "FULL",
-            "MINIMAL",
-            "RAW",
-            "METADATA"
-          ]
-        }
-      }
-    },
-    "authMethod": "OAUTH",
-    "requiredScopes": [
-      "https://www.googleapis.com/auth/gmail.readonly"
-    ],
-    "requiredSecrets": [],
-    "apiDetails": {
-      "method": "GET",
-      "baseUrl": "https://gmail.googleapis.com/gmail/v1",
-      "pathTemplate": "/users/me/messages/{id}",
-      "paramMappings": {
-        "path": {
-          "id": "id"
-        },
-        "query": {
-          "format": "format"
-        }
-      }
-    }
-  },
-  {
-    "id": "stripe_list_refunds",
-    "schema": {
-      "type": "object",
-      "properties": {
-        "limit": {
-          "type": "integer",
-          "examples": [
-            10
-          ],
-          "description": "Nombre maximum de remboursements à récupérer (max: 100)."
-        },
-        "starting_after": {
-          "type": "string",
-          "examples": [
-            "re_1Nispe2eZvKYlo2Cd31jOCgZ"
-          ],
-          "description": "ID du remboursement après lequel commencer la liste."
-        },
-        "ending_before": {
-          "type": "string",
-          "examples": [
-            "re_1Nispe2eZvKYlo2Cd31jOCgZ"
-          ],
-          "description": "ID du remboursement avant lequel terminer la liste."
-        }
-      }
-    },
-    "apiDetails": {
-      "method": "GET",
-      "baseUrl": "https://api.stripe.com/v1",
-      "pathTemplate": "/refunds",
-      "paramMappings": {
-        "query": {
-          "limit": "limit",
-          "starting_after": "starting_after",
-          "ending_before": "ending_before"
-        }
-      }
-    },
-    "authMethod": "API_KEY",
-    "description": "Liste les remboursements récents dans votre compte Stripe.",
-    "requiredSecrets": [
-      "api_secret_key"
-    ],
-    "apiKeyDetails": {
-      "secretName": "api_secret_key",
-      "scheme": "Bearer"
-    },
-    "utilityProvider": "stripe"
-  },
-  {
-    "id": "stripe_get_refund",
-    "schema": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "examples": [
-            "re_1Nispe2eZvKYlo2Cd31jOCgZ"
-          ],
-          "description": "L'ID du remboursement à récupérer."
-        }
-      }
-    },
-    "apiDetails": {
-      "method": "GET",
-      "baseUrl": "https://api.stripe.com/v1",
-      "pathTemplate": "/refunds/{id}",
-      "paramMappings": {
-        "path": {
-          "id": "id"
-        }
-      }
-    },
-    "authMethod": "API_KEY",
-    "description": "Récupère les détails d'un remboursement spécifique dans votre compte Stripe.",
-    "requiredSecrets": [
-      "api_secret_key"
-    ],
-    "apiKeyDetails": {
-      "secretName": "api_secret_key",
-      "scheme": "Bearer"
-    },
-    "utilityProvider": "stripe"
-  },
-  {
-    "id": "stripe_get_charge",
-    "schema": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "examples": [
-            "ch_3R5LCHGlVst8Q7tM0lGT1PYu"
-          ],
-          "description": "L'ID de la charge à récupérer."
-        }
-      }
-    },
-    "apiDetails": {
-      "method": "GET",
-      "baseUrl": "https://api.stripe.com/v1",
-      "pathTemplate": "/charges/{id}",
-      "paramMappings": {
-        "path": {
-          "id": "id"
-        }
-      }
-    },
-    "authMethod": "API_KEY",
-    "description": "Récupère les détails d'une charge spécifique dans votre compte Stripe.",
-    "apiKeyDetails": {
-      "scheme": "Bearer",
-      "secretName": "api_secret_key"
-    },
-    "requiredSecrets": [
-      "api_secret_key"
-    ],
-    "utilityProvider": "stripe"
   },
   {
     "id": "crisp_list_conversations",
@@ -518,6 +176,10 @@
       "method": "GET",
       "pathTemplate": "/website/{website_id}/conversations/{page_number}",
       "paramMappings": {
+        "path": {
+          "website_id": "website_id",
+          "page_number": "page_number"
+        },
         "query": {
           "filter_unread": "filter_unread",
           "filter_resolved": "filter_resolved",
@@ -525,7 +187,8 @@
         }
       },
       "staticHeaders": {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "X-Crisp-Tier": "plugin"
       }
     },
     "schema": {
@@ -535,12 +198,12 @@
           "type": "string",
           "description": "L'identifiant du site web Crisp",
           "examples": [
-            "8c842203-7ed8-4e29-a608-7cf78a7d2fcc"
+            "7c842203-7ed8-4e29-a608-7cf78a7d2fcc"
           ]
         },
         "page_number": {
           "type": "string",
-          "description": "Le numéro de page pour la pagination",
+          "description": "Numéro de page pour la pagination",
           "examples": [
             "1"
           ]
@@ -570,32 +233,321 @@
     }
   },
   {
-    "id": "whatsapp_send_message",
-    "utilityProvider": "agent-base",
-    "description": "Envoie un message texte à un numéro WhatsApp spécifié",
+    "id": "crisp_list_conversations_new",
+    "utilityProvider": "crisp",
+    "description": "Liste les conversations Crisp d'un site web spécifique",
+    "authMethod": "API_KEY",
+    "requiredSecrets": [
+      "api_identifier",
+      "api_secret_key"
+    ],
+    "apiKeyDetails": {
+      "secretName": "api_secret_key",
+      "scheme": "BasicUser"
+    },
+    "apiDetails": {
+      "baseUrl": "https://api.crisp.chat/v1",
+      "method": "GET",
+      "pathTemplate": "/website/b65cba08-5896-4142-b94b-d25fcf2bad90/conversations/1",
+      "staticHeaders": {
+        "Content-Type": "application/json",
+        "X-Crisp-Tier": "plugin"
+      }
+    },
     "schema": {
       "type": "object",
       "properties": {
-        "to": {
+        "filter_unread": {
           "type": "string",
-          "description": "Le numéro de téléphone WhatsApp du destinataire au format international (ex: +33612345678)",
+          "description": "Filtrer pour n'afficher que les conversations non lues (1 ou 0)",
           "examples": [
-            "+33612345678"
+            "1"
           ]
         },
-        "message": {
+        "filter_resolved": {
           "type": "string",
-          "description": "Le contenu du message texte à envoyer",
+          "description": "Filtrer pour n'afficher que les conversations résolues (1 ou 0)",
           "examples": [
-            "Bonjour, voici une notification importante concernant votre demande."
+            "0"
+          ]
+        },
+        "filter_not_resolved": {
+          "type": "string",
+          "description": "Filtrer pour n'afficher que les conversations non résolues (1 ou 0)",
+          "examples": [
+            "1"
           ]
         }
-      },
-      "required": [
-        "to",
-        "message"
-      ]
+      }
+    }
+  },
+  {
+    "id": "crisp_list_conversations_custom",
+    "utilityProvider": "crisp",
+    "description": "Liste les conversations Crisp avec authentification personnalisée",
+    "authMethod": "API_KEY",
+    "requiredSecrets": [
+      "api_identifier",
+      "api_secret_key"
+    ],
+    "apiKeyDetails": {
+      "secretName": "api_secret_key",
+      "scheme": "BasicUser"
     },
+    "apiDetails": {
+      "baseUrl": "https://api.crisp.chat/v1",
+      "method": "GET",
+      "pathTemplate": "/website/b65cba08-5896-4142-b94b-d25fcf2bad90/conversations/1",
+      "staticHeaders": {
+        "Content-Type": "application/json",
+        "X-Crisp-Tier": "plugin"
+      }
+    },
+    "schema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "id": "crisp_list_my_conversations",
+    "utilityProvider": "crisp",
+    "description": "Liste les conversations Crisp pour mon site web spécifique",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "filter_unread": {
+          "type": "string",
+          "description": "Filtrer pour n'afficher que les conversations non lues (1 ou 0)",
+          "examples": [
+            "1"
+          ]
+        },
+        "filter_resolved": {
+          "type": "string",
+          "description": "Filtrer pour n'afficher que les conversations résolues (1 ou 0)",
+          "examples": [
+            "0"
+          ]
+        },
+        "filter_not_resolved": {
+          "type": "string",
+          "description": "Filtrer pour n'afficher que les conversations non résolues (1 ou 0)",
+          "examples": [
+            "1"
+          ]
+        }
+      }
+    },
+    "authMethod": "API_KEY",
+    "requiredSecrets": [
+      "api_identifier",
+      "api_secret_key"
+    ],
+    "apiKeyDetails": {
+      "secretName": "api_secret_key",
+      "scheme": "BasicUser"
+    },
+    "apiDetails": {
+      "method": "GET",
+      "baseUrl": "https://api.crisp.chat/v1",
+      "pathTemplate": "/website/b65cba08-5896-4142-b94b-d25fcf2bad90/conversations/1",
+      "staticHeaders": {
+        "Content-Type": "application/json",
+        "X-Crisp-Tier": "plugin"
+      },
+      "paramMappings": {
+        "query": {
+          "filter_unread": "filter_unread",
+          "filter_resolved": "filter_resolved",
+          "filter_not_resolved": "filter_not_resolved"
+        }
+      }
+    }
+  },
+  {
+    "id": "crisp_list_conversations_secure",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "filter_unread": {
+          "type": "string",
+          "examples": [
+            "1"
+          ],
+          "description": "Filtrer pour n'afficher que les conversations non lues (1 ou 0)"
+        },
+        "filter_resolved": {
+          "type": "string",
+          "examples": [
+            "0"
+          ],
+          "description": "Filtrer pour n'afficher que les conversations résolues (1 ou 0)"
+        },
+        "filter_not_resolved": {
+          "type": "string",
+          "examples": [
+            "1"
+          ],
+          "description": "Filtrer pour n'afficher que les conversations non résolues (1 ou 0)"
+        }
+      }
+    },
+    "apiDetails": {
+      "method": "GET",
+      "baseUrl": "https://api.crisp.chat/v1",
+      "pathTemplate": "/website/{website_id}/conversations/1",
+      "paramMappings": {
+        "path": {
+          "website_id": "website_id"
+        },
+        "query": {
+          "filter_unread": "filter_unread",
+          "filter_resolved": "filter_resolved",
+          "filter_not_resolved": "filter_not_resolved"
+        }
+      },
+      "staticHeaders": {
+        "Content-Type": "application/json",
+        "X-Crisp-Tier": "plugin"
+      }
+    },
+    "authMethod": "API_KEY",
+    "description": "Liste les conversations Crisp avec tous les paramètres en secrets",
+    "apiKeyDetails": {
+      "scheme": "BasicUser",
+      "secretName": "api_secret_key"
+    },
+    "requiredSecrets": [
+      "website_id",
+      "api_identifier",
+      "api_secret_key"
+    ],
+    "utilityProvider": "crisp"
+  },
+  {
+    "id": "crisp_list_conversations_direct",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "website_id": {
+          "type": "string",
+          "examples": [
+            "b65cba08-5896-4142-b94b-d25fcf2bad90"
+          ],
+          "description": "L'identifiant du site web Crisp"
+        },
+        "filter_unread": {
+          "type": "string",
+          "examples": [
+            "1"
+          ],
+          "description": "Filtrer pour n'afficher que les conversations non lues (1 ou 0)"
+        },
+        "filter_resolved": {
+          "type": "string",
+          "examples": [
+            "0"
+          ],
+          "description": "Filtrer pour n'afficher que les conversations résolues (1 ou 0)"
+        },
+        "filter_not_resolved": {
+          "type": "string",
+          "examples": [
+            "1"
+          ],
+          "description": "Filtrer pour n'afficher que les conversations non résolues (1 ou 0)"
+        }
+      }
+    },
+    "apiDetails": {
+      "method": "GET",
+      "baseUrl": "https://api.crisp.chat/v1",
+      "pathTemplate": "/website/{website_id}/conversations/1",
+      "paramMappings": {
+        "path": {
+          "website_id": "website_id"
+        },
+        "query": {
+          "filter_unread": "filter_unread",
+          "filter_resolved": "filter_resolved",
+          "filter_not_resolved": "filter_not_resolved"
+        }
+      },
+      "staticHeaders": {
+        "Content-Type": "application/json",
+        "X-Crisp-Tier": "plugin"
+      }
+    },
+    "authMethod": "API_KEY",
+    "description": "Liste les conversations Crisp avec website_id en paramètre",
+    "apiKeyDetails": {
+      "scheme": "BasicUser",
+      "secretName": "api_secret_key"
+    },
+    "requiredSecrets": [
+      "api_identifier",
+      "api_secret_key"
+    ],
+    "utilityProvider": "crisp"
+  },
+  {
+    "id": "crisp_respond_to_message",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "session_id": {
+          "type": "string",
+          "examples": [
+            "session_0839e4c2-a059-445b-8de5-390d6417f893"
+          ],
+          "description": "L'identifiant de la session de conversation"
+        },
+        "content": {
+          "type": "string",
+          "examples": [
+            "Bonjour, merci pour votre message. Je vais vous aider avec votre demande."
+          ],
+          "description": "Le contenu du message à envoyer"
+        }
+      }
+    },
+    "apiDetails": {
+      "method": "POST",
+      "baseUrl": "https://api.crisp.chat/v1",
+      "pathTemplate": "/website/{website_id}/conversation/{session_id}/message",
+      "paramMappings": {
+        "path": {
+          "session_id": "session_id"
+        },
+        "body": {
+          "from": "operator",
+          "type": "text",
+          "origin": "chat",
+          "content": "content"
+        }
+      },
+      "staticHeaders": {
+        "Content-Type": "application/json",
+        "X-Crisp-Tier": "plugin"
+      }
+    },
+    "authMethod": "API_KEY",
+    "description": "Envoie une réponse à un message Crisp",
+    "apiKeyDetails": {
+      "scheme": "BasicUser",
+      "secretName": "api_secret_key"
+    },
+    "requiredSecrets": [
+      "website_id",
+      "api_identifier",
+      "api_secret_key"
+    ],
+    "utilityProvider": "crisp"
+  },
+  {
+    "id": "stripe_list_balance_transactions",
+    "utilityProvider": "stripe",
+    "description": "Lists balance transactions from your Stripe account, showing movements of funds in and out of your Stripe balance.",
     "authMethod": "API_KEY",
     "requiredSecrets": [
       "api_secret_key"
@@ -604,23 +556,273 @@
       "secretName": "api_secret_key",
       "scheme": "Bearer"
     },
-    "apiDetails": {
-      "method": "POST",
-      "baseUrl": "https://graph.facebook.com/v22.0",
-      "pathTemplate": "/{phone_number_id}/messages",
-      "staticHeaders": {
-        "Content-Type": "application/json"
-      },
-      "paramMappings": {
-        "body": {
-          "messaging_product": "whatsapp",
-          "recipient_type": "individual",
-          "to": "to",
-          "type": "text",
-          "text": {
-            "body": "message"
-          }
+    "schema": {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "type": "integer",
+          "description": "A limit on the number of objects to return, between 1 and 100.",
+          "examples": [
+            10,
+            25,
+            50
+          ]
+        },
+        "type": {
+          "type": "string",
+          "description": "Only return transactions of the specified type (e.g., charge, refund, payout, etc.)",
+          "examples": [
+            "charge",
+            "refund",
+            "payout"
+          ]
+        },
+        "starting_after": {
+          "type": "string",
+          "description": "A cursor for pagination, representing the ID of the last transaction from a previous request.",
+          "examples": [
+            "txn_1MiN3gLkdIwHu7ixxapQrznl"
+          ]
         }
+      }
+    },
+    "apiDetails": {
+      "baseUrl": "https://api.stripe.com/v1",
+      "method": "GET",
+      "pathTemplate": "/balance_transactions",
+      "paramMappings": {
+        "query": {
+          "limit": "limit",
+          "type": "type",
+          "starting_after": "starting_after"
+        }
+      },
+      "staticHeaders": {
+        "Content-Type": "application/x-www-form-urlencoded"
+      }
+    }
+  },
+  {
+    "id": "stripe_retrieve_balance_transaction",
+    "utilityProvider": "stripe",
+    "description": "Retrieves details of a specific balance transaction from your Stripe account.",
+    "authMethod": "API_KEY",
+    "requiredSecrets": [
+      "api_secret_key"
+    ],
+    "apiKeyDetails": {
+      "secretName": "api_secret_key",
+      "scheme": "Bearer"
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "transaction_id": {
+          "type": "string",
+          "description": "The ID of the balance transaction to retrieve.",
+          "examples": [
+            "txn_1MiN3gLkdIwHu7ixxapQrznl"
+          ]
+        }
+      }
+    },
+    "apiDetails": {
+      "baseUrl": "https://api.stripe.com/v1",
+      "method": "GET",
+      "pathTemplate": "/balance_transactions/{transaction_id}",
+      "paramMappings": {
+        "path": {
+          "transaction_id": "transaction_id"
+        }
+      },
+      "staticHeaders": {
+        "Content-Type": "application/x-www-form-urlencoded"
+      }
+    }
+  },
+  {
+    "id": "crisp_list_conversations_extended",
+    "utilityProvider": "crisp",
+    "description": "Lists conversations for a Crisp website with comprehensive filtering and pagination options.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "website_id": {
+          "type": "string",
+          "description": "The website identifier for your Crisp account",
+          "examples": [
+            "8c842203-7ed8-4e29-a608-7cf78a7d2fcc"
+          ]
+        },
+        "page_number": {
+          "type": "integer",
+          "description": "Page number for conversations paging",
+          "examples": [
+            1
+          ]
+        },
+        "per_page": {
+          "type": "integer",
+          "description": "Page size for conversations paging (between 20 and 50, defaults to 20)",
+          "examples": [
+            20
+          ]
+        },
+        "search_query": {
+          "type": "string",
+          "description": "Search query in all conversations (text if type is text or segment, filter if type is filter)",
+          "examples": [
+            "customer support"
+          ]
+        },
+        "search_type": {
+          "type": "string",
+          "description": "Search type (either text, segment or filter)",
+          "enum": [
+            "text",
+            "segment",
+            "filter"
+          ]
+        },
+        "search_operator": {
+          "type": "string",
+          "description": "Search operator if search type is filter (or or and respectful to boolean algebra, defaults to and if not set)",
+          "enum": [
+            "or",
+            "and"
+          ]
+        },
+        "include_empty": {
+          "type": "integer",
+          "description": "Whether to include conversations without any message (1 or 0, defaults to 0)",
+          "enum": [
+            0,
+            1
+          ]
+        },
+        "filter_inbox_id": {
+          "type": "string",
+          "description": "Whether to return only conversations categorized under provided inbox identifier"
+        },
+        "filter_unread": {
+          "type": "integer",
+          "description": "Whether to return only conversations with unread messages (1 or 0, defaults to 0)",
+          "enum": [
+            0,
+            1
+          ]
+        },
+        "filter_resolved": {
+          "type": "integer",
+          "description": "Whether to return only conversations that are resolved (1 or 0, defaults to 0)",
+          "enum": [
+            0,
+            1
+          ]
+        },
+        "filter_not_resolved": {
+          "type": "integer",
+          "description": "Whether to return only conversations that are not resolved (1 or 0, defaults to 0)",
+          "enum": [
+            0,
+            1
+          ]
+        },
+        "filter_mention": {
+          "type": "integer",
+          "description": "Whether to return only conversations where user is mentioned (1 or 0, defaults to 0)",
+          "enum": [
+            0,
+            1
+          ]
+        },
+        "filter_assigned": {
+          "type": "string",
+          "description": "Whether to return only conversations that are assigned to user identifier"
+        },
+        "filter_unassigned": {
+          "type": "integer",
+          "description": "Whether to return only conversations that are not assigned to any user (1 or 0, defaults to 0)",
+          "enum": [
+            0,
+            1
+          ]
+        },
+        "filter_date_start": {
+          "type": "string",
+          "description": "When to start relative to conversation update date (date, ISO 8601, eg. 2018-03-01T17:00:00.000Z)"
+        },
+        "filter_date_end": {
+          "type": "string",
+          "description": "When to end relative to conversation update date (date, ISO 8601, eg. 2018-04-01T10:30:00.000Z)"
+        },
+        "order_date_created": {
+          "type": "integer",
+          "description": "Whether to order conversations by date created instead of default order (1 or 0, defaults to 0)",
+          "enum": [
+            0,
+            1
+          ]
+        },
+        "order_date_updated": {
+          "type": "integer",
+          "description": "Whether to order conversations by date updated instead of default order (1 or 0, defaults to 0)",
+          "enum": [
+            0,
+            1
+          ]
+        },
+        "order_date_waiting": {
+          "type": "integer",
+          "description": "Whether to order conversations by longest date waiting instead of default order, this also filters out non-waiting conversations (1 or 0, defaults to 0)",
+          "enum": [
+            0,
+            1
+          ]
+        }
+      }
+    },
+    "authMethod": "API_KEY",
+    "requiredSecrets": [
+      "api_identifier",
+      "api_secret_key"
+    ],
+    "apiKeyDetails": {
+      "secretName": "api_secret_key",
+      "scheme": "BasicUser"
+    },
+    "apiDetails": {
+      "baseUrl": "https://api.crisp.chat",
+      "method": "GET",
+      "pathTemplate": "/v1/website/{website_id}/conversations/{page_number}",
+      "paramMappings": {
+        "path": {
+          "website_id": "website_id",
+          "page_number": "page_number"
+        },
+        "query": {
+          "per_page": "per_page",
+          "search_query": "search_query",
+          "search_type": "search_type",
+          "search_operator": "search_operator",
+          "include_empty": "include_empty",
+          "filter_inbox_id": "filter_inbox_id",
+          "filter_unread": "filter_unread",
+          "filter_resolved": "filter_resolved",
+          "filter_not_resolved": "filter_not_resolved",
+          "filter_mention": "filter_mention",
+          "filter_assigned": "filter_assigned",
+          "filter_unassigned": "filter_unassigned",
+          "filter_date_start": "filter_date_start",
+          "filter_date_end": "filter_date_end",
+          "order_date_created": "order_date_created",
+          "order_date_updated": "order_date_updated",
+          "order_date_waiting": "order_date_waiting"
+        }
+      },
+      "staticHeaders": {
+        "Content-Type": "application/json",
+        "X-Crisp-Tier": "plugin"
       }
     }
   }
