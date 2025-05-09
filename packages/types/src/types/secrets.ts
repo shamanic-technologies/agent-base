@@ -12,6 +12,7 @@ export interface StoreSecretRequest {
   userType: UserType;
   secretType: UtilitySecretType;
   secretUtilityProvider: UtilityProvider;
+  secretUtilitySubProvider?: string;
   secretValue: string;
 }
 
@@ -24,6 +25,7 @@ export interface CheckSecretRequest {
   userType: UserType;
   secretType: UtilitySecretType;
   secretUtilityProvider: UtilityProvider;
+  secretUtilitySubProvider?: string;
 }
 
 /**
@@ -33,6 +35,7 @@ export interface GetSecretRequest {
   userType: UserType;
   secretType: UtilitySecretType;
   secretUtilityProvider: UtilityProvider;
+  secretUtilitySubProvider?: string;
 }
 
 export type SecretExists = {
