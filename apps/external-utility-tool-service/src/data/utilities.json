@@ -825,5 +825,82 @@
         "X-Crisp-Tier": "plugin"
       }
     }
+  },
+  {
+    "id": "crisp_list_conversations_api",
+    "utilityProvider": "crisp",
+    "description": "Lists conversations for a Crisp website using the Crisp API.",
+    "authMethod": "API_KEY",
+    "requiredSecrets": [
+      "api_identifier",
+      "api_secret_key"
+    ],
+    "apiKeyDetails": {
+      "secretName": "api_secret_key",
+      "scheme": "Bearer"
+    },
+    "apiDetails": {
+      "baseUrl": "https://api.crisp.chat/v1",
+      "method": "GET",
+      "pathTemplate": "/website/{website_id}/conversations/{page_number}",
+      "staticHeaders": {
+        "X-Crisp-Tier": "plugin",
+        "Content-Type": "application/json"
+      }
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "website_id": {
+          "type": "string",
+          "description": "The Crisp website identifier",
+          "examples": [
+            "8c842203-7ed8-4e29-a608-7cf78a7d2fcc"
+          ]
+        },
+        "page_number": {
+          "type": "string",
+          "description": "Page number for conversations paging",
+          "examples": [
+            "1"
+          ]
+        },
+        "per_page": {
+          "type": "string",
+          "description": "Page size for conversations paging (between 20 and 50, defaults to 20)",
+          "examples": [
+            "20"
+          ]
+        },
+        "search_query": {
+          "type": "string",
+          "description": "Search query in all conversations (text if type is text or segment, filter if type is filter)",
+          "examples": [
+            "customer support"
+          ]
+        },
+        "filter_unread": {
+          "type": "string",
+          "description": "Whether to return only conversations with unread messages (1 or 0, defaults to 0)",
+          "examples": [
+            "1"
+          ]
+        },
+        "filter_resolved": {
+          "type": "string",
+          "description": "Whether to return only conversations that are resolved (1 or 0, defaults to 0)",
+          "examples": [
+            "1"
+          ]
+        },
+        "filter_not_resolved": {
+          "type": "string",
+          "description": "Whether to return only conversations that are not resolved (1 or 0, defaults to 0)",
+          "examples": [
+            "1"
+          ]
+        }
+      }
+    }
   }
 ]

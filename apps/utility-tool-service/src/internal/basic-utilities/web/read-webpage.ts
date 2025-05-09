@@ -18,6 +18,8 @@ import { registry } from '../../../registry/registry.js';
 export interface FireCrawlExtractContentRequest {
   url: string;
   onlyMainContent?: boolean;
+  fromLine?: number; // New parameter: starting line (1-indexed)
+  toLine?: number;   // New parameter: ending line (1-indexed)
 }
 // Assuming success response is the complex object returned by FireCrawl
 // Define a more specific success response type
@@ -58,6 +60,20 @@ const readWebPage: InternalUtilityTool = {
         description: 'Whether to extract only the main content without navigation, headers, footers, etc. (default: true)',
         default: true,
         examples: [true, false]
+      },
+      fromLine: { // Schema for fromLine
+        type: 'integer',
+        description: 'Optional: The 1-indexed line number to start extracting content from. Defaults to 1 if not provided.',
+        minimum: 0,
+        default: 0, // Schema default
+        examples: [10, 50]
+      },
+      toLine: { // Schema for toLine
+        type: 'integer',
+        description: 'Optional: The 1-indexed line number to end extracting content at (inclusive). Defaults to 200 if not provided (or end of content if shorter).',
+        minimum: 0,
+        default: 199, // Schema default
+        examples: [100, 200]
       }
     },
     required: ['url']
@@ -66,10 +82,9 @@ const readWebPage: InternalUtilityTool = {
   execute: async (clientUserId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: FireCrawlExtractContentRequest): Promise<ReadWebPageResponse> => {
     const logPrefix = '🔥 [FIRECRAWL]';
     try {
-      // Use raw params, assuming validation happens elsewhere
-      const { url, onlyMainContent = true } = params || {}; // Use raw params
+      // Defaults are now 0-indexed: fromLine=0, toLine=199 (inclusive)
+      const { url, onlyMainContent = true, fromLine = 0, toLine = 199 } = params || {};
       
-      // Basic validation still useful within execute if not relying on central validation
       if (!url || typeof url !== 'string') {
         return { success: false, error: "URL is required and must be a string" } as ErrorResponse;
       }
@@ -77,9 +92,8 @@ const readWebPage: InternalUtilityTool = {
         return { success: false, error: "Invalid URL format. URL must start with http:// or https://" } as ErrorResponse;
       }
       
-      console.log(`${logPrefix} Extracting content from: "${url}" (onlyMainContent: ${onlyMainContent})`);
+      console.log(`${logPrefix} Extracting content from: "${url}" (onlyMainContent: ${onlyMainContent}, fromLine: ${fromLine}, toLine: ${toLine})`);
       
-      // Use FireCrawl API to fetch content from the URL
       const apiKey = process.env.FIRECRAWL_API_KEY;
       if (!apiKey) {
         console.error(`${logPrefix} FIRECRAWL_API_KEY not set`);
@@ -123,6 +137,38 @@ const readWebPage: InternalUtilityTool = {
         } as ErrorResponse;
       }
 
+      let markdownContent = firecrawlData.data.markdown || ""; // Default to empty string to prevent split error
+
+      if (markdownContent.length > 0) {
+        const lines = markdownContent.split('\n');
+        const totalLines = lines.length;
+
+        // fromLine and toLine are already 0-indexed from destructuring
+        let startIdx = fromLine;
+        // toLine is the 0-indexed *inclusive* end. For slice, the end index is *exclusive*.
+        let endExclusiveIdx = toLine + 1;
+
+        // Clamp start index: cannot be less than 0, cannot be more than totalLines (slice handles start > end)
+        startIdx = Math.max(0, startIdx);
+        startIdx = Math.min(startIdx, totalLines);
+
+        // Clamp end index (exclusive for slice): cannot be less than start, cannot be more than totalLines
+        endExclusiveIdx = Math.max(startIdx, endExclusiveIdx);
+        endExclusiveIdx = Math.min(endExclusiveIdx, totalLines);
+        
+        if (startIdx < endExclusiveIdx) {
+          markdownContent = lines.slice(startIdx, endExclusiveIdx).join('\n');
+          console.log(`${logPrefix} Markdown sliced. Params: fromLine=${params?.fromLine}(used ${fromLine}), toLine=${params?.toLine}(used ${toLine}). Effective 0-indexed slice: [${startIdx}-${endExclusiveIdx-1}]. Orig: ${totalLines}, New: ${markdownContent.split('\n').length}`);
+        } else {
+          // This case covers when the range is invalid (e.g., start >= end after clamping) or content was empty.
+          markdownContent = ""; 
+          console.log(`${logPrefix} Range results in empty selection or original content was empty. Params: fromLine=${params?.fromLine}(used ${fromLine}), toLine=${params?.toLine}(used ${toLine}). Effective 0-indexed slice: [${startIdx}-${endExclusiveIdx-1}]. Orig: ${totalLines}`);
+        }
+      } else {
+        // markdownContent was initially null or empty, remains empty string.
+        markdownContent = ""; 
+      }
+
       // Return the extraction results in standard format
       const successResponse: ReadWebPageSuccessResponse = {
         status: 'success',
@@ -130,9 +176,9 @@ const readWebPage: InternalUtilityTool = {
           url: url,
           title: firecrawlData.data.metadata?.title || firecrawlData.data.title || null,
           favicon: firecrawlData.data.metadata?.ogImage || firecrawlData.data.favicon || null, // Prefer ogImage if available
-          markdown: firecrawlData.data.markdown || null,
+          markdown: markdownContent, // Use potentially sliced markdown
           language: firecrawlData.data.metadata?.language || null,
-          word_count: firecrawlData.data.content?.split(' ').length || 0, // Simple word count
+          word_count: markdownContent?.split(/\s+/).filter(Boolean).length || 0, // Recalculate word count on potentially sliced markdown
           detected_content_type: firecrawlData.data.metadata?.sourceURL?.includes('.pdf') ? 'application/pdf' : 'text/html', // Basic detection
           extracted_at: new Date().toISOString()
         }

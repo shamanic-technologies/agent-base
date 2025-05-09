@@ -184,7 +184,6 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
         }),
         async onFinish({ response }) { // Destructure response directly
             try {
-              console.log('🟢👉[Agent Service /run] onFinish:', response);
               // Construct the final list including the latest assistant/tool responses
               const finalMessages: Message[] = appendResponseMessages({
                 messages: allMessages,
@@ -207,7 +206,6 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
             }
         },
       });
-      console.log('🟢[Agent Service /run] Result:', result);
       // --- End Call AI Model ---
       // consume the stream to ensure it runs to completion & triggers onFinish
       // even when the client response is aborted:
