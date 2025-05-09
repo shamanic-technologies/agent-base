@@ -21,22 +21,21 @@ interface SearchWebhooksParams {
 
 const webhookSearchWebhooksUtility: InternalUtilityTool = {
     id: 'webhook_search_webhooks',
-    description: 'Searches for existing webhook definitions based on a query string.',
+    description: 'Searches for existing webhook definitions. An empty query lists all accessible webhooks.',
     schema: {
         type: 'object',
-        required: ['query'], 
         properties: {
             query: { 
                 type: 'string',
-                description: 'The search term to filter webhooks by (e.g., name, provider ID).',
-                examples: ['stripe', 'My Integration']
+                description: 'The search term to filter webhooks by (e.g., name, provider ID). Provide an empty string to list all.',
+                examples: ['stripe', 'My Integration', '']
             },
             limit: { 
                 type: 'integer',
                 description: 'Optional maximum number of results to return.',
                 examples: [10]
             },
-        }
+        },
     },
   
     execute: async (
@@ -44,17 +43,18 @@ const webhookSearchWebhooksUtility: InternalUtilityTool = {
         platformUserId: string,
         platformApiKey: string,
         conversationId: string, 
-        params: SearchWebhooksParams, // Use the defined interface for params
+        params: SearchWebhooksParams, // query is string, but can be empty
         agentId?: string
     ): Promise<ServiceResponse<Webhook[]>> => {
         const logPrefix = '🛠️ [WEBHOOK_SEARCH_WEBHOOKS]';
         try {
-            // Basic validation
-            if (!params || !params.query) {
-                console.error(`${logPrefix} Invalid or missing required parameter (query).`);
+            // Validation: params must exist, and if query is provided, it must be a string.
+            // An empty string for query is now acceptable.
+            if (!params || (params.query !== undefined && typeof params.query !== 'string')) {
+                console.error(`${logPrefix} Invalid parameters. 'query' must be a string if provided.`);
                 return { 
                     success: false, 
-                    error: "Invalid input: Missing required parameter (query)."
+                    error: "Invalid input: 'query' must be a string if provided."
                 };
             }
 

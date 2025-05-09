@@ -43,6 +43,8 @@ export interface Webhook extends WebhookData {
   id: string;   /** Unique identifier for the utility */
   webhookUrl: string;
   isLinkedToCurrentUser?: boolean;
+  currentUserWebhookStatus?: WebhookStatus;
+  isLinkedToAgent?: boolean;
   linkedAgentId?: string;
 }
 
