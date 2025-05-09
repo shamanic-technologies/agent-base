@@ -33,6 +33,7 @@ and you can't find the right tool to do it, use this tool to create a new extern
 3- Call the new external tool using the utility_call_utility tool in order to test it, until it works as expected.
 
 ### Procedure to create a new webhook:
+0- Search if the user has already created a webhook for the provider you want to create. if not, do the following:
 1- Search online for the Webhook Documentation of the webhook provider you want to create. 
 2- Ensure you have a clear understanding of:
 - the specific webhook event you want to subscribe to
