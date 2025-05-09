@@ -27,6 +27,37 @@ import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 const client = new SecretManagerServiceClient(); 
 
 /**
+ * Creates a standardized secret ID.
+ * 
+ * @param userType The type of the user (e.g., 'agent', 'user').
+ * @param userId The unique identifier of the user.
+ * @param secretUtilityProvider The provider of the secret utility.
+ * @param secretType The type of the secret.
+ * @param secretUtilitySubProvider Optional sub-provider for the secret utility.
+ * @returns A standardized string to be used as a secret ID.
+ */
+function createSecretId(
+  userType: UserType,
+  userId: string,
+  secretUtilityProvider: string,
+  secretType: string,
+  secretUtilitySubProvider?: string,
+): string {
+  let baseId;
+  if (secretUtilitySubProvider) {
+    baseId = `${userType}_${userId}_${secretUtilityProvider}_${secretUtilitySubProvider}_${secretType}`;
+  } else {
+    baseId = `${userType}_${userId}_${secretUtilityProvider}_${secretType}`;
+  }
+  // Sanitize the ID: replace invalid characters with a hyphen and convert to lowercase.
+  // Allowed characters are letters, numerals, hyphens, and underscores.
+  const sanitizedId = baseId.replace(/[^a-zA-Z0-9_-]/g, '-').toLowerCase();
+  
+  // Ensure the secret ID does not exceed 255 characters.
+  return sanitizedId.substring(0, 255);
+}
+
+/**
  * Create a secret key for a user
  * 
  * @param storeSecretRequest Object containing userType, userId, secretType, and secretValue
@@ -44,12 +75,7 @@ export async function storeSecret(storeSecretRequest: StoreSecretRequest, userId
     // Destructure directly from the request object
     const { userType, secretUtilityProvider, secretUtilitySubProvider, secretType, secretValue } = storeSecretRequest;
     // Check if secretUtilitySubProvider is defined, if not, dsimiss it
-    let secretId = '';
-    if (!secretUtilitySubProvider) {
-      secretId = `${userType}_${userId}_${secretUtilityProvider}_${secretType}`.toLowerCase(); // Ensure lowercase
-    } else {
-      secretId = `${userType}_${userId}_${secretUtilityProvider}_${secretUtilitySubProvider}_${secretType}`.toLowerCase(); // Ensure lowercase
-    }
+    const secretId = createSecretId(userType, userId, secretUtilityProvider, secretType, secretUtilitySubProvider);
     const parent = `projects/${projectId}`;
     const secretName = `${parent}/secrets/${secretId}`;
 
@@ -123,12 +149,7 @@ export async function checkSecretExists(request: CheckSecretRequest, userId: str
     const { userType, secretUtilityProvider, secretUtilitySubProvider, secretType } = request;
 
     // Create the secret name based on user type, user id and secret type
-    let secretId = '';
-    if (!secretUtilitySubProvider) {
-      secretId = `${userType}_${userId}_${secretUtilityProvider}_${secretType}`.toLowerCase(); // Ensure lowercase
-    } else {
-      secretId = `${userType}_${userId}_${secretUtilityProvider}_${secretUtilitySubProvider}_${secretType}`.toLowerCase(); // Ensure lowercase
-    }
+    const secretId = createSecretId(userType, userId, secretUtilityProvider, secretType, secretUtilitySubProvider);
     const name = `projects/${projectId}/secrets/${secretId}`;
 
     try {
@@ -179,12 +200,7 @@ export async function getSecret(request: GetSecretRequest, userId: string): Prom
     const { userType, secretUtilityProvider, secretUtilitySubProvider, secretType } = request;
 
     // Create the secret name based on user type, user id and secret type
-    let secretId = '';
-    if (!secretUtilitySubProvider) {
-      secretId = `${userType}_${userId}_${secretUtilityProvider}_${secretType}`.toLowerCase(); // Ensure lowercase
-    } else {
-      secretId = `${userType}_${userId}_${secretUtilityProvider}_${secretUtilitySubProvider}_${secretType}`.toLowerCase(); // Ensure lowercase
-    }
+    const secretId = createSecretId(userType, userId, secretUtilityProvider, secretType, secretUtilitySubProvider);
     const name = `projects/${projectId}/secrets/${secretId}/versions/latest`;
 
     // Access the secret version - wrap in try-catch for NOT_FOUND

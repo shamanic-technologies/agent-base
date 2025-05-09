@@ -568,5 +568,60 @@
         }
       }
     }
+  },
+  {
+    "id": "whatsapp_send_message",
+    "utilityProvider": "agent-base",
+    "description": "Envoie un message texte à un numéro WhatsApp spécifié",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "to": {
+          "type": "string",
+          "description": "Le numéro de téléphone WhatsApp du destinataire au format international (ex: +33612345678)",
+          "examples": [
+            "+33612345678"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "description": "Le contenu du message texte à envoyer",
+          "examples": [
+            "Bonjour, voici une notification importante concernant votre demande."
+          ]
+        }
+      },
+      "required": [
+        "to",
+        "message"
+      ]
+    },
+    "authMethod": "API_KEY",
+    "requiredSecrets": [
+      "api_secret_key"
+    ],
+    "apiKeyDetails": {
+      "secretName": "api_secret_key",
+      "scheme": "Bearer"
+    },
+    "apiDetails": {
+      "method": "POST",
+      "baseUrl": "https://graph.facebook.com/v22.0",
+      "pathTemplate": "/{phone_number_id}/messages",
+      "staticHeaders": {
+        "Content-Type": "application/json"
+      },
+      "paramMappings": {
+        "body": {
+          "messaging_product": "whatsapp",
+          "recipient_type": "individual",
+          "to": "to",
+          "type": "text",
+          "text": {
+            "body": "message"
+          }
+        }
+      }
+    }
   }
 ]
