@@ -108,6 +108,7 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
           'webhook_search_webhooks',
           'webhook_link_user',
           'webhook_link_agent',
+          'webhook_test_webhook',
           'create_external_tool',
           'utility_google_search',
           'utility_google_maps',
