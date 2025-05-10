@@ -104,3 +104,18 @@ export interface WebhookResolutionRequest {
   subscribedEventId: string;
   payload: WebhookEventPayload;
 }
+
+export interface WebhookTestResult {
+  request?: {
+      targetUrl: string;
+      method: string;
+      headers: Record<string, string>;
+      payload: any;
+  };
+  response?: {
+      status: number;
+      headers: Record<string, string>;
+      body: any;
+  };
+  resolvedSecrets?: Record<string, boolean>; // Indicates which secrets were found e.g. { "API_KEY": true, "TOKEN": false }
+}
