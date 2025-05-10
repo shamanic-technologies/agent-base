@@ -42,7 +42,7 @@ export interface WebhookData {
 
 export interface Webhook extends WebhookData {
   id: string;   /** Unique identifier for the utility */
-  webhookUrl: string;
+  webhookUrl?: string;
   isLinkedToCurrentUser?: boolean;
   currentUserWebhookStatus?: WebhookStatus;
   isLinkedToAgent?: boolean;
