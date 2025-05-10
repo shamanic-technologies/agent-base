@@ -37,6 +37,7 @@ export interface WebhookData {
   clientUserIdentificationMapping: Record<UtilitySecretType, string>;
   conversationIdIdentificationMapping: string;
   eventPayloadSchema: Record<string, unknown>;
+  creatorClientUserId: string;
 }
 
 export interface Webhook extends WebhookData {
@@ -49,9 +50,6 @@ export interface Webhook extends WebhookData {
 }
 
 export type CreateWebhookRequest = WebhookData;
-
-
-
 
 export interface WebhookAgentLink {
   webhookId: string;
