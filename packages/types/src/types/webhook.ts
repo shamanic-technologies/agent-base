@@ -19,7 +19,8 @@ export interface UserWebhook {
   clientUserId: string;
   platformUserId: string;
   status: WebhookStatus;
-  clientUserIdentificationHash: string; // Hash of identifiers linking webhook event to client user
+  webhookSecret: string; // Unique secret for this webhook link
+  clientUserIdentificationHash?: string | null; // DEPRECATED - will be removed
   createdAt?: Date;
 }
 
