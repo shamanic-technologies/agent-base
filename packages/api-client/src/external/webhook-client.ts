@@ -4,7 +4,8 @@
 import {
     Webhook,
     ServiceResponse,
-    PlatformUserApiServiceCredentials
+    PlatformUserApiServiceCredentials,
+    WebhookEvent
 } from '@agent-base/types';
 import { makePlatformUserApiServiceRequest } from '../utils/service-client.js';
 import { getApiGatewayServiceUrl } from '../utils/config.js';
@@ -22,6 +23,26 @@ export async function getUserCreatedWebhooks(
         getApiGatewayServiceUrl(),
         'GET',
         '/webhook/get-user-created-webhooks',
+        externalApiServiceCredentials,
+        undefined,
+        undefined
+    );
+}
+
+/**
+ * Fetches all webhook definitions created by the specified user via the API Gateway.
+ * @param credentials - Internal service credentials containing platformApiKey, platformUserId, clientUserId.
+ * @returns ServiceResponse containing an array of Webhooks or an error.
+ */
+export async function getWebhookEvents(
+    webhookId: string,
+    externalApiServiceCredentials: PlatformUserApiServiceCredentials,
+): Promise<ServiceResponse<WebhookEvent[]>> {
+
+    return makePlatformUserApiServiceRequest<WebhookEvent[]>(
+        getApiGatewayServiceUrl(),
+        'GET',
+        `/webhook/${webhookId}/events`,
         externalApiServiceCredentials,
         undefined,
         undefined
