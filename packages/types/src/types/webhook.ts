@@ -1,7 +1,7 @@
 /**
  * Types for webhook integrations
  */
-import { UtilityProvider, UtilitySecretType } from "./utility.js";
+import { UtilityProvider } from "./utility.js";
 
 export type WebhookProviderId = UtilityProvider;
 
@@ -69,12 +69,10 @@ export interface WebhookEvent {
   updatedAt?: Date;
 }
 
-
 export interface CreateWebhookEventRequest {
   webhookId: string;
   webhookEventPayload: WebhookEventPayload;
 }
-
 
 /**
  * Webhook message event data base interface
@@ -99,34 +97,3 @@ export interface SearchWebhookResult {
   items: SearchWebhookResultItem[];
   total: number;
 }
-
-// /**
-//  * Defines the expected result from resolving webhook identification information.
-//  */
-// export interface WebhookResolutionResult {
-//   platformUserId: string;
-//   clientUserId: string;
-//   agentId: string;
-//   conversationId: string;
-// }
-
-// export interface WebhookResolutionRequest {
-//   webhookProviderId: WebhookProviderId;
-//   subscribedEventId: string;
-//   payload: WebhookEventPayload;
-// }
-
-// export interface WebhookTestResult {
-//   request?: {
-//       targetUrl: string;
-//       method: string;
-//       headers: Record<string, string>;
-//       payload: any;
-//   };
-//   response?: {
-//       status: number;
-//       headers: Record<string, string>;
-//       body: any;
-//   };
-//   resolvedSecrets?: Record<string, boolean>; // Indicates which secrets were found e.g. { "API_KEY": true, "TOKEN": false }
-// }

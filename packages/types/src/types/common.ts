@@ -49,6 +49,12 @@ export interface PlatformUserApiServiceCredentials {
   platformClientUserId: string;
 }
 
+export interface ClientUserApiServiceCredentials {
+  platformApiKey: string;
+  clientUserId: string;
+}
+
+export type ExternalApiServiceCredentials = PlatformUserApiServiceCredentials | ClientUserApiServiceCredentials;
 
 export interface ServiceCredentialsForPlatformClientUserValidation {
   platformApiKey: string;
