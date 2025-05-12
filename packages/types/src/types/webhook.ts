@@ -61,10 +61,16 @@ export interface CreateAgentUserWebhookRequest {
  * Application-level Webhook Event type (camelCase)
  */
 export interface WebhookEvent {
+  eventId: string; // Unique identifier for the event record
   webhookId: string;
   clientUserId: string;
   platformUserId: string;
-  webhookEventPayload: WebhookEventPayload;
+  payload: WebhookEventPayload;
+  providerId: WebhookProviderId;
+  subscribedEventId: string;
+  webhookSecret: string;
+  conversationId: string;
+  agentId: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
