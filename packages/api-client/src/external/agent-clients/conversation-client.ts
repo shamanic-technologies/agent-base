@@ -9,10 +9,11 @@ import {
     InternalServiceCredentials,
     PlatformUserApiServiceCredentials, // Import credentials type
     ConversationRecord,
+    ClientUserApiServiceCredentials
 } from '@agent-base/types';
 //@ts-ignore
 import { Message } from 'ai'; // Import Message from 'ai'
-import { makePlatformUserApiServiceRequest, makeInternalAPIServiceRequest } from '../../utils/service-client.js'; // Added .js
+import { makePlatformUserApiServiceRequest, makeClientUserApiServiceRequest } from '../../utils/service-client.js'; // Added .js
 import { getAgentServiceUrl, getApiGatewayServiceUrl } from '../../utils/config.js'; // Added .js
 import { Method } from 'axios';
 
@@ -24,12 +25,12 @@ const AGENT_SERVICE_ROUTE_PREFIX = '/agent'; // Assuming API Gateway prefixes ag
  * Corresponds to GET /agent/conversations/get-or-create-conversations-from-agent?agent_id=... in API Gateway
  * 
  * @param params - Object containing the agentId.
- * @param externalApiServiceCredentials - Credentials containing platformClientUserId and platformApiKey.
+ * @param platformUserApiServiceCredentials - Credentials containing platformClientUserId and platformApiKey.
  * @returns A promise resolving to the ServiceResponse containing the list of conversations.
  */
-export const getOrCreateConversationsExternalApiService = async (
+export const getOrCreateConversationsPlatformUserApiService = async (
     params: { agentId: string }, 
-    externalApiServiceCredentials: PlatformUserApiServiceCredentials
+    platformUserApiServiceCredentials: PlatformUserApiServiceCredentials
 ): Promise<ServiceResponse<Conversation[]>> => {
     const { agentId } = params;
     const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/conversation/get-or-create-conversations-from-agent`;
@@ -39,9 +40,33 @@ export const getOrCreateConversationsExternalApiService = async (
         API_GATEWAY_URL,
         'GET',
         endpoint,
-        externalApiServiceCredentials,
+        platformUserApiServiceCredentials,
         undefined, // No body for GET
         queryParams // Pass query params here
+    );
+};
+
+
+/**
+ * Creates a new conversation record via the API Gateway.
+ * Corresponds to POST /agent/conversations/create-conversation in API Gateway
+ * 
+ * @param body - The input data for creating the conversation (agentId, channelId, conversationId).
+ * @param platformUserApiServiceCredentials - Credentials containing platformClientUserId and platformApiKey.
+ * @returns A promise resolving to the ServiceResponse containing the ID of the created conversation.
+ */
+export const createConversationExternalApiService = async (
+    body: CreateConversationInput,
+    platformUserApiServiceCredentials: PlatformUserApiServiceCredentials
+): Promise<ServiceResponse<ConversationId>> => {
+    const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/conversation/create-conversation`;    
+    return makePlatformUserApiServiceRequest<ConversationId>( 
+        API_GATEWAY_URL,
+        'POST',
+        endpoint,
+        platformUserApiServiceCredentials,
+        body, // Pass body here
+        undefined // No query params for POST
     );
 };
 
@@ -50,19 +75,19 @@ export const getOrCreateConversationsExternalApiService = async (
  * Corresponds to POST /agent/conversations/create-conversation in API Gateway
  * 
  * @param body - The input data for creating the conversation (agentId, channelId, conversationId).
- * @param externalApiServiceCredentials - Credentials containing platformClientUserId and platformApiKey.
+ * @param platformUserApiServiceCredentials - Credentials containing platformClientUserId and platformApiKey.
  * @returns A promise resolving to the ServiceResponse containing the ID of the created conversation.
  */
-export const createConversationExternalApiService = async (
+export const getOrCreateConversationClientUserApiService = async (
     body: CreateConversationInput,
-    externalApiServiceCredentials: PlatformUserApiServiceCredentials
+    clientUserApiServiceCredentials: ClientUserApiServiceCredentials
 ): Promise<ServiceResponse<ConversationId>> => {
-    const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/conversation/create-conversation`;    
-    return makePlatformUserApiServiceRequest<ConversationId>( 
+    const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/conversation/get-or-create-conversation`;    
+    return makeClientUserApiServiceRequest<ConversationId>( 
         API_GATEWAY_URL,
         'POST',
         endpoint,
-        externalApiServiceCredentials,
+        clientUserApiServiceCredentials,
         body, // Pass body here
         undefined // No query params for POST
     );

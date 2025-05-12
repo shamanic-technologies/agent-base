@@ -10,11 +10,7 @@ import {
     CreateAgentUserWebhookRequest,
     ServiceResponse,
     InternalServiceCredentials,
-    WebhookProviderId,
-    WebhookEventPayload,
-    WebhookResolutionResult,
-    WebhookResolutionRequest,
-    WebhookTestResult
+
 } from '@agent-base/types';
 import { makeExternalApiServiceRequest, makeInternalAPIServiceRequest } from '../utils/service-client.js';
 import { getApiGatewayServiceUrl, getWebhookToolApiUrl } from '../utils/config.js';
@@ -125,53 +121,53 @@ export async function linkAgentToWebhookInternalApiService(
     );
 }
 
-/**
- * Resolves webhook identification information (platformUserId, clientUserId, agentId, conversationId) via the API Gateway.
- * @param webhookResolutionRequest - The incoming webhook event payload and provider ID.
- * @param credentials - Internal service credentials (platformUserId, clientUserId, platformApiKey).
- * @returns ServiceResponse containing the WebhookResolutionResult or an error.
- */
-export async function resolveWebhookExternalApiService(
-    webhookResolutionRequest: WebhookResolutionRequest
-): Promise<ServiceResponse<WebhookResolutionResult>> {
-    const webhookToolApiKey = process.env.WEBHOOK_TOOL_API_KEY;
-    let authHeaders = {
-        'Authorization': `Bearer ${webhookToolApiKey}`
-    };
+// /**
+//  * Resolves webhook identification information (platformUserId, clientUserId, agentId, conversationId) via the API Gateway.
+//  * @param webhookResolutionRequest - The incoming webhook event payload and provider ID.
+//  * @param credentials - Internal service credentials (platformUserId, clientUserId, platformApiKey).
+//  * @returns ServiceResponse containing the WebhookResolutionResult or an error.
+//  */
+// export async function resolveWebhookExternalApiService(
+//     webhookResolutionRequest: WebhookResolutionRequest
+// ): Promise<ServiceResponse<WebhookResolutionResult>> {
+//     const webhookToolApiKey = process.env.WEBHOOK_TOOL_API_KEY;
+//     let authHeaders = {
+//         'Authorization': `Bearer ${webhookToolApiKey}`
+//     };
 
-    return makeExternalApiServiceRequest<WebhookResolutionResult>(
-        getWebhookToolApiUrl(),
-        'POST' as Method,
-        '/resolve',
-        webhookResolutionRequest,
-        undefined,
-        authHeaders
-    );
-}
+//     return makeExternalApiServiceRequest<WebhookResolutionResult>(
+//         getWebhookToolApiUrl(),
+//         'POST' as Method,
+//         '/resolve',
+//         webhookResolutionRequest,
+//         undefined,
+//         authHeaders
+//     );
+// }
 
-/**
- * Tests a webhook execution via the API Gateway.
- * @param webhookId - ID of the webhook to test.
- * @param credentials - Internal service credentials containing platformApiKey, platformUserId, clientUserId.
- * @returns ServiceResponse containing the WebhookTestResult or an error.
- */
-export async function testWebhookInternalApiService(
-    webhookId: string,
-    credentials: InternalServiceCredentials
-): Promise<ServiceResponse<WebhookTestResult>> {
-    const { platformUserId, clientUserId, platformApiKey, agentId: credentialsAgentId } = credentials;
-    return makeInternalAPIServiceRequest<WebhookTestResult>(
-        getApiGatewayServiceUrl(),
-        'POST' as Method,
-        `/webhook/${webhookId}/test`,
-        platformUserId,
-        clientUserId,
-        platformApiKey,
-        {},
-        undefined,
-        credentialsAgentId
-    );
-}
+// /**
+//  * Tests a webhook execution via the API Gateway.
+//  * @param webhookId - ID of the webhook to test.
+//  * @param credentials - Internal service credentials containing platformApiKey, platformUserId, clientUserId.
+//  * @returns ServiceResponse containing the WebhookTestResult or an error.
+//  */
+// export async function testWebhookInternalApiService(
+//     webhookId: string,
+//     credentials: InternalServiceCredentials
+// ): Promise<ServiceResponse<WebhookTestResult>> {
+//     const { platformUserId, clientUserId, platformApiKey, agentId: credentialsAgentId } = credentials;
+//     return makeInternalAPIServiceRequest<WebhookTestResult>(
+//         getApiGatewayServiceUrl(),
+//         'POST' as Method,
+//         `/webhook/${webhookId}/test`,
+//         platformUserId,
+//         clientUserId,
+//         platformApiKey,
+//         {},
+//         undefined,
+//         credentialsAgentId
+//     );
+// }
 
 /**
  * Fetches all webhook definitions created by the specified user via the API Gateway.

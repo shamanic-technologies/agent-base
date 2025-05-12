@@ -49,4 +49,5 @@ export * from './internal/tools/tool-creators.js';
 export * from './external/agent-clients/agent-client.js';
 export * from './external/agent-clients/conversation-client.js';
 export * from './external/agent-clients/message-client.js';
+export * from './external/agent-clients/run-client.js';
 export * from './external/webhook-client.js';
