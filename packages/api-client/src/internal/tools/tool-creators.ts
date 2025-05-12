@@ -18,7 +18,7 @@ import {
     WebhookData,           // For webhook_create_webhook schema
     InternalServiceCredentials, // For webhook client calls within execute
     Webhook,               // For webhook_create_webhook result
-    WebhookAgentLink,      // For webhook_link_agent result
+    CreateAgentUserWebhookRequest,      // For webhook_link_agent result
     UserWebhook,           // For webhook_link_user result
     SetupNeeded,           // For webhook_link_user result
     UtilityProvider,       // For create_external_tool schema

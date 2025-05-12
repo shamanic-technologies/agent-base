@@ -7,7 +7,7 @@ import {
     Webhook,
     UserWebhook,
     SetupNeeded,
-    WebhookAgentLink,
+    CreateAgentUserWebhookRequest,
     ServiceResponse,
     InternalServiceCredentials,
     WebhookProviderId,
@@ -110,9 +110,9 @@ export async function linkAgentToWebhookInternalApiService(
     webhookId: string,
     agentId: string,
     credentials: InternalServiceCredentials
-): Promise<ServiceResponse<WebhookAgentLink>> {
+): Promise<ServiceResponse<CreateAgentUserWebhookRequest>> {
     const { platformUserId, clientUserId, platformApiKey, agentId: credentialsAgentId } = credentials;
-    return makeInternalAPIServiceRequest<WebhookAgentLink>(
+    return makeInternalAPIServiceRequest<CreateAgentUserWebhookRequest>(
         getApiGatewayServiceUrl(),
         'POST' as Method,
         `/webhook/${webhookId}/link-agent`,

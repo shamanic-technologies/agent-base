@@ -6,9 +6,9 @@ import { UtilityProvider, UtilitySecretType } from "./utility.js";
 export type WebhookProviderId = UtilityProvider;
 
 export enum WebhookStatus {
+  UNSET = 'unset',
   ACTIVE = 'active',
-  PENDING = 'pending',
-  INACTIVE = 'inactive',
+  DISABLED = 'disabled', // To be implemented later
 }
 
 /**
@@ -20,46 +20,39 @@ export interface UserWebhook {
   platformUserId: string;
   status: WebhookStatus;
   webhookSecret: string; // Unique secret for this webhook link
-  clientUserIdentificationHash?: string | null; // DEPRECATED - will be removed
   createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface CreateUserWebhookRequest {
   webhookId: string;
 }
 
-
 export interface WebhookData {
   name: string;
   description: string;
   webhookProviderId: WebhookProviderId;
   subscribedEventId: string;
-  requiredSecrets: UtilitySecretType[];
-  clientUserIdentificationMapping: Record<UtilitySecretType, string>;
   conversationIdIdentificationMapping: string;
-  eventPayloadSchema: Record<string, unknown>;
   creatorClientUserId: string;
 }
 
 export interface Webhook extends WebhookData {
   id: string;   /** Unique identifier for the utility */
-  webhookUrl?: string;
-  isLinkedToCurrentUser?: boolean;
-  currentUserWebhookStatus?: WebhookStatus;
-  isLinkedToAgent?: boolean;
-  linkedAgentId?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export type CreateWebhookRequest = WebhookData;
 
-export interface WebhookAgentLink {
+export interface AgentUserWebhook {
   webhookId: string;
   clientUserId: string;
   platformUserId: string;
   agentId: string;
 };
 
-export interface CreateWebhookAgentLinkRequest {
+export interface CreateAgentUserWebhookRequest {
   webhookId: string;
   agentId: string;
 };
@@ -90,33 +83,50 @@ export interface WebhookEventPayload {
   [key: string]: any;
 }
 
-/**
- * Defines the expected result from resolving webhook identification information.
- */
-export interface WebhookResolutionResult {
-  platformUserId: string;
-  clientUserId: string;
-  agentId: string;
-  conversationId: string;
-}
-
-export interface WebhookResolutionRequest {
+export interface SearchWebhookResultItem {
+  id: string;
+  name: string;
+  description: string;
   webhookProviderId: WebhookProviderId;
   subscribedEventId: string;
-  payload: WebhookEventPayload;
+  isLinkedToCurrentUser?: boolean;
+  currentUserWebhookStatus?: WebhookStatus;
+  isLinkedToAgent?: boolean;
+  linkedAgentId?: string;
 }
 
-export interface WebhookTestResult {
-  request?: {
-      targetUrl: string;
-      method: string;
-      headers: Record<string, string>;
-      payload: any;
-  };
-  response?: {
-      status: number;
-      headers: Record<string, string>;
-      body: any;
-  };
-  resolvedSecrets?: Record<string, boolean>; // Indicates which secrets were found e.g. { "API_KEY": true, "TOKEN": false }
+export interface SearchWebhookResult {
+  items: SearchWebhookResultItem[];
+  total: number;
 }
+
+// /**
+//  * Defines the expected result from resolving webhook identification information.
+//  */
+// export interface WebhookResolutionResult {
+//   platformUserId: string;
+//   clientUserId: string;
+//   agentId: string;
+//   conversationId: string;
+// }
+
+// export interface WebhookResolutionRequest {
+//   webhookProviderId: WebhookProviderId;
+//   subscribedEventId: string;
+//   payload: WebhookEventPayload;
+// }
+
+// export interface WebhookTestResult {
+//   request?: {
+//       targetUrl: string;
+//       method: string;
+//       headers: Record<string, string>;
+//       payload: any;
+//   };
+//   response?: {
+//       status: number;
+//       headers: Record<string, string>;
+//       body: any;
+//   };
+//   resolvedSecrets?: Record<string, boolean>; // Indicates which secrets were found e.g. { "API_KEY": true, "TOKEN": false }
+// }
