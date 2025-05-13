@@ -31,7 +31,6 @@ import './internal/webhook-utilities/webhook_create_webhook.js';
 import './internal/webhook-utilities/webhook_search_webhooks.js';
 import './internal/webhook-utilities/webhook_link_user.js';
 import './internal/webhook-utilities/webhook_link_agent.js';
-import './internal/webhook-utilities/webhook_test_webhook.js';
 
 // Re-export everything from the registry
 export * from './registry/registry.js';

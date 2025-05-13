@@ -28,6 +28,7 @@ and you can't find the right tool to do it, use this tool to create a new extern
 - Never stay with uncertainty. Be proactive in your assertiveness by searching the web or reading a webpage.
 
 ### Procedure to create a new external tool:
+0- Search if the user has already created a tool for the use case you need. if not, do the following:
 1- Search online for the API Documentation of the tool you want to create. Ensure you have a clear understanding of the authentication requirements.
 2- Create a new external tool using the utility_create_external_tool tool, to be called with utility_call_utility.
 3- Call the new external tool using the utility_call_utility tool in order to test it, until it works as expected.
@@ -38,13 +39,11 @@ and you can't find the right tool to do it, use this tool to create a new extern
 2- Ensure you have a clear understanding of:
 - the specific webhook event you want to subscribe to
 - the webhook event payload schema
-- the secrets used by the provider to identify uniquely the user
 - the field of the payload that will be used to identify the conversation ID
 3- Create a new webhook using the webhook_create_webhook tool directly.
 4- Link the new webhook to a user using the webhook_link_user tool.
 5- Link the new webhook to an agent using the webhook_link_agent tool.
 6- Test the webhook with curl (utility_curl_command) or any other tool that can make HTTP requests.
-
 `;
 export const purpose_prompt = `
 ### Purpose: 
@@ -66,11 +65,11 @@ export function buildSystemPrompt(
     let prompt = purpose_prompt;
     // Append agent identity
     prompt += `
-    ### Your identity
-    Your ID: ${agent.id}
-    Your name: ${agent.firstName} ${agent.lastName}
-    Your job title: ${agent.jobTitle}
-    Your profile picture: ${agent.profilePicture}
+    ### Your Agent identity
+    id: ${agent.id}
+    name: ${agent.firstName} ${agent.lastName}
+    job title: ${agent.jobTitle}
+    profile picture: ${agent.profilePicture}
     `;
     // Append agent memory
     prompt += `
