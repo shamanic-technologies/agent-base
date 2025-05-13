@@ -10,13 +10,13 @@
   },
   "dependencies": {
     "@trivago/prettier-plugin-sort-imports": "5.2.2",
-    "lucide-react": "^0.487.0",
+    "lucide-react": "^0.510.0",
     "prettier": "^3.5.3",
     "prettier-plugin-tailwindcss": "^0.6.11"
   },
   "devDependencies": {
     "@kit/tsconfig": "workspace:*",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.3"
   },
   "prettier": "./index.mjs"
 }

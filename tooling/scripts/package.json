@@ -8,6 +8,6 @@
     "requirements": "node ./src/requirements.mjs"
   },
   "dependencies": {
-    "lucide-react": "^0.487.0"
+    "lucide-react": "^0.510.0"
   }
 }
