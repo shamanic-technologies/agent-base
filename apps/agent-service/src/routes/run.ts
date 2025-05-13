@@ -41,6 +41,8 @@ import { buildSystemPrompt } from '../lib/promptBuilder.js';
 
 // Import error handler
 import { handleToolError } from '../lib/utils/errorHandlers.js';
+import { truncateHistory } from '../lib/historyTruncation.js'; // Added for history truncation
+
 const runRouter = Router(); // Use a specific router for this file
 
 /**
@@ -91,6 +93,37 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       // --- Construct System Prompt ---
       const systemPrompt = buildSystemPrompt(agent);
       // --- End Construct System Prompt ---
+
+      // --- Get Conversation & History (Full) ---
+      let fullHistoryMessages: Message[] = [];
+      const conversationResponse = await getConversationByIdInternalApiService(
+        { conversationId },
+        platformUserId,
+        platformApiKey,
+        clientUserId
+      );
+      if (conversationResponse.success && conversationResponse.data?.messages) {
+          fullHistoryMessages = conversationResponse.data.messages;
+      } else {
+          console.warn(`[Agent Service /run] Conversation ${conversationId} not found, error fetching, or no messages present. Starting with empty history. Error: ${conversationResponse.error}`);
+      }
+      // --- End Get Conversation & History (Full) ---
+
+      // --- Truncate History using the new utility function ---
+      const totalModelLimit = 200000; // Defined for clarity, passed to utility
+      const maxOutputTokens = 4096;   // Defined for clarity, passed to utility
+      const thinkingBudgetTokens = 12000; // Anthropic thinking budget
+
+      const selectedHistoryMessages = truncateHistory({
+        systemPrompt,
+        currentMessage,
+        fullHistoryMessages,
+        totalModelLimit,
+        maxOutputTokens,
+        thinkingBudgetTokens, // Pass the thinking budget
+        // safetyMargin: 0.90 // Using default from the function
+      });
+      // --- End Truncate History ---
 
       // --- Prepare Credentials for API Client ---
       const agentServiceCredentials: AgentServiceCredentials = {
@@ -145,24 +178,9 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       // --- End Assemble Final Tools Object ---
 
 
-      // --- Get Conversation & History ---
-      let historyMessages: Message[] = [];
-      const conversationResponse = await getConversationByIdInternalApiService(
-        { conversationId },
-        platformUserId,
-        platformApiKey,
-        clientUserId
-      );
-      if (conversationResponse.success && conversationResponse.data?.messages) {
-          historyMessages = conversationResponse.data.messages;
-      } else {
-          console.warn(`[Agent Service /run] Conversation ${conversationId} not found, error fetching, or no messages present. Starting with empty history. Error: ${conversationResponse.error}`);
-      }
-      // --- End Get History ---
-
       // --- Combine Messages ---
       const allMessages: Message[] = appendClientMessage({
-        messages: historyMessages, // Original array without system message
+        messages: selectedHistoryMessages, // Use truncated history from the utility function
         message: currentMessage
       });
       // --- End Combine Messages ---
@@ -170,14 +188,14 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       // --- Call AI Model ---
       const result = await streamText({
         model: anthropic(agent.modelId),
-        messages: allMessages as any[], // Pass the array including the system message
-        // @ts-ignore - Restore system parameter as requested
+        messages: allMessages as any[],
+        // @ts-ignore - The 'system' property is a valid documented parameter for streamText with certain providers
         system: systemPrompt, 
-        tools: allStartupTools, // Pass the combined tools object
-        maxTokens: 4096, // Set maximum output tokens for each generation step
+        tools: allStartupTools,
+        maxTokens: maxOutputTokens, // Use the locally defined maxOutputTokens for the API call
+        temperature: 0.1, // Moved to top-level
         maxSteps: 25, 
-        providerOptions: { temperature: 0.1, sendReasoning: true },
-           // id format for server-side messages:
+        providerOptions: { anthropic: { thinking: { type: 'enabled', budgetTokens: thinkingBudgetTokens } } }, // Use the constant here too
         experimental_generateMessageId: createIdGenerator({
             prefix: 'msgs',
             size: 16,
@@ -185,13 +203,19 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
         async onFinish({ response }) { // Destructure response directly
             try {
               // Construct the final list including the latest assistant/tool responses
-              const finalMessages: Message[] = appendResponseMessages({
-                messages: allMessages,
-                responseMessages: response.messages // Use response.messages
+              // When saving, we should save the full original history plus the new interaction,
+              // not just the truncated 'allMessages'.
+              // The 'fullHistoryMessages' already contains the state before this interaction.
+              // We append the 'currentMessage' (user's latest) and 'response.messages' (AI's reply).
+              
+              let messagesToSave = [...fullHistoryMessages, currentMessage];
+              messagesToSave = appendResponseMessages({
+                  messages: messagesToSave,
+                  responseMessages: response.messages
               });
 
               const saveResult = await updateConversationInternalApiService(
-                { conversationId: conversationId, messages: finalMessages },
+                { conversationId: conversationId, messages: messagesToSave }, // Save complete, non-truncated history + new messages
                 platformUserId,
                 platformApiKey,
                 clientUserId

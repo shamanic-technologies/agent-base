@@ -2,9 +2,13 @@
  * Type declarations for Vercel AI SDK packages
  */
 
-declare module '@ai-sdk/anthropic' {
-  export function anthropic(modelName: string, options?: any): any;
-}
+// declare module '@ai-sdk/anthropic' {
+//   export function anthropic(modelName: string, options?: any): any;
+// }
+
+/*
+Removed to allow TypeScript to use the default types from the 'ai' package.
+If issues persist, this section may need to be reinstated with more accurate types.
 
 declare module 'ai' {
   export interface TextStreamFullPart {
@@ -27,3 +31,4 @@ declare module 'ai' {
     onError?: (options: { error: any }) => void;
   }): StreamResult;
 } 
+*/ 

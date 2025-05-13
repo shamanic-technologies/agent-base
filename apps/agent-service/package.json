@@ -23,6 +23,7 @@
     "@agent-base/api-client": "workspace:^",
     "@agent-base/types": "workspace:^",
     "@ai-sdk/anthropic": "^1.2.11",
+    "@anthropic-ai/tokenizer": "^0.0.4",
     "@langchain/anthropic": "^0.3.20",
     "@langchain/core": "^0.3.55",
     "@langchain/langgraph": "^0.2.72",
