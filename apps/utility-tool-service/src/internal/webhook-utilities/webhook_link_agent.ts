@@ -21,7 +21,7 @@ interface LinkAgentParams {
 
 const webhookLinkAgentUtility: InternalUtilityTool = {
     id: 'webhook_link_agent',
-    description: 'Links a specified agent to an existing user-webhook link.',
+    description: 'Set the agent that will receive the webhook events.',
     schema: {
         type: 'object',
         required: ['webhookId', 'agentIdToLink'], // Both required

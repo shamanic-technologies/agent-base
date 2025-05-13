@@ -41,7 +41,7 @@ and you can't find the right tool to do it, use this tool to create a new extern
 - the webhook event payload schema
 - the field of the payload that will be used to identify the conversation ID
 3- Create a new webhook using the webhook_create_webhook tool directly.
-4- Link the new webhook to a user using the webhook_link_user tool.
+4- Link the new webhook to the user using the webhook_link_user tool.
 It will return a webhook endpoint that you will ask the user to input in the webhook provider dashboard.
 Once done, the user will see that webhook in its Agent Base dashboard.
 5- Link the new webhook to an agent using the webhook_link_agent tool.

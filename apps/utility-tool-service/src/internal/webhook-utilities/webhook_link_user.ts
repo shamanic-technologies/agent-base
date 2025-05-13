@@ -21,7 +21,7 @@ interface LinkUserParams {
 
 const webhookLinkUserUtility: InternalUtilityTool = {
     id: 'webhook_link_user',
-    description: 'Links the current user to a specific webhook definition, potentially triggering a setup flow if needed.',
+    description: 'Links the current user to a specific webhook, potentially triggering a setup flow if needed.',
     schema: {
         type: 'object',
         required: ['webhookId'],

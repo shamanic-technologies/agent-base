@@ -21,14 +21,14 @@ interface SearchWebhooksParams {
 
 const webhookSearchWebhooksUtility: InternalUtilityTool = {
     id: 'webhook_search_webhooks',
-    description: 'Searches for existing webhook definitions. An empty query lists all accessible webhooks.',
+    description: 'Searches for existing webhook',
     schema: {
         type: 'object',
         properties: {
             query: { 
                 type: 'string',
-                description: 'The search term to filter webhooks by (e.g., name, provider ID). Provide an empty string to list all.',
-                examples: ['stripe', 'My Integration', '']
+                description: 'The search term to filter webhooks. Provide an empty string to list all.',
+                examples: ['stripe refund', 'new email', 'whatsapp message received']
             },
             limit: { 
                 type: 'integer',
