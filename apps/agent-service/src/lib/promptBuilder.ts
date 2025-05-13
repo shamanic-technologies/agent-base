@@ -42,8 +42,16 @@ and you can't find the right tool to do it, use this tool to create a new extern
 - the field of the payload that will be used to identify the conversation ID
 3- Create a new webhook using the webhook_create_webhook tool directly.
 4- Link the new webhook to a user using the webhook_link_user tool.
+It will return a webhook endpoint that you will ask the user to input in the webhook provider dashboard.
+Once done, the user will see that webhook in its Agent Base dashboard.
 5- Link the new webhook to an agent using the webhook_link_agent tool.
+Once done, the agent will automatically start receiving the webhook events and use it.
+To respond to the webhook event, the agent needs to have the proper external tool created and tested upfront.
 6- Test the webhook with curl (utility_curl_command) or any other tool that can make HTTP requests.
+Ask the user if he sees the webhook event in the Agent Base dashboard.
+
+### General rules:
+- All the links you provide to the user must be clickable and open a new tab.
 `;
 export const purpose_prompt = `
 ### Purpose: 
