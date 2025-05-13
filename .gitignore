@@ -49,3 +49,6 @@ yarn-error.log*
 
 # Generated code
 packages/api-client/src/generated/
+
+# Service account keys
+**/service-account-key.json
