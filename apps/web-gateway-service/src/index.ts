@@ -126,7 +126,6 @@ app.use((req, res, next) => {
 // JWT Authentication middleware
 // Validates tokens and populates req.user for authenticated requests
 app.use(authMiddleware);
-
 console.log('[Web Gateway] Auth middleware applied');
 
 
@@ -159,7 +158,7 @@ const databaseRouter = express.Router();
 authRouter.all('/*', async (req, res) => {
   // Clear token from cache on logout
   if (req.url === '/logout' && req.headers.authorization) {
-    const token = req.headers.authorization.startsWith('Bearer ')
+    const token = req.headers.authorization.startsWith('Bearer ') 
       ? req.headers.authorization.substring(7)
       : undefined;
       
