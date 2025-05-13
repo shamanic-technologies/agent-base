@@ -2,8 +2,8 @@ import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
 
-// Load environment variables from .env.local first
-const envFile = path.resolve(process.cwd(), '.env.local');
+// Load environment variables from .env first
+const envFile = path.resolve(process.cwd(), '.env');
 if (fs.existsSync(envFile)) {
   console.log(`Loading environment from ${envFile}`);
   dotenv.config({ path: envFile });
@@ -81,7 +81,8 @@ app.use(apiLimiter as any);
 app.use((req, res, next) => {
   // Skip API key check for health endpoint
   if (req.path === '/health') {
-    return next();
+    next(); // Already void
+    return;
   }
 
   // Define a whitelist of allowed OAuth paths
@@ -96,27 +97,30 @@ app.use((req, res, next) => {
     // For callback endpoints, validate basic OAuth parameters if it's a callback
     if (req.path.includes('/callback') && !req.query.code) {
       console.warn(`Invalid OAuth callback request: missing code parameter`);
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: 'Invalid OAuth callback request'
       });
+      return; // Ensure void return
     }
     
     // Allow the OAuth flow to proceed without API key
-    return next();
+    next(); // Already void
+    return;
   }
   
   // For all other endpoints, require API key
   const webGatewayAPIKey = req.headers['x-web-gateway-api-key'] as string;
   if (webGatewayAPIKey !== WEB_GATEWAY_API_KEY) {
     console.warn(`Unauthorized gateway access attempt using key: ${webGatewayAPIKey ? webGatewayAPIKey.substring(0, 5) + '...' : 'None'} from ${req.ip}`);
-    return res.status(403).json({
+    res.status(403).json({
       success: false,
       error: 'Unauthorized access to gateway'
     });
+    return; // Ensure void return
   }
   
-  next();
+  next(); // Already void
 });
 
 // JWT Authentication middleware
@@ -140,6 +144,7 @@ app.get('/health', (req, res) => {
       database: DATABASE_SERVICE_URL
     }
   });
+  // Implicit void return is fine here, but can be explicit for clarity if desired
 });
 
 // Create routers for allowed service endpoints
@@ -151,7 +156,7 @@ const loggingRouter = express.Router();
 const databaseRouter = express.Router();
 
 // Auth service route handler
-authRouter.all('*', (req, res) => {
+authRouter.all('/*', async (req, res) => {
   // Clear token from cache on logout
   if (req.url === '/logout' && req.headers.authorization) {
     const token = req.headers.authorization.startsWith('Bearer ')
@@ -163,34 +168,33 @@ authRouter.all('*', (req, res) => {
       console.log('[Web Gateway] Invalidated token in cache for logout');
     }
   }
-
-  return forwardRequest(WEB_OAUTH_SERVICE_URL, req, res);
+  await forwardRequest(WEB_OAUTH_SERVICE_URL, req, res);
 });
 
 // OAuth route handler (for Auth Service)
-oauthRouter.all('*', (req, res) => {
-  return forwardRequest(WEB_OAUTH_SERVICE_URL, req, res);
+oauthRouter.all('/*', async (req, res) => {
+  await forwardRequest(WEB_OAUTH_SERVICE_URL, req, res);
 });
 
 // Keys service route handler
-keysRouter.all('*', (req, res) => {  
-  return forwardRequest(KEY_SERVICE_URL, req, res);
+keysRouter.all('/*', async (req, res) => {  
+  await forwardRequest(KEY_SERVICE_URL, req, res);
 });
 
 // Payment service route handler
-paymentRouter.all('*', (req, res) => {
-  return forwardRequest(PAYMENT_SERVICE_URL, req, res);
+paymentRouter.all('/*', async (req, res) => {
+  await forwardRequest(PAYMENT_SERVICE_URL, req, res);
 });
 
 // Logging service route handler
-loggingRouter.all('*', (req, res) => {
-  return forwardRequest(LOGGING_SERVICE_URL, req, res);
+loggingRouter.all('/*', async (req, res) => {
+  await forwardRequest(LOGGING_SERVICE_URL, req, res);
 });
 
 // Database service route handler
-databaseRouter.all('*', (req, res) => {
+databaseRouter.all('/*', async (req, res) => {
   console.log('🗄️ Database service route handler'+ req.path);
-  return forwardRequest(DATABASE_SERVICE_URL, req, res);
+  await forwardRequest(DATABASE_SERVICE_URL, req, res);
 });
 
 // Mount the allowed routers
@@ -208,6 +212,7 @@ app.use((req, res) => {
     success: false,
     error: '[Web Gateway] Endpoint not found'
   });
+  // Implicit void return is fine here
 });
 
 // Start server

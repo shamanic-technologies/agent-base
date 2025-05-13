@@ -28,7 +28,7 @@ const router = Router();
  * - 401 if user is not authenticated
  * - 500 for server errors
  */
-router.get('/by-name', async (req, res) => {
+router.get('/by-name', async (req, res): Promise<void> => {
   try {
     const keyName = req.query.name as string;
     const platformUserId = req.headers['x-platform-user-id'] as string;
@@ -37,18 +37,20 @@ router.get('/by-name', async (req, res) => {
 
     if (!platformUserId) {
       console.error('User authentication required: x-platform-user-id header missing');
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         error: 'User authentication required: x-platform-user-id header missing'
       });
+      return;
     }
 
     if (!keyName) {
       console.error('Key name is required as a query parameter');
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: 'Key name is required as a query parameter'
       });
+      return;
     }
 
     // Get all user keys and filter by name
@@ -56,10 +58,11 @@ router.get('/by-name', async (req, res) => {
     
     if (!userKeys.success) {
       console.error('Error retrieving user keys:', userKeys.error);
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
         error: 'Failed to retrieve user keys'
       });
+      return;
     }
     
     // Find the key with the matching name
@@ -77,7 +80,8 @@ router.get('/by-name', async (req, res) => {
       
       if (!secretValueResponse.success) {
         console.error('Error retrieving API key secret:', secretValueResponse.error);
-        return res.status(404).json(secretValueResponse);
+        res.status(404).json(secretValueResponse);
+        return;
       }
       platformApiKey = secretValueResponse.data.value;
 
@@ -95,7 +99,8 @@ router.get('/by-name', async (req, res) => {
         // The client expects raw text for 200 OK status
         res.setHeader('Content-Type', 'text/plain'); 
 
-        return res.status(200).json(serviceResponse);
+        res.status(200).json(serviceResponse);
+        return;
       } 
     } 
     // Generate new API key
@@ -114,7 +119,8 @@ router.get('/by-name', async (req, res) => {
 
     if (!createResponse.success) {
       console.error('Error creating API key:', createResponse.error);
-      return res.status(500).json(createResponse);
+      res.status(500).json(createResponse);
+      return;
     }
 
     //In any case store secret
@@ -127,7 +133,8 @@ router.get('/by-name', async (req, res) => {
     const storeResponse : ServiceResponse<string> = await storeSecretWebClient(platformUserId, requestData);
     if (!storeResponse.success) {
       console.error('Failed to store secret:', storeResponse.error);
-      return storeResponse;
+      res.status(500).json(storeResponse);
+      return;
     }
     const serviceResponse : ServiceResponse<SecretValue> = {
       success: true,
@@ -135,14 +142,16 @@ router.get('/by-name', async (req, res) => {
         value: platformApiKey,
       },
     };
-    return res.status(201).json(serviceResponse);
+    res.status(201).json(serviceResponse);
+    return;
   
   } catch (error) {
     console.error('Error retrieving or creating API key by name:', error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       error: 'Internal server error while retrieving or creating API key'
     });
+    return;
   }
 });
 
@@ -163,23 +172,25 @@ router.get('/by-name', async (req, res) => {
  * - 404 if the key is not found
  * - 500 for server errors
  */
-router.get('/:keyId', async (req, res) => {
+router.get('/:keyId', async (req, res): Promise<void> => {
   try {
     const keyId = req.params.keyId;
     const platformUserId = req.headers['x-platform-user-id'] as string;
 
     if (!platformUserId) {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         error: 'User authentication required'
       });
+      return;
     }
 
     if (!keyId) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: 'Key ID is required'
       });
+      return;
     }
     
     // Get the API key from the secret service
@@ -191,28 +202,32 @@ router.get('/:keyId', async (req, res) => {
     const secretValueResponse: ServiceResponse<SecretValue> = await getSecretWebClient(platformUserId, getSecretRequest);
     
     if (!secretValueResponse.success) {
-      return res.status(404).json(secretValueResponse);
+      res.status(404).json(secretValueResponse);
+      return;
     }
     const platformApiKey = secretValueResponse.data.value;
 
     // Check if the retrieved key value is valid
     if (!platformApiKey) {
       console.error('Retrieved API key secret value is empty for key:', keyId);
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         error: 'API key secret not found or empty'
       });
+      return;
     }
     // Return the secret value (as raw text)
     res.setHeader('Content-Type', 'text/plain');
-    return res.status(200).send(platformApiKey);
+    res.status(200).send(platformApiKey);
+    return;
     
   } catch (error) {
     console.error('Error retrieving API key:', error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       error: 'Internal server error while retrieving API key'
     });
+    return;
   }
 });
 

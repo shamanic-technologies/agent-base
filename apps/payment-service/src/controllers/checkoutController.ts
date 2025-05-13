@@ -10,7 +10,7 @@ import { stripe } from '../config';
  * 
  * Gets the user ID from x-user-id header (set by web-gateway auth middleware)
  */
-export async function createCheckoutSession(req: ExpressRequest, res: ExpressResponse) {
+export async function createCheckoutSession(req: ExpressRequest, res: ExpressResponse): Promise<void> {
   try {
     const userId = req.headers['x-user-id'] as string;
     const { amount, successUrl, cancelUrl } = req.body;
@@ -18,26 +18,29 @@ export async function createCheckoutSession(req: ExpressRequest, res: ExpressRes
     // Check for authentication
     if (!userId) {
       console.log('Missing x-user-id header in request to /payment/create-checkout-session');
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         error: 'Authentication required'
       });
+      return;
     }
     
     // Validate required parameters
     if (amount === undefined || !successUrl || !cancelUrl) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: 'Missing required parameters: amount, successUrl, and cancelUrl are required'
       });
+      return;
     }
     
     // Validate amount
     if (typeof amount !== 'number' || amount < 5) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: 'Amount must be a number and at least 5'
       });
+      return;
     }
     
     console.log(`Creating checkout session for user: ${userId}, amount: $${amount}`);
@@ -47,10 +50,11 @@ export async function createCheckoutSession(req: ExpressRequest, res: ExpressRes
     
     if (!customer) {
       console.error(`No customer found for user ID: ${userId}`);
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         error: 'Customer not found'
       });
+      return;
     }
     
     console.log(`Found customer: ${customer.id} for user: ${userId}`);
@@ -82,18 +86,20 @@ export async function createCheckoutSession(req: ExpressRequest, res: ExpressRes
     
     console.log(`Created checkout session: ${session.id}`);
     
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
       data: {
         sessionId: session.id,
         checkoutUrl: session.url
       }
     });
+    return;
   } catch (error) {
     console.error('Error creating checkout session:', error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       error: 'An unexpected error occurred while creating the checkout session'
     });
+    return;
   }
 } 

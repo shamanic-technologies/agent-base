@@ -132,7 +132,7 @@ POST /utility-tool/call-tool/:id
 npm install
 ```
 
-2. Create a `.env.local` file with required API keys:
+2. Create a `.env` file with required API keys:
 ```
 SERPAPI_API_KEY=your_serp_api_key
 FIRECRAWL_API_KEY=your_firecrawl_api_key

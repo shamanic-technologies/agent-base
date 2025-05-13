@@ -3,16 +3,16 @@ import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
 const NODE_ENV = process.env.NODE_ENV || 'development';
-// Load .env.local explicitly
+// Load .env explicitly
 if (NODE_ENV === 'development') {
-    const envFile = path.resolve(process.cwd(), '.env.local');
+    const envFile = path.resolve(process.cwd(), '.env');
     if (fs.existsSync(envFile)) {
         console.log(`Loading environment from ${envFile}`);
         dotenv.config({ path: envFile });
     }
     else {
         console.log(`Environment file ${envFile} not found, using default environment variables.`);
-        // Optionally exit or throw error if .env.local is required for development
+        // Optionally exit or throw error if .env is required for development
     }
 }
 else {

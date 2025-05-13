@@ -170,7 +170,7 @@ importers:
         specifier: ^5.0.1
         version: 5.0.1
       '@types/node':
-        specifier: ^22.15.17
+        specifier: ^22.13.10
         version: 22.15.17
       '@types/uuid':
         specifier: ^10.0.0
@@ -222,7 +222,7 @@ importers:
         specifier: ^5.0.1
         version: 5.0.1
       '@types/node':
-        specifier: ^22.15.17
+        specifier: ^22.13.10
         version: 22.15.17
       eslint:
         specifier: ^9.26.0
@@ -274,7 +274,7 @@ importers:
         specifier: ^29.5.14
         version: 29.5.14
       '@types/node':
-        specifier: ^22.15.17
+        specifier: ^22.13.10
         version: 22.15.17
       '@types/pg':
         specifier: ^8.15.1
@@ -338,7 +338,7 @@ importers:
         specifier: ^7.0.15
         version: 7.0.15
       '@types/node':
-        specifier: ^22.15.17
+        specifier: ^22.13.10
         version: 22.15.17
       eslint:
         specifier: ^9.26.0
@@ -387,7 +387,7 @@ importers:
         specifier: ^5.0.1
         version: 5.0.1
       '@types/node':
-        specifier: ^22.15.17
+        specifier: ^22.13.10
         version: 22.15.17
       '@types/uuid':
         specifier: ^10.0.0
@@ -439,7 +439,7 @@ importers:
         specifier: ^5.0.1
         version: 5.0.1
       '@types/node':
-        specifier: ^22.15.17
+        specifier: ^22.13.10
         version: 22.15.17
       '@types/uuid':
         specifier: ^10.0.0
@@ -482,7 +482,7 @@ importers:
         specifier: ^5.0.1
         version: 5.0.1
       '@types/node':
-        specifier: ^22.15.17
+        specifier: ^22.13.10
         version: 22.15.17
       concurrently:
         specifier: ^9.1.2
@@ -537,7 +537,7 @@ importers:
         specifier: ^5.0.1
         version: 5.0.1
       '@types/node':
-        specifier: ^22.15.17
+        specifier: ^22.13.10
         version: 22.15.17
       eslint:
         specifier: ^9.26.0
@@ -610,7 +610,7 @@ importers:
         specifier: ^7.0.15
         version: 7.0.15
       '@types/node':
-        specifier: ^22.15.17
+        specifier: ^22.13.10
         version: 22.15.17
       '@types/uuid':
         specifier: ^10.0.0
@@ -680,7 +680,7 @@ importers:
         specifier: ^9.0.9
         version: 9.0.9
       '@types/node':
-        specifier: ^22.15.17
+        specifier: ^22.13.10
         version: 22.15.17
       eslint:
         specifier: ^9.26.0
@@ -762,7 +762,7 @@ importers:
         specifier: ^9.0.9
         version: 9.0.9
       '@types/node':
-        specifier: ^22.15.17
+        specifier: ^22.13.10
         version: 22.15.17
       '@types/passport':
         specifier: ^1.0.17
@@ -841,7 +841,7 @@ importers:
         specifier: ^1.9.9
         version: 1.9.9
       '@types/node':
-        specifier: ^22.15.17
+        specifier: ^22.13.10
         version: 22.15.17
       '@types/uuid':
         specifier: ^10.0.0

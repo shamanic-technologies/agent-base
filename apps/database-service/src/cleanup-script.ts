@@ -12,9 +12,9 @@ import { cleanupTables, initDbPool } from './db.js';
 // Load environment variables
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
-// Load .env.local explicitly for development
+// Load .env explicitly for development
 if (NODE_ENV === 'development') {
-  const envFile = path.resolve(process.cwd(), '.env.local');
+  const envFile = path.resolve(process.cwd(), '.env');
   if (fs.existsSync(envFile)) {
     console.log(`Loading environment from ${envFile}`);
     dotenv.config({ path: envFile });

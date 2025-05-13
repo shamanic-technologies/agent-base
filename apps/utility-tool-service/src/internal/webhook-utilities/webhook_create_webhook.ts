@@ -39,38 +39,22 @@ const webhookCreateWebhookUtility: InternalUtilityTool = {
                 description: 'A unique identifier for the specific event subscription this webhook represents (e.g., \'stripe_charge_succeeded\').',
                 examples: ['stripe_charge_succeeded']
             },
-            requiredSecrets: { 
-                type: 'array',
-                items: { type: 'string' }, 
-                description: 'List of secrets needed to identify user/conversation from the payload (e.g., [\'customer_id\', \'invoice_id\']).',
-                examples: [ ['customer_id'] ]
-            },
-            clientUserIdentificationMapping: { 
-                type: 'object',
-                additionalProperties: { type: 'string' },
-                description: 'How to map requiredSecrets from the payload to find the clientUserId (e.g., { \"customer_id\": \"data.object.customer\" }). Uses dot notation for nested fields.',
-                examples: [ { "customer_id": "data.object.customer" } ]
-            },
             conversationIdIdentificationMapping: { 
                 type: 'string',
                 description: 'How to extract a unique conversation identifier from the payload (e.g., \"data.object.metadata.conversation_ref\"). Uses dot notation.',
                 examples: ['data.object.metadata.conversation_ref']
             },
-            eventPayloadSchema: { 
-                type: 'object',
-                additionalProperties: true, 
-                description: 'A JSON schema describing the expected structure of the incoming webhook payload for documentation/validation purposes.',
-                examples: [ { "type": "object", "properties": { "data": { "type": "object" } } } ]
-            },
+            creatorClientUserId: {
+                type: 'string',
+                description: 'The client user ID of the creator.'
+            }
         },
         required: [
-            'name', 
-            'webhookProviderId', 
-            'subscribedEventId', 
-            'requiredSecrets', 
-            'clientUserIdentificationMapping', 
-            'conversationIdIdentificationMapping', 
-            'eventPayloadSchema'
+            'name',
+            'webhookProviderId',
+            'subscribedEventId',
+            'conversationIdIdentificationMapping',
+            'creatorClientUserId'
         ]
     },
   
@@ -85,11 +69,11 @@ const webhookCreateWebhookUtility: InternalUtilityTool = {
         const logPrefix = '🛠️ [WEBHOOK_CREATE_WEBHOOK]';
         try {
             // Update validation based on actual WebhookData required fields
-            if (!params || !params.name || !params.webhookProviderId || !params.subscribedEventId || !params.requiredSecrets || !params.clientUserIdentificationMapping || !params.conversationIdIdentificationMapping || !params.eventPayloadSchema) { 
+            if (!params || !params.name || !params.webhookProviderId || !params.subscribedEventId || !params.conversationIdIdentificationMapping || !params.creatorClientUserId) { 
                 console.error(`${logPrefix} Invalid or missing required parameters.`);
                 return { 
                     success: false, 
-                    error: "Invalid input: Missing one or more required parameters for WebhookData."
+                    error: "Invalid input: Missing one or more required parameters for WebhookData (name, webhookProviderId, subscribedEventId, conversationIdIdentificationMapping, creatorClientUserId)."
                 };
             }
 

@@ -12,7 +12,7 @@ const router = Router();
  * POST /validate
  * Handles validation by calling the database service
  */
-router.post('/', async (req, res) => {
+router.post('/', async (req, res): Promise<void> => {
   try {
     // Extract API key from the request headers
     const platformApiKey = req.headers['x-platform-api-key'];
@@ -21,10 +21,11 @@ router.post('/', async (req, res) => {
     // Validate the key structure/presence
     if (!platformApiKey || typeof platformApiKey !== 'string') {
       console.error('API key is required in the request body');
-      return res.status(400).json({ 
+      res.status(400).json({ 
         success: false, 
         error: 'API key is required in the request body'
       } as ErrorResponse);
+      return;
     }
 
     // Call dbService to validate the API key against the database
@@ -38,18 +39,21 @@ router.post('/', async (req, res) => {
       // Use 500 for internal errors during validation
       console.error('API key validation failed:', validateResponse.error);
       const statusCode = validateResponse.error?.includes('Internal') ? 500 : 401;
-      return res.status(statusCode).json(validateResponse);
+      res.status(statusCode).json(validateResponse);
+      return;
     }
 
     // Validation successful, return the ApiKey object received from dbService
     // This object should contain the platformUserId associated with the key.
-    return res.status(200).json(validateResponse); // Contains { success: true, data: ApiKey } 
+    res.status(200).json(validateResponse); // Contains { success: true, data: ApiKey } 
+    return;
   } catch (error) {
     console.error('Error during API key validation process:', error instanceof Error ? error.message : error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       error: 'Internal server error during key validation'
     });
+    return;
   }
 });
 

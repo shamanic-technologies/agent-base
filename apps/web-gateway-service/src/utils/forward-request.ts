@@ -4,7 +4,7 @@
 import { Request, Response } from 'express';
 import axios, { AxiosError } from 'axios';
 
-export async function forwardRequest(targetUrl: string, req: Request, res: Response) {
+export async function forwardRequest(targetUrl: string, req: Request, res: Response): Promise<void> {
     // Construct the target URL using req.url which excludes the mount point prefix 
     // but includes the query string.
     const targetPathWithQuery = req.url; // e.g., /platform-users/me?param=value
@@ -68,10 +68,12 @@ export async function forwardRequest(targetUrl: string, req: Request, res: Respo
       if (response.status >= 300 && response.status < 400) {
         console.log(`[Web Gateway] Forwarding ${response.status} redirect to: ${response.headers.location}`);
         console.log(`[Web Gateway] Response headers:`, Object.fromEntries(Object.entries(res.getHeaders())));
-        return res.end();
+        res.end();
+        return;
       }
       
-      return res.send(response.data);
+      res.send(response.data);
+      return;
     } catch (error) {
       console.error(`[Web Gateway] Error forwarding request to ${targetUrl}${req.originalUrl}:`, error);
       
@@ -109,22 +111,26 @@ export async function forwardRequest(targetUrl: string, req: Request, res: Respo
           });
           
           console.log(`[Web Gateway] Response headers after processing:`, Object.fromEntries(Object.entries(res.getHeaders())));
-          return res.end();
+          res.end();
+          return;
         }
         
-        return res.status(axiosError.response.status).send(axiosError.response.data);
+        res.status(axiosError.response.status).send(axiosError.response.data);
+        return;
       } else if (axiosError.request) {
         // The request was made but no response was received
-        return res.status(502).json({
+        res.status(502).json({
           success: false,
           error: `[Web Gateway] Could not connect to ${new URL(targetUrl).hostname}`
         });
+        return;
       } else {
         // Something happened in setting up the request
-        return res.status(500).json({
+        res.status(500).json({
           success: false,
           error: '[Web Gateway] Internal error'
         });
+        return;
       }
     }
   }

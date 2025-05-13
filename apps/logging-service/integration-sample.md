@@ -30,7 +30,7 @@ app.use('/api/v1', apiLoggerMiddleware);
 Add the following environment variables to your API Gateway service:
 
 ```env
-# .env.local for API Gateway service
+# .env for API Gateway service
 LOGGING_SERVICE_URL=http://localhost:3900 # For local development
 # LOGGING_SERVICE_URL=https://logging-service.railway.app # For production
 ```

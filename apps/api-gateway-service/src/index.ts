@@ -2,8 +2,8 @@ import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
 
-// Load environment variables from .env.local first
-const envFile = path.resolve(process.cwd(), '.env.local');
+// Load environment variables from .env first
+const envFile = path.resolve(process.cwd(), '.env');
 if (fs.existsSync(envFile)) {
   console.log(`Loading environment from ${envFile}`);
   dotenv.config({ path: envFile });

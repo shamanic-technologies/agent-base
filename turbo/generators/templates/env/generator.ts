@@ -33,9 +33,9 @@ export function createEnvironmentVariablesGenerator(
           env += `${key}=${value}\n`;
         }
 
-        writeFileSync('turbo/generators/templates/env/.env.local', env);
+        writeFileSync('turbo/generators/templates/env/.env', env);
 
-        return 'Environment variables generated at /turbo/generators/templates/env/.env.local.\nPlease double check and use this file in your hosting provider to set the environment variables. \nNever commit this file, it contains secrets!';
+        return 'Environment variables generated at /turbo/generators/templates/env/.env.\nPlease double check and use this file in your hosting provider to set the environment variables. \nNever commit this file, it contains secrets!';
       },
     ],
     prompts: [

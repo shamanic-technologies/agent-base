@@ -45,9 +45,9 @@ const nodeEnv = process.env.NODE_ENV || 'development';
 
 // Only load from .env file in development
 if (nodeEnv === 'development') {
-  const envFile = path.resolve(process.cwd(), '.env.local');
+  const envFile = path.resolve(process.cwd(), '.env');
   if (fs.existsSync(envFile)) {
-    console.log('🔧 Loading development environment from .env.local');
+    console.log('🔧 Loading development environment from .env');
     dotenv.config({ path: envFile });
   } else {
     console.log(`Environment file ${envFile} not found, using default environment variables.`);
@@ -90,12 +90,13 @@ app.get('/health', (req, res) => {
 // --- Unified Tool Endpoints --- 
 
 // List ALL available utilities (Internal + External)
-app.get('/get-list', async (req, res) => {
+app.get('/get-list', async (req, res): Promise<void> => {
   const logPrefix = '[GET /get-list]';
   const authHeaders = getAuthHeadersFromAgent(req);
   if (!authHeaders.success) {
     console.log(`${logPrefix} Auth headers:`, authHeaders);
-    return res.status(401).json(authHeaders);
+    res.status(401).json(authHeaders);
+    return;
   }
   const agentServiceCredentials : AgentServiceCredentials = authHeaders.data;
   // Extract conversationId from query parameters
@@ -109,7 +110,8 @@ app.get('/get-list', async (req, res) => {
     const externalResponse: ServiceResponse<ExternalUtilityTool[]> = await listExternalToolsFromAgent(agentServiceCredentials, conversationId);
     if (!externalResponse.success) {
       console.log(`${logPrefix} Error listing external tools:`, externalResponse);
-      return res.status(502).json(externalResponse);
+      res.status(502).json(externalResponse);
+      return;
     }
     // Map ExternalUtilityTool to UtilitiesListItem { id, description }
     externalTools = externalResponse.data.map(tool => ({ id: tool.id, description: tool.description }));
@@ -127,17 +129,19 @@ app.get('/get-list', async (req, res) => {
   res.status(200).json(response);
   } catch (error) {
     handleServiceError(res, error, logPrefix);
+    return;
   }
 });
 
 // Get info about a specific utility (Internal or External)
-app.get('/get-details/:id', async (req, res) => {
+app.get('/get-details/:id', async (req, res): Promise<void> => {
   const { id } = req.params;
   const logPrefix = `[GET /get-details/${id}]`;
   const authHeaders = getAuthHeadersFromAgent(req);
   if (!authHeaders.success) {
     console.log(`${logPrefix} Auth headers:`, authHeaders);
-    return res.status(401).json(authHeaders);
+    res.status(401).json(authHeaders);
+    return;
   }
   const agentServiceCredentials : AgentServiceCredentials = authHeaders.data;
   // Extract conversationId from query parameters
@@ -147,7 +151,8 @@ app.get('/get-details/:id', async (req, res) => {
     // 1. Try internal registry
     const internalUtility: InternalUtilityTool = registry.getInternalUtility(id);
     if (internalUtility) {
-        return res.status(200).json(internalUtility);
+        res.status(200).json(internalUtility);
+        return;
     }
 
     // 2. Try external service (requires auth headers)
@@ -160,30 +165,35 @@ app.get('/get-details/:id', async (req, res) => {
 
     if (!externalResponse.success) {
         console.log(`${logPrefix} Error getting external tool info:`, externalResponse);
-        return res.status(502).json(externalResponse);
+        res.status(502).json(externalResponse);
+        return;
     }
 
-    return res.status(200).json(externalResponse); 
+    res.status(200).json(externalResponse); 
+    return;
 
   } catch (error) {
       handleServiceError(res, error, logPrefix);
+      return;
   }
 });
 
 // Execute a utility (Internal or External)
-app.post('/call-tool/:id', async (req, res) => {
+app.post('/call-tool/:id', async (req, res): Promise<void> => {
   const { id } = req.params;
   const logPrefix = `[POST /call-tool/${id}]`;
   const { conversationId, params } : ExecuteToolPayload = req.body;
   // Basic input validation
   if (!conversationId) {
     console.log(`${logPrefix} Conversation ID is required`);
-    return res.status(400).json({ success: false, error: 'conversationId is required' });
+    res.status(400).json({ success: false, error: 'conversationId is required' });
+    return;
   }
   const authHeaders = getAuthHeadersFromAgent(req);
   if (!authHeaders.success) {
     console.log(`${logPrefix} Auth headers:`, authHeaders);
-    return res.status(401).json(authHeaders);
+    res.status(401).json(authHeaders);
+    return;
   }
   const agentServiceCredentials : AgentServiceCredentials = authHeaders.data;
 
@@ -203,7 +213,8 @@ app.post('/call-tool/:id', async (req, res) => {
             agentServiceCredentials.agentId
         );
         
-        return res.status(200).json(result); 
+        res.status(200).json(result); 
+        return;
     }
 
     // 2. Try external service (requires full auth headers)
@@ -216,13 +227,16 @@ app.post('/call-tool/:id', async (req, res) => {
 
     if (!externalResponse.success) {
       console.error(`${logPrefix} External tool execution failed: ${externalResponse.error}`);
-      return res.status(502).json(externalResponse);
+      res.status(502).json(externalResponse);
+      return;
     }
-    return res.status(200).json(externalResponse);
+    res.status(200).json(externalResponse);
+    return;
 
   } catch (error) {
     console.error(`${logPrefix} Error executing external tool: ${error}`);
     handleServiceError(res, error, logPrefix);
+    return;
   }
 });
 

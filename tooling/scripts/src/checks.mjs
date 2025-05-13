@@ -71,7 +71,7 @@ function checkEnvFiles(rootPath) {
     );
 
     console.error('- Use environment variables in your CI/CD system');
-    console.error('- For local development, use .env.local (git ignored)');
+    console.error('- For local development, use .env (git ignored)');
     process.exit(1);
   } else {
     const appName = rootPath.split('/').pop();

@@ -11,15 +11,16 @@ const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 /**
  * Process Stripe webhook events
  */
-export async function handleWebhook(req: ExpressRequest, res: ExpressResponse) {
+export async function handleWebhook(req: ExpressRequest, res: ExpressResponse): Promise<void> {
   const signature = req.headers['stripe-signature'];
   
   if (!signature || !STRIPE_WEBHOOK_SECRET) {
     console.error('Webhook error: Missing signature or webhook secret');
-    return res.status(400).json({
+    res.status(400).json({
       success: false,
       error: 'Missing signature or webhook secret'
     });
+    return;
   }
   
   try {
@@ -67,12 +68,14 @@ export async function handleWebhook(req: ExpressRequest, res: ExpressResponse) {
         console.log(`Unhandled webhook event type: ${event.type}`);
     }
     
-    return res.status(200).json({ received: true });
+    res.status(200).json({ received: true });
+    return;
   } catch (err) {
     console.error('Webhook error:', err);
-    return res.status(400).json({
+    res.status(400).json({
       success: false,
       error: 'Webhook processing failed'
     });
+    return;
   }
 } 

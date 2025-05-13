@@ -52,7 +52,7 @@ Example user object:
 
 ### Environment Setup
 
-Before running the service, set up the required environment variables in a `.env.local` file:
+Before running the service, set up the required environment variables in a `.env` file:
 
 ```
 # Railway PostgreSQL Configuration

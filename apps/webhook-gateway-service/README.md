@@ -18,7 +18,7 @@ The Webhook Service receives events from external providers (like Crisp) and for
 ### Prerequisites
 
 - Node.js 18+
-- Environment variables set (see .env.local)
+- Environment variables set (see .env)
 
 ### Installation
 
@@ -36,7 +36,7 @@ npm run start
 
 ### Environment Variables
 
-Create a `.env.local` file with the following variables:
+Create a `.env` file with the following variables:
 
 ```
 PORT=3015

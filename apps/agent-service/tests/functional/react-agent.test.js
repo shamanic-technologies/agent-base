@@ -4,8 +4,8 @@
  * This script tests the ReAct agent directly without starting the Express server.
  */
 
-// Load environment variables from .env.local
-require('dotenv').config({ path: '.env.local' });
+// Load environment variables from .env
+require('dotenv').config({ path: '.env' });
 
 const { createReactAgent } = require('@langchain/langgraph/prebuilt');
 const { ChatAnthropic } = require('@langchain/anthropic');

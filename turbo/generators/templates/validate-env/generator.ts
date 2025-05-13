@@ -184,8 +184,8 @@ export function createEnvironmentVariablesValidatorGenerator(
         type: 'input',
         name: 'path',
         message:
-          'Where is the path to the environment variables file? Leave empty to use the generated turbo/generators/templates/env/.env.local',
-        default: 'turbo/generators/templates/env/.env.local',
+          'Where is the path to the environment variables file? Leave empty to use the generated turbo/generators/templates/env/.env',
+        default: 'turbo/generators/templates/env/.env',
       },
     ],
   });

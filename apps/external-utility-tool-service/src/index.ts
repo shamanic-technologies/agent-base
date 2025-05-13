@@ -10,9 +10,9 @@ const nodeEnv = process.env.NODE_ENV || 'development';
 
 // Only load from .env file in development
 if (nodeEnv === 'development') {
-  const envFile = path.resolve(process.cwd(), '.env.local');
+  const envFile = path.resolve(process.cwd(), '.env');
   if (fs.existsSync(envFile)) {
-    console.log('🔧 Loading development environment from .env.local');
+    console.log('🔧 Loading development environment from .env');
     dotenv.config({ path: envFile });
   } else {
     console.log(`Environment file ${envFile} not found, using default environment variables.`);

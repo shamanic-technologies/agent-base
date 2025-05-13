@@ -13,7 +13,7 @@ import * as dotenv from "dotenv";
 import { NodeId, NodeType, ReactAgentWrapperConfig } from "../../src/types/agent-config";
 
 // Load environment variables from .env file
-dotenv.config({ path: '.env.local' });
+dotenv.config({ path: '.env' });
 
 // All available stream modes to test
 const ALL_STREAM_MODES: StreamMode[] = [

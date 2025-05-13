@@ -12,7 +12,7 @@ import routes from './routes/index.js'; // Import the main router (explicitly in
 import { ErrorResponse } from '@agent-base/types'; // Import shared error type
 
 // Load environment variables from .env file, explicitly setting the path
-dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 // Initialize Express app
 const app: Express = express();

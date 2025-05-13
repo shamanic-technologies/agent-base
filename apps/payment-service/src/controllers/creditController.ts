@@ -11,24 +11,26 @@ import { stripe } from '../config';
  * 
  * Gets the user ID from x-user-id header (set by web-gateway auth middleware)
  */
-export async function validateCredit(req: ExpressRequest, res: ExpressResponse) {
+export async function validateCredit(req: ExpressRequest, res: ExpressResponse): Promise<void> {
   try {
     const userId = req.headers['x-user-id'] as string;
     const { amount } = req.body;
     
     if (!userId) {
       console.log('Missing x-user-id header in request to /payment/validate-credit');
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         error: 'Authentication required'
       });
+      return;
     }
     
     if (amount === undefined) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: 'Amount is required'
       });
+      return;
     }
     
     console.log(`Validating credit for userId: ${userId}, amount: ${amount}`);
@@ -38,29 +40,32 @@ export async function validateCredit(req: ExpressRequest, res: ExpressResponse) 
     
     if (!customer) {
       console.error(`Customer not found with userId: ${userId}`);
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         error: 'Customer not found'
       });
+      return;
     }
     
     // Check if customer has enough credit
     const credits = await customerService.calculateCustomerCredits(customer.id);
     const hasEnoughCredit = credits.remaining >= amount;
     
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
       data: {
         hasEnoughCredit,
         remainingCredit: credits.remaining
       }
     });
+    return;
   } catch (error) {
     console.error('Error validating credit:', error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       error: 'Failed to validate credit'
     });
+    return;
   }
 }
 
@@ -69,24 +74,26 @@ export async function validateCredit(req: ExpressRequest, res: ExpressResponse) 
  * 
  * Gets the user ID from x-user-id header (set by web-gateway auth middleware)
  */
-export async function deductCreditByUserId(req: ExpressRequest, res: ExpressResponse) {
+export async function deductCreditByUserId(req: ExpressRequest, res: ExpressResponse): Promise<void> {
   try {
     const userId = req.headers['x-user-id'] as string;
     const { amount, description } = req.body;
     
     if (!userId) {
       console.log('Missing x-user-id header in request to /payment/deduct-credit');
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         error: 'Authentication required'
       });
+      return;
     }
     
     if (amount === undefined) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: 'Amount is required'
       });
+      return;
     }
     
     console.log(`Deducting ${amount} credit from user: ${userId}`);
@@ -96,10 +103,11 @@ export async function deductCreditByUserId(req: ExpressRequest, res: ExpressResp
     
     if (!customer) {
       console.error(`No customer found for user ID: ${userId}`);
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         error: 'Customer not found'
       });
+      return;
     }
     
     // Check if customer has enough credit
@@ -107,7 +115,7 @@ export async function deductCreditByUserId(req: ExpressRequest, res: ExpressResp
     
     if (credits.remaining < amount) {
       console.warn(`Insufficient credit for user: ${userId}. Requested: ${amount}, Available: ${credits.remaining}`);
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: 'Insufficient credit',
         data: {
@@ -115,6 +123,7 @@ export async function deductCreditByUserId(req: ExpressRequest, res: ExpressResp
           requestedAmount: amount
         }
       });
+      return;
     }
     
     // Deduct credit by updating the customer's balance
@@ -127,19 +136,21 @@ export async function deductCreditByUserId(req: ExpressRequest, res: ExpressResp
     // Get updated credit balance
     const updatedCredits = await customerService.calculateCustomerCredits(customer.id);
     
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
       data: {
         transaction,
         newBalance: updatedCredits.remaining
       }
     });
+    return;
   } catch (error) {
     console.error('Error deducting credit:', error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       error: 'Failed to deduct credit'
     });
+    return;
   }
 }
 
@@ -148,22 +159,24 @@ export async function deductCreditByUserId(req: ExpressRequest, res: ExpressResp
  * 
  * Used for direct access by admins or other services
  */
-export async function deductCreditById(req: ExpressRequest, res: ExpressResponse) {
+export async function deductCreditById(req: ExpressRequest, res: ExpressResponse): Promise<void> {
   try {
     const { customerId, amount, description } = req.body;
     
     if (!customerId) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: 'Customer ID is required'
       });
+      return;
     }
     
     if (amount === undefined) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: 'Amount is required'
       });
+      return;
     }
     
     console.log(`Deducting ${amount} credit from customer: ${customerId}`);
@@ -173,10 +186,11 @@ export async function deductCreditById(req: ExpressRequest, res: ExpressResponse
     
     if (!customer || customer.deleted) {
       console.error(`Customer not found with ID: ${customerId}`);
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         error: 'Customer not found'
       });
+      return;
     }
     
     // Check if customer has enough credit
@@ -184,7 +198,7 @@ export async function deductCreditById(req: ExpressRequest, res: ExpressResponse
     
     if (credits.remaining < amount) {
       console.warn(`Insufficient credit for customer: ${customerId}. Requested: ${amount}, Available: ${credits.remaining}`);
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: 'Insufficient credit',
         data: {
@@ -192,6 +206,7 @@ export async function deductCreditById(req: ExpressRequest, res: ExpressResponse
           requestedAmount: amount
         }
       });
+      return;
     }
     
     // Deduct credit by updating the customer's balance
@@ -204,18 +219,20 @@ export async function deductCreditById(req: ExpressRequest, res: ExpressResponse
     // Get updated credit balance
     const updatedCredits = await customerService.calculateCustomerCredits(customerId);
     
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
       data: {
         transaction,
         newBalance: updatedCredits.remaining
       }
     });
+    return;
   } catch (error) {
     console.error('Error deducting credit:', error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       error: 'Failed to deduct credit'
     });
+    return;
   }
 } 

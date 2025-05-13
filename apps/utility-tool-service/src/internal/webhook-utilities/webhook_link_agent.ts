@@ -8,7 +8,7 @@ import {
     ErrorResponse,
     ServiceResponse,
     InternalServiceCredentials,
-    WebhookAgentLink
+    CreateAgentUserWebhookRequest
 } from '@agent-base/types';
 import { linkAgentToWebhookInternalApiService } from '@agent-base/api-client'; // Import the client function
 import { registry } from '../../registry/registry.js';
@@ -46,7 +46,7 @@ const webhookLinkAgentUtility: InternalUtilityTool = {
         conversationId: string, 
         params: LinkAgentParams, // Use the defined interface for params
         agentId?: string // This is the ID of the agent *calling* the tool
-    ): Promise<ServiceResponse<WebhookAgentLink>> => {
+    ): Promise<ServiceResponse<CreateAgentUserWebhookRequest>> => {
         const logPrefix = '🛠️ [WEBHOOK_LINK_AGENT]';
         try {
             // Basic validation

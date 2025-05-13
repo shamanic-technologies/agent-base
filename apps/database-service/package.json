@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts --env-file .env.local",
+    "dev": "tsx watch src/index.ts --env-file .env",
     "build": "tsc",
     "start": "node dist/index.js",
     "lint": "eslint . --max-warnings 0",

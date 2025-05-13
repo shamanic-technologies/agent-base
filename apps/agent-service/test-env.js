@@ -11,9 +11,9 @@ console.log('PORT:', process.env.PORT);
 console.log('ANTHROPIC_API_KEY:', process.env.ANTHROPIC_API_KEY ? 
   `${process.env.ANTHROPIC_API_KEY.substring(0, 10)}...` : 'undefined');
 
-// Try loading with .env.local specifically
-console.log('\nTrying to load .env.local specifically:');
-require('dotenv').config({ path: '.env.local' });
+// Try loading with .env specifically
+console.log('\nTrying to load .env specifically:');
+require('dotenv').config({ path: '.env' });
 console.log('PORT:', process.env.PORT);
 console.log('ANTHROPIC_API_KEY:', process.env.ANTHROPIC_API_KEY ? 
   `${process.env.ANTHROPIC_API_KEY.substring(0, 10)}...` : 'undefined'); 

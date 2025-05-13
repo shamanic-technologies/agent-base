@@ -2,7 +2,7 @@
   "extends": "../../tooling/typescript/base.json",
   "compilerOptions": {
     "target": "ES2016",
-    "module": "esnext",
+    "module": "NodeNext",
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,

@@ -7,7 +7,7 @@
 
 // Load environment variables first
 import { config } from 'dotenv';
-config({ path: '.env.local' });
+config({ path: '.env' });
 
 import express, { Request, Response, NextFunction, RequestHandler } from 'express';
 import cors from 'cors';

@@ -5,7 +5,7 @@
  */
 
 // Import required dependencies
-require('dotenv').config({ path: '.env.local' });
+require('dotenv').config({ path: '.env' });
 const { createReactAgentWrapper } = require('../../dist/react-agent');
 const { HumanMessage } = require('@langchain/core/messages');
 const { UtilityHelloWorldEcho } = require('../../dist/lib/utility/utility_helloworldecho');

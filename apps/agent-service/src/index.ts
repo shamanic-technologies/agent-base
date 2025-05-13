@@ -39,8 +39,8 @@ const __dirname = path.dirname(__filename);
 // Only load from .env file in development
 if (nodeEnv === 'development') {
   // Construct path relative to the service's root directory (apps/agent-service)
-  // Go up one level from src (__dirname) and then look for .env.local
-  const envFile = path.resolve(__dirname, '..', '.env.local'); 
+  // Go up one level from src (__dirname) and then look for .env
+  const envFile = path.resolve(__dirname, '..', '.env'); 
   if (fs.existsSync(envFile)) {
     console.log(`🔧 Loading development environment from ${envFile}`);
     dotenv.config({ path: envFile });

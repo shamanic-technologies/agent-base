@@ -20,7 +20,7 @@ import { apiCache } from '../utils/api-cache.js'; // Import the API cache
  * Also adds relevant headers for downstream services.
  */
 export const authMiddleware = () => { 
-  return async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  return async (req: express.Request, res: express.Response, next: express.NextFunction): Promise<void> => {
     try {
       
       // 1. Platform API Key Validation
@@ -29,10 +29,11 @@ export const authMiddleware = () => {
       
       if (!platformApiKey) {
         console.log(`[Auth Middleware] No API key provided`);
-        return res.status(401).json({
+        res.status(401).json({
           success: false,
           error: 'API Gateway Service: API key is required. Please use the X-PLATFORM-API-KEY header.'
         });
+        return;
       }
 
       let platformUserId: string | undefined = apiCache.getPlatformUserId(platformApiKey);
@@ -49,7 +50,8 @@ export const authMiddleware = () => {
         // Check for validation success first
         if (!validationResponse.success ) {
           console.log(`[Auth Middleware] Key validation failed: ${validationResponse.error}`);
-          return res.status(401).json(validationResponse); // Return the original error response
+          res.status(401).json(validationResponse); // Return the original error response
+          return;
         }
         // Extract the platform user ID
         platformUserId = validationResponse.data.platformUserId;
@@ -79,7 +81,8 @@ export const authMiddleware = () => {
 
           if (!clientUserResponse.success) {
             console.error(`[Auth Middleware] Failed to validate/upsert client user ID ${platformClientUserId} for platform user ${platformUserId}. Error: ${clientUserResponse.error}`);
-            return res.status(401).json(clientUserResponse);
+            res.status(401).json(clientUserResponse);
+            return;
           }
 
           // Extract the internal client user ID (UUID)
@@ -99,11 +102,12 @@ export const authMiddleware = () => {
       next();
     } catch (error) {
       console.error(`[Auth Middleware] Unexpected error in middleware execution:`, error); 
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
         error: 'API Gateway Service: Internal authentication processing error',
         details: error instanceof Error ? error.message : 'Unknown error'
       });
+      return;
     }
   };
 };

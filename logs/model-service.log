@@ -3,7 +3,7 @@ npm warn config ignoring workspace config at /Users/kevinlourd/Business/agent-ba
 > @helloworld/model-service@1.0.0 dev
 > tsx watch src/index.ts
 
-🔧 Loading development environment from .env.local
+🔧 Loading development environment from .env
 (node:45254) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
 🤖 LangGraph ReAct Agent Service running at http://0.0.0.0:3001
