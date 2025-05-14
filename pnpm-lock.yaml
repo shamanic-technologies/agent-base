@@ -853,7 +853,7 @@ importers:
         specifier: ^5.8.3
         version: 5.8.3
 
-  packages/google-secret-manager-client:
+  packages/secret-client:
     dependencies:
       '@google-cloud/secret-manager':
         specifier: ^6.0.1
