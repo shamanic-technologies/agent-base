@@ -1,5 +1,6 @@
 import {
     SetupNeeded,
+    UtilityProviderEnum,
 } from "./utility.js";
 import { InternalUtilityInfo } from "./internal-utility.js";
 import { OAuthProvider } from "./oauth.js";
@@ -89,7 +90,7 @@ export interface ApiToolInfo extends InternalUtilityInfo {
  */
 export function mapUtilityProviderToOAuthProvider(utilityProvider: UtilityProvider): OAuthProvider {
     switch (utilityProvider) {
-        case UtilityProvider.GMAIL:
+        case UtilityProviderEnum.GMAIL:
             return OAuthProvider.GOOGLE;
         default:
             console.warn(`No direct OAuthProvider mapping for UtilityProvider: ${utilityProvider}. This is fine if the tool uses another auth method or defines OAuth via OpenAPI components.`);
