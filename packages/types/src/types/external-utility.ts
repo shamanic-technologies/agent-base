@@ -1,13 +1,12 @@
 import {
     SetupNeeded,
-
- } from "./utility.js";
-import {InternalUtilityTool, InternalUtilityInfo } from "./internal-utility.js";
-import {OAuthProvider} from "./oauth.js";
-import { SuccessResponse, ErrorResponse, ServiceResponse } from "./common.js";
-import { UtilityProvider, UtilityInputSecret, UtilitySecretType, UtilityActionConfirmation } from "./utility.js";
-// Add imports for OpenAPI types
-import type { OperationObject, SecuritySchemeObject } from 'openapi3-ts/oas30'; // Using oas30 for broader compatibility for now
+} from "./utility.js";
+import { InternalUtilityInfo } from "./internal-utility.js";
+import { OAuthProvider } from "./oauth.js";
+import { SuccessResponse, ErrorResponse } from "./common.js";
+import { UtilityProvider, UtilitySecretType } from "./utility.js";
+import type { OpenAPIObject, SecuritySchemeObject } from 'openapi3-ts/oas30';
+import type { JSONSchema7 } from 'json-schema';
 
 
 // /**
@@ -48,54 +47,28 @@ import type { OperationObject, SecuritySchemeObject } from 'openapi3-ts/oas30'; 
  */
 export interface ApiTool {
     id: string;
-    utilityProvider: UtilityProvider;     /** The provider enum (e.g., UtilityProvider.GMAIL) */
-    // requiredSecrets: UtilitySecretType[];     /** General secrets required (includes action confirmations like WEBHOOK_URL_INPUTED). For auth secrets, prefer mapping via openapiSecuritySchemes if using OpenAPI spec. */
-    
-    // --- OpenAPI Specification (Preferred Method) ---
-    /** Describes the target API endpoint using an OpenAPI Operation Object. 
-     *  This object contains details about the HTTP method, path, parameters (path, query, header, cookie),
-     *  request body, responses, and security requirements for the specific API call.
-     */
-    openapiOperation?: OperationObject;
-    /** 
-     * Maps security scheme names (referenced in `openapiOperation.security`) to their full SecuritySchemeObject definitions.
-     * Includes custom 'x-shamanic-*' extensions within each scheme definition to map to internal secret names from the secret-service.
-     * Example: `openapiSecuritySchemes: { "MyBasicAuth": { type: "http", scheme: "basic", "x-shamanic-username-secret-name": "my_user_secret", "x-shamanic-password-secret-name": "my_pass_secret" } }`
-     */
-    openapiSecuritySchemes?: Record<string, SecuritySchemeObject & {
-        'x-shamanic-secret-name'?: UtilitySecretType; // For single-value secrets like a Bearer token or an API key in a header. The value is the name of the secret in secret-service.
-        'x-shamanic-username-secret-name'?: UtilitySecretType; // For the username part of Basic Auth. The value is the name of the secret in secret-service.
-        'x-shamanic-password-secret-name'?: UtilitySecretType; // For the password part of Basic Auth. The value is the name of the secret in secret-service.
-        // Add other 'x-shamanic-*' mappings if needed for other credential parts (e.g., OAuth client_id secret name if storing client_id as a secret)
-    }>;
+    utilityProvider: UtilityProvider;
 
-    // --- Legacy/Alternative Configuration (Will be removed in the future) ---
-    // /** @deprecated Prefer openapiOperation and openapiSecuritySchemes. Authentication method required. */
-    // authMethod?: AuthMethod;    
-    // /** @deprecated Prefer openapiOperation and openapiSecuritySchemes. OAuth scopes required. */
-    // requiredScopes?: string[];     
-    // /** @deprecated Prefer openapiOperation and openapiSecuritySchemes. Details on how to use the API key. */
-    // apiKeyDetails?: {     
-    //     secretName: UtilitySecretType; 
-    //     scheme: ApiKeyAuthScheme;
-    //     identifierSecretName?: UtilitySecretType; // Only for BASIC_USER_PASS if username comes from a different secret
-    //     headerName?: string;      
-    // };
-    // /** @deprecated Prefer openapiOperation. Details for making the actual API call. */
-    // apiDetails?: {
-    //     method: HttpMethod;
-    //     baseUrl: string;          
-    //     pathTemplate: string;      
-    //     paramMappings?: {
-    //         path?: Record<string, string>;   
-    //         query?: Record<string, string | { target: string, transform: 'joinComma' }>; 
-    //         body?: Record<string, string>;   
-    //     };
-    //     staticHeaders?: Record<string, string>; 
-    // };
+    /**
+     * An OpenAPI Specification object (or a self-contained fragment focusing on a single operation)
+     * that describes the external API this tool interacts with.
+     *
+     * For execution by api-tool-backend, it's expected that:
+     * 1. The `paths` object within this spec should ideally contain a single path string as a key
+     *    (e.g., "/users/{id}").
+     * 2. That path item object (the value for the path string) should ideally contain a single
+     *    HTTP method as a key (e.g., "get", "post").
+     * 3. The operation object at `openapiSpec.paths[pathString][methodString]` is what will be executed.
+     *    This OperationObject contains parameters, requestBody, responses, and security requirements.
+     * 4. Security schemes referenced in the operation's `security` field must be defined in
+     *    `openapiSpec.components.securitySchemes`, including the necessary `x-shamanic-*` extensions
+     *    for mapping to internal secret names from your secret-service.
+     * 5. The `servers` array in `openapiSpec` (if present and unambiguous for the operation)
+     *    can be used to determine the base URL. Otherwise, a default or fallback mechanism
+     *    might be needed in api-tool-backend if not specified or ambiguous.
+     */
+    openapiSpecification: OpenAPIObject;
 }
-
-
 
 /**
  * Represents any possible valid response from executing an external utility
@@ -103,40 +76,13 @@ export interface ApiTool {
 export type ApiToolExecutionResponse =
     SuccessResponse<SetupNeeded> |
     ErrorResponse |
-    SuccessResponse<any>;
+    SuccessResponse<unknown>;
 
 export interface ApiToolInfo extends InternalUtilityInfo {
     utilityProvider: UtilityProvider;
-    // OpenAPI fields
-    openapiOperation?: OperationObject;
-    openapiSecuritySchemes?: Record<string, SecuritySchemeObject & {
-        'x-shamanic-secret-name'?: UtilitySecretType;
-        'x-shamanic-username-secret-name'?: UtilitySecretType;
-        'x-shamanic-password-secret-name'?: UtilitySecretType;
-    }>;
-
-    // Legacy fields (Will be removed in the future)
-    // /** @deprecated */
-    // authMethod?: AuthMethod;
-    // requiredSecrets: UtilitySecretType[]; // Keep this for general non-auth secrets or if not using openapiSecuritySchemes fully
-    // /** @deprecated */
-    // requiredScopes?: string[];
-    // /** @deprecated */
-    // apiKeyDetails?: {
-    //     secretName: UtilitySecretType; 
-    //     scheme: ApiKeyAuthScheme;
-    //     identifierSecretName?: UtilitySecretType;
-    //     headerName?: string;      
-    // };
-    // /** @deprecated */
-    // apiDetails?: {
-    //     method: HttpMethod;
-    //     baseUrl: string;          
-    //     pathTemplate: string;      
-    // };
-};
-
-
+    // The 'schema: JSONSchema7' inherited from InternalUtilityInfo will be
+    // derived by api-tool-backend from the single OperationObject found within ApiTool.openapiSpec.paths.
+}
 
 /**
  * Maps a UtilityProvider to an OAuthProvider
@@ -145,16 +91,8 @@ export function mapUtilityProviderToOAuthProvider(utilityProvider: UtilityProvid
     switch (utilityProvider) {
         case UtilityProvider.GMAIL:
             return OAuthProvider.GOOGLE;
-        // Add other mappings as needed for OAuth-enabled providers
-        // case UtilityProvider.CRISP:
-            // return OAuthProvider.CRISP; // Example if Crisp had OAuth
         default:
-            // Consider if this should throw an error or return a default/undefined
-            // For now, let's assume not all utility providers support OAuth directly mapped this way
-            // and an error might be too strict if the tool uses a different auth method.
-            console.warn(`No direct OAuthProvider mapping for UtilityProvider: ${utilityProvider}. This is fine if the tool uses another auth method.`);
-            // Return a placeholder or handle as per your OAuth flow design for non-explicitly mapped providers.
-            // For this example, let's throw to indicate a missing explicit mapping if OAuth is expected.
-            throw new Error(`OAuthProvider mapping not defined for UtilityProvider: ${utilityProvider}. Please define it if this provider uses OAuth.`);
+            console.warn(`No direct OAuthProvider mapping for UtilityProvider: ${utilityProvider}. This is fine if the tool uses another auth method or defines OAuth via OpenAPI components.`);
+            throw new Error(`OAuthProvider mapping not defined for UtilityProvider: ${utilityProvider}. Define in OpenAPI components or add a case here if direct mapping is intended.`);
     }
-};
+}

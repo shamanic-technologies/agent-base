@@ -7,7 +7,7 @@ import { InternalUtilityInfo } from './internal-utility.js';
 
 // --- Enums and Core Records ---
 
-export enum UtilityProvider {
+export enum UtilityProviderEnum {
     AGENT_BASE = 'agent-base',
     CRISP = 'crisp',
     STRIPE = 'stripe',
@@ -15,6 +15,8 @@ export enum UtilityProvider {
     CHARGEBEE = 'chargebee',
     SLACK = 'slack',
 }
+
+export type UtilityProvider = UtilityProviderEnum | string;
 
 export type PlatformApiKeySecretType = string;
 
@@ -30,7 +32,11 @@ export enum UtilityInputSecret {
     API_IDENTIFIER = 'api_identifier',
 }
 
-export type UtilitySecretType = UtilityInputSecret | UtilityActionConfirmation | PlatformApiKeySecretType;
+export type UtilitySecretType = 
+UtilityInputSecret 
+| UtilityActionConfirmation 
+| PlatformApiKeySecretType
+| string;
 
 /**
  * UtilityToolCredentials Interface
