@@ -14,10 +14,10 @@ import {
 //@ts-ignore
 import { Message } from 'ai'; // Import Message from 'ai'
 import { makePlatformUserApiServiceRequest, makeClientUserApiServiceRequest } from '../../utils/service-client.js'; // Added .js
-import { getAgentServiceUrl, getApiGatewayServiceUrl } from '../../utils/config.js'; // Added .js
+import { getAgentBaseApiUrl } from '../../utils/config.js'; // Added .js
 import { Method } from 'axios';
 
-const API_GATEWAY_URL = getApiGatewayServiceUrl();
+const AGENT_BASE_API_URL = getAgentBaseApiUrl();
 const AGENT_SERVICE_ROUTE_PREFIX = '/agent'; // Assuming API Gateway prefixes agent routes with /agent
 
 /**
@@ -37,7 +37,7 @@ export const getOrCreateConversationsPlatformUserApiService = async (
     const queryParams = { agentId }; 
 
     return makePlatformUserApiServiceRequest<Conversation[]>( 
-        API_GATEWAY_URL,
+        AGENT_BASE_API_URL,
         'GET',
         endpoint,
         platformUserApiServiceCredentials,
@@ -61,7 +61,7 @@ export const createConversationExternalApiService = async (
 ): Promise<ServiceResponse<ConversationId>> => {
     const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/conversation/create-conversation`;    
     return makePlatformUserApiServiceRequest<ConversationId>( 
-        API_GATEWAY_URL,
+        AGENT_BASE_API_URL,
         'POST',
         endpoint,
         platformUserApiServiceCredentials,
@@ -84,7 +84,7 @@ export const getOrCreateConversationClientUserApiService = async (
 ): Promise<ServiceResponse<ConversationId>> => {
     const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/conversation/get-or-create-conversation`;    
     return makeClientUserApiServiceRequest<ConversationId>( 
-        API_GATEWAY_URL,
+        AGENT_BASE_API_URL,
         'POST',
         endpoint,
         clientUserApiServiceCredentials,

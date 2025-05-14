@@ -8,10 +8,10 @@ import {
     PlatformUserApiServiceCredentials, // Import credentials type
 } from '@agent-base/types';
 import { makePlatformUserApiServiceRequest } from '../../utils/service-client.js'; // Added .js
-import { getApiGatewayServiceUrl } from '../../utils/config.js'; // Added .js
+import { getAgentBaseApiUrl } from '../../utils/config.js'; // Added .js
 import { Message } from 'ai';
 
-const API_GATEWAY_URL = getApiGatewayServiceUrl();
+const AGENT_BASE_API_URL = getAgentBaseApiUrl();
 const AGENT_SERVICE_ROUTE_PREFIX = '/agent'; // Assuming API Gateway prefixes agent routes with /agent
 
 /**
@@ -31,7 +31,7 @@ export const getMessagesFromConversationExternalApiService = async (
     const queryParams = { conversationId }; 
 
     return makePlatformUserApiServiceRequest<Message[]>( 
-        API_GATEWAY_URL,
+        AGENT_BASE_API_URL,
         'GET',
         endpoint,
         externalApiServiceCredentials,

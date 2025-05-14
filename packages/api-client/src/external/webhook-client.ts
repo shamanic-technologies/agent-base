@@ -8,7 +8,7 @@ import {
     WebhookEvent
 } from '@agent-base/types';
 import { makePlatformUserApiServiceRequest } from '../utils/service-client.js';
-import { getApiGatewayServiceUrl } from '../utils/config.js';
+import { getAgentBaseApiUrl } from '../utils/config.js';
 
 /**
  * Fetches all webhook definitions created by the specified user via the API Gateway.
@@ -20,7 +20,7 @@ export async function getUserCreatedWebhooks(
 ): Promise<ServiceResponse<Webhook[]>> {
 
     return makePlatformUserApiServiceRequest<Webhook[]>(
-        getApiGatewayServiceUrl(),
+        getAgentBaseApiUrl(),
         'GET',
         '/webhook/get-user-created-webhooks',
         externalApiServiceCredentials,
@@ -40,7 +40,7 @@ export async function getWebhookEvents(
 ): Promise<ServiceResponse<WebhookEvent[]>> {
 
     return makePlatformUserApiServiceRequest<WebhookEvent[]>(
-        getApiGatewayServiceUrl(),
+        getAgentBaseApiUrl(),
         'GET',
         `/webhook/${webhookId}/events`,
         externalApiServiceCredentials,
