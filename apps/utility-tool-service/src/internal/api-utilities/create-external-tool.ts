@@ -6,7 +6,7 @@
  */
 import { 
   InternalUtilityTool,
-  ExternalUtilityTool, // Type for the tool configuration object
+  ApiTool, // Type for the tool configuration object
   ServiceResponse,
   UtilityProvider,
   AuthMethod,
@@ -15,7 +15,7 @@ import {
   HttpMethod ,
   ExecuteToolResult,
   AgentServiceCredentials,
-  ExternalUtilityInfo,
+  ApiToolExecutionResponse,
 } from '@agent-base/types';
 // Import the correct function from api-client
 import { createExternalToolFromAgent } from '@agent-base/api-client';
@@ -199,7 +199,7 @@ const createExternalToolUtility: InternalUtilityTool = {
     platformUserId: string,
     platformApiKey: string,
     conversationId: string,
-    params: { tool_configuration: ExternalUtilityTool },
+    params: { tool_configuration: ApiTool },
     agentId?: string
   // Revert return type to ExecuteToolResult as expected by createExternalToolFromAgent
   ): Promise<ServiceResponse<ExecuteToolResult>> => {

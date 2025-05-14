@@ -28,7 +28,7 @@ import {
     ErrorResponse,
     ServiceResponse,
     UtilitiesList,
-    ExternalUtilityTool,
+    ApiTool,
     InternalUtilityInfo,
     ExecuteToolPayload,
     InternalUtilityTool,
@@ -107,7 +107,7 @@ app.get('/get-list', async (req, res): Promise<void> => {
     const internalTools: UtilitiesList = registry.listInternalUtilities(); 
     // Get external tools
     let externalTools: UtilitiesList = []; 
-    const externalResponse: ServiceResponse<ExternalUtilityTool[]> = await listExternalToolsFromAgent(agentServiceCredentials, conversationId);
+    const externalResponse: ServiceResponse<ApiTool[]> = await listExternalToolsFromAgent(agentServiceCredentials, conversationId);
     if (!externalResponse.success) {
       console.log(`${logPrefix} Error listing external tools:`, externalResponse);
       res.status(502).json(externalResponse);
@@ -157,7 +157,7 @@ app.get('/get-details/:id', async (req, res): Promise<void> => {
 
     // 2. Try external service (requires auth headers)
     
-    const externalResponse: ServiceResponse<ExternalUtilityTool> = await getExternalToolInfoFromAgent(
+    const externalResponse: ServiceResponse<ApiTool> = await getExternalToolInfoFromAgent(
         agentServiceCredentials,
         conversationId,
         id

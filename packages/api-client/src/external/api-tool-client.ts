@@ -4,8 +4,8 @@
 import {
     ServiceResponse,
     PlatformUserApiServiceCredentials,
-    ExternalUtilityTool,
-    ExternalUtilityInfo,
+    ApiTool,
+    ApiToolExecutionResponse,
     ExecuteToolPayload,
     ExternalUtilityExecutionResponse
 } from '@agent-base/types';
@@ -19,9 +19,9 @@ import { getApiToolApiUrl } from '../utils/config.js';
  */
 export async function listApiTools(
     externalApiServiceCredentials: PlatformUserApiServiceCredentials
-): Promise<ServiceResponse<ExternalUtilityTool[]>> {
+): Promise<ServiceResponse<ApiTool[]>> {
 
-    return makePlatformUserApiServiceRequest<ExternalUtilityTool[]>(
+    return makePlatformUserApiServiceRequest<ApiTool[]>(
         getApiToolApiUrl(),
         'GET',
         '/',
@@ -40,9 +40,9 @@ export async function listApiTools(
 export async function getApiToolInfo(
     externalApiServiceCredentials: PlatformUserApiServiceCredentials,
     id: string
-): Promise<ServiceResponse<ExternalUtilityInfo>> {
+): Promise<ServiceResponse<ApiToolExecutionResponse>> {
 
-    return makePlatformUserApiServiceRequest<ExternalUtilityInfo>(
+    return makePlatformUserApiServiceRequest<ApiToolExecutionResponse>(
         getApiToolApiUrl(),
         'GET',
         '/:id',
@@ -60,10 +60,10 @@ export async function getApiToolInfo(
  */
 export async function createApiTool(
     externalApiServiceCredentials: PlatformUserApiServiceCredentials,
-    apiTool: ExternalUtilityTool
-): Promise<ServiceResponse<ExternalUtilityTool>> {
+    apiTool: ApiTool
+): Promise<ServiceResponse<ApiTool>> {
 
-    return makePlatformUserApiServiceRequest<ExternalUtilityTool>(
+    return makePlatformUserApiServiceRequest<ApiTool>(
         getApiToolApiUrl(),
         'POST',
         '/',

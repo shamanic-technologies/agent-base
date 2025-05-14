@@ -1,7 +1,7 @@
 /**
  * API Client functions for interacting with the External Utility Tool Service.
  */
-import { AgentServiceCredentials, ExecuteToolPayload, ExecuteToolResult, ExternalUtilityTool, InternalServiceCredentials, ServiceResponse } from '@agent-base/types';
+import { AgentServiceCredentials, ExecuteToolPayload, ExecuteToolResult, ApiTool, InternalServiceCredentials, ServiceResponse } from '@agent-base/types';
 import { makeInternalAPIServiceRequest } from '../utils/service-client.js';
 import { getExternalUtilityToolServiceUrl } from '../utils/config.js'; // Import the config getter
 import { Method } from 'axios';
@@ -16,12 +16,12 @@ import { Method } from 'axios';
  * @param {string} platformUserId - The ID of the platform user.
  * @param {string} clientUserId - The ID of the client user.
  * @param {string} platformApiKey - The platform API key.
- * @returns {Promise<ServiceResponse<ExternalUtilityTool[]>>} Service response containing the list of tools or an error.
+ * @returns {Promise<ServiceResponse<ApiTool[]>>} Service response containing the list of tools or an error.
  */
 export async function listExternalToolsFromAgent(
   agentServiceCredentials: AgentServiceCredentials,
   conversationId: string
-): Promise<ServiceResponse<ExternalUtilityTool[]>> {
+): Promise<ServiceResponse<ApiTool[]>> {
   const { platformUserId, clientUserId, platformApiKey, agentId } = agentServiceCredentials;
   const baseUrl = getExternalUtilityToolServiceUrl(); // Use the config getter
   const input = {
@@ -39,7 +39,7 @@ export async function listExternalToolsFromAgent(
       conversationId
     }
   };
-  return makeInternalAPIServiceRequest<ExternalUtilityTool[]>(
+  return makeInternalAPIServiceRequest<ApiTool[]>(
     input.url,
     input.method,
     input.endpoint,
@@ -61,13 +61,13 @@ export async function listExternalToolsFromAgent(
  * @param {string} clientUserId - The ID of the client user.
  * @param {string} platformApiKey - The platform API key.
  * @param {string} toolId - The ID of the tool to retrieve.
- * @returns {Promise<ServiceResponse<ExternalUtilityTool>>} Service response containing the tool details or an error.
+ * @returns {Promise<ServiceResponse<ApiTool>>} Service response containing the tool details or an error.
  */
 export async function getExternalToolInfoFromAgent(
   agentServiceCredentials: AgentServiceCredentials,
   conversationId: string,
   toolId: string
-): Promise<ServiceResponse<ExternalUtilityTool>> {
+): Promise<ServiceResponse<ApiTool>> {
   const { platformUserId, clientUserId, platformApiKey, agentId } = agentServiceCredentials;
   const baseUrl = getExternalUtilityToolServiceUrl(); // Use the config getter
   const input = {
@@ -85,7 +85,7 @@ export async function getExternalToolInfoFromAgent(
       conversationId
     }
   };
-  return makeInternalAPIServiceRequest<ExternalUtilityTool>(
+  return makeInternalAPIServiceRequest<ApiTool>(
     input.url,
     input.method,
     input.endpoint,
@@ -107,12 +107,12 @@ export async function getExternalToolInfoFromAgent(
  * @param {string} clientUserId - The ID of the client user.
  * @param {string} platformApiKey - The platform API key.
  * @param {CreateExternalToolPayload} payload - The data required to create the tool.
- * @returns {Promise<ServiceResponse<ExternalUtilityTool>>} Service response containing the newly created tool or an error.
+ * @returns {Promise<ServiceResponse<ApiTool>>} Service response containing the newly created tool or an error.
  */
 export async function createExternalToolFromAgent(
   agentServiceCredentials: AgentServiceCredentials,
   conversationId: string, 
-  payload: ExternalUtilityTool
+  payload: ApiTool
 ): Promise<ServiceResponse<ExecuteToolResult>> {
   const { platformUserId, clientUserId, platformApiKey, agentId } = agentServiceCredentials;
   const baseUrl = getExternalUtilityToolServiceUrl(); // Use the config getter

@@ -26,7 +26,7 @@ import {
     UtilityInputSecret,
     ApiKeyAuthScheme,
     HttpMethod,
-    ExternalUtilityTool    // For create_external_tool schema
+    ApiTool    // For create_external_tool schema
 } from '@agent-base/types';
 import {
     listUtilitiesFromAgent,

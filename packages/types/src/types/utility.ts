@@ -2,7 +2,7 @@
  * Types related to Utility.
  */
 import { AgentServiceCredentials, ErrorResponse, ServiceResponse, SuccessResponse } from './common.js';
-import { ExternalUtilityInfo } from './external-utility.js';
+import { ApiToolInfo } from './external-utility.js';
 import { InternalUtilityInfo } from './internal-utility.js';
 
 // --- Enums and Core Records ---
@@ -95,7 +95,7 @@ export type UtilitiesListItem = {
 export type UtilitiesList =  UtilitiesListItem[];
 
 export type UtilitiesListResponse = ServiceResponse<UtilitiesList>;
-export type UtilityInfo = InternalUtilityInfo | ExternalUtilityInfo;
+export type UtilityInfo = InternalUtilityInfo | ApiToolInfo;
 
 /**
  * Payload for executing an external tool.
