@@ -12,8 +12,8 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/your-repo/agent-base-backend.git",
-    "directory": "packages/google-secret-manager-client"
+    "url": "git+https://github.com/agent-base/agent-base-backend.git",
+    "directory": "packages/secret-client"
   },
   "keywords": [
     "google",
@@ -23,11 +23,11 @@
     "client",
     "typescript"
   ],
-  "author": "Your Name or Organization <your-email@example.com>",
+  "author": "Agent Base <hello@agentbase.com>",
   "license": "MIT",
-  "homepage": "https://github.com/your-repo/agent-base-backend/tree/main/packages/google-secret-manager-client#readme",
+  "homepage": "https://github.com/agent-base/agent-base-backend/tree/main/packages/secret-client#readme",
   "bugs": {
-    "url": "https://github.com/your-repo/agent-base-backend/issues"
+    "url": "https://github.com/agent-base/agent-base-backend/issues"
   },
   "dependencies": {
     "@google-cloud/secret-manager": "^6.0.1"
