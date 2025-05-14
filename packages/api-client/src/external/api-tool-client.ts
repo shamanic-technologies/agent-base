@@ -3,13 +3,14 @@
  */
 import {
     ServiceResponse,
-    PlatformUserApiServiceCredentials,
+    ExternalServiceCredentials,
     ApiTool,
     ApiToolExecutionResponse,
     ExecuteToolPayload,
-    ExternalUtilityExecutionResponse
+    ServiceCredentials,
+    ApiToolInfo,
 } from '@agent-base/types';
-import { makePlatformUserApiServiceRequest } from '../utils/service-client.js';
+import { makeExternalApiServiceRequest, makePlatformUserApiServiceRequest } from '../utils/service-client.js';
 import { getApiToolApiUrl } from '../utils/config.js';
 
 /**
@@ -18,18 +19,27 @@ import { getApiToolApiUrl } from '../utils/config.js';
  * @returns ServiceResponse containing an array of Webhooks or an error.
  */
 export async function listApiTools(
-    externalApiServiceCredentials: PlatformUserApiServiceCredentials
-): Promise<ServiceResponse<ApiTool[]>> {
+    serviceCredentials: ExternalServiceCredentials,
+): Promise<ServiceResponse<ApiToolInfo[]>> {
+    const customHeaders : Record<string, string> = {
+        'x-platform-user-id': serviceCredentials.platformUserId,
+        'x-client-user-id': serviceCredentials.clientUserId,
+        'x-platform-api-key': serviceCredentials.platformApiKey,
+    };
+    if (serviceCredentials.agentId) {
+        customHeaders['x-agent-id'] = serviceCredentials.agentId;
+    }
 
-    return makePlatformUserApiServiceRequest<ApiTool[]>(
+    return makeExternalApiServiceRequest<ApiToolInfo[]>(
         getApiToolApiUrl(),
         'GET',
         '/',
-        externalApiServiceCredentials,
         undefined,
-        undefined
+        undefined,
+        customHeaders
     );
 }
+
 
 /**
  * Fetches the api tool info for the specified id.
@@ -38,17 +48,24 @@ export async function listApiTools(
  * @returns ServiceResponse containing an array of Webhooks or an error.
  */
 export async function getApiToolInfo(
-    externalApiServiceCredentials: PlatformUserApiServiceCredentials,
+    externalApiServiceCredentials: ExternalServiceCredentials,
     id: string
-): Promise<ServiceResponse<ApiToolExecutionResponse>> {
-
-    return makePlatformUserApiServiceRequest<ApiToolExecutionResponse>(
+): Promise<ServiceResponse<ApiToolInfo>> {
+    const customHeaders : Record<string, string> = {
+        'x-platform-user-id': externalApiServiceCredentials.platformUserId,
+        'x-client-user-id': externalApiServiceCredentials.clientUserId,
+        'x-platform-api-key': externalApiServiceCredentials.platformApiKey,
+    };
+    if (externalApiServiceCredentials.agentId) {
+        customHeaders['x-agent-id'] = externalApiServiceCredentials.agentId;
+    }
+    return makeExternalApiServiceRequest<ApiToolInfo>(
         getApiToolApiUrl(),
         'GET',
-        '/:id',
-        externalApiServiceCredentials,
+        '/'+id,
         undefined,
-        undefined
+        undefined,
+        customHeaders
     );
 }
 
@@ -59,17 +76,24 @@ export async function getApiToolInfo(
  * @returns ServiceResponse containing an array of Webhooks or an error.
  */
 export async function createApiTool(
-    externalApiServiceCredentials: PlatformUserApiServiceCredentials,
+    externalserviceCredentials: ExternalServiceCredentials,
     apiTool: ApiTool
 ): Promise<ServiceResponse<ApiTool>> {
-
-    return makePlatformUserApiServiceRequest<ApiTool>(
+    const customHeaders : Record<string, string> = {
+        'x-platform-user-id': externalserviceCredentials.platformUserId,
+        'x-client-user-id': externalserviceCredentials.clientUserId,
+        'x-platform-api-key': externalserviceCredentials.platformApiKey,
+    };
+    if (externalserviceCredentials.agentId) {
+        customHeaders['x-agent-id'] = externalserviceCredentials.agentId;
+    }
+    return makeExternalApiServiceRequest<ApiTool>(
         getApiToolApiUrl(),
         'POST',
         '/',
-        externalApiServiceCredentials,
         apiTool,
-        undefined
+        undefined,
+        customHeaders
     );
 }
 
@@ -80,18 +104,25 @@ export async function createApiTool(
  * @returns ServiceResponse containing an array of Webhooks or an error.
  */
 export async function executeApiTool(
-    externalApiServiceCredentials: PlatformUserApiServiceCredentials,
+    externalApiServiceCredentials: ExternalServiceCredentials,
     id: string,
     executeToolPayload: ExecuteToolPayload
-): Promise<ServiceResponse<ExternalUtilityExecutionResponse>> {
-
-    return makePlatformUserApiServiceRequest<ExternalUtilityExecutionResponse>(
+): Promise<ServiceResponse<ApiToolExecutionResponse>> {
+    const customHeaders : Record<string, string> = {
+        'x-platform-user-id': externalApiServiceCredentials.platformUserId,
+        'x-client-user-id': externalApiServiceCredentials.clientUserId,
+        'x-platform-api-key': externalApiServiceCredentials.platformApiKey,
+    };
+    if (externalApiServiceCredentials.agentId) {
+        customHeaders['x-agent-id'] = externalApiServiceCredentials.agentId;
+    }
+    return makeExternalApiServiceRequest<ApiToolExecutionResponse>(
         getApiToolApiUrl(),
         'POST',
-        '/:id/execute',
-        externalApiServiceCredentials,
+        '/'+id+'/execute',
         executeToolPayload,
-        undefined
+        undefined,
+        customHeaders
     );
 }
 

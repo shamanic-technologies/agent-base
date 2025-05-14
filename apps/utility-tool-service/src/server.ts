@@ -17,10 +17,10 @@ import { registry } from './registry/registry.js';
 
 // Import client for EXTERNAL tools from the API client package
 import {
-    listExternalToolsFromAgent,
-    getExternalToolInfoFromAgent,
-    executeExternalToolFromAgent,
     getAuthHeadersFromAgent,
+    listApiTools,
+    getApiToolInfo,
+    executeApiTool
 } from '@agent-base/api-client'; // <--- Updated Import Path
 
 // Import shared response types for consistency
@@ -34,7 +34,12 @@ import {
     InternalUtilityTool,
     AgentServiceCredentials,
     InternalServiceCredentials,
-    ExecuteToolResult
+    ExecuteToolResult,
+    PlatformUserApiServiceCredentials,
+    ClientUserApiServiceCredentials,
+    ExternalServiceCredentials,
+    ApiToolInfo,
+    ApiToolExecutionResponse
 } from '@agent-base/types';
 
 // --- Ensure internal utilities are registered (if needed by side-effect imports)
@@ -99,15 +104,13 @@ app.get('/get-list', async (req, res): Promise<void> => {
     return;
   }
   const agentServiceCredentials : AgentServiceCredentials = authHeaders.data;
-  // Extract conversationId from query parameters
-  const conversationId = req.query.conversationId as string | undefined;
 
   try {
     // Get internal tools
     const internalTools: UtilitiesList = registry.listInternalUtilities(); 
     // Get external tools
     let externalTools: UtilitiesList = []; 
-    const externalResponse: ServiceResponse<ApiTool[]> = await listExternalToolsFromAgent(agentServiceCredentials, conversationId);
+    const externalResponse: ServiceResponse<ApiToolInfo[]> = await listApiTools(agentServiceCredentials);
     if (!externalResponse.success) {
       console.log(`${logPrefix} Error listing external tools:`, externalResponse);
       res.status(502).json(externalResponse);
@@ -157,9 +160,8 @@ app.get('/get-details/:id', async (req, res): Promise<void> => {
 
     // 2. Try external service (requires auth headers)
     
-    const externalResponse: ServiceResponse<ApiTool> = await getExternalToolInfoFromAgent(
+    const externalResponse: ServiceResponse<ApiToolInfo> = await getApiToolInfo(
         agentServiceCredentials,
-        conversationId,
         id
     );
 
@@ -219,7 +221,7 @@ app.post('/call-tool/:id', async (req, res): Promise<void> => {
 
     // 2. Try external service (requires full auth headers)
 
-    const externalResponse: ServiceResponse<ExecuteToolResult> = await executeExternalToolFromAgent(
+    const externalResponse: ServiceResponse<ApiToolExecutionResponse> = await executeApiTool(
         agentServiceCredentials,
         id,
         req.body

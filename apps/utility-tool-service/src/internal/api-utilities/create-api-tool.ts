@@ -15,7 +15,7 @@ import {
   ApiToolExecutionResponse,
 } from '@agent-base/types';
 // Import the correct function from api-client
-import { createExternalToolFromAgent } from '@agent-base/api-client';
+import { createApiTool } from '@agent-base/api-client';
 import { registry } from '../../registry/registry.js';
 
 
@@ -145,26 +145,26 @@ const createExternalToolUtility: InternalUtilityTool = {
                             }
                           }
                         }
-                      }
-                      // Security would be applied via top-level security or here
+                      },
+                      security: [
+                        { "stripeBasicAuth": [] }
+                      ]
                     }
                   }
                 },
                 components: {
                   securitySchemes: {
-                    stripeApiKey: {
-                      type: "apiKey",
-                      name: "Authorization",
-                      in: "header",
-                      description: "Stripe API Key (prepended with 'Bearer ')."
-                      // x-extensions for securitySecrets mapping would be interpreted by api-tool-backend
+                    stripeBasicAuth: {
+                      type: "http",
+                      scheme: "basic",
+                      description: "HTTP Basic Authentication with Stripe API key as username and empty password."
                     }
                   }
                 }
               },
-              securityOption: "stripeApiKey",
+              securityOption: "stripeBasicAuth",
               securitySecrets: {
-                "x-secret-name": "api_secret_key" // This refers to a UtilityInputSecret name
+                "x-secret-username": "api_secret_key"
               }
             }
           ]
@@ -180,15 +180,15 @@ const createExternalToolUtility: InternalUtilityTool = {
     conversationId: string,
     params: { tool_configuration: ApiTool },
     agentId?: string
-  // Revert return type to ExecuteToolResult as expected by createExternalToolFromAgent
-  ): Promise<ServiceResponse<ExecuteToolResult>> => {
+  // Adjust return type to ServiceResponse<ApiTool>
+  ): Promise<ServiceResponse<ApiTool>> => {
     const logPrefix = '🛠️ [CREATE_EXTERNAL_TOOL_UTILITY]';
     try {
       const toolConfiguration = params?.tool_configuration;
 
       if (!toolConfiguration) {
         console.error(`${logPrefix} Invalid or missing tool_configuration parameter.`);
-        // Ensure error response matches ExecuteToolResult structure (or is a generic error)
+        // Ensure error response matches ApiTool structure for consistency (or a generic error)
         return { 
           success: false, 
           error: "Invalid input: 'tool_configuration' parameter is missing or invalid.",
@@ -210,9 +210,9 @@ const createExternalToolUtility: InternalUtilityTool = {
       };
 
       // Call the correct client function with correct arguments
-      const resultResponse : ServiceResponse<ExecuteToolResult> = await createExternalToolFromAgent(
+      // createApiTool does not take conversationId
+      const resultResponse: ServiceResponse<ApiTool> = await createApiTool(
         agentServiceCredentials, 
-        conversationId,        // Pass conversationId
         toolConfiguration    // Pass the tool configuration object
       );
 
@@ -221,7 +221,7 @@ const createExternalToolUtility: InternalUtilityTool = {
         return resultResponse;
       }
             
-      // Return the ExecuteToolResult from the client call
+      // Return the ApiTool from the client call
       return resultResponse;
 
     } catch (error: any) {

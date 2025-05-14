@@ -5,7 +5,7 @@
 import { Router } from 'express';
 import { getUserApiKeys } from '../services/dbService.js';
 import { createApiKeyMetadata, getSecretWebClient, storeSecretWebClient } from '@agent-base/api-client';
-import { ApiKey, CreateApiKeyRequest, GetSecretRequest, PlatformApiKeySecretType, SecretValue, ServiceResponse, StoreSecretRequest, UserType, UtilityProvider, UtilitySecretType } from '@agent-base/types';
+import { ApiKey, CreateApiKeyRequest, GetSecretRequest, PlatformApiKeySecretType, SecretValue, ServiceResponse, StoreSecretRequest, UserType, UtilityProvider, UtilityProviderEnum, UtilitySecretType } from '@agent-base/types';
 import { generateApiKey, getKeyPrefix, hashApiKey } from '../utils/apiKeyUtils.js';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -73,7 +73,7 @@ router.get('/by-name', async (req, res): Promise<void> => {
       // Get API Key from secret service
       const getSecretRequest: GetSecretRequest = {
         userType: UserType.Platform,
-        secretUtilityProvider: UtilityProvider.AGENT_BASE,
+        secretUtilityProvider: UtilityProviderEnum.AGENT_BASE,
         secretType: `api_key_${keyId}` as PlatformApiKeySecretType
       };
       const secretValueResponse: ServiceResponse<SecretValue> = await getSecretWebClient(platformUserId, getSecretRequest);
@@ -126,7 +126,7 @@ router.get('/by-name', async (req, res): Promise<void> => {
     //In any case store secret
     const requestData: StoreSecretRequest = {
       userType: UserType.Platform,
-      secretUtilityProvider: UtilityProvider.AGENT_BASE,
+      secretUtilityProvider: UtilityProviderEnum.AGENT_BASE,
       secretType: `api_key_${keyId}` as PlatformApiKeySecretType,
       secretValue: platformApiKey,
     };
@@ -196,7 +196,7 @@ router.get('/:keyId', async (req, res): Promise<void> => {
     // Get the API key from the secret service
     const getSecretRequest: GetSecretRequest = {
       userType: UserType.Platform,
-      secretUtilityProvider: UtilityProvider.AGENT_BASE,
+      secretUtilityProvider: UtilityProviderEnum.AGENT_BASE,
       secretType: `api_key_${keyId}` as PlatformApiKeySecretType
     };
     const secretValueResponse: ServiceResponse<SecretValue> = await getSecretWebClient(platformUserId, getSecretRequest);
