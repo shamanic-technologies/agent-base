@@ -68,7 +68,13 @@ export interface ApiTool {
      *    can be used to determine the base URL. Otherwise, a default or fallback mechanism
      *    might be needed in api-tool-backend if not specified or ambiguous.
      */
-    openapiSpecification: OpenAPIObject;
+    openapiSpecification: OpenAPIObject; // The OpenAPI specification fragment for the external API
+    securityOption: string; // The key of the security scheme to use for the operation
+    securitySecrets: { // The secrets to use for the operation
+        "x-secret-name": UtilitySecretType,
+        "x-secret-username": UtilitySecretType,
+        "x-secret-password": UtilitySecretType,
+     };
 }
 
 /**
@@ -80,6 +86,7 @@ export type ApiToolExecutionResponse =
     SuccessResponse<unknown>;
 
 export interface ApiToolInfo extends InternalUtilityInfo {
+    name: string;
     utilityProvider: UtilityProvider;
     // The 'schema: JSONSchema7' inherited from InternalUtilityInfo will be
     // derived by api-tool-backend from the single OperationObject found within ApiTool.openapiSpec.paths.

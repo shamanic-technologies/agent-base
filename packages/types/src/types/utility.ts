@@ -26,7 +26,6 @@ export enum UtilityActionConfirmation {
 }
 
 export enum UtilityInputSecretEnum {
-    WEBSITE_ID = 'website_id',
     API_SECRET_KEY = 'api_secret_key',
     API_PUBLISHABLE_KEY = 'api_publishable_key',
     API_IDENTIFIER = 'api_identifier',
