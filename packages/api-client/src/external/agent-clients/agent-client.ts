@@ -31,8 +31,6 @@ export async function getOrCreateAgent(
     };
   }
 
-  console.log(`[api-client/agentClient] Calling ${method} ${serviceUrl}${endpoint} for platformClientUserId: ${platformUserApiServiceCredentials.platformClientUserId}`);
-
   // Using makePlatformUserApiServiceRequest as it correctly handles the required headers
   return makePlatformUserApiServiceRequest<Agent>(
     serviceUrl,
