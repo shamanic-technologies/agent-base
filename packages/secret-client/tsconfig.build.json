@@ -1,0 +1,35 @@
+{
+  "extends": "../../tsconfig.json", // Assuming a base tsconfig.json at the root
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    // Module settings for ESM
+    "module": "NodeNext", 
+    "moduleResolution": "NodeNext",
+    // Strictness and Code Quality
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    // Emit options
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "composite": true, // Required for project references if you build packages separately
+    "lib": ["ESNext"],
+    "target": "ES2022"
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
+} 
