@@ -3,11 +3,11 @@
  */
 import { ServiceResponse, ClientUserApiServiceCredentials } from '@agent-base/types'; // Assuming Agent type exists
 import { makeClientUserApiServiceRequest } from '../../utils/service-client.js';
-import { getAgentServiceUrl } from '../../utils/config.js';
+import { getAgentBaseApiUrl } from '../../utils/config.js';
 import { Message } from 'ai';
 
 const AGENT_SERVICE_ROUTE_PREFIX = '/agent'; // Assuming API Gateway prefixes agent routes with /agent
-const AGENT_BASE_API_URL = getAgentServiceUrl();
+const AGENT_BASE_API_URL = getAgentBaseApiUrl();
 
 /**
  * Triggers the agent run process for a given conversation and message.
