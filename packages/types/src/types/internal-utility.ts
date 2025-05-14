@@ -32,7 +32,7 @@ export interface InternalUtilityTool {
    */
   export interface InternalUtilityInfo {
     id: string;
-    name: string;
+    name?: string;
     description: string;
     schema: JSONSchema7;
   };
