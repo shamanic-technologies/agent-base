@@ -1,4 +1,4 @@
-# @agent-base/google-secret-manager-client
+# @agent-base/secret-client
 
 A simple and modern TypeScript client for interacting with Google Cloud Secret Manager.
 
@@ -14,11 +14,11 @@ This package provides a convenient wrapper around the official `@google-cloud/se
 ## Installation
 
 ```bash
-pnpm install @agent-base/google-secret-manager-client
+pnpm install @agent-base/secret-client
 # or
-yarn add @agent-base/google-secret-manager-client
+yarn add @agent-base/secret-client
 # or
-npm install @agent-base/google-secret-manager-client
+npm install @agent-base/secret-client
 ```
 
 ## Prerequisites
@@ -34,7 +34,7 @@ Before using this client, ensure you have:
 ## Usage
 
 ```typescript
-import { GoogleSecretManager } from '@agent-base/google-secret-manager-client';
+import { GoogleSecretManager } from '@agent-base/secret-client';
 
 async function main() {
   // Initialize the client
