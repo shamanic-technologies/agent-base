@@ -29,7 +29,7 @@ export * from './types/secrets.js';
 // Export utility types
 export * from './types/utility.js';
 export * from './types/internal-utility.js';
-export * from './types/external-utility.js';
+export * from './types/api-tool.js';
 
 // Export credential types
 export * from './types/oauth.js';

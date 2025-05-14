@@ -27,6 +27,7 @@ export interface BaseResponse {
     success: false;
     data?: never;
     error: string;
+    statusCode?: number; // Added optional statusCode for HTTP error reporting
   }
 
   export type ServiceResponse<T> = SuccessResponse<T> | ErrorResponse;

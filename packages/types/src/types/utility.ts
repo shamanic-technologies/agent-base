@@ -2,7 +2,7 @@
  * Types related to Utility.
  */
 import { AgentServiceCredentials, ErrorResponse, ServiceResponse, SuccessResponse } from './common.js';
-import { ApiToolInfo } from './external-utility.js';
+import { ApiToolInfo } from './api-tool.js';
 import { InternalUtilityInfo } from './internal-utility.js';
 
 // --- Enums and Core Records ---

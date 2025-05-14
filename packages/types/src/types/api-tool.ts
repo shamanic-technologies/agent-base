@@ -10,38 +10,6 @@ import type { OpenAPIObject, SecuritySchemeObject } from 'openapi3-ts/oas30';
 import type { JSONSchema7 } from 'json-schema';
 
 
-// /**
-//  * Standard HTTP methods
-//  */
-// export enum HttpMethod {
-//     GET = 'GET',
-//     POST = 'POST',
-//     PUT = 'PUT',
-//     DELETE = 'DELETE',
-//     PATCH = 'PATCH'
-// }
-
-// /**
-//  * Standard Authentication methods for external tools
-//  */
-// export enum AuthMethod {
-//     OAUTH = 'OAUTH',    // Requires OAuth flow via tool-auth-service
-//     API_KEY = 'API_KEY', // Requires API key(s) stored via secret-service
-//     NONE = 'NONE'       // No authentication needed
-// }
-
-// /**
-//  * How an API key is presented in the request
-//  */
-// export enum ApiKeyAuthScheme {
-//     BEARER = 'Bearer',          // Authorization: Bearer <key>
-//     BASIC_USER = 'BasicUser',   // Basic Auth: username=<key>, password=
-//     BASIC_PASS = 'BasicPass',   // Basic Auth: username=, password=<key>
-//     BASIC_USER_PASS = 'BasicUserPass', // Basic Auth: username=<identifier_secret>, password=<key_secret>
-//     HEADER = 'Header'           // Custom Header: <headerName>: <key>
-// }
-
-
 /**
  * Configuration structure for an external utility tool.
  * Drives the generic execution engine.
@@ -76,6 +44,7 @@ export interface ApiTool {
         "x-secret-password": UtilitySecretType,
      };
 }
+
 
 /**
  * Represents any possible valid response from executing an external utility

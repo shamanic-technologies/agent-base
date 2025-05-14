@@ -24,7 +24,7 @@ import './internal/basic-utilities/get-current-datetime.js';
 import './internal/basic-utilities/curl-command.js';
 
 // Import internal utility for managing external tools
-import './internal/api-utilities/create-external-tool.js';
+import './internal/api-utilities/create-api-tool.js';
 
 // Import internal webhook utilities
 import './internal/webhook-utilities/webhook_create_webhook.js';

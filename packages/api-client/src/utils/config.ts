@@ -132,8 +132,7 @@ export function getWebhookToolApiUrl(): string {
  * @returns The Webhook Tool API URL string.
  */
 export function getApiToolApiUrl(): string {
-  // Default port 4000 based on openapi.json
-  const url = process.env.API_TOOL_API_URL || 'http://localhost:5000/api/v1/';
+  const url = process.env.API_TOOL_API_URL || 'http://localhost:4010/api/v1';
   if (!process.env.API_TOOL_API_URL) {
     // Using logger instead of console.warn for consistency if logger exists
     console.warn('[api-client/config] API_TOOL_API_URL environment variable not set. Defaulting to ' + url);
