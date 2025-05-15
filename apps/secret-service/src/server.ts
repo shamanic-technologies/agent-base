@@ -7,9 +7,15 @@
 import express, { Express, Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import path from 'path'; // Import path module
+import path from 'path';
+import { fileURLToPath } from 'url'; // Added for ES module equivalent of __dirname
 import routes from './routes/index.js'; // Import the main router (explicitly index.js)
 import { ErrorResponse } from '@agent-base/types'; // Import shared error type
+import { initializeGsmClient } from './lib/gsmClient.js'; // Corrected import
+
+// ES module equivalent of __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Load environment variables from .env file, explicitly setting the path
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
@@ -27,6 +33,12 @@ app.use(cors());
 
 // Parse JSON request bodies
 app.use(express.json());
+
+// Basic Logging Middleware (optional, can be expanded)
+app.use((req: Request, res: Response, next: NextFunction) => {
+  console.log(`[SecretService] ${req.method} ${req.url}`);
+  next();
+});
 
 // --- Routes --- //
 
@@ -55,10 +67,17 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   res.status(500).json(errorResponse);
 });
 
-// --- Start Server --- //
+// Initialize GSM client and then start the server
+async function startServer() {
+  try {
+    await initializeGsmClient(); // Initialize GSM client
+    app.listen(port, () => {
+      console.log(`[SecretService] Server running on http://localhost:${port}`);
+    });
+  } catch (error) {
+    console.error('[SecretService] Failed to initialize and start server:', error);
+    process.exit(1); // Exit if critical initialization fails
+  }
+}
 
-// Start listening on the configured port
-app.listen(port, () => {
-  // Log server start message
-  console.log(`[server]: Server is running at http://localhost:${port}`);
-}); 
+startServer(); // Call the async function to start the server 

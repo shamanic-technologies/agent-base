@@ -7,7 +7,7 @@
  * - GET /exists/:secretType : Check if a secret exists by type
  */
 import { Router } from 'express';
-import * as secretsController from '../controllers/secretsController'; // Import controller functions
+import * as secretsController from '../controllers/secretsController.js'; // Import controller functions
 
 // Initialize the secrets router
 const router: Router = Router();

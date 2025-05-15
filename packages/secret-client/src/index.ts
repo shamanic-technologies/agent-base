@@ -5,6 +5,7 @@ import {
   GoogleCloudSecretManagerApiError,
 } from './errors.js';
 import type { GoogleSecretManagerConfig } from './types.js';
+import { generateSecretManagerId } from './utils.js';
 
 /**
  * A client for interacting with Google Cloud Secret Manager.
@@ -175,7 +176,14 @@ export class GoogleSecretManager {
   }
 }
 
-// Export types and errors for consumers of the library
+// Export types, selected errors, and selected utils for consumers of the library
 export * from './types.js';
-export * from './errors.js';
-export * from './utils.js'; 
+
+export {
+  // Re-export the error classes that were imported for the GoogleSecretManager class
+  GoogleSecretManagerConfigError,
+  SecretNotFoundError,
+  GoogleCloudSecretManagerApiError,
+  // Re-export the utility function
+  generateSecretManagerId
+}; 

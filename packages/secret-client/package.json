@@ -1,10 +1,29 @@
 {
   "name": "@agent-base/secret-client",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "A TypeScript client for Google Cloud Secret Manager.",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./utils": {
+      "import": "./dist/utils.js",
+      "types": "./dist/utils.d.ts"
+    },
+    "./errors": {
+      "import": "./dist/errors.js",
+      "types": "./dist/errors.d.ts"
+    },
+    "./types": {
+      "import": "./dist/types.js",
+      "types": "./dist/types.d.ts"
+    }
+  },
   "scripts": {
     "build": "npx rimraf dist && tsc -p tsconfig.json",
     "clean": "rm -rf dist"
