@@ -134,7 +134,7 @@ export const getAllUserConversationsFromDbService = async (
         clientUserIdAuth,     
         platformApiKey,       
         undefined,            
-        { client_user_id: params.clientUserId } 
+        { clientUserId: params.clientUserId } 
     );
 };
 
