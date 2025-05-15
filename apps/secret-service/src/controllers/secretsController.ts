@@ -64,7 +64,6 @@ export async function storeSecretHandler(req: Request, res: Response, next: Next
             userType,
             userId,
             secretUtilityProvider, 
-            secretUtilitySubProvider || '', // Pass empty string if subProvider is null/undefined
             secretType
         );
 
