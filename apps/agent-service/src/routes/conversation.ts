@@ -252,7 +252,7 @@ router.get('/get-all-user-conversations', async (req: Request, res: Response, ne
         // Call the API client function. 
         // The clientUserId for auth is the same as the one we're fetching data for.
         const response = await getAllUserConversationsFromDbService(
-            { clientUserId: clientUserId }, // Params object with clientUserId to fetch data for
+            { clientUserId }, // Params object with clientUserId to fetch data for
             clientUserId,                 // clientUserId for authentication context
             platformUserId,
             platformApiKey
