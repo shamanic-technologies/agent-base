@@ -138,5 +138,35 @@ export const getAllUserConversationsFromDbService = async (
     );
 };
 
+/**
+ * Updates an existing conversation's messages in the database service.
+ * This is an internal API call.
+ * @param data - The data containing conversationId and messages to update.
+ * @param clientUserId - The client user ID for authentication.
+ * @param platformUserId - The platform user ID for authentication.
+ * @param platformApiKey - The platform API key for authentication.
+ * @returns A promise that resolves to the service response containing the ID of the updated conversation.
+ */
+export const updateConversationInternalApiService = async (
+    data: { conversationId: string; messages: any[] }, // Assuming messages type, adjust if UpdateConversationInput is defined and different
+    clientUserId: string, 
+    platformUserId: string, 
+    platformApiKey: string
+): Promise<ServiceResponse<ConversationId>> => { // Database route returns ConversationId upon successful update
+    if (!data.conversationId || !data.messages) {
+        throw new Error('conversationId and messages are required for updating a conversation.');
+    }
+    return makeInternalAPIServiceRequest<ConversationId>(
+        getDatabaseServiceUrl(),
+        'POST',
+        '/conversations/update-conversation', // The endpoint for updating conversations
+        platformUserId,
+        clientUserId,
+        platformApiKey,
+        data, // Request Body containing conversation_id and messages
+        undefined // No Query Params
+    );
+};
+
 
 
