@@ -25,15 +25,13 @@ export enum UtilityActionConfirmation {
     OAUTH_DONE = 'oauth_done', // Represents user confirmation of an action
 }
 
-export enum UtilityInputSecretEnum {
+export enum UtilityInputSecret {
     API_SECRET_KEY = 'api_secret_key',
     API_PUBLISHABLE_KEY = 'api_publishable_key',
     API_IDENTIFIER = 'api_identifier', // e.g., App ID, Account ID that is not secret but part of auth context
     USERNAME = 'username',
     PASSWORD = 'password'
 }
-
-export type UtilityInputSecret = UtilityInputSecretEnum | string;
 
 export type UtilitySecretType = 
 UtilityInputSecret 
