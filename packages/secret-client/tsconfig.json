@@ -1,9 +1,10 @@
 {
-  "extends": "../../tsconfig.json", // Assuming a base tsconfig.json at the root
+  "extends": "@kit/tsconfig/base.json",
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",
-    "noEmit": false, // Override inherited noEmit
+    "noEmit": false, // Override inherited noEmit (or ensure it's false)
+    "incremental": false, // Prevent .tsbuildinfo file generation
     // Module settings for ESM
     "module": "NodeNext", 
     "moduleResolution": "NodeNext",
@@ -27,7 +28,6 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "composite": true, // Required for project references if you build packages separately
     "lib": ["ESNext"],
     "target": "ES2022"
   },

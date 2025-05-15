@@ -1,14 +1,13 @@
 {
   "name": "@agent-base/secret-client",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "A TypeScript client for Google Cloud Secret Manager.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
-    "clean": "rm -rf dist",
-    "prepublishOnly": "pnpm run clean && pnpm run build"
+    "build": "npx rimraf dist && tsc -p tsconfig.json",
+    "clean": "rm -rf dist"
   },
   "repository": {
     "type": "git",
@@ -34,7 +33,9 @@
   },
   "devDependencies": {
     "@types/node": "^20.11.20",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "rimraf": "^6.0.1",
+    "@kit/tsconfig": "workspace:*"
   },
   "files": [
     "dist",
