@@ -43,7 +43,7 @@ const createExternalToolUtility: InternalUtilityTool = {
             utilityProvider: {
               type: 'string', 
               description: 'REQUIRED. The service provider this tool interacts with (e.g., \'stripe\', \'google\').',
-              enum: ["stripe", "google", "hubspot", "custom_api"]
+              enum: ["stripe", "google", "hubspot"]
             },
             
             // --- OpenAPI Specification ---

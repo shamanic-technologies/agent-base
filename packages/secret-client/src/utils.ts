@@ -1,4 +1,4 @@
-import { UserType } from '@agent-base/types';
+import { UserType, UtilityInputSecret, UtilityProvider } from '@agent-base/types';
 
 /**
  * Generates a standardized Google Secret Manager (GSM) compatible secret ID.
@@ -15,16 +15,18 @@ import { UserType } from '@agent-base/types';
 export const generateSecretManagerId = (
     userType: UserType,
     userId: string,
-    contextProvider: string, 
-    contextIdentifier: string,
-    secretNameOrType: string 
+    utilityProvider: UtilityProvider, 
+    utilitySubProvider: string,
+    secretType: UtilityInputSecret,
+    secretValue: string
 ): string => {
     const parts = [
         userType,
         userId,
-        contextProvider,
-        contextIdentifier,
-        secretNameOrType,
+        utilityProvider,
+        utilitySubProvider,
+        secretType,
+        secretValue,
     ];
     // Ensure all parts are strings before attempting to call toLowerCase or join
     const stringParts = parts.map(part => {
