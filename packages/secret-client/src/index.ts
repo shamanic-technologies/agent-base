@@ -177,4 +177,5 @@ export class GoogleSecretManager {
 
 // Export types and errors for consumers of the library
 export * from './types.js';
-export * from './errors.js'; 
+export * from './errors.js';
+export * from './utils.js'; 

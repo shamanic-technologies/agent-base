@@ -1,6 +1,6 @@
 {
   "name": "@agent-base/secret-client",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "A TypeScript client for Google Cloud Secret Manager.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -29,6 +29,7 @@
     "url": "https://github.com/agent-base/agent-base-backend/issues"
   },
   "dependencies": {
+    "@agent-base/types": "workspace:*",
     "@google-cloud/secret-manager": "^6.0.1"
   },
   "devDependencies": {
