@@ -22,6 +22,7 @@ import {
     getConversation,
     getConversationsByAgent,
     updateConversationMessages,
+    getConversationsByClientUserId
 } from '../services/conversations.js';
 
 const router = express.Router();
@@ -247,5 +248,42 @@ router.post('/update-conversation', (async (req: Request, res: Response, next: N
   }
 }) as unknown as RequestHandler);
 
+/**
+ * Get all conversations for a given clientUserId
+ * GET /get-all-user-conversations?clientUserId=...
+ */
+router.get('/get-all-user-conversations', (async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const clientUserId = req.query.clientUserId as string;
+
+    if (!clientUserId) {
+      return res.status(400).json({ success: false, error: 'clientUserId query parameter is required' } as ErrorResponse);
+    }
+
+    console.log(`[DB Route /conversations] Getting all conversations for client_user_id ${clientUserId}`);
+    const response = await getConversationsByClientUserId(clientUserId);
+
+    if (!response.success) {
+      console.error(`[DB Route /conversations] Service error getting all conversations for client_user_id ${clientUserId}:`, response.error);
+      // Use 500 for service errors, but could be more specific if service provides error codes
+      return res.status(500).json(response);
+    }
+
+    // Success case
+    console.log(`[DB Route /conversations] Retrieved ${response.data?.length ?? 0} conversations for client_user_id ${clientUserId}.`);
+    res.status(200).json(response);
+
+  } catch (error) {
+    console.error('Error in GET /conversations/get-all-user-conversations route:', error);
+    // Pass to default error handler or send a generic 500 response
+    if (!res.headersSent) {
+        res.status(500).json({
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown internal server error'
+        } as ErrorResponse);
+    }
+    // Optionally, call next(error) if you have a centralized error handling middleware that handles sending responses
+  }
+}) as unknown as RequestHandler);
 
 export default router; 

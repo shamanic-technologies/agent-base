@@ -19,7 +19,9 @@ import {
 import { 
     getOrCreateConversationsInternalApiService, 
     createConversationInternalApiService,
-    getConversationByIdInternalApiService
+    getConversationByIdInternalApiService,
+    // Import the new API client function
+    getAllUserConversationsFromDbService 
 } from '@agent-base/api-client';
 
 const router = Router();
@@ -224,6 +226,58 @@ router.post('/get-or-create-conversation', async (req: Request, res: Response, n
             success: false,
             error: error instanceof Error ? error.message : 'Unknown error processing get-or-create conversation'
         });
+    }
+});
+
+/**
+ * Get all conversations for the authenticated user across all their agents.
+ * GET /get-all-user-conversations
+ */
+router.get('/get-all-user-conversations', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const clientUserId = req.clientUserId as string;
+    const platformUserId = req.platformUserId as string;
+    const platformApiKey = req.headers['x-platform-api-key'] as string;
+
+    const logPrefix = `[Agent Service /get-all-user-conversations] User ${clientUserId}:`;
+
+    // Validate auth details first
+    if (!clientUserId || !platformUserId || !platformApiKey) {
+        console.error(`${logPrefix} Authentication details missing.`);
+        res.status(401).json({ success: false, error: 'Authentication details missing from request headers/context' });
+        return;
+    }
+
+    try {
+        console.log(`${logPrefix} Calling getAllUserConversationsFromDbService.`);
+        // Call the API client function. 
+        // The clientUserId for auth is the same as the one we're fetching data for.
+        const response = await getAllUserConversationsFromDbService(
+            { clientUserId: clientUserId }, // Params object with clientUserId to fetch data for
+            clientUserId,                 // clientUserId for authentication context
+            platformUserId,
+            platformApiKey
+        );
+
+        if (response.success) {
+            console.log(`${logPrefix} Successfully retrieved ${response.data?.length ?? 0} conversations.`);
+            res.status(200).json(response);
+        } else {
+            console.error(`${logPrefix} Failed to retrieve conversations: ${response.error}`);
+            // Determine status code based on error if possible, otherwise default to 500
+            // For now, just forwarding the error and assuming the client function handled status appropriately if it was a direct HTTP error.
+            // If the error is from the DB service, it might be a generic 500 from its perspective.
+            res.status(500).json({ success: false, error: response.error || 'Failed to retrieve all user conversations' });
+        }
+    } catch (error) {
+        console.error(`${logPrefix} Unexpected error:`, error);
+        // Pass to generic error handler or ensure response is sent
+        if (!res.headersSent) {
+            res.status(500).json({
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error processing get-all-user-conversations'
+            });
+        }
+        // next(error); // Uncomment if you have a global error handler that sends response
     }
 });
 

@@ -1,92 +1,39 @@
 /**
- * Typed API client functions for interacting with the Database Service Conversation Endpoints.
+ * API Client for Database Service - Conversations
+ *
+ * This file contains functions to interact with the conversation-related endpoints
+ * of the database service. These are intended for internal use by other services
+ * within the agent-base backend, abstracting the direct HTTP calls.
  */
 import {
-    ServiceResponse,
-    Conversation, // Use camelCase type for client consistency
-    ConversationId,
-    ConversationRecord,
-    BaseResponse,
-    CreateConversationInput,
     AgentId,
-    UpdateConversationInput
+    Conversation,
+    ServiceResponse,
+    ConversationId,
+    CreateConversationInput,
 } from '@agent-base/types';
 import { makeInternalAPIServiceRequest } from '../../utils/service-client.js';
 import { getDatabaseServiceUrl } from '../../utils/config.js';
 
 // ==============================================================================
-// Conversation Client Functions
+// == Internal API Service Calls to Database Service for CONVERSATIONS
 // ==============================================================================
 
 /**
- * Creates a new conversation.
- * POST /conversations/create-conversation
- */
-export const createConversationInternalApiService = async (
-  body: CreateConversationInput, // Use shared type
-  clientUserId: string, // Required for header
-  platformUserId: string, // Required for header
-  platformApiKey: string
-): Promise<ServiceResponse<Conversation>> => { // Expect created record
-
-  return makeInternalAPIServiceRequest<Conversation>( // Expect created record
-      getDatabaseServiceUrl(),
-      'POST',
-      '/conversations/create-conversation',
-      platformUserId,
-      clientUserId,
-      platformApiKey,
-      body,      // Pass body
-      undefined // No Query Params
-  );
-};
-
-
-/**
- * Gets all conversations associated with a specific agent ID.
- * 
- * Corresponds to: GET /conversations/get-conversations-from-agent
- * 
- * @param params - Query parameters containing the agentId.
- * @param platformUserId - The platform user ID making the request (for headers).
- * @returns A ServiceResponse containing an array of Conversation objects or an error.
- */
-export const getConversationsInternalApiService = async (
-  params: AgentId,
-  platformUserId: string,
-  platformApiKey: string,
-  clientUserId: string
-): Promise<ServiceResponse<Conversation[]>> => {
-  if (!platformUserId) {
-    throw new Error('[api-client:getConversationsFromAgent] platformUserId is required for request header.');
-  }
-  if (!params || !params.agentId) {
-    throw new Error('[api-client:getConversationsFromAgent] Query parameters must include agentId.');
-  }
-  const endpoint = '/conversations/get-conversations-from-agent';
-  return makeInternalAPIServiceRequest<Conversation[]>(
-    getDatabaseServiceUrl(),
-    'GET',
-    endpoint,
-    platformUserId,
-    clientUserId,
-    platformApiKey,
-    undefined, // No request body for GET
-    params     // Pass params as query parameters
-  );
-};
-
-/**
- * Retrieves conversations for an agent, or creates a default one.
- * GET /conversations/get-or-create-conversations-from-agent
+ * Retrieves or creates conversations for a specific agent from the database service.
+ * This is an internal API call.
+ * @param params - Object containing agentId.
+ * @param clientUserId - The client user ID for authentication.
+ * @param platformUserId - The platform user ID for authentication.
+ * @param platformApiKey - The platform API key for authentication.
+ * @returns A promise that resolves to the service response containing an array of conversations.
  */
 export const getOrCreateConversationsInternalApiService = async (
-    params: AgentId,
-    clientUserId: string, // Required for header
-    platformUserId: string, // Required for header
+    params: AgentId, // Original type was AgentId { agentId: string }
+    clientUserId: string, 
+    platformUserId: string, 
     platformApiKey: string
-): Promise<ServiceResponse<Conversation[]>> => { // Expect array of records
-
+): Promise<ServiceResponse<Conversation[]>> => {
     return makeInternalAPIServiceRequest<Conversation[]>(
         getDatabaseServiceUrl(),
         'GET',
@@ -94,22 +41,54 @@ export const getOrCreateConversationsInternalApiService = async (
         platformUserId,
         clientUserId,
         platformApiKey,
-        undefined, // No Body
-        params // Query param
+        undefined, 
+        params 
     );
 };
 
 /**
- * Retrieves a single conversation by its ID.
- * GET /conversations/get-conversation/:conversationId
+ * Creates a new conversation in the database service.
+ * This is an internal API call.
+ * @param data - The conversation data to create.
+ * @param clientUserId - The client user ID for authentication.
+ * @param platformUserId - The platform user ID for authentication.
+ * @param platformApiKey - The platform API key for authentication.
+ * @returns A promise that resolves to the service response containing the ID of the created conversation.
+ */
+export const createConversationInternalApiService = async (
+    data: CreateConversationInput, 
+    clientUserId: string, 
+    platformUserId: string, 
+    platformApiKey: string
+): Promise<ServiceResponse<ConversationId>> => {
+    return makeInternalAPIServiceRequest<ConversationId>(
+        getDatabaseServiceUrl(),
+        'POST',
+        '/conversations/create-conversation',
+        platformUserId,
+        clientUserId,
+        platformApiKey,
+        data, 
+        undefined 
+    );
+};
+
+
+/**
+ * Fetches a specific conversation by its ID from the database service.
+ * This is an internal API call.
+ * @param params - Object containing conversationId.
+ * @param clientUserId - The client user ID for authentication.
+ * @param platformUserId - The platform user ID for authentication.
+ * @param platformApiKey - The platform API key for authentication.
+ * @returns A promise that resolves to the service response containing the conversation.
  */
 export const getConversationByIdInternalApiService = async (
     params: ConversationId,
-    clientUserId: string, // Required for header
-    platformUserId: string, // Required for header
+    clientUserId: string, 
+    platformUserId: string, 
     platformApiKey: string
-): Promise<ServiceResponse<Conversation>> => { // Expect single record
-
+): Promise<ServiceResponse<Conversation>> => {
     return makeInternalAPIServiceRequest<Conversation>(
         getDatabaseServiceUrl(),
         'GET',
@@ -117,40 +96,47 @@ export const getConversationByIdInternalApiService = async (
         platformUserId,
         clientUserId,
         platformApiKey,
-        undefined, // No Body
-        undefined // No Query Params
+        undefined, 
+        undefined 
     );
 };
 
 
-
 /**
- * Updates the messages array for a specific conversation.
- * 
- * Corresponds to: POST /conversations/update-conversation
- * 
- * @param data - Input data containing conversationId and the messages array.
- * @param platformUserId - The platform user ID making the request (for headers).
- * @returns A ServiceResponse containing the updated Conversation object or an error.
+ * Fetches all conversations for a given client_user_id from the database service.
+ * This is an internal API call.
+ * @param params - Object containing clientUserId (the ID to fetch conversations for).
+ * @param clientUserIdAuth - The client user ID for authentication context (passed in header).
+ * @param platformUserId - The platform user ID for authentication.
+ * @param platformApiKey - The platform API key for authentication.
+ * @returns A promise that resolves to the service response containing an array of conversations.
  */
-export const updateConversationInternalApiService = async (
-  data: UpdateConversationInput,
-  platformUserId: string,
-  platformApiKey: string,
-  clientUserId: string
-): Promise<ServiceResponse<Conversation>> => {
-  const endpoint = '/conversations/update-conversation';
-  return makeInternalAPIServiceRequest<Conversation>(
-    getDatabaseServiceUrl(),
-    'POST',
-    endpoint,
-    platformUserId,
-    clientUserId,
-    platformApiKey,
-    data,
-    undefined // No Query Params
-  );
-}; 
+export const getAllUserConversationsFromDbService = async (
+    params: { clientUserId: string }, 
+    clientUserIdAuth: string,      
+    platformUserId: string,
+    platformApiKey: string
+): Promise<ServiceResponse<Conversation[]>> => {
+    if (!params.clientUserId) {
+        // Consider returning a ServiceResponse with success: false and an error message
+        // For now, throwing an error which will be caught by the caller or break if unhandled.
+        throw new Error('clientUserId query parameter is required to fetch all user conversations.');
+    }
+    if (!clientUserIdAuth || !platformUserId || !platformApiKey) {
+        throw new Error('Authentication details (clientUserIdAuth, platformUserId, platformApiKey) are required.');
+    }
+
+    return makeInternalAPIServiceRequest<Conversation[]>(
+        getDatabaseServiceUrl(),
+        'GET',
+        '/conversations/get-all-user-conversations', 
+        platformUserId,       
+        clientUserIdAuth,     
+        platformApiKey,       
+        undefined,            
+        { client_user_id: params.clientUserId } 
+    );
+};
 
 
 

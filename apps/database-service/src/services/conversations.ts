@@ -207,3 +207,53 @@ export async function getConversationsByAgent(input: AgentId)
     if (client) client.release();
   }
 }
+
+/**
+ * Get all conversations associated with a specific client_user_id.
+ * This involves finding all agents linked to the client_user_id and then fetching their conversations.
+ */
+export async function getConversationsByClientUserId(clientUserId: string): Promise<ServiceResponse<Conversation[]>> {
+  console.log(`[DB Service] Getting all conversations for client_user_id: ${clientUserId}`);
+
+  if (!clientUserId) {
+    return { success: false, error: 'clientUserId is required' };
+  }
+
+  // SQL query to fetch conversations by joining with client_user_agents table
+  // Assumes 'agents' table has 'id' as primary key which is 'agent_id' in 'client_user_agents'
+  // Assumes 'client_user_agents' table links client_user_id to agent_id
+  // Assumes 'conversations' table has 'agent_id' to link to agents
+  const query = `
+    SELECT c.* 
+    FROM "${CONVERSATIONS_TABLE}" c
+    JOIN "client_user_agents" cua ON c.agent_id = cua.agent_id
+    WHERE cua.client_user_id = $1
+    ORDER BY c.updated_at DESC;
+  `;
+
+  let client: PoolClient | null = null;
+  try {
+    client = await getClient();
+    const result = await client.query(query, [clientUserId]);
+
+    const conversations = result.rows.map(row => {
+      // Assuming row structure matches ConversationRecord and messages is JSONB
+      // The mapConversationFromDatabase function handles the mapping including messages
+      return mapConversationFromDatabase(row as any); // Use 'as any' if row structure isn't strictly typed here
+    });
+
+    console.log(`[DB Service] Found ${conversations.length} conversations for client_user_id ${clientUserId}`);
+    return {
+      success: true,
+      data: conversations
+    };
+  } catch (error) {
+    console.error(`[DB Service] Error getting conversations for client_user_id ${clientUserId}:`, error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Database error occurred'
+    };
+  } finally {
+    if (client) client.release();
+  }
+}
