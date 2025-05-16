@@ -63,7 +63,7 @@ const createExternalToolUtility: InternalUtilityTool = {
                 },
                 servers: { 
                   type: 'array',
-                  description: "REQUIRED. An array of Server Objects, each defining a base URL for the API. At least one server must be provided with a non-relative URL for the tool to be usable.",
+                  description: "REQUIRED. An array of Server Objects, each defining a base URL for the API. Exactly one server object must be provided with a non-relative URL for the tool to be usable.",
                   items: {
                     type: 'object',
                     properties: {
@@ -73,7 +73,8 @@ const createExternalToolUtility: InternalUtilityTool = {
                     },
                     required: ["url"]
                   },
-                  minItems: 1 
+                  minItems: 1,
+                  maxItems: 1 
                 },
                 paths: {
                   type: 'object',
