@@ -1,5 +1,6 @@
 import {
     SetupNeeded,
+    UtilityInputSecret,
     UtilityProviderEnum,
 } from "./utility.js";
 import { InternalUtilityInfo } from "./internal-utility.js";
@@ -39,9 +40,9 @@ export interface ApiTool {
     openapiSpecification: OpenAPIObject; // The OpenAPI specification fragment for the external API
     securityOption: string; // The key of the security scheme to use for the operation
     securitySecrets: { // The secrets to use for the operation
-        "x-secret-name": UtilitySecretType,
-        "x-secret-username": UtilitySecretType,
-        "x-secret-password": UtilitySecretType,
+        "x-secret-name": UtilityInputSecret,
+        "x-secret-username": UtilityInputSecret,
+        "x-secret-password": UtilityInputSecret,
      };
 }
 

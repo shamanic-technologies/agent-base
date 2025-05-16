@@ -42,8 +42,8 @@ const createExternalToolUtility: InternalUtilityTool = {
             },
             utilityProvider: {
               type: 'string', 
-              description: 'REQUIRED. The service provider this tool interacts with (e.g., \'stripe\', \'google\').',
-              enum: ["stripe", "google", "hubspot"]
+              description: 'REQUIRED. The service provider this tool interacts with.',
+              examples: ["stripe", "google", "hubspot"]
             },
             
             // --- OpenAPI Specification ---
@@ -95,17 +95,17 @@ const createExternalToolUtility: InternalUtilityTool = {
                 "x-secret-name": { 
                   type: "string", 
                   description: "The UtilitySecretType name for the API key or bearer token.",
-                  examples: ['api_secret_key', 'api_publishable_key', 'api_identifier', 'username', 'password']
+                  examples: Object.values(UtilityInputSecret)
                 },
                 "x-secret-username": { 
                   type: "string", 
                   description: "The UtilitySecretType name for the username in HTTP basic auth.",
-                  examples: ['api_secret_key', 'api_publishable_key', 'api_identifier', 'username', 'password']
+                  examples: Object.values(UtilityInputSecret)
                 },
                 "x-secret-password": { 
                   type: "string", 
                   description: "The UtilitySecretType name for the password in HTTP basic auth.",
-                  examples: ['api_secret_key', 'api_publishable_key', 'api_identifier', 'username', 'password']
+                  examples: Object.values(UtilityInputSecret)
                 }
               },
               additionalProperties: false // Only allow defined x-prefixed properties
