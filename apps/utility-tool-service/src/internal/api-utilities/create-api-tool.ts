@@ -49,7 +49,7 @@ const createExternalToolUtility: InternalUtilityTool = {
             // --- OpenAPI Specification ---
             openapiSpecification: {
               type: 'object',
-              description: "REQUIRED. A valid OpenAPI 3.0.x specification object for the tool. It must define exactly one path and one operation (e.g., one HTTP method under that path). The 'info' object should contain 'title' and 'version'. The tool's parameters and request/response bodies are defined here. Security schemes should be defined in 'components.securitySchemes'.",
+              description: "REQUIRED. A valid OpenAPI 3.0.x specification object for the tool. It must define exactly one path and one operation (e.g., one HTTP method under that path). It MUST include a 'servers' array defining the base URL. The 'info' object should contain 'title' and 'version'. The tool's parameters and request/response bodies are defined here. Security schemes should be defined in 'components.securitySchemes'.",
               properties: {
                 openapi: { type: 'string', description: "REQUIRED. OpenAPI version string (e.g., '3.0.0')." },
                 info: {
@@ -60,6 +60,20 @@ const createExternalToolUtility: InternalUtilityTool = {
                     description: { type: 'string', description: "OPTIONAL. A verbose description of the API." }
                   },
                   required: ["title", "version"]
+                },
+                servers: { 
+                  type: 'array',
+                  description: "REQUIRED. An array of Server Objects, each defining a base URL for the API. At least one server must be provided with a non-relative URL for the tool to be usable.",
+                  items: {
+                    type: 'object',
+                    properties: {
+                      url: { type: 'string', description: "REQUIRED. A URL to the target host. This URL supports Server Variables. Should be an absolute URL for external APIs." },
+                      description: { type: 'string', description: "OPTIONAL. An optional string describing the host designated by the URL." },
+                      variables: { type: 'object', description: "OPTIONAL. A map between a variable name and its value. The value is used for substitution in the server's URL template." }
+                    },
+                    required: ["url"]
+                  },
+                  minItems: 1 
                 },
                 paths: {
                   type: 'object',
@@ -78,9 +92,9 @@ const createExternalToolUtility: InternalUtilityTool = {
                     }
                   }
                 }
-                // Other OpenAPI fields like servers, tags, externalDocs can be added if needed.
+                // Other OpenAPI fields like tags, externalDocs can be added if needed.
               },
-              required: ["openapi", "info", "paths"]
+              required: ["openapi", "info", "paths", "servers"]
             },
 
             // --- Security Configuration ---
@@ -125,6 +139,11 @@ const createExternalToolUtility: InternalUtilityTool = {
                   version: "v1",
                   description: "Retrieves the current account balance in Stripe."
                 },
+                servers: [
+                  {
+                    "url": "https://api.stripe.com"
+                  }
+                ],
                 paths: {
                   "/v1/balance": {
                     get: {
