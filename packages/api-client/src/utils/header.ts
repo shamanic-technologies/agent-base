@@ -16,18 +16,26 @@ export const getAuthHeadersFromAgent = (req: RequestWithHeaders): ServiceRespons
     const platformApiKey = req.headers['x-platform-api-key'] as string | undefined;
     const agentId = req.headers['x-agent-id'] as string | undefined; // Agent ID if provided
   
-    // Validate required headers for external call
-    if (!platformUserId || !clientUserId || !platformApiKey || !agentId) {
-      // Proceed with only internal tools, or return error depending on requirements
-      return { success: false, error: 'Missing authentication headers for external tools' } as ErrorResponse;
-    }  
+    const missingHeaders: string[] = [];
+    if (!platformUserId) missingHeaders.push('x-platform-user-id');
+    if (!clientUserId) missingHeaders.push('x-client-user-id');
+    if (!platformApiKey) missingHeaders.push('x-platform-api-key');
+    if (!agentId) missingHeaders.push('x-agent-id');
+
+    if (missingHeaders.length > 0) {
+      return {
+        success: false,
+        error: `Missing required authentication headers: ${missingHeaders.join(', ')}. Expected x-platform-user-id, x-client-user-id, x-platform-api-key, and x-agent-id.`
+      } as ErrorResponse;
+    }
+    
     return { 
       success: true,
       data: {
-          platformUserId,
-          clientUserId,
-          platformApiKey,
-          agentId
+          platformUserId: platformUserId as string,
+          clientUserId: clientUserId as string,
+          platformApiKey: platformApiKey as string,
+          agentId: agentId as string
       }
     };
 };

@@ -126,4 +126,31 @@ export async function executeApiTool(
     );
 }
 
+/**
+ * Fetches all API tools for the authenticated user.
+ * @param serviceCredentials - External service credentials containing platformApiKey, platformUserId, clientUserId.
+ * @returns ServiceResponse containing an array of ApiTool or an error.
+ */
+export async function getUserApiTools(
+    serviceCredentials: ExternalServiceCredentials,
+): Promise<ServiceResponse<ApiTool[]>> {
+    const customHeaders : Record<string, string> = {
+        'x-platform-user-id': serviceCredentials.platformUserId,
+        'x-client-user-id': serviceCredentials.clientUserId,
+        'x-platform-api-key': serviceCredentials.platformApiKey,
+    };
+    if (serviceCredentials.agentId) {
+        customHeaders['x-agent-id'] = serviceCredentials.agentId;
+    }
+
+    return makeExternalApiServiceRequest<ApiTool[]>(
+        getApiToolApiUrl(),
+        'GET',
+        '/user-api-tools',
+        undefined,
+        undefined,
+        customHeaders
+    );
+}
+
 
