@@ -6,9 +6,8 @@ import {
 import { InternalUtilityInfo } from "./internal-utility.js";
 import { OAuthProvider } from "./oauth.js";
 import { SuccessResponse, ErrorResponse } from "./common.js";
-import { UtilityProvider, UtilitySecretType } from "./utility.js";
-import type { OpenAPIObject, SecuritySchemeObject } from 'openapi3-ts/oas30';
-import type { JSONSchema7 } from 'json-schema';
+import { UtilityProvider } from "./utility.js";
+import type { OpenAPIObject } from 'openapi3-ts/oas30';
 
 export enum ApiToolStatus {
     UNSET = 'unset',
@@ -92,6 +91,8 @@ export interface ApiToolInfo extends InternalUtilityInfo {
 
 export interface SearchApiToolResultItem {
     // Api Tool Info
+    name: string;
+    description: string;
     apiToolId: string;
     utilityProvider: UtilityProvider;
     securityOption: string;
@@ -106,12 +107,12 @@ export interface SearchApiToolResultItem {
     failedExecutions: number;
     createdAt: Date;
     updatedAt: Date;
-  }
+}
   
-  export interface SearchApiToolResult {
+export interface SearchApiToolResult {
     items: SearchApiToolResultItem[];
     total: number;
-  }
+}
 
 /**
  * Maps a UtilityProvider to an OAuthProvider

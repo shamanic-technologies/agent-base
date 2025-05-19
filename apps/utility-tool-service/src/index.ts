@@ -25,7 +25,7 @@ import './internal/basic-utilities/curl-command.js';
 
 // Import internal utility for managing external tools
 import './internal/api-utilities/create-api-tool.js';
-
+import './internal/agent-utilities/update-memory.js';
 // Import internal webhook utilities
 import './internal/webhook-utilities/webhook_create_webhook.js';
 import './internal/webhook-utilities/webhook_search_webhooks.js';

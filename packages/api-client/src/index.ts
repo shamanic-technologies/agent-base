@@ -30,12 +30,11 @@ export * from './utils/service-client.js';
 export * from './utils/header.js';
 export * from './utils/config.js';
 
-export * from './internal/external-utility-tool-client.js';
 export * from './internal/utility-tool-client.js';
 
 // Export agent service client functions
-export * from './internal/agent-clients/conversation-client.js';
-export * from './internal/agent-clients/run-client.js';
+export * from './internal/agent-clients/agent-client.js';
+
 
 // Export shared utilities or functions if any
 // export * from './utils';

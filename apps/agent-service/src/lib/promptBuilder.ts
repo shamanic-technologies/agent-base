@@ -21,6 +21,7 @@ Don't call utility_id directly. Instead call the utility_call_utility tool with 
 and you can't find the right tool to do it, use this tool to create a new external tool based on an API Documentation from your knowledge or found online.
 - Google search: Search the web using Google Search API to find up-to-date information.
 - Read webpage: Read the content of any webpage.
+- Update memory: Update your memory everytime the user provides relevant information.
 
 ### Procedure when you are not 100% sure about something:
 - Search the web using Google Search API to find up-to-date information.
