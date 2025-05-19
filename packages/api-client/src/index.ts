@@ -22,6 +22,9 @@ export * from './internal/secret-client.js';
 // Export the Key Service client function
 export * from './internal/key-client.js';
 
+// Export API Tool Service client functions
+export * from './internal/api-tool-client.js';
+
 // Export utility functions/types if any
 export * from './utils/service-client.js';
 export * from './utils/header.js';

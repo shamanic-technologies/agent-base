@@ -27,6 +27,8 @@ export interface UserApiTool {
 
 export interface ApiToolData {
     utilityProvider: UtilityProvider;
+    name: string;
+    description: string;
     openapiSpecification: OpenAPIObject;
     securityOption: string;
     securitySecrets: { // The secrets to use for the operation
@@ -36,7 +38,8 @@ export interface ApiToolData {
      };
     isVerified: boolean;
     creatorUserId?: string;
-    }
+    embedding?: number[];
+}
 
 export type CreateApiToolRequest = ApiToolData;
 /**
@@ -49,7 +52,18 @@ export interface ApiTool extends ApiToolData {
     updatedAt?: Date;
 }
 
-export interface ApiToolExecution {
+export interface ApiToolExecutionData {
+    apiToolId: string;
+    userId: string;
+    input: any;
+    output: any;
+    statusCode: number;
+    error?: string;
+    errorDetails?: string;
+    hint?: string;
+}
+
+export interface ApiToolExecution extends ApiToolExecutionData {
     id: string;
     apiToolId: string;
     userId: string;
@@ -74,9 +88,30 @@ export type ApiToolExecutionResponse =
 export interface ApiToolInfo extends InternalUtilityInfo {
     name: string;
     utilityProvider: UtilityProvider;
-    // The 'schema: JSONSchema7' inherited from InternalUtilityInfo will be
-    // derived by api-tool-backend from the single OperationObject found within ApiTool.openapiSpec.paths.
 }
+
+export interface SearchApiToolResultItem {
+    // Api Tool Info
+    apiToolId: string;
+    utilityProvider: UtilityProvider;
+    securityOption: string;
+    isVerified: boolean;
+    creatorUserId?: string;
+    // User info
+    userId: string;
+    status: ApiToolStatus;
+    // Execution info
+    totalExecutions: number;
+    succeededExecutions: number;
+    failedExecutions: number;
+    createdAt: Date;
+    updatedAt: Date;
+  }
+  
+  export interface SearchApiToolResult {
+    items: SearchApiToolResultItem[];
+    total: number;
+  }
 
 /**
  * Maps a UtilityProvider to an OAuthProvider

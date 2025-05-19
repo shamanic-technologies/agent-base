@@ -8,14 +8,11 @@ import {
   InternalUtilityTool,
   ApiTool, // Type for the tool configuration object
   ServiceResponse,
-  UtilityProvider,
   UtilityInputSecret,
-  ExecuteToolResult,
   AgentServiceCredentials,
-  ApiToolExecutionResponse,
 } from '@agent-base/types';
 // Import the correct function from api-client
-import { createApiTool } from '@agent-base/api-client';
+import { createApiToolInternal } from '@agent-base/api-client';
 import { registry } from '../../registry/registry.js';
 
 
@@ -36,6 +33,14 @@ const createExternalToolUtility: InternalUtilityTool = {
           description: 'REQUIRED. The complete configuration object for the external tool to be created. This object must conform to the ApiTool type, including a full OpenAPI specification.',
           properties: {
             // --- Core Identification ---
+            name: {
+              type: 'string',
+              description: 'REQUIRED. A human-readable name for the tool.'
+            },
+            description: {
+              type: 'string',
+              description: 'REQUIRED. A detailed description of what the tool does.'
+            },
             id: { 
               type: 'string', 
               description: 'REQUIRED. Unique identifier for the new tool (e.g., \'stripe_create_charge\'). Use snake_case. This will also be used as the operationId in the OpenAPI spec if not otherwise specified.'
@@ -128,9 +133,11 @@ const createExternalToolUtility: InternalUtilityTool = {
               // Example: { "x-secret-username": "my_service_username_secret", "x-secret-password": "my_service_password_secret" }
             }
           },
-          required: ['id', 'utilityProvider', 'openapiSpecification', 'securityOption', 'securitySecrets'],
+          required: ['name', 'description', 'id', 'utilityProvider', 'openapiSpecification', 'securityOption', 'securitySecrets'],
           examples: [
             {
+              name: "Stripe Get Balance",
+              description: "Retrieves the current account balance in Stripe.",
               id: "stripe_get_balance",
               utilityProvider: "stripe",
               openapiSpecification: {
@@ -231,7 +238,7 @@ const createExternalToolUtility: InternalUtilityTool = {
 
       // Call the correct client function with correct arguments
       // createApiTool does not take conversationId
-      const resultResponse: ServiceResponse<ApiTool> = await createApiTool(
+      const resultResponse: ServiceResponse<ApiTool> = await createApiToolInternal(
         agentServiceCredentials, 
         toolConfiguration    // Pass the tool configuration object
       );

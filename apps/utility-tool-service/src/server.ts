@@ -18,9 +18,9 @@ import { registry } from './registry/registry.js';
 // Import client for EXTERNAL tools from the API client package
 import {
     getAuthHeadersFromAgent,
-    listApiTools,
-    getApiToolInfo,
-    executeApiTool
+    listApiToolsInternal,
+    getApiToolInfoInternal,
+    executeApiToolInternal
 } from '@agent-base/api-client'; // <--- Updated Import Path
 
 // Import shared response types for consistency
@@ -110,14 +110,14 @@ app.get('/get-list', async (req, res): Promise<void> => {
     const internalTools: UtilitiesList = registry.listInternalUtilities(); 
     // Get external tools
     let externalTools: UtilitiesList = []; 
-    const externalResponse: ServiceResponse<ApiToolInfo[]> = await listApiTools(agentServiceCredentials);
+    const externalResponse: ServiceResponse<ApiToolInfo[]> = await listApiToolsInternal(agentServiceCredentials);
     if (!externalResponse.success) {
       console.log(`${logPrefix} Error listing external tools:`, externalResponse);
       res.status(502).json(externalResponse);
       return;
     }
-    // Map ExternalUtilityTool to UtilitiesListItem { id, description }
-    externalTools = externalResponse.data.map(tool => ({ id: tool.id, description: tool.description }));
+    // Map ExternalUtilityTool to UtilitiesListItem { id, name, description }
+    externalTools = externalResponse.data.map(tool => ({ id: tool.id, name: tool.name, description: tool.description }));
 
     // Combine lists
     const allTools = [...internalTools, ...externalTools];
@@ -158,9 +158,9 @@ app.get('/get-details/:id', async (req, res): Promise<void> => {
         return;
     }
 
-    // 2. Try external service (requires auth headers)
+    // 2. Try external service (requires auth headers, now using internal client)
     
-    const externalResponse: ServiceResponse<ApiToolInfo> = await getApiToolInfo(
+    const externalResponse: ServiceResponse<ApiToolInfo> = await getApiToolInfoInternal(
         agentServiceCredentials,
         id
     );
@@ -219,9 +219,9 @@ app.post('/call-tool/:id', async (req, res): Promise<void> => {
         return;
     }
 
-    // 2. Try external service (requires full auth headers)
+    // 2. Try external service (requires full auth headers, now using internal client)
 
-    const externalResponse: ServiceResponse<ApiToolExecutionResponse> = await executeApiTool(
+    const externalResponse: ServiceResponse<ApiToolExecutionResponse> = await executeApiToolInternal(
         agentServiceCredentials,
         id,
         req.body

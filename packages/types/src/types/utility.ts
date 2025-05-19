@@ -95,6 +95,7 @@ export interface UtilityRequest {
 
 export type UtilitiesListItem = {
     id: string;
+    name: string;
     description: string;
 }
 

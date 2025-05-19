@@ -33,6 +33,7 @@ const LOGGING_SERVICE_URL = process.env.LOGGING_SERVICE_URL;
 const SECRET_SERVICE_URL = process.env.SECRET_SERVICE_URL;
 // Rename variable and environment key
 const WEBHOOK_TOOL_API_URL = process.env.WEBHOOK_TOOL_API_URL; 
+const API_TOOL_API_URL = process.env.API_TOOL_API_URL; // Add API Tool Service URL
 // Set up global middleware
 app.use(cors());
 // app.use(express.json({ limit: '50mb' }));
@@ -56,7 +57,8 @@ configureRoutes(
     utilityTool: UTILITY_TOOL_SERVICE_URL,
     key: KEY_SERVICE_URL,
     logging: LOGGING_SERVICE_URL,
-    webhookTool: WEBHOOK_TOOL_API_URL // Pass renamed variable
+    webhookTool: WEBHOOK_TOOL_API_URL, // Pass renamed variable
+    apiTool: API_TOOL_API_URL // Add API Tool URL to the configuration
   },
   authMiddleware()
 );
@@ -78,4 +80,5 @@ const server = app.listen(PORT, () => {
   console.log(`🔗 LOGGING_SERVICE_URL: ${LOGGING_SERVICE_URL || 'not set'}`);
   console.log(`🔗 SECRET_SERVICE_URL: ${SECRET_SERVICE_URL || 'not set'}`);
   console.log(`🔗 WEBHOOK_TOOL_API_URL: ${WEBHOOK_TOOL_API_URL || 'not set'}`); 
+  console.log(`🔗 API_TOOL_API_URL: ${API_TOOL_API_URL || 'not set'}`); // Log API Tool Service URL
 });
