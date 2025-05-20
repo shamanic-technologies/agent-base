@@ -13,6 +13,4 @@ packages:
   - apps/webhook-gateway-service
   - packages/**
   - tooling/*
-  - company-flow-web
-  - webhook-tool-backend
-  - api-tool-backend
+
