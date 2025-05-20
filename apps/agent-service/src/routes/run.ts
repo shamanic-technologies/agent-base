@@ -194,9 +194,9 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       const result = await streamText({
         model: anthropic(agent.modelId),
         messages: allMessages as any[],
-        // @ts-ignore - The 'system' property is a valid documented parameter for streamText with certain providers
         system: systemPrompt, 
         tools: allStartupTools,
+        toolCallStreaming: true, // Enable streaming of partial tool calls
         maxTokens: maxOutputTokens, // Use the locally defined maxOutputTokens for the API call
         temperature: 0.1, // Moved to top-level
         maxSteps: 25, 
