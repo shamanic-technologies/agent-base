@@ -8,7 +8,8 @@ import {
   GetClientUserAgentInput,
   CreateClientUserAgentInput,
   UpdateAgentInput,
-  Agent
+  Agent,
+  UpdateClientUserAgentInput
 } from '@agent-base/types';
 import { makeInternalAPIServiceRequest } from '../../utils/service-client.js';
 import { getDatabaseServiceUrl } from '../../utils/config.js'; // Import the centralized getter
@@ -61,20 +62,20 @@ export const createUserAgent = async (
  * POST /agents/update-user-agent
  */
 export const updateUserAgent = async (
-  data: UpdateAgentInput,
+  data: UpdateClientUserAgentInput,
   platformUserId: string,
   platformApiKey: string,
   clientUserId: string
-): Promise<ServiceResponse<Agent>> => { // Revert to generic response type
+): Promise<ServiceResponse<Agent>> => {
 
-  return makeInternalAPIServiceRequest<Agent>( // Expect AgentRecord in data
-    getDatabaseServiceUrl(), // Use dynamic getter
+  return makeInternalAPIServiceRequest<Agent>(
+    getDatabaseServiceUrl(),
     'POST',
     '/agents/update-user-agent',
     platformUserId,
-    clientUserId, // Pass clientUserId for header
-    platformApiKey, // Pass platformApiKey for header
-    data          // Pass original data as body
+    clientUserId,
+    platformApiKey,
+    data
   );
 };
 

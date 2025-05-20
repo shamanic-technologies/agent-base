@@ -17,7 +17,9 @@ import {
   AgentRecord,
   GetClientUserAgentInput,
   Agent,
-  ServiceResponse, // Keep for default agent creation typing
+  ServiceResponse,
+  UpdateClientUserAgentInput,
+  Gender, // Keep for default agent creation typing
   // Remove ServiceResponse import - Use specific response types like UserResponse etc.
   // ServiceResponse 
 } from '@agent-base/types';
@@ -102,7 +104,7 @@ router.post('/create-user-agent', async (req: Request, res: Response, next: Next
  */
 router.post('/update-user-agent', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const agentUpdateData = req.body;
+    const agentUpdateData: UpdateClientUserAgentInput = req.body;
     // Extract auth details from augmented request
     const clientUserId = req.clientUserId as string;
     const platformUserId = req.platformUserId as string;
@@ -119,20 +121,14 @@ router.post('/update-user-agent', async (req: Request, res: Response, next: Next
       return;
     }
 
-    // We no longer combine user_id into the input here, it's passed separately
-    // const combinedInput: UpdateUserAgentInput = {
-    //   ...agentUpdateData,
-    //   user_id: clientUserId
-    // };
-
-    console.log(`[Agent Service /update-user-agent] Calling updateUserAgent service for user ${clientUserId}, agent ${agentUpdateData.agent_id}`);
+    console.log(`[Agent Service /update-user-agent] Calling updateUserAgent service for user ${clientUserId}, agent ${agentUpdateData.agentId}`);
     // Call the service function with all required arguments
-    const updateResponse = await updateUserAgent(
+    const updateResponse : ServiceResponse<Agent> = await updateUserAgent(
       agentUpdateData, // Pass the original body as data
       platformUserId,
       platformApiKey,
       clientUserId
-      );
+    );
 
     if (updateResponse.success && updateResponse.data) {
       // Send 200 OK on success
@@ -276,87 +272,93 @@ router.get('/get-user-agent', async (req: Request, res: Response, next: NextFunc
   }
 });
 
-/**
- * Update an agent's memory
- * @route PATCH /agents/:agentId/memory
- * @param {string} req.params.agentId - The ID of the agent to update.
- * @param {object} req.body - The request body.
- * @param {string} req.body.memory - The new memory content for the agent.
- * @returns {Promise<void>}
- * @throws {Error} If authentication details are missing, agentId or memory is missing, or if the service call fails.
- */
-router.patch('/:agentId/memory', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  const logPrefix = '[Agent Service /agents/:agentId/memory]';
-  try {
-    const { agentId } = req.params;
-    const { memory } = req.body;
+// /**
+//  * Update an agent's memory
+//  * @route PATCH /agents/:agentId/memory
+//  * @param {string} req.params.agentId - The ID of the agent to update.
+//  * @param {object} req.body - The request body.
+//  * @param {string} req.body.memory - The new memory content for the agent.
+//  * @returns {Promise<void>}
+//  * @throws {Error} If authentication details are missing, agentId or memory is missing, or if the service call fails.
+//  */
+// router.patch('/:agentId/memory', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+//   const logPrefix = '[Agent Service /:agentId/memory]';
+//   try {
+//     const { agentId } = req.params;
+//     const { memory } = req.body;
 
-    // Extract auth details from augmented request
-    const clientUserId = req.clientUserId as string;
-    const platformUserId = req.platformUserId as string;
-    const platformApiKey = req.headers['x-platform-api-key'] as string;
+//     // Extract auth details from augmented request
+//     const clientUserId = req.clientUserId as string;
+//     const platformUserId = req.platformUserId as string;
+//     const platformApiKey = req.headers['x-platform-api-key'] as string;
 
-    // Validate auth details first
-    if (!clientUserId || !platformUserId || !platformApiKey) {
-      console.error(`${logPrefix} Authentication details missing for agent ${agentId}.`);
-      res.status(401).json({ success: false, error: 'Authentication details missing from request headers/context' });
-      return;
-    }
+//     // Validate auth details first
+//     if (!clientUserId || !platformUserId || !platformApiKey) {
+//       console.error(`${logPrefix} Authentication details missing for agent ${agentId}.`);
+//       res.status(401).json({ success: false, error: 'Authentication details missing from request headers/context' });
+//       return;
+//     }
 
-    // Validate agentId from path
-    if (!agentId) {
-      // This case should ideally not be hit if routing is correct, but good for defense.
-      console.error(`${logPrefix} agentId is missing in path parameters.`);
-      res.status(400).json({ success: false, error: 'agentId is required in the URL path' });
-      return;
-    }
+//     // Validate agentId from path
+//     if (!agentId) {
+//       // This case should ideally not be hit if routing is correct, but good for defense.
+//       console.error(`${logPrefix} agentId is missing in path parameters.`);
+//       res.status(400).json({ success: false, error: 'agentId is required in the URL path' });
+//       return;
+//     }
 
-    // Validate memory from body
-    if (typeof memory === 'undefined') { // Check for undefined, as empty string might be valid
-      console.error(`${logPrefix} Memory content missing in request body for agent ${agentId}.`);
-      res.status(400).json({ success: false, error: 'memory is required in request body' });
-      return;
-    }
-    if (typeof memory !== 'string') {
-      console.error(`${logPrefix} Memory content must be a string for agent ${agentId}. Received: ${typeof memory}`);
-      res.status(400).json({ success: false, error: 'memory must be a string' });
-      return;
-    }
+//     // Validate memory from body
+//     if (typeof memory === 'undefined') { // Check for undefined, as empty string might be valid
+//       console.error(`${logPrefix} Memory content missing in request body for agent ${agentId}.`);
+//       res.status(400).json({ success: false, error: 'memory is required in request body' });
+//       return;
+//     }
+//     if (typeof memory !== 'string') {
+//       console.error(`${logPrefix} Memory content must be a string for agent ${agentId}. Received: ${typeof memory}`);
+//       res.status(400).json({ success: false, error: 'memory must be a string' });
+//       return;
+//     }
 
-    // Prepare the input for the updateUserAgent service
-    // The UpdateAgentInput type definition seems to be causing confusion with the linter.
-    // Addressing the linter error that 'id' is missing, and also keeping 'agentId'.
-    const agentUpdateData = {
-      id: agentId,       // Assuming 'id' is the primary key expected by UpdateAgentInput
-      agentId: agentId,  // Keeping agentId as it was part of the presumed type
-      memory: memory     // The actual field to update
-    } as UpdateAgentInput;
+//     // Prepare the input for the updateUserAgent service
+//     // The UpdateAgentInput type definition seems to be causing confusion with the linter.
+//     // Addressing the linter error that 'id' is missing, and also keeping 'agentId'.
+//     const agentUpdateData = {
+//       clientUserId : clientUserId,
+//       agentId: agentId, 
+//       agentFirstName: agentFirstName,
+//       agentLastName: agentLastName,
+//       agentProfilePicture: agentProfilePicture,
+//       agentGender: agentGender,
+//       agentModelId: agentModelId,
+//       agentMemory: memory,
+//       agentJobTitle: agentJobTitle
+//     } as UpdateClientUserAgentInput;
 
-    console.log(`${logPrefix} Calling updateUserAgent service for user ${clientUserId}, agent ${agentId}`);
-    // Call the service function with all required arguments
-    const updateResponse: ServiceResponse<Agent> = await updateUserAgent(
-      agentUpdateData,
-      platformUserId,
-      platformApiKey,
-      clientUserId
-    );
+//     console.log(`${logPrefix} Calling updateUserAgent service for user ${clientUserId}, agent ${agentId}`);
+//     // Call the service function with all required arguments
+//     const updateResponse: ServiceResponse<Agent> = await updateUserAgent(
+//       agentUpdateData,
+//       platformUserId,
+//       platformApiKey,
+//       clientUserId
+//     );
 
-    if (updateResponse.success && updateResponse.data) {
-      console.log(`${logPrefix} Memory updated successfully for agent ${agentId}.`);
-      // Send 200 OK on success
-      res.status(200).json(updateResponse);
-    } else {
-      // Handle service failure
-      console.error(`${logPrefix} Service call failed to update memory for agent ${agentId}: ${updateResponse.error}`);
-      // Potentially check error message for specific DB service codes (like 403/404 for not found) if needed
-      const statusCode = updateResponse.error?.toLowerCase().includes('not found') ? 404 : 500;
-      res.status(statusCode).json({ success: false, error: updateResponse.error || 'Failed to update agent memory via service' });
-    }
+//     if (updateResponse.success && updateResponse.data) {
+//       console.log(`${logPrefix} Memory updated successfully for agent ${agentId}.`);
+//       // Send 200 OK on success
+//       res.status(200).json(updateResponse);
+//     } else {
+//       // Handle service failure
+//       console.error(`${logPrefix} Service call failed to update memory for agent ${agentId}: ${updateResponse.error}`);
+//       // Potentially check error message for specific DB service codes (like 403/404 for not found) if needed
+//       const statusCode = updateResponse.error?.toLowerCase().includes('not found') ? 404 : 500;
+//       res.status(statusCode).json({ success: false, error: updateResponse.error || 'Failed to update agent memory via service' });
+//     }
 
-  } catch (error) {
-    console.error(`${logPrefix} Unexpected error for agent ${req.params.agentId}:`, error);
-    next(error);
-  }
-});
+//   } catch (error) {
+//     console.error(`${logPrefix} Unexpected error for agent ${req.params.agentId}:`, error);
+//     next(error);
+//   }
+// });
 
 export default router; 

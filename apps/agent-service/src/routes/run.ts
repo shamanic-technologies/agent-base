@@ -137,16 +137,21 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
 
       // --- Dynamically Load and Prepare Tools ---
       const startupToolIds = [
+        // Webhook Tools,
           'webhook_create_webhook',
           'webhook_search_webhooks',
           'webhook_link_user',
           'webhook_link_agent',
+        // API Tools
           'create_api_tool',
+        // Utility Tools
           'utility_google_search',
           'utility_google_maps',
           'utility_get_current_datetime',
           'utility_read_webpage',
-          'utility_curl_command'
+          'utility_curl_command',
+        // Agent Tools
+          'update_agent_memory'
       ];
 
       // --- Fetch Functional Tools Concurrently ---

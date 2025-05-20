@@ -10,6 +10,7 @@ import {
   ServiceResponse,
   UpdateAgentInput,
   Agent,
+  UpdateClientUserAgentInput,
   // UserAgentResponse // Not directly used, ServiceResponse<AgentRecord> is used
 } from '@agent-base/types';
 import { makeInternalAPIServiceRequest } from '../../utils/service-client.js'; // Reverted .js extension
@@ -26,24 +27,25 @@ import { getAgentServiceUrl } from '../../utils/config.js'; // Reverted .js exte
  * @param clientUserId The client user ID (for x-client-user-id header).
  * @returns A promise that resolves to a ServiceResponse containing the updated agent record or an error.
  */
-export async function updateAgentMemoryApiClient(
+export async function updateAgentInternalService(
   agentId: string,
-  memory: string,
+  agentUpdateData: UpdateClientUserAgentInput,
   platformUserId: string,
   platformApiKey: string,
   clientUserId: string
 ): Promise<ServiceResponse<Agent>> {
-  const requestPath = `/${agentId}/memory`; // Construct path with agentId
-  const requestBody = { memory };
+  const requestPath = `/update-user-agent`; // Construct path with agentId
+  const requestBody = agentUpdateData;
 
   return await makeInternalAPIServiceRequest<Agent>(
     getAgentServiceUrl(),
-    'patch',
+    'POST',
     requestPath,
     platformUserId,
     clientUserId,
     platformApiKey,
     requestBody,
-    undefined
+    undefined,
+    agentId
   );
 }

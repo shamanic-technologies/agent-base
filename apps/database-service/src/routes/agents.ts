@@ -98,6 +98,7 @@ router.post('/update-user-agent', async (req: Request, res: Response): Promise<v
   try {
     const input = req.body as UpdateClientUserAgentInput;
     const { clientUserId, agentId, ...agentUpdateData } = input;
+    console.log(`[DB Service /update-user-agent] Received request ${JSON.stringify(input, null, 2)}`);
     
     // --- Validation ---
     if (!clientUserId) {
@@ -135,7 +136,16 @@ router.post('/update-user-agent', async (req: Request, res: Response): Promise<v
     console.log(`[DB Service /update-user-agent] Attempting update for agent ${agentId} by user ${clientUserId}`);
     
     // Assuming updateAgent service needs agent_id within the data payload
-    const updatePayload: UpdateAgentInput = { id: agentId, ...agentUpdateData }; 
+    const updatePayload: UpdateAgentInput = {
+       id: agentId,
+       firstName: agentUpdateData.agentFirstName,
+       lastName: agentUpdateData.agentLastName,
+       profilePicture: agentUpdateData.agentProfilePicture,
+       gender: agentUpdateData.agentGender,
+       modelId: agentUpdateData.agentModelId,
+       memory: agentUpdateData.agentMemory,
+       jobTitle: agentUpdateData.agentJobTitle
+    }; 
     const updateResponse : ServiceResponse<Agent> = await updateAgent(updatePayload);
     
     if (!updateResponse.success) {
