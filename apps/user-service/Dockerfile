@@ -1,4 +1,4 @@
-# Dockerfile for web-oauth-service (located at monorepo root)
+# Dockerfile for user-service (located at monorepo root)
 
 # Stage 1: Base Dependencies - Use Node.js 20
 FROM node:20-slim AS base
@@ -40,13 +40,13 @@ RUN pnpm --filter @agent-base/types build
 
 # Build only the target service (web-oauth-service) and its dependencies
 # The '...' includes dependencies of web-oauth-service
-RUN pnpm --filter @agent-base/web-oauth-service... build
+RUN pnpm --filter @agent-base/user-service... build
 
 # Prepare deployment bundle in the builder stage using pnpm deploy
 # This copies only production dependencies and built files
 # The destination directory within the builder is 'deploy_temp'
 # The --filter ensures only web-oauth-service is included in the deploy package
-RUN pnpm --filter @agent-base/web-oauth-service --prod deploy --legacy ./deploy_temp
+RUN pnpm --filter @agent-base/user-service --prod deploy --legacy ./deploy_temp
 
 # Stage 3: Production Runner - Create a smaller final image using pnpm deploy
 FROM base AS runner
