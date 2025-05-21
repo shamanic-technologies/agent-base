@@ -5,7 +5,8 @@ packages:
   - apps/database-service
   - apps/utility-tool-service
   - apps/api-gateway-service
-  - apps/web-oauth-service
+  - apps/user-service
+  # - apps/web-oauth-service
   - apps/web-gateway-service
   # - apps/payment-service
   - apps/key-service

@@ -1,137 +1,90 @@
 /**
- * Helper function to forward requests to microservices
+ * Forwards an incoming HTTP request to a specified target URL and sends the target's response back to the original client.
+ * This function aims to be a simple and direct proxy, forwarding the request method, path, query parameters, headers, and body.
+ * It also forwards the response status, headers, and body from the target service.
+ *
+ * @param {string} targetUrl - The base URL of the target service (e.g., http://localhost:3001).
+ * @param {Request} req - The original Express request object.
+ * @param {Response} res - The original Express response object.
+ * @returns {Promise<void>} A promise that resolves when the forwarding is complete or an error response has been sent.
  */
 import { Request, Response } from 'express';
-import axios, { AxiosError } from 'axios';
+import axios, { AxiosError, Method, RawAxiosRequestHeaders } from 'axios';
 
 export async function forwardRequest(targetUrl: string, req: Request, res: Response): Promise<void> {
-    // Construct the target URL using req.url which excludes the mount point prefix 
-    // but includes the query string.
-    const targetPathWithQuery = req.url; // e.g., /platform-users/me?param=value
+    // Construct the target URL path including query string from the original request.
+    // req.url already contains the path and query string, e.g., "/users/search?name=foo"
+    const targetPathWithQuery = req.url;
     const requestUrl = `${targetUrl}${targetPathWithQuery}`;
-    
-    // Log which path is being forwarded
-    console.log(`[Web Gateway] Forwarding request to ${new URL(targetUrl).hostname} - ${req.method} ${targetPathWithQuery}`);
-    
-    try {
-      const axiosConfig = {
-        method: req.method,
-        url: requestUrl,
-        data: req.method !== 'GET' ? req.body : undefined,
-        headers: {
-          ...(req.headers || {}), // Fix: Provide default empty object if headers are undefined
-          host: new URL(targetUrl).host
-        },
-        // Forward cookies for authentication
-        withCredentials: true,
-        // Never follow redirects, always pass them through to the client
-        maxRedirects: 0,
-      };
-      
-      // Log for debugging issues with headers
-      if (process.env.DEBUG_HEADERS === 'true') {
-        console.log(`[Web Gateway] Request headers:`, 
-                    Object.keys(axiosConfig.headers).map(key => 
-                      `${key}: ${key === 'authorization' ? 'Bearer ***' : 
-                      (key === 'x-user-id' ? (axiosConfig.headers as Record<string, any>)[key] : '***')}`));
-      }
-      
-      const response = await axios(axiosConfig);
-      
-      // Forward the response status, headers, and data
-      res.status(response.status);
-      
-      // Forward all headers from the response, with special handling for cookies
-      Object.entries(response.headers).forEach(([key, value]) => {
-        if (value) {
-          // For set-cookie headers, ensure they are properly preserved
-          if (key.toLowerCase() === 'set-cookie') {
-            console.log(`[Web Gateway] Found Set-Cookie header: ${typeof value}`, 
-                        Array.isArray(value) ? `Array with ${value.length} items` : 'Single value');
-            
-            if (Array.isArray(value)) {
-              value.forEach((cookie, i) => {
-                console.log(`[Web Gateway] Setting cookie[${i}]:`, cookie.substring(0, 30) + '...');
-                res.append('Set-Cookie', cookie);
-              });
-            } else {
-              console.log(`[Web Gateway] Setting cookie:`, value.substring(0, 30) + '...');
-              res.append('Set-Cookie', value);
+
+    console.log(`[Web Gateway] Forwarding ${req.method} request from ${req.originalUrl} to ${requestUrl}`);
+
+    // Prepare headers for Axios, ensuring all values are suitable (string, number, or boolean)
+    // IncomingHttpHeaders can have string | string[] | undefined.
+    const headersToForward: RawAxiosRequestHeaders = {};
+    for (const key in req.headers) {
+        if (Object.prototype.hasOwnProperty.call(req.headers, key)) {
+            const value = req.headers[key];
+            // Axios expects string, number or boolean for header values in RawAxiosRequestHeaders.
+            // We'll take the first element if it's an array (common for some headers, though less so for forwarding).
+            // Exclude undefined values.
+            if (value !== undefined) {
+                headersToForward[key] = Array.isArray(value) ? value[0] : value;
             }
-          } else {
-            res.setHeader(key, value);
-          }
         }
-      });
-      
-      // For redirect responses (like OAuth redirects), just send the response without a body
-      if (response.status >= 300 && response.status < 400) {
-        console.log(`[Web Gateway] Forwarding ${response.status} redirect to: ${response.headers.location}`);
-        console.log(`[Web Gateway] Response headers:`, Object.fromEntries(Object.entries(res.getHeaders())));
-        res.end();
-        return;
-      }
-      
-      res.send(response.data);
-      return;
-    } catch (error) {
-      console.error(`[Web Gateway] Error forwarding request to ${targetUrl}${req.originalUrl}:`, error);
-      
-      const axiosError = error as AxiosError;
-      
-      if (axiosError.response) {
-        // Forward the error status and response from the microservice
-        
-        // Preserve any redirect status and headers
-        if (axiosError.response.status >= 300 && axiosError.response.status < 400) {
-          res.status(axiosError.response.status);
-          console.log(`[Web Gateway] Handling error redirect (${axiosError.response.status}) to: ${axiosError.response.headers.location}`);
-          
-          // Copy all headers from the response
-          Object.entries(axiosError.response.headers).forEach(([key, value]) => {
-            if (value) {
-              // Special handling for Set-Cookie headers
-              if (key.toLowerCase() === 'set-cookie') {
-                console.log(`[Web Gateway] Found Set-Cookie header: ${typeof value}`, 
-                           Array.isArray(value) ? `Array with ${value.length} items` : 'Single value');
-                
-                if (Array.isArray(value)) {
-                  value.forEach((cookie, i) => {
-                    console.log(`[Web Gateway] Setting cookie[${i}]:`, cookie.substring(0, 30) + '...');
-                    res.append('Set-Cookie', cookie);
-                  });
-                } else {
-                  console.log(`[Web Gateway] Setting cookie:`, typeof value === 'string' ? value.substring(0, 30) + '...' : value);
-                  res.append('Set-Cookie', value);
-                }
-              } else {
-                res.setHeader(key, value);
-              }
-            }
-          });
-          
-          console.log(`[Web Gateway] Response headers after processing:`, Object.fromEntries(Object.entries(res.getHeaders())));
-          res.end();
-          return;
-        }
-        
-        res.status(axiosError.response.status).send(axiosError.response.data);
-        return;
-      } else if (axiosError.request) {
-        // The request was made but no response was received
-        res.status(502).json({
-          success: false,
-          error: `[Web Gateway] Could not connect to ${new URL(targetUrl).hostname}`
-        });
-        return;
-      } else {
-        // Something happened in setting up the request
-        res.status(500).json({
-          success: false,
-          error: '[Web Gateway] Internal error'
-        });
-        return;
-      }
     }
-  }
+    // Override/set specific headers for the forwarded request
+    headersToForward['host'] = new URL(targetUrl).host;
+    headersToForward['x-forwarded-for'] = req.ip;
+    headersToForward['x-forwarded-proto'] = req.protocol;
+    // Remove connection header as it's hop-by-hop
+    delete headersToForward['connection'];
+
+    try {
+        const axiosConfig = {
+            method: req.method as Method,
+            url: requestUrl,
+            data: req.method !== 'GET' && req.method !== 'HEAD' ? req.body : undefined,
+            headers: headersToForward, // Use the processed headers
+            maxRedirects: 0,
+            validateStatus: function (status: number) {
+                return status >= 100 && status < 600;
+            },
+        };
+
+        const response = await axios(axiosConfig);
+
+        res.status(response.status);
+
+        Object.entries(response.headers).forEach(([key, value]) => {
+            if (value) {
+                res.setHeader(key, value as string | string[]);
+            }
+        });
+
+        res.send(response.data);
+        return;
+
+    } catch (error) {
+        const axiosError = error as AxiosError;
+        console.error(`[Web Gateway] Error forwarding request to ${requestUrl}:`, axiosError.message);
+
+        if (axiosError.response) {
+            res.status(axiosError.response.status).send(axiosError.response.data);
+        } else if (axiosError.request) {
+            res.status(502).json({
+                success: false,
+                error: `[Web Gateway] No response from target service at ${new URL(targetUrl).hostname}`,
+                details: axiosError.message,
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                error: '[Web Gateway] Internal server error while forwarding request',
+                details: axiosError.message,
+            });
+        }
+        return;
+    }
+}
   

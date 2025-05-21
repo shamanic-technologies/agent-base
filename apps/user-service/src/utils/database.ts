@@ -7,10 +7,7 @@ import { config } from '../config/env';
 import {
   GetOrCreatePlatformUserInput, 
   PlatformUser, 
-  ServiceResponse, 
-  ProviderUser
-  // Remove makeServiceRequest import if no longer needed here
-  // makeServiceRequest 
+  ServiceResponse
 } from '@agent-base/types';
 // Import the api-client functions
 import { 
@@ -18,30 +15,21 @@ import {
   getCurrentPlatformUser 
 } from '@agent-base/api-client';
 
-const dbServiceUrl = config.databaseServiceUrl; // Keep for reference, though client uses its own URL config
+// const dbServiceUrl = config.databaseServiceUrl; // No longer used, API client handles its own URL config
 
 /**
  * Saves or retrieves a user in the database service based on provider ID.
  * Uses the API client.
  * 
- * @param providerUser User information from the OAuth provider
+ * @param inputData User information, including providerUserId.
  * @returns Promise resolving to the platform user data
  */
-export async function getOrCreateUserInDatabase(providerUser: ProviderUser): Promise<ServiceResponse<PlatformUser>> {
-  
-  // Use correct camelCase properties for the input type
-  const inputData: GetOrCreatePlatformUserInput = {
-    providerUserId: providerUser.id,
-    email: providerUser.email,
-    displayName: providerUser.name,
-    profileImage: providerUser.picture
-  };
-  
+export async function getOrCreateUserInDatabase(inputData: GetOrCreatePlatformUserInput): Promise<ServiceResponse<PlatformUser>> {
   // Use the API client function
   const response = await getOrCreatePlatformUser(inputData);
   
   if (!response.success) {
-    console.error(`[Auth Service] Failed to save/get user via api-client: ${response.error}`);
+    console.error(`[User Service] Failed to save/get user via api-client: ${response.error}`);
   }
   return response;
 }
@@ -60,7 +48,7 @@ export async function getUserFromDatabase(userId: string): Promise<ServiceRespon
   const response = await getCurrentPlatformUser(userId);
 
   if (!response.success) {
-    console.error(`[Auth Service] Failed to get user ${userId} via api-client: ${response.error}`);
+    console.error(`[User Service] Failed to get user ${userId} via api-client: ${response.error}`);
   }
   
   return response;

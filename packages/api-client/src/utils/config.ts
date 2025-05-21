@@ -30,19 +30,6 @@ export function getSecretServiceUrl(): string {
 }
 
 /**
- * Retrieves the Web OAuth Service URL from environment variables or defaults.
- * Includes a warning if the environment variable is not set.
- * @returns The Web OAuth Service URL string.
- */
-export function getWebOauthServiceUrl(): string {
-  const url = process.env.WEB_OAUTH_SERVICE_URL || 'http://localhost:3005';
-  if (!process.env.WEB_OAUTH_SERVICE_URL) {
-    console.warn('[api-client/config] WEB_OAUTH_SERVICE_URL environment variable not set. Defaulting to ' + url);
-  }
-  return url;
-}
-
-/**
  * Retrieves the Database Service URL from environment variables or defaults.
  * Includes a warning if the environment variable is not set.
  * @returns The Database Service URL string.
@@ -151,6 +138,19 @@ export function getAgentBaseApiUrl(): string {
   if (!process.env.AGENT_BASE_API_URL) {
     // Using logger instead of console.warn for consistency if logger exists
     console.warn('[api-client/config] AGENT_BASE_API_URL environment variable not set. Defaulting to ' + url);
+  }
+  return url;
+} 
+
+/**
+ * Retrieves the Payment Service URL from environment variables or defaults.
+ * Includes a warning if the environment variable is not set.
+ * @returns The Payment Service URL string.
+ */
+export function getPaymentServiceUrl(): string {
+  const url = process.env.PAYMENT_SERVICE_URL || 'http://localhost:3004';
+  if (!process.env.PAYMENT_SERVICE_URL) {
+    console.warn('[api-client/config] PAYMENT_SERVICE_URL environment variable not set. Defaulting to ' + url);
   }
   return url;
 } 

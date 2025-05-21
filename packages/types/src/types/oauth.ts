@@ -13,7 +13,8 @@ export enum OAuthProvider {
     FACEBOOK = 'facebook',
     TWITTER = 'twitter',
     LINKEDIN = 'linkedin',
-    GITHUB = 'github'
+    GITHUB = 'github',
+    CLERK = 'clerk'
   }
   
   /**

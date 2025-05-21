@@ -22,13 +22,12 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { rateLimit } from 'express-rate-limit';
 import { authMiddleware } from './middleware/auth-middleware.js';
-import { tokenCache } from './utils/token-cache.js';
+import { apiKeyAuthMiddleware } from './middleware/api-key-auth-middleware.js';
 import { forwardRequest } from './utils/forward-request.js';
 
 // Check required environment variables
 const requiredEnvVars = [
   'PORT',
-  'WEB_OAUTH_SERVICE_URL',
   'KEY_SERVICE_URL',
   'PAYMENT_SERVICE_URL',
   'LOGGING_SERVICE_URL',
@@ -46,13 +45,12 @@ const app = express();
 const PORT = process.env.PORT;
 
 // Service URLs with non-null assertion to handle TypeScript
-const WEB_OAUTH_SERVICE_URL = process.env.WEB_OAUTH_SERVICE_URL!;
 const KEY_SERVICE_URL = process.env.KEY_SERVICE_URL!;
 const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL!;
 const LOGGING_SERVICE_URL = process.env.LOGGING_SERVICE_URL!;
 const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL!;
 // API key for gateway access
-const WEB_GATEWAY_API_KEY = process.env.WEB_GATEWAY_API_KEY!;
+// const WEB_GATEWAY_API_KEY = process.env.WEB_GATEWAY_API_KEY!; // Removed as it's handled in middleware
 
 // Middleware
 app.use(cors({
@@ -74,54 +72,7 @@ const apiLimiter = rateLimit({
 // Apply rate limiting to all routes
 app.use(apiLimiter as any);
 
-/**
- * API Key Authentication Middleware
- * Ensures only authorized clients can access the gateway
- */
-app.use((req, res, next) => {
-  // Skip API key check for health endpoint
-  if (req.path === '/health') {
-    next(); // Already void
-    return;
-  }
-
-  // Define a whitelist of allowed OAuth paths
-  const ALLOWED_OAUTH_PATHS = [
-    '/oauth/google',          // Initial OAuth redirect to Google
-    '/oauth/google/callback', // Callback from Google after authentication
-    // Add other provider paths here as needed
-  ];
-
-  // Use exact path matching for allowed OAuth endpoints
-  if (ALLOWED_OAUTH_PATHS.includes(req.path)) {
-    // For callback endpoints, validate basic OAuth parameters if it's a callback
-    if (req.path.includes('/callback') && !req.query.code) {
-      console.warn(`Invalid OAuth callback request: missing code parameter`);
-      res.status(400).json({
-        success: false,
-        error: 'Invalid OAuth callback request'
-      });
-      return; // Ensure void return
-    }
-    
-    // Allow the OAuth flow to proceed without API key
-    next(); // Already void
-    return;
-  }
-  
-  // For all other endpoints, require API key
-  const webGatewayAPIKey = req.headers['x-web-gateway-api-key'] as string;
-  if (webGatewayAPIKey !== WEB_GATEWAY_API_KEY) {
-    console.warn(`Unauthorized gateway access attempt using key: ${webGatewayAPIKey ? webGatewayAPIKey.substring(0, 5) + '...' : 'None'} from ${req.ip}`);
-    res.status(403).json({
-      success: false,
-      error: 'Unauthorized access to gateway'
-    });
-    return; // Ensure void return
-  }
-  
-  next(); // Already void
-});
+app.use(apiKeyAuthMiddleware); // Added new middleware
 
 // JWT Authentication middleware
 // Validates tokens and populates req.user for authenticated requests
@@ -136,7 +87,6 @@ app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'healthy',
     services: {
-      auth: WEB_OAUTH_SERVICE_URL,
       keys: KEY_SERVICE_URL,
       payment: PAYMENT_SERVICE_URL,
       logging: LOGGING_SERVICE_URL,
@@ -147,33 +97,10 @@ app.get('/health', (req, res) => {
 });
 
 // Create routers for allowed service endpoints
-const authRouter = express.Router();
 const keysRouter = express.Router();
 const paymentRouter = express.Router();
-const oauthRouter = express.Router();
 const loggingRouter = express.Router();
 const databaseRouter = express.Router();
-
-// Auth service route handler
-authRouter.all('/*', async (req, res) => {
-  // Clear token from cache on logout
-  if (req.url === '/logout' && req.headers.authorization) {
-    const token = req.headers.authorization.startsWith('Bearer ') 
-      ? req.headers.authorization.substring(7)
-      : undefined;
-      
-    if (token) {
-      tokenCache.invalidate(token);
-      console.log('[Web Gateway] Invalidated token in cache for logout');
-    }
-  }
-  await forwardRequest(WEB_OAUTH_SERVICE_URL, req, res);
-});
-
-// OAuth route handler (for Auth Service)
-oauthRouter.all('/*', async (req, res) => {
-  await forwardRequest(WEB_OAUTH_SERVICE_URL, req, res);
-});
 
 // Keys service route handler
 keysRouter.all('/*', async (req, res) => {  
@@ -197,8 +124,6 @@ databaseRouter.all('/*', async (req, res) => {
 });
 
 // Mount the allowed routers
-app.use('/auth', authRouter);
-app.use('/oauth', oauthRouter);
 app.use('/keys', keysRouter);
 app.use('/payment', paymentRouter);
 app.use('/logging', loggingRouter);
@@ -218,7 +143,6 @@ app.use((req, res) => {
 app.listen(PORT, () => {
   console.log(`🚪 Web Gateway Service running on port ${PORT}`);
   console.log('Connected to services:');
-  console.log(`🔐 Web Oauth Service: ${WEB_OAUTH_SERVICE_URL}`);
   console.log(`🔑 Key Service: ${KEY_SERVICE_URL}`);
   console.log(`💳 Payment Service: ${PAYMENT_SERVICE_URL}`);
   console.log(`📝 Logging Service: ${LOGGING_SERVICE_URL}`);

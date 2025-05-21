@@ -14,7 +14,7 @@ export * from './internal/database-clients/oauth-client.js';
 export * from './internal/database-clients/client-user.js'; // Ensure this is present
 
 // Export functions from web OAuth service client files
-export * from './internal/web-oauth-client.js';
+// export * from './internal/web-oauth-client.js';
 
 // Export Secret Service client functions
 export * from './internal/secret-client.js';
