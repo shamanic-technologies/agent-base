@@ -8,17 +8,15 @@ import express, { Express, Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import path from 'path';
-import { fileURLToPath } from 'url'; // Added for ES module equivalent of __dirname
 import routes from './routes/index.js'; // Import the main router (explicitly index.js)
 import { ErrorResponse } from '@agent-base/types'; // Import shared error type
 import { initializeGsmClient } from './lib/gsmClient.js'; // Corrected import
 
-// ES module equivalent of __dirname
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Load environment variables from .env file, explicitly setting the path
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
+// Load environment variables from .env file
+// process.cwd() should be /app (the WORKDIR in Docker)
+// This assumes your .env file for secret-service is at /app/apps/secret-service/.env in the container
+// if you have one for local dev that gets copied by 'COPY . .'
+dotenv.config({ path: path.resolve(process.cwd(), 'apps/secret-service/.env') });
 
 // Initialize Express app
 const app: Express = express();
