@@ -3,7 +3,6 @@ packages:
   - apps/secret-service
   - apps/agent-service
   - apps/database-service
-  # - apps/tool-auth-service
   - apps/utility-tool-service
   - apps/api-gateway-service
   - apps/web-oauth-service

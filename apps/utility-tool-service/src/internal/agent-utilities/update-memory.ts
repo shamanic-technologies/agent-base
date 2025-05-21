@@ -12,7 +12,7 @@ import {
   UpdateClientUserAgentInput, // Assuming the SDK returns the updated AgentRecord
 } from '@agent-base/types';
 // Use package import now that agent-client.js is exported from @agent-base/api-client
-import { updateAgentInternalService, updateAgentMemoryApiClient } from '@agent-base/api-client';
+import { updateAgentInternalService } from '@agent-base/api-client';
 import { registry } from '../../registry/registry.js';
 
 /**

@@ -16,7 +16,7 @@ ARG CACHEBUST=1
 WORKDIR /app
 
 # Copy root dependency manifests
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc .nvmrc turbo.json tsconfig.json ./
 
 # Optional: Copy .npmrc if needed for private packages
 # COPY .npmrc ./
@@ -25,28 +25,24 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN echo "Cachebust: ${CACHEBUST}"
 
 # Copy the entire monorepo source code FIRST
-# Note: This assumes the Docker build context is the monorepo root
 COPY . .
 
 # Clear pnpm cache within the builder stage
 RUN pnpm store prune
 
 # Install ALL monorepo dependencies (using --frozen-lockfile)
-# Necessary because pnpm build requires devDependencies from other workspaces
+# Reverted from filtered install
 RUN pnpm install --frozen-lockfile --shamefully-hoist
 
-# Explicitly build the 'types' package first as it's a common dependency
+# Explicitly build the 'types' package first to isolate potential issues
 RUN pnpm --filter @agent-base/types build
 
 # Build only the target service (secret-service) and its dependencies
-# Using the name from its package.json: @helloworld/secret-service
-RUN pnpm --filter @helloworld/secret-service... build
+RUN pnpm --filter secret-service... build
 
-# Prepare deployment bundle in the builder stage using pnpm deploy
-# This copies only production dependencies and built files
-# The destination directory within the builder is 'deploy_temp'
-# The --filter ensures only secret-service is included in the deploy package
-RUN pnpm --filter @helloworld/secret-service --prod deploy --legacy ./deploy_temp
+# Prepare deployment bundle in the builder stage
+# Using the name 'secret-service'
+RUN pnpm --filter secret-service --prod deploy --legacy ./deploy_temp
 
 # Stage 3: Production Runner - Create a smaller final image using pnpm deploy
 FROM base AS runner
@@ -54,13 +50,13 @@ FROM base AS runner
 WORKDIR /app
 
 # Copy the pre-built deployment bundle from the builder stage
-# The source is /app/deploy_temp in the builder_stage
-# The destination is the root of the runner's WORKDIR (/app)
 COPY --from=builder_stage /app/deploy_temp .
 
-# Expose the port the service listens on (assuming 8080 as standard, adjust if needed)
+# Expose the port the service listens on (ensure this matches your service)
+# Secret service likely runs on 8080 as well, adjust if needed.
+# Standardizing to 8080, but this should be confirmed or made an environment variable.
 EXPOSE 8080
 
-# Define the command to run the built service
-# This matches the 'start' script in secret-service/package.json
+# Define the command to run the built service from the root of the runner stage
+# From secret-service's package.json
 CMD ["node", "dist/server.js"] 
