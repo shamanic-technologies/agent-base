@@ -5,12 +5,12 @@
  */
 import { Router } from 'express';
 import { 
-  validateProviderUserIdHandler
-} from '../controllers/user.controller';
+  validateProviderUserHandler
+} from '../controllers/provider-users.controller';
 
 const router = Router();
 
 // User routes
-router.post('/validate-provider-user-id', validateProviderUserIdHandler);
+router.post('/validate', validateProviderUserHandler);
 
 export default router;

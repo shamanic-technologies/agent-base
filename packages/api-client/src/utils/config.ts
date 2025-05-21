@@ -148,7 +148,7 @@ export function getPaymentServiceUrl(): string {
  * @returns The User Service URL string.
  */
 export function getUserServiceUrl(): string {
-  const url = process.env.USER_SERVICE_URL || 'http://localhost:3004';
+  const url = process.env.USER_SERVICE_URL || 'http://localhost:3005';
   if (!process.env.USER_SERVICE_URL) {
     console.warn('[api-client/config] USER_SERVICE_URL environment variable not set. Defaulting to ' + url);
   }

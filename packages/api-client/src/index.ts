@@ -12,6 +12,7 @@ export * from './internal/database-clients/api-key-client.js';
 export * from './internal/database-clients/oauth-client.js';
 // export * from './database-clients/webhook-client.js';
 export * from './internal/database-clients/client-user.js'; // Ensure this is present
+export * from './internal/user-client.js';
 
 // Export functions from web OAuth service client files
 // export * from './internal/web-oauth-client.js';

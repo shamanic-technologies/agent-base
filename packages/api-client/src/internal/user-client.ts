@@ -4,23 +4,23 @@
 // import axios, { AxiosError } from 'axios'; // No longer needed directly
 import {
   ServiceResponse,
-  ApiKey,
-  SecretValue,
+  // ApiKey, // Removed as no longer used here
+  // SecretValue, // Removed as no longer used here
   PlatformUserId,
-  GetApiKeyByIdRequest,
-  GetApiKeyByNameRequest,
-  InternalServiceCredentials
+  // GetApiKeyByIdRequest, // Removed as no longer used here
+  // GetApiKeyByNameRequest, // Removed as no longer used here
+  // InternalServiceCredentials // Removed as no longer used here
 } from '@agent-base/types';
 
 // Import the shared request helpers
 import { 
-  makeWebAuthenticatedServiceRequest, 
-  makePlatformUserValidationRequest,
-  makeInternalAPIServiceRequest,
+  // makeWebAuthenticatedServiceRequest, // Removed as no longer used here
+  // makePlatformUserValidationRequest, // Removed as no longer used here
+  // makeInternalAPIServiceRequest, // Removed as no longer used here
   makeWebAnonymousServiceRequest
 } from '../utils/service-client.js';
 
-import { getKeyServiceUrl } from '../utils/config.js'; // Added .js
+import { getUserServiceUrl } from '../utils/config.js'; // Changed to getUserServiceUrl
 import { Method } from 'axios';
 
 // --- Endpoint Client Functions --- //
@@ -34,18 +34,17 @@ import { Method } from 'axios';
  * @param providerUserId - The provider user ID to validate.
  * @returns A promise resolving to ServiceResponse<PlatformUserId>.
  */
-export const validateProviderUserId = async (
+export const validateProviderUser = async (
   providerUserId: string
 ): Promise<ServiceResponse<PlatformUserId>> => {
 
-  const endpoint = '/validate-provider-user-id'; // Endpoint path
+  const endpoint = '/provider-users/validate'; // Endpoint path
   const input = {
-    serviceUrl: getKeyServiceUrl(),
+    serviceUrl: getUserServiceUrl(),
     method: 'post',
     endpoint: endpoint,
     providerUserId: providerUserId,
   };
-  console.log('providerUserId in validateProviderUserId:', JSON.stringify(input.providerUserId, null, 2));
   // Use the helper function, passing the key in the body
   return await makeWebAnonymousServiceRequest<PlatformUserId>(
     input.serviceUrl,
@@ -56,71 +55,6 @@ export const validateProviderUserId = async (
 
 };
 
-/**
- * Lists API key metadata for a specific platform user.
- * GET /
- *
- * @param platformUserId - The ID of the platform user whose keys to list.
- * @returns A promise resolving to ServiceResponse<ApiKey[]>.
- */
-export const listPlatformApiKeys = async (
-  platformUserId: PlatformUserId
-): Promise<ServiceResponse<ApiKey[]>> => {
-  if (!platformUserId) {
-    return { success: false, error: 'platformUserId is required for listApiKeys.' };
-  }
-  return await makeWebAuthenticatedServiceRequest<ApiKey[]>(
-    getKeyServiceUrl(), // Use dynamic getter
-    'get',
-    '/',
-    platformUserId.platformUserId
-  );
-};
-
-/**
- * Retrieves an API key secret by its ID for a specific platform user.
- * GET /:keyId
- *
- * @param input - Object containing platformUserId and keyId.
- * @returns A promise resolving to ServiceResponse<SecretValue>.
- */
-export const getPlatformApiKeySecretById = async (
-  input: GetApiKeyByIdRequest
-): Promise<ServiceResponse<SecretValue>> => {
-  const { platformUserId, keyId } = input;
-  if (!platformUserId) {
-    return { success: false, error: 'platformUserId is required for getApiKeyById.' };
-  }
-  if (!keyId) {
-    return { success: false, error: 'Key ID parameter is required.' };
-  }
-  return await makeWebAuthenticatedServiceRequest<SecretValue>(
-    getKeyServiceUrl(), // Use dynamic getter
-    'get',
-    `/${keyId}`,
-    platformUserId
-  );
-};
-
-/**
- * Retrieves or creates an API key secret by its name for a specific platform user.
- * GET /by-name?name=<keyName>
- *
- * @param input - Object containing platformUserId and keyName.
- * @returns A promise resolving to ServiceResponse<SecretValue>.
- */
-export const getOrCreatePlatformApiKeySecretByName = async (
-  input: GetApiKeyByNameRequest
-): Promise<ServiceResponse<SecretValue>> => {
-  const { platformUserId, keyName } = input;
-
-  const queryParams = { name: keyName };
-  return await makeWebAuthenticatedServiceRequest<SecretValue>(
-    getKeyServiceUrl(), // Use dynamic getter
-    'get',
-    '/by-name',
-    platformUserId,
-    undefined, // No body
-    queryParams
-  );
-};
+// Removed listPlatformApiKeys
+// Removed getPlatformApiKeySecretById
+// Removed getOrCreatePlatformApiKeySecretByName

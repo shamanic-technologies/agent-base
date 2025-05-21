@@ -7,7 +7,7 @@ import { AsyncRequestHandler } from '../utils/types';
 import { GetOrCreatePlatformUserInput, PlatformUser, ServiceResponse } from '@agent-base/types';
 import { getOrCreateUserInDatabase } from '../utils/database'; // We will ensure this function exists and is correctly typed
 
-interface ValidateProviderUserIdInput {
+interface ValidateProviderUserInput {
   providerUserId: string;
   // Add other optional fields if needed in the future, like email, displayName
 }
@@ -17,8 +17,8 @@ interface ValidateProviderUserIdInput {
  * It will find an existing user linked to this clerkUserId or create a new one.
  * Returns the internal platformUserId.
  */
-export const validateProviderUserIdHandler: AsyncRequestHandler = async (req, res) => {
-  const { providerUserId } = req.body as ValidateProviderUserIdInput;
+export const validateProviderUserHandler: AsyncRequestHandler = async (req, res) => {
+  const { providerUserId } = req.body as ValidateProviderUserInput;
 
   if (!providerUserId) {
     console.log('[User Service] Missing providerUserId in request body');
