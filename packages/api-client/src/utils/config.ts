@@ -42,19 +42,6 @@ export function getDatabaseServiceUrl(): string {
   return url;
 }
 
-/**
- * Retrieves the External Utility Tool Service URL from environment variables or defaults.
- * Includes a warning if the environment variable is not set.
- * @returns The External Utility Tool Service URL string.
- */
-export function getExternalUtilityToolServiceUrl(): string {
-  // Assuming default port 3008, adjust if necessary
-  const url = process.env.EXTERNAL_UTILITY_TOOL_SERVICE_URL || 'http://localhost:3090'; 
-  if (!process.env.EXTERNAL_UTILITY_TOOL_SERVICE_URL) {
-    console.warn('[api-client/config] EXTERNAL_UTILITY_TOOL_SERVICE_URL environment variable not set. Defaulting to ' + url);
-  }
-  return url;
-}
 
 /**
  * Retrieves the External Utility Tool Service URL from environment variables or defaults.
@@ -151,6 +138,19 @@ export function getPaymentServiceUrl(): string {
   const url = process.env.PAYMENT_SERVICE_URL || 'http://localhost:3004';
   if (!process.env.PAYMENT_SERVICE_URL) {
     console.warn('[api-client/config] PAYMENT_SERVICE_URL environment variable not set. Defaulting to ' + url);
+  }
+  return url;
+} 
+
+/**
+ * Retrieves the User Service URL from environment variables or defaults.
+ * Includes a warning if the environment variable is not set.
+ * @returns The User Service URL string.
+ */
+export function getUserServiceUrl(): string {
+  const url = process.env.USER_SERVICE_URL || 'http://localhost:3004';
+  if (!process.env.USER_SERVICE_URL) {
+    console.warn('[api-client/config] USER_SERVICE_URL environment variable not set. Defaulting to ' + url);
   }
   return url;
 } 

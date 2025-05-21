@@ -7,8 +7,8 @@ import { AsyncRequestHandler } from '../utils/types';
 import { GetOrCreatePlatformUserInput, PlatformUser, ServiceResponse } from '@agent-base/types';
 import { getOrCreateUserInDatabase } from '../utils/database'; // We will ensure this function exists and is correctly typed
 
-interface ValidatePlatformUserInput {
-  clerkUserId: string;
+interface ValidateProviderUserIdInput {
+  providerUserId: string;
   // Add other optional fields if needed in the future, like email, displayName
 }
 
@@ -17,14 +17,14 @@ interface ValidatePlatformUserInput {
  * It will find an existing user linked to this clerkUserId or create a new one.
  * Returns the internal platformUserId.
  */
-export const validatePlatformUserHandler: AsyncRequestHandler = async (req, res) => {
-  const { clerkUserId } = req.body as ValidatePlatformUserInput;
+export const validateProviderUserIdHandler: AsyncRequestHandler = async (req, res) => {
+  const { providerUserId } = req.body as ValidateProviderUserIdInput;
 
-  if (!clerkUserId) {
-    console.log('[User Service] Missing clerkUserId in request body');
+  if (!providerUserId) {
+    console.log('[User Service] Missing providerUserId in request body');
     return res.status(400).json({
       success: false,
-      error: 'Missing required field: clerkUserId',
+      error: 'Missing required field: providerUserId',
     });
   }
 
@@ -32,7 +32,7 @@ export const validatePlatformUserHandler: AsyncRequestHandler = async (req, res)
     // Prepare the input for the database utility function
     // We use clerkUserId as the providerUserId
     const getOrCreateInput: GetOrCreatePlatformUserInput = {
-      providerUserId: clerkUserId,
+      providerUserId: providerUserId,
       // We are not passing email, displayName, or profileImage from this endpoint initially
       // The database service's getOrCreatePlatformUserByProviderUserId can handle nulls for these
       email: null, 
@@ -44,7 +44,7 @@ export const validatePlatformUserHandler: AsyncRequestHandler = async (req, res)
     const dbResponse: ServiceResponse<PlatformUser> = await getOrCreateUserInDatabase(getOrCreateInput);
 
     if (!dbResponse.success || !dbResponse.data) {
-      console.error(`[User Service] Failed to get or create user for clerkUserId ${clerkUserId}: ${dbResponse.error}`);
+      console.error(`[User Service] Failed to get or create user for providerUserId ${providerUserId}: ${dbResponse.error}`);
       return res.status(500).json({
         success: false,
         error: dbResponse.error || 'Failed to process user validation',
@@ -52,7 +52,7 @@ export const validatePlatformUserHandler: AsyncRequestHandler = async (req, res)
     }
 
     // Successfully found or created the user
-    console.log(`[User Service] Successfully validated platform user for clerkUserId ${clerkUserId}, platformUserId: ${dbResponse.data.id}`);
+    console.log(`[User Service] Successfully validated platform user for providerUserId ${providerUserId}, platformUserId: ${dbResponse.data.id}`);
     return res.json({
       success: true,
       data: {
@@ -61,7 +61,7 @@ export const validatePlatformUserHandler: AsyncRequestHandler = async (req, res)
     });
 
   } catch (error: any) {
-    console.error(`[User Service] Unexpected error validating platform user for clerkUserId ${clerkUserId}:`, error);
+    console.error(`[User Service] Unexpected error validating platform user for providerUserId ${providerUserId}:`, error);
     return res.status(500).json({
       success: false,
       error: 'Internal server error during user validation',

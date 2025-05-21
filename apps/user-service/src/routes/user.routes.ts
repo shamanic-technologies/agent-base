@@ -5,12 +5,12 @@
  */
 import { Router } from 'express';
 import { 
-  validatePlatformUserHandler
+  validateProviderUserIdHandler
 } from '../controllers/user.controller';
 
 const router = Router();
 
 // User routes
-router.post('/validate-platform-user', validatePlatformUserHandler);
+router.post('/validate-provider-user-id', validateProviderUserIdHandler);
 
 export default router;
