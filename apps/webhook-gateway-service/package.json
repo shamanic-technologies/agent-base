@@ -6,7 +6,7 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "nodemon --exec tsx src/server.ts",
-    "build": "echo 'Webhook Gateway Service build temporarily skipped'",
+    "build": "tsc",
     "start": "node dist/server.js",
     "lint": "eslint src/**/*.ts",
     "test": "vitest run",

@@ -1,5 +1,5 @@
 packages:
-  - apps/logging-service
+  # - apps/logging-service
   - apps/secret-service
   - apps/agent-service
   - apps/database-service
@@ -7,10 +7,10 @@ packages:
   - apps/api-gateway-service
   - apps/web-oauth-service
   - apps/web-gateway-service
-  - apps/payment-service
+  # - apps/payment-service
   - apps/key-service
-  - apps/webhook-gateway-service
-  - apps/tool-auth-service
+  # - apps/webhook-gateway-service
+  # - apps/tool-auth-service
   - packages/**
   - tooling/*
 

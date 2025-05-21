@@ -58,5 +58,5 @@ COPY --from=builder_stage /app/deploy_temp .
 EXPOSE 8080
 
 # Define the command to run the built service from the root of the runner stage
-# Assumes the entry point is 'dist/index.js'
-CMD ["node", "dist/index.js"] 
+# Assumes the entry point is 'dist/server.js'
+CMD ["node", "dist/server.js"] 
