@@ -2,7 +2,7 @@ import GoogleProvider from "next-auth/providers/google";
 import type { NextAuthOptions } from "next-auth";
 import type { JWT } from "next-auth/jwt";
 import { createOrUpdateCredentials } from "@/lib/database";
-import { CreateOrUpdateCredentialsInput, OAuthProvider, PlatformJWTPayload } from "@agent-base/types";
+import { CreateOrUpdateOAuthInput, OAuthProvider, JWTPayload } from "@agent-base/types";
 
 // Extend the Session type for the client
 declare module "next-auth" {
@@ -38,7 +38,7 @@ declare module "next-auth/jwt" {
  * Store user credentials in the database
  * (Assumes this function exists and works correctly)
  */
-async function storeCredentials(input: CreateOrUpdateCredentialsInput): Promise<any> { 
+async function storeCredentials(input: CreateOrUpdateOAuthInput): Promise<any> { 
   console.log("[Tool Auth Service] Storing credentials:", input);
   const result = await createOrUpdateCredentials(input);
   if (!result.success) {
@@ -152,7 +152,7 @@ export const authOptions: NextAuthOptions = {
         
         console.log(`[Tool Auth Service] JWT: Linking provider '${account.provider}' for user '${internalUserId}'.`);
 
-        const credentialData: CreateOrUpdateCredentialsInput = {
+        const credentialData: CreateOrUpdateOAuthInput = {
           userId: internalUserId, // *** Use internalUserId (from token.id) ***
           oauthProvider: account.provider as OAuthProvider,
           scopes: scopes,

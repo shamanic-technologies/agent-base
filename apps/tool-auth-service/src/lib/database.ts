@@ -5,36 +5,36 @@
  */
 import {
   OAuth, 
-  CreateOrUpdateCredentialsInput, 
-  DatabaseResponse,
-  CredentialsResponse,
-  GetUserCredentialsInput
+  CreateOrUpdateOAuthInput,
+  ServiceResponse,
+  GetUserOAuthInput,
 } from '@agent-base/types';
 // Import the shared HTTP client utility
-import { makeServiceRequest } from '@agent-base/types';
+// import { makeServiceRequest } from '@agent-base/types'; // Old import
+import { makeWebAnonymousServiceRequest } from '@agent-base/api-client'; // New import
 
 const DB_SERVICE_URL = process.env.DATABASE_SERVICE_URL;
 
 // Re-export the types for convenience
-export type { OAuth, CreateOrUpdateCredentialsInput, DatabaseResponse };
+export type { OAuth, CreateOrUpdateOAuthInput, ServiceResponse, GetUserOAuthInput };
 
 /**
  * Create or update user credentials using the shared HTTP client utility.
  */
 export async function createOrUpdateCredentials(
-  input: CreateOrUpdateCredentialsInput
-): Promise<DatabaseResponse> {
+  input: CreateOrUpdateOAuthInput
+): Promise<ServiceResponse<void>> {
   if (!DB_SERVICE_URL) {
     console.error('DATABASE_SERVICE_URL is not defined.');
     return { success: false, error: 'Database service URL not configured.' };
   }
-  // Use makeServiceRequest for POST request
-  return makeServiceRequest<void>(
+  // Use makeWebAnonymousServiceRequest for POST request
+  return makeWebAnonymousServiceRequest<void>(
     DB_SERVICE_URL,
     'POST',
     '/credentials',
-    undefined, // No specific userId needed in header for this endpoint
-    input // Send input as the request body (data)
+    input, // Send input as the request body (data)
+    undefined // No query parameters
   );
 }
 
@@ -42,18 +42,17 @@ export async function createOrUpdateCredentials(
  * Get user credentials by user ID using the shared HTTP client utility.
  */
 export async function getCredentials(
-  input: GetUserCredentialsInput
-): Promise<CredentialsResponse<OAuth[]>> {
+  input: GetUserOAuthInput
+): Promise<ServiceResponse<OAuth[]>> {
   if (!DB_SERVICE_URL) {
     console.error('DATABASE_SERVICE_URL is not defined.');
     return { success: false, error: 'Database service URL not configured.' };
   }
-  // Use makeServiceRequest for GET request, sending input as query parameters
-  return makeServiceRequest<OAuth[]>(
+  // Use makeWebAnonymousServiceRequest for GET request, sending input as query parameters
+  return makeWebAnonymousServiceRequest<OAuth[]>(
     DB_SERVICE_URL,
     'GET',
     '/credentials',
-    undefined, // No specific userId needed in header for this endpoint
     undefined, // No request body (data)
     input // Send input as query parameters (params)
   );

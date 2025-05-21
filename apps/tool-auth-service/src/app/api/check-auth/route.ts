@@ -4,15 +4,25 @@
  * Checks if a user has the required OAuth scopes and returns authentication URL if needed
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { getCredentials, OAuth } from '@/lib/database';
-import { CheckAuthInput,
+import { getCredentials, OAuth, GetUserOAuthInput } from '@/lib/database';
+import { 
    OAuthProvider,
    ServiceResponse,
-   CheckAuthSuccessData,
-   CheckAuthNeededData,
-   CheckUserAuth } from '@agent-base/types';
+   CheckUserOAuth,
+   // CheckAuthSuccessData,
+   // CheckAuthNeededData,
+} from '@agent-base/types';
 
+// Local type definitions for this endpoint's specific responses
+interface CheckAuthSuccessData {
+  hasAuth: true;
+  oauthCredentials: OAuth[];
+}
 
+interface CheckAuthNeededData {
+  hasAuth: false;
+  authUrl: string;
+}
 
 /**
  * Checks if the user has authorized the required scopes for a tool
@@ -20,7 +30,7 @@ import { CheckAuthInput,
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
-    const { userId, oauthProvider, requiredScopes }: CheckAuthInput = await req.json();
+    const { userId, oauthProvider, requiredScopes }: GetUserOAuthInput = await req.json();
 
     // Basic validation (kept concise)
     if (!userId || !oauthProvider || !requiredScopes || !Array.isArray(requiredScopes) || requiredScopes.length === 0) {
@@ -50,7 +60,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         success: true,
         data: {
           hasAuth: true,
-          credentials: authResult.data.credentials! // Safe due to valid check
+          oauthCredentials: authResult.data.oauthCredentials!
         }
       };
       return NextResponse.json(responseData);
@@ -84,7 +94,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 /**
  * Checks if a user has valid credentials with the required scopes
  */
-async function checkUserAuth(input: CheckAuthInput): Promise<ServiceResponse<CheckUserAuth>> {
+async function checkUserAuth(input: GetUserOAuthInput): Promise<ServiceResponse<CheckUserOAuth>> {
   const { userId, oauthProvider, requiredScopes } = input;
   try {
     console.log(`Checking auth for user ${userId} with provider ${oauthProvider} and scopes: ${requiredScopes.join(', ')}`);
@@ -117,7 +127,7 @@ async function checkUserAuth(input: CheckAuthInput): Promise<ServiceResponse<Che
         success: true,
         data: {
           valid: false,
-          credentials: []
+          oauthCredentials: [] // Changed to oauthCredentials
         }
       };
     }
@@ -134,7 +144,7 @@ async function checkUserAuth(input: CheckAuthInput): Promise<ServiceResponse<Che
         success: true,
         data: {
           valid: false,
-          credentials: []
+          oauthCredentials: [] // Changed to oauthCredentials
         }
       };
     }
@@ -145,7 +155,7 @@ async function checkUserAuth(input: CheckAuthInput): Promise<ServiceResponse<Che
       success: true,
       data: {
         valid: true,
-        credentials: credentials // Return the credentials received
+        oauthCredentials: credentials // Changed to oauthCredentials
       }
     };
 
