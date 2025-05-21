@@ -3,22 +3,18 @@ import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 
-// Load environment variables specifically for secret service if needed,
-// or rely on global .env loading if service is run in an environment where that's handled.
-// For simplicity, assuming .env in the service's root or globally available vars.
+// Load environment variables
 if (process.env.NODE_ENV === 'development') {
-  const envPath = path.resolve(process.cwd(), '.env'); // Use project root .env for dev
-  if (fs.existsSync(envPath)) {
-    dotenv.config({ path: envPath });
-    console.log('[SecretService] Loaded .env file for development from project root.');
-  }
-  // Also check for service-specific .env for development if GOOGLE_APPLICATION_CREDENTIALS is not set
-  if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-    const serviceEnvPath = path.resolve(process.cwd(), 'apps/secret-service/.env');
-    if (fs.existsSync(serviceEnvPath)) {
-        dotenv.config({ path: serviceEnvPath, override: true });
-        console.log('[SecretService] Loaded service-specific .env file for development.');
-    }
+  // When running from `apps/secret-service` (e.g. `pnpm run dev`),
+  // process.cwd() is `apps/secret-service`.
+  // So, path.resolve(process.cwd(), '.env') targets `apps/secret-service/.env`.
+  const localEnvPath = path.resolve(process.cwd(), '.env');
+  if (fs.existsSync(localEnvPath)) {
+    dotenv.config({ path: localEnvPath });
+    console.log(`[SecretService] Loaded .env file for development from: ${localEnvPath}`);
+  } else {
+    console.log(`[SecretService] No .env file found at ${localEnvPath}. 
+    Ensure GOOGLE_PROJECT_ID and GOOGLE_APPLICATION_CREDENTIALS are set in your environment or .env file.`);
   }
 }
 

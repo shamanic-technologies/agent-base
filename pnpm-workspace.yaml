@@ -13,4 +13,3 @@ packages:
   # - apps/tool-auth-service
   - packages/**
   - tooling/*
-

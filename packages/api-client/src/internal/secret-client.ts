@@ -30,12 +30,13 @@ export async function storeSecretWebClient(
   storeSecretRequest: StoreSecretRequest
 ): Promise<ServiceResponse<string>> {
   // POST requests send data in the body.
+  const { secretType, ...bodyData } = storeSecretRequest; // Extract secretType for path, rest for body
   return await makeWebAuthenticatedServiceRequest<string>(
     getSecretServiceUrl(), // Use dynamic getter
     'post',
-    '/api/secrets', // Endpoint for storing secrets
+    `/api/secrets/${secretType}`, // Endpoint for storing secrets with secretType in path
     platformUserId, // ID value for the header (x-platform-user-id)
-    storeSecretRequest, // Request body (data)
+    bodyData, // Request body (data) without secretType
     undefined // No query parameters (params)
   );
 }
