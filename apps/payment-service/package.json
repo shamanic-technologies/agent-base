@@ -1,7 +1,8 @@
 {
-  "name": "@helloworld/payment-service",
+  "name": "@agent-base/payment-service",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "concurrently \"stripe listen --forward-to http://localhost:3007/payment/webhook\" \"tsx watch src/index.ts\"",
     "dev:service": "tsx watch src/index.ts",
@@ -14,6 +15,8 @@
     "trigger:checkout-completed": "stripe trigger checkout.session.completed --add \"checkout_session:mode=payment\" --add \"checkout_session:payment_status=paid\" --add \"checkout_session:customer=cus_PicLiMDp41NrPe\" --add \"checkout_session:metadata.purpose=add_credit\" --add \"checkout_session:metadata.userId=user_2YFJmK4vKsUNxRwqNWb9eAvQDcF\" --add \"checkout_session:metadata.creditAmount=10\""
   },
   "dependencies": {
+    "@agent-base/types": "workspace:*",
+    "@agent-base/api-client": "workspace:*",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",

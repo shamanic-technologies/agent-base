@@ -2,10 +2,10 @@
  * Routes configuration for the payment service
  */
 import express from 'express';
-import * as customerController from '../controllers/customerController';
-import * as creditController from '../controllers/creditController';
-import * as checkoutController from '../controllers/checkoutController';
-import * as webhookController from '../controllers/webhookController';
+import * as customerController from '../controllers/customerController.js';
+import * as creditController from '../controllers/creditController.js';
+import * as checkoutController from '../controllers/checkoutController.js';
+import * as webhookController from '../controllers/webhookController.js';
 
 // Create the router
 const router = express.Router();
@@ -16,25 +16,25 @@ router.get('/health', (req, res) => {
 });
 
 // Customer endpoints
-router.post('/payment/customers', customerController.getOrCreateCustomer);
-router.get('/payment/customer/credit', customerController.getCustomerCreditByUserId);
-router.get('/payment/customers-direct/:customerId', customerController.getCustomerById);
-router.get('/payment/customers-direct/:customerId/credit', customerController.getCustomerCreditById);
-router.get('/payment/customers-direct/:customerId/transactions', customerController.getCustomerTransactions);
+router.post('/customer', customerController.getOrCreateCustomer);
+router.get('/customer/credit', customerController.getStripeCustomerCreditByPlatformUserId);
+router.get('/customer/:stripeCustomerId', customerController.getStripeCustomerByStripeCustomerId);
+router.get('/customer/credit/:stripeCustomerId', customerController.getStripeCustomerCreditByStripeCustomerId);
+router.get('/customer/transactions/:stripeCustomerId', customerController.getStripeTransactionsByStripeCustomerId);
 
 // Auto-recharge endpoints
-router.get('/payment/auto-recharge', customerController.getAutoRechargeSettings);
-router.post('/payment/auto-recharge', customerController.updateAutoRechargeSettings);
+router.get('/auto-recharge', customerController.getAutoRechargeSettings);
+router.post('/auto-recharge', customerController.updateAutoRechargeSettings);
 
 // Credit endpoints
-router.post('/payment/validate-credit', creditController.validateCredit);
-router.post('/payment/deduct-credit', creditController.deductCreditByUserId);
-router.post('/payment/deduct-credit-direct', creditController.deductCreditById);
+router.post('/validate-credit', creditController.validateCredit);
+router.post('/deduct-credit', creditController.deductCreditByPlatformUserId);
+router.post('/deduct-credit/:stripeCustomerId', creditController.deductCreditByStripeCustomerId);
 
 // Checkout endpoints
-router.post('/payment/create-checkout-session', checkoutController.createCheckoutSession);
+router.post('/create-checkout-session', checkoutController.createCheckoutSession);
 
 // Webhook endpoints
-router.post('/payment/webhook', express.raw({ type: 'application/json' }), webhookController.handleWebhook);
+router.post('/webhook', express.raw({ type: 'application/json' }), webhookController.handleWebhook);
 
 export default router; 

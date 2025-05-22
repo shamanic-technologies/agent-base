@@ -1,71 +1,59 @@
 /**
  * Controller for customer-related endpoints
  */
-import { ExpressRequest, ExpressResponse, AutoRechargeSettings } from '../types';
-import * as customerService from '../services/customerService';
-import * as creditService from '../services/creditService';
-import { stripe } from '../config';
-
+import { Request, Response } from 'express';
+import { AutoRechargeSettings, CustomerCredits, Pricing, StripeCustomerInformation, createCustomerRequest } from '@agent-base/types';
+import * as customerService from '../services/customerService.js';
+import * as creditService from '../services/creditService.js';
+import { stripe } from '../config/index.js';
+import Stripe from 'stripe';
 /**
  * Get or create a Stripe customer
  * 
  * Gets the user ID from x-user-id header (set by web-gateway auth middleware)
  */
-export async function getOrCreateCustomer(req: ExpressRequest, res: ExpressResponse): Promise<void> {
+export async function getOrCreateCustomer(req: Request, res: Response): Promise<void> {
   try {
-    const userId = req.headers['x-user-id'] as string;
-    const { email, name } = req.body;
+    const platformUserId = req.headers['x-platform-user-id'] as string;
+    const { platformUserEmail, platformUserName } : createCustomerRequest = req.body;
     
-    if (!userId) {
-      console.log('Missing x-user-id header in request to /payment/customers');
+    if (!platformUserId) {
+      console.log('Missing x-platform-user-id header in request to /payment/customers');
       res.status(401).json({
         success: false,
-        error: 'Authentication required'
+        error: 'Authentication required',
+        details: 'Missing x-platform-user-id header in request to /payment/customers'
       });
       return;
     }
-
-    console.log(`Searching for customer with userId: ${userId}`);
     
     // Try to find existing customer
-    const customer = await customerService.findCustomerByUserId(userId);
+    let stripeCustomer = await customerService.findStripeCustomerByPlatformUserId(platformUserId);
     
     // If customer exists, return it
-    if (customer) {
-      const credits = await customerService.calculateCustomerCredits(customer.id);
-      const customerData = customerService.formatCustomerData(customer, credits);
+    if (!stripeCustomer) {
+      // If no customer exists, create one in Stripe
+      stripeCustomer = await customerService.createCustomer(platformUserId, platformUserEmail, platformUserName);
       
-      res.status(200).json({
-        success: true,
-        data: customerData,
-        message: 'Retrieved existing customer'
-      });
-      return;
+      // Add initial $5 free credit
+      await customerService.addFreeSignupCredit(stripeCustomer.id);
     }
 
-    // If no customer exists, create one in Stripe
-    const newCustomer = await customerService.createCustomer(userId, email, name);
-    
-    // Add initial $5 free credit
-    await customerService.addFreeSignupCredit(newCustomer.id);
-    
     // Get the updated credit balance
-    const credits = await customerService.calculateCustomerCredits(newCustomer.id);
-    const customerData = customerService.formatCustomerData(newCustomer, credits);
-    
-    console.log(`Created new Stripe customer for userId: ${userId} with $5 free credit`);
-    
+    const credits: CustomerCredits = await customerService.calculateCustomerCredits(stripeCustomer.id);
+    const stripeCustomerInformation: StripeCustomerInformation = customerService.formatCustomerData(stripeCustomer, credits);
+        
     res.status(201).json({
       success: true,
-      data: customerData,
-      message: 'Created new customer with $5 free credit'
+      data: stripeCustomerInformation,
     });
     return;
   } catch (error) {
     console.error('Error in get/create customer endpoint:', error);
     res.status(500).json({
       success: false,
-      error: 'An unexpected error occurred'
+      error: 'An unexpected error occurred',
+      details: error
     });
     return;
   }
@@ -76,35 +64,37 @@ export async function getOrCreateCustomer(req: ExpressRequest, res: ExpressRespo
  * 
  * Gets the user ID from x-user-id header (set by web-gateway auth middleware)
  */
-export async function getCustomerCreditByUserId(req: ExpressRequest, res: ExpressResponse): Promise<void> {
+export async function getStripeCustomerCreditByPlatformUserId(req: Request, res: Response): Promise<void> {
   try {
-    const userId = req.headers['x-user-id'] as string;
+    const platformUserId = req.headers['x-platform-user-id'] as string;
     
-    if (!userId) {
-      console.log('Missing x-user-id header in request to /payment/customers/:userId/credit');
+    if (!platformUserId) {
+      console.log('Missing x-platform-user-id header in request to /payment/customers/:platformUserId/credit');
       res.status(401).json({
         success: false,
-        error: 'Authentication required'
+        error: 'Authentication required',
+        details: 'Missing x-platform-user-id header in request to /payment/customers/:platformUserId/credit'
       });
       return;
     }
     
-    console.log(`Getting credit balance for userId: ${userId}`);
+    console.log(`Getting credit balance for userId: ${platformUserId}`);
     
     // Find the customer
-    const customer = await customerService.findCustomerByUserId(userId);
+    const stripeCustomer = await customerService.findStripeCustomerByPlatformUserId(platformUserId);
     
-    if (!customer) {
-      console.error(`Customer not found with userId: ${userId}`);
+    if (!stripeCustomer) {
+      console.error(`Customer not found with userId: ${platformUserId}`);
       res.status(404).json({
         success: false,
-        error: 'Customer not found'
+        error: 'Customer not found',
+        details: `Customer not found with userId: ${platformUserId}`
       });
       return;
     }
     
     // Get credit balance
-    const credits = await customerService.calculateCustomerCredits(customer.id);
+    const credits: CustomerCredits = await customerService.calculateCustomerCredits(stripeCustomer.id);
     
     res.status(200).json({
       success: true,
@@ -115,7 +105,8 @@ export async function getCustomerCreditByUserId(req: ExpressRequest, res: Expres
     console.error('Error retrieving credit balance:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to retrieve credit balance'
+      error: 'Failed to retrieve credit balance',
+      details: error
     });
     return;
   }
@@ -124,23 +115,23 @@ export async function getCustomerCreditByUserId(req: ExpressRequest, res: Expres
 /**
  * Get a customer by direct ID
  */
-export async function getCustomerById(req: ExpressRequest, res: ExpressResponse): Promise<void> {
+export async function getStripeCustomerByStripeCustomerId(req: Request, res: Response): Promise<void> {
   try {
-    const { customerId } = req.params;
+    const { stripeCustomerId } = req.params;
     
-    if (!customerId) {
+    if (!stripeCustomerId) {
       res.status(400).json({
         success: false,
-        error: 'Customer ID is required'
+        error: 'Stripe Customer ID is required'
       });
       return;
     }
     
     // Get customer directly
     try {
-      const customer = await stripe.customers.retrieve(customerId);
+      const stripeCustomer = await stripe.customers.retrieve(stripeCustomerId);
       
-      if ('deleted' in customer) {
+      if ('deleted' in stripeCustomer) {
         res.status(404).json({
           success: false,
           error: 'Customer has been deleted'
@@ -149,19 +140,20 @@ export async function getCustomerById(req: ExpressRequest, res: ExpressResponse)
       }
       
       // Get credit balance
-      const credits = await customerService.calculateCustomerCredits(customer.id);
-      const customerData = customerService.formatCustomerData(customer, credits);
+      const credits: CustomerCredits = await customerService.calculateCustomerCredits(stripeCustomer.id);
+      const stripeCustomerInformation: StripeCustomerInformation = customerService.formatCustomerData(stripeCustomer, credits);
       
       res.status(200).json({
         success: true,
-        data: customerData
+        data: stripeCustomerInformation
       });
       return;
     } catch (error) {
       console.error('Error retrieving customer by ID:', error);
       res.status(404).json({
         success: false,
-        error: 'Customer not found'
+        error: 'Customer not found',
+        details: error
       });
       return;
     }
@@ -169,7 +161,8 @@ export async function getCustomerById(req: ExpressRequest, res: ExpressResponse)
     console.error('Error in customer by ID endpoint:', error);
     res.status(500).json({
       success: false,
-      error: 'An unexpected error occurred'
+      error: 'An unexpected error occurred',
+      details: error
     });
     return;
   }
@@ -178,32 +171,34 @@ export async function getCustomerById(req: ExpressRequest, res: ExpressResponse)
 /**
  * Get a customer's credit balance by direct ID
  */
-export async function getCustomerCreditById(req: ExpressRequest, res: ExpressResponse): Promise<void> {
+export async function getStripeCustomerCreditByStripeCustomerId(req: Request, res: Response): Promise<void> {
   try {
-    const { customerId } = req.params;
+    const { stripeCustomerId } = req.params;
     
-    if (!customerId) {
+    if (!stripeCustomerId) {
       res.status(400).json({
         success: false,
-        error: 'Customer ID is required'
+        error: 'Stripe Customer ID is required',
+        details: 'Missing stripeCustomerId in request to /payment/customers/:stripeCustomerId/credit'
       });
       return;
     }
     
     try {
       // Get customer and check if it exists
-      const customer = await stripe.customers.retrieve(customerId);
+      const stripeCustomer = await stripe.customers.retrieve(stripeCustomerId);
       
-      if ('deleted' in customer) {
+      if ('deleted' in stripeCustomer) {
         res.status(404).json({
           success: false,
-          error: 'Customer has been deleted'
+          error: 'Customer has been deleted',
+          details: `Customer has been deleted with stripeCustomerId: ${stripeCustomerId}`
         });
         return;
       }
       
       // Get credit balance
-      const credits = await customerService.calculateCustomerCredits(customer.id);
+      const credits: CustomerCredits = await customerService.calculateCustomerCredits(stripeCustomer.id);
       
       res.status(200).json({
         success: true,
@@ -214,7 +209,8 @@ export async function getCustomerCreditById(req: ExpressRequest, res: ExpressRes
       console.error('Error retrieving credit by ID:', error);
       res.status(404).json({
         success: false,
-        error: 'Customer not found'
+        error: 'Customer not found',
+        details: error
       });
       return;
     }
@@ -222,7 +218,8 @@ export async function getCustomerCreditById(req: ExpressRequest, res: ExpressRes
     console.error('Error in credit by ID endpoint:', error);
     res.status(500).json({
       success: false,
-      error: 'An unexpected error occurred'
+      error: 'An unexpected error occurred',
+      details: error
     });
     return;
   }
@@ -231,43 +228,38 @@ export async function getCustomerCreditById(req: ExpressRequest, res: ExpressRes
 /**
  * Get customer transaction history
  */
-export async function getCustomerTransactions(req: ExpressRequest, res: ExpressResponse): Promise<void> {
+export async function getStripeTransactionsByStripeCustomerId(req: Request, res: Response): Promise<void> {
   try {
-    const { customerId } = req.params;
+    const { stripeCustomerId } = req.params;
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
     
     try {
       // Get customer and check if it exists
-      const customer = await stripe.customers.retrieve(customerId);
+      const stripeCustomer = await stripe.customers.retrieve(stripeCustomerId);
       
-      if ('deleted' in customer) {
+      if ('deleted' in stripeCustomer) {
         res.status(404).json({
           success: false,
-          error: 'Customer has been deleted'
+          error: 'Customer has been deleted',
+          details: `Customer has been deleted with stripeCustomerId: ${stripeCustomerId}`
         });
         return;
       }
       
       // Get transaction history
-      const transactions = await creditService.getTransactionHistory(customer.id, limit);
-      
-      // Add userId to each transaction
-      const userId = customer.metadata.userId || 'unknown';
-      const transactionsWithUserId = transactions.map(tx => ({
-        ...tx,
-        userId
-      }));
-      
+      const transactions: Stripe.CustomerBalanceTransaction[] = await creditService.getTransactionHistory(stripeCustomer.id, limit);
+
       res.status(200).json({
         success: true,
-        data: transactionsWithUserId
+        data: transactions
       });
       return;
     } catch (error) {
       console.error('Error retrieving transactions by ID:', error);
       res.status(404).json({
         success: false,
-        error: 'Customer not found'
+        error: 'Customer not found',
+        details: error
       });
       return;
     }
@@ -275,7 +267,8 @@ export async function getCustomerTransactions(req: ExpressRequest, res: ExpressR
     console.error('Error in transactions endpoint:', error);
     res.status(500).json({
       success: false,
-      error: 'An unexpected error occurred'
+      error: 'An unexpected error occurred',
+      details: error
     });
     return;
   }
@@ -286,42 +279,44 @@ export async function getCustomerTransactions(req: ExpressRequest, res: ExpressR
  * 
  * Gets the user ID from x-user-id header (set by web-gateway auth middleware)
  */
-export async function getAutoRechargeSettings(req: ExpressRequest, res: ExpressResponse): Promise<void> {
+export async function getAutoRechargeSettings(req: Request, res: Response): Promise<void> {
   try {
-    const userId = req.headers['x-user-id'] as string;
+    const platformUserId = req.headers['x-platform-user-id'] as string;
     
-    if (!userId) {
-      console.log('Missing x-user-id header in request to /payment/auto-recharge');
+    if (!platformUserId) {
+      console.log('Missing x-platform-user-id header in request to /payment/auto-recharge');
       res.status(401).json({
         success: false,
-        error: 'Authentication required'
+        error: 'Authentication required',
+        details: 'Missing x-platform-user-id header in request to /payment/auto-recharge'
       });
       return;
     }
     
-    console.log(`Getting auto-recharge settings for userId: ${userId}`);
+    console.log(`Getting auto-recharge settings for userId: ${platformUserId}`);
     
     // Find customer associated with this user
-    const customer = await customerService.findCustomerByUserId(userId);
+    const stripeCustomer = await customerService.findStripeCustomerByPlatformUserId(platformUserId);
     
-    if (!customer) {
-      console.error(`Customer not found with userId: ${userId}`);
+    if (!stripeCustomer) {
+      console.error(`Customer not found with userId: ${platformUserId}`);
       res.status(404).json({
         success: false,
-        error: 'Customer not found'
+        error: 'Customer not found',
+        details: `Customer not found with userId: ${platformUserId}`
       });
       return;
     }
     
     // Get auto-recharge settings
-    const settings = await customerService.getAutoRechargeSettings(customer.id);
+    const settings = await customerService.getAutoRechargeSettings(stripeCustomer.id);
     
     // Return default settings if none exist
     if (!settings) {
       const defaultSettings: AutoRechargeSettings = {
         enabled: false,
-        thresholdAmount: 5,
-        rechargeAmount: 10
+        thresholdAmountInUSDCents: Pricing.AUTO_RECHARGE_THRESHOLD_IN_USDCENTS,
+        rechargeAmountInUSDCents: Pricing.AUTO_RECHARGE_RECHARGE_AMOUNT_IN_USDCENTS
       };
       
       res.status(200).json({
@@ -340,7 +335,8 @@ export async function getAutoRechargeSettings(req: ExpressRequest, res: ExpressR
     console.error('Error getting auto-recharge settings:', error);
     res.status(500).json({
       success: false,
-      error: 'An unexpected error occurred'
+      error: 'An unexpected error occurred',
+      details: error
     });
     return;
   }
@@ -351,13 +347,13 @@ export async function getAutoRechargeSettings(req: ExpressRequest, res: ExpressR
  * 
  * Gets the user ID from x-user-id header (set by web-gateway auth middleware)
  */
-export async function updateAutoRechargeSettings(req: ExpressRequest, res: ExpressResponse): Promise<void> {
+export async function updateAutoRechargeSettings(req: Request, res: Response): Promise<void> {
   try {
-    const userId = req.headers['x-user-id'] as string;
-    const { enabled, thresholdAmount, rechargeAmount } = req.body;
+    const platformUserId = req.headers['x-platform-user-id'] as string;
+    const { enabled, thresholdAmountInUSDCents, rechargeAmountInUSDCents } : AutoRechargeSettings = req.body;
     
-    if (!userId) {
-      console.log('Missing x-user-id header in request to /payment/auto-recharge');
+    if (!platformUserId) {
+      console.log('Missing x-platform-user-id header in request to /payment/auto-recharge');
       res.status(401).json({
         success: false,
         error: 'Authentication required'
@@ -365,27 +361,29 @@ export async function updateAutoRechargeSettings(req: ExpressRequest, res: Expre
       return;
     }
     
-    console.log(`Updating auto-recharge settings for userId: ${userId}`);
+    console.log(`Updating auto-recharge settings for userId: ${platformUserId}`);
     
     // Validate inputs
     if (enabled === undefined) {
       res.status(400).json({
         success: false,
-        error: 'Enabled flag is required'
+        error: 'Enabled flag is required',
+        details: 'Enabled flag is required'
       });
       return;
     }
     
-    if (enabled && (thresholdAmount === undefined || rechargeAmount === undefined)) {
+    if (enabled && (thresholdAmountInUSDCents === undefined || rechargeAmountInUSDCents === undefined)) {
       res.status(400).json({
         success: false,
-        error: 'Threshold amount and recharge amount are required'
+        error: 'Missing required fields',
+        details: 'Threshold amount and recharge amount are required'
       });
       return;
     }
     
     // Find customer associated with this user
-    const customer = await customerService.findCustomerByUserId(userId);
+    const customer = await customerService.findStripeCustomerByPlatformUserId(platformUserId);
     
     if (!customer) {
       res.status(404).json({
@@ -398,8 +396,8 @@ export async function updateAutoRechargeSettings(req: ExpressRequest, res: Expre
     // Prepare settings object
     const settings: AutoRechargeSettings = {
       enabled: Boolean(enabled),
-      thresholdAmount: parseFloat(thresholdAmount) || 5,
-      rechargeAmount: parseFloat(rechargeAmount) || 10
+      thresholdAmountInUSDCents,
+      rechargeAmountInUSDCents
     };
     
     // Update settings in Stripe
@@ -408,14 +406,14 @@ export async function updateAutoRechargeSettings(req: ExpressRequest, res: Expre
     res.status(200).json({
       success: true,
       data: settings,
-      message: 'Auto-recharge settings updated successfully'
     });
     return;
   } catch (error) {
     console.error('Error updating auto-recharge settings:', error);
     res.status(500).json({
       success: false,
-      error: 'An unexpected error occurred'
+      error: 'An unexpected error occurred',
+      details: error
     });
     return;
   }

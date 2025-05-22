@@ -8,7 +8,7 @@ packages:
   - apps/user-service
   # - apps/web-oauth-service
   - apps/web-gateway-service
-  # - apps/payment-service
+  - apps/payment-service
   - apps/key-service
   # - apps/webhook-gateway-service
   # - apps/tool-auth-service

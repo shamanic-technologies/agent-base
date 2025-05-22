@@ -1,23 +1,24 @@
 /**
  * Controller for Stripe Checkout session operations
  */
-import { ExpressRequest, ExpressResponse } from '../types';
-import * as customerService from '../services/customerService';
-import { stripe } from '../config';
-
+import { Request, Response } from 'express';
+import * as customerService from '../services/customerService.js';
+import { stripe } from '../config/index.js';
+import { CreateCheckoutSessionRequest } from '@agent-base/types';
+import Stripe from 'stripe';
 /**
  * Create a Stripe Checkout session for adding credit to a user's account
  * 
  * Gets the user ID from x-user-id header (set by web-gateway auth middleware)
  */
-export async function createCheckoutSession(req: ExpressRequest, res: ExpressResponse): Promise<void> {
+export async function createCheckoutSession(req: Request, res: Response): Promise<void> {
   try {
-    const userId = req.headers['x-user-id'] as string;
-    const { amount, successUrl, cancelUrl } = req.body;
+    const platformUserId = req.headers['x-platform-user-id'] as string;
+    const { amountInUSDCents, successUrl, cancelUrl }: CreateCheckoutSessionRequest = req.body;
     
     // Check for authentication
-    if (!userId) {
-      console.log('Missing x-user-id header in request to /payment/create-checkout-session');
+    if (!platformUserId) {
+      console.log('Missing x-platform-user-id header in request to /payment/create-checkout-session');
       res.status(401).json({
         success: false,
         error: 'Authentication required'
@@ -26,30 +27,30 @@ export async function createCheckoutSession(req: ExpressRequest, res: ExpressRes
     }
     
     // Validate required parameters
-    if (amount === undefined || !successUrl || !cancelUrl) {
+    if (amountInUSDCents === undefined || !successUrl || !cancelUrl) {
       res.status(400).json({
         success: false,
-        error: 'Missing required parameters: amount, successUrl, and cancelUrl are required'
+        error: 'Missing required parameters: amountInUSDCents, successUrl, and cancelUrl are required'
       });
       return;
     }
     
     // Validate amount
-    if (typeof amount !== 'number' || amount < 5) {
+    if (typeof amountInUSDCents !== 'number' || amountInUSDCents < 500) {
       res.status(400).json({
         success: false,
-        error: 'Amount must be a number and at least 5'
+        error: 'Amount must be a number and at least $5'
       });
       return;
     }
     
-    console.log(`Creating checkout session for user: ${userId}, amount: $${amount}`);
+    console.log(`Creating checkout session for user: ${platformUserId}, amount: $${(amountInUSDCents/100).toFixed(2)}`);
     
     // Find or create customer for the user
-    const customer = await customerService.findCustomerByUserId(userId);
+    const stripeCustomer = await customerService.findStripeCustomerByPlatformUserId(platformUserId);
     
-    if (!customer) {
-      console.error(`No customer found for user ID: ${userId}`);
+    if (!stripeCustomer) {
+      console.error(`No customer found for user ID: ${platformUserId}`);
       res.status(404).json({
         success: false,
         error: 'Customer not found'
@@ -57,13 +58,13 @@ export async function createCheckoutSession(req: ExpressRequest, res: ExpressRes
       return;
     }
     
-    console.log(`Found customer: ${customer.id} for user: ${userId}`);
+    console.log(`Found customer: ${stripeCustomer.id} for user: ${platformUserId}`);
     
     // Create a Stripe Checkout session
-    const session = await stripe.checkout.sessions.create({
+    const stripeCheckoutSession: Stripe.Checkout.Session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'payment',
-      customer: customer.id,
+      customer: stripeCustomer.id,
       line_items: [{
         price_data: {
           currency: 'usd',
@@ -71,27 +72,24 @@ export async function createCheckoutSession(req: ExpressRequest, res: ExpressRes
             name: 'Credits',
             description: 'Credit for API usage'
           },
-          unit_amount: Math.round(amount * 100), // Convert to cents
+          unit_amount: Math.round(amountInUSDCents), // Convert to cents
         },
         quantity: 1,
       }],
       success_url: successUrl,
       cancel_url: cancelUrl,
       metadata: {
-        userId: userId,
+        platformUserId: platformUserId,
         purpose: 'add_credit',
-        creditAmount: amount.toString()
+        creditAmountInUSDCents: amountInUSDCents.toString()
       }
     });
     
-    console.log(`Created checkout session: ${session.id}`);
+    console.log(`Created checkout session: ${stripeCheckoutSession.id}`);
     
     res.status(200).json({
       success: true,
-      data: {
-        sessionId: session.id,
-        checkoutUrl: session.url
-      }
+      data: stripeCheckoutSession
     });
     return;
   } catch (error) {

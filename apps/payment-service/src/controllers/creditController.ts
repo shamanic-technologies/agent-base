@@ -1,23 +1,28 @@
 /**
  * Controller for credit-related endpoints
  */
-import { ExpressRequest, ExpressResponse } from '../types';
-import * as customerService from '../services/customerService';
-import * as creditService from '../services/creditService';
-import { stripe } from '../config';
-
+import { Request, Response } from 'express';
+import * as customerService from '../services/customerService.js';
+import * as creditService from '../services/creditService.js';
+import { stripe } from '../config/index.js';
+import {
+  DeductCreditRequest,
+  DeductCreditResponse,
+  ValidateCreditRequest,
+  ValidateCreditResponse,
+} from "@agent-base/types";
 /**
  * Validate if a customer has sufficient credit for a specific operation
  * 
  * Gets the user ID from x-user-id header (set by web-gateway auth middleware)
  */
-export async function validateCredit(req: ExpressRequest, res: ExpressResponse): Promise<void> {
+export async function validateCredit(req: Request, res: Response): Promise<void> {
   try {
-    const userId = req.headers['x-user-id'] as string;
-    const { amount } = req.body;
+    const platformUserId = req.headers['x-platform-user-id'] as string;
+    const { amountInUSDCents }: ValidateCreditRequest = req.body;
     
-    if (!userId) {
-      console.log('Missing x-user-id header in request to /payment/validate-credit');
+    if (!platformUserId) {
+      console.log('Missing x-platform-user-id header in request to /payment/validate-credit');
       res.status(401).json({
         success: false,
         error: 'Authentication required'
@@ -25,7 +30,7 @@ export async function validateCredit(req: ExpressRequest, res: ExpressResponse):
       return;
     }
     
-    if (amount === undefined) {
+    if (amountInUSDCents === undefined) {
       res.status(400).json({
         success: false,
         error: 'Amount is required'
@@ -33,13 +38,13 @@ export async function validateCredit(req: ExpressRequest, res: ExpressResponse):
       return;
     }
     
-    console.log(`Validating credit for userId: ${userId}, amount: ${amount}`);
+    console.log(`Validating credit for userId: ${platformUserId}, amount: $${(amountInUSDCents/100).toFixed(2)}`);
     
     // Find the customer
-    const customer = await customerService.findCustomerByUserId(userId);
+    const customer = await customerService.findStripeCustomerByPlatformUserId(platformUserId);
     
     if (!customer) {
-      console.error(`Customer not found with userId: ${userId}`);
+      console.error(`Customer not found with userId: ${platformUserId}`);
       res.status(404).json({
         success: false,
         error: 'Customer not found'
@@ -49,14 +54,14 @@ export async function validateCredit(req: ExpressRequest, res: ExpressResponse):
     
     // Check if customer has enough credit
     const credits = await customerService.calculateCustomerCredits(customer.id);
-    const hasEnoughCredit = credits.remaining >= amount;
+    const hasEnoughCredit = credits.remainingInUSDCents >= amountInUSDCents;
     
     res.status(200).json({
       success: true,
       data: {
         hasEnoughCredit,
-        remainingCredit: credits.remaining
-      }
+        remainingCreditInUSDCents: credits.remainingInUSDCents
+      } as ValidateCreditResponse
     });
     return;
   } catch (error) {
@@ -74,13 +79,13 @@ export async function validateCredit(req: ExpressRequest, res: ExpressResponse):
  * 
  * Gets the user ID from x-user-id header (set by web-gateway auth middleware)
  */
-export async function deductCreditByUserId(req: ExpressRequest, res: ExpressResponse): Promise<void> {
+export async function deductCreditByPlatformUserId(req: Request, res: Response): Promise<void> {
   try {
-    const userId = req.headers['x-user-id'] as string;
-    const { amount, description } = req.body;
+    const platformUserId = req.headers['x-platform-user-id'] as string;
+    const { amountInUSDCents, description }: DeductCreditRequest = req.body;
     
-    if (!userId) {
-      console.log('Missing x-user-id header in request to /payment/deduct-credit');
+    if (!platformUserId) {
+      console.log('Missing x-platform-user-id header in request to /payment/deduct-credit');
       res.status(401).json({
         success: false,
         error: 'Authentication required'
@@ -88,7 +93,7 @@ export async function deductCreditByUserId(req: ExpressRequest, res: ExpressResp
       return;
     }
     
-    if (amount === undefined) {
+    if (amountInUSDCents === undefined) {
       res.status(400).json({
         success: false,
         error: 'Amount is required'
@@ -96,59 +101,50 @@ export async function deductCreditByUserId(req: ExpressRequest, res: ExpressResp
       return;
     }
     
-    console.log(`Deducting ${amount} credit from user: ${userId}`);
+    console.log(`Deducting ${amountInUSDCents} credit from user: ${platformUserId}`);
     
     // Find the customer
-    const customer = await customerService.findCustomerByUserId(userId);
+    const stripeCustomer = await customerService.findStripeCustomerByPlatformUserId(platformUserId);
     
-    if (!customer) {
-      console.error(`No customer found for user ID: ${userId}`);
+    if (!stripeCustomer) {
+      console.error(`No customer found for user ID: ${platformUserId}`);
       res.status(404).json({
         success: false,
-        error: 'Customer not found'
+        error: 'Stripe customer not found'
       });
       return;
     }
     
     // Check if customer has enough credit
-    const credits = await customerService.calculateCustomerCredits(customer.id);
+    const stripeCustomerCredits = await customerService.calculateCustomerCredits(stripeCustomer.id);
     
-    if (credits.remaining < amount) {
-      console.warn(`Insufficient credit for user: ${userId}. Requested: ${amount}, Available: ${credits.remaining}`);
+    if (stripeCustomerCredits.remainingInUSDCents < amountInUSDCents) {
+      console.warn(`Insufficient credit for user: ${platformUserId}. Requested: ${amountInUSDCents}, Available: ${stripeCustomerCredits.remainingInUSDCents}`);
       res.status(400).json({
         success: false,
         error: 'Insufficient credit',
-        data: {
-          remainingCredit: credits.remaining,
-          requestedAmount: amount
-        }
+        details: `Remaining credit: $${(stripeCustomerCredits.remainingInUSDCents/100).toFixed(2)}, Requested amount: $${(amountInUSDCents/100).toFixed(2)}`
       });
       return;
     }
     
     // Deduct credit by updating the customer's balance
-    const transaction = await creditService.deductCredit(
-      customer.id, 
-      amount, 
-      description || 'API usage'
+    const deductCreditResult: DeductCreditResponse = await creditService.deductCredit(
+      stripeCustomer.id, 
+      amountInUSDCents, 
+      description
     );
-    
-    // Get updated credit balance
-    const updatedCredits = await customerService.calculateCustomerCredits(customer.id);
-    
+
     res.status(200).json({
       success: true,
-      data: {
-        transaction,
-        newBalance: updatedCredits.remaining
-      }
+      data: deductCreditResult
     });
     return;
   } catch (error) {
     console.error('Error deducting credit:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to deduct credit'
+      error: 'Failed to deduct credit:' + error
     });
     return;
   }
@@ -159,19 +155,21 @@ export async function deductCreditByUserId(req: ExpressRequest, res: ExpressResp
  * 
  * Used for direct access by admins or other services
  */
-export async function deductCreditById(req: ExpressRequest, res: ExpressResponse): Promise<void> {
+export async function deductCreditByStripeCustomerId(req: Request, res: Response): Promise<void> {
   try {
-    const { customerId, amount, description } = req.body;
+    const { stripeCustomerId } = req.params;
+
+    const { amountInUSDCents, description } : DeductCreditRequest = req.body;
     
-    if (!customerId) {
+    if (!stripeCustomerId) {
       res.status(400).json({
         success: false,
-        error: 'Customer ID is required'
+        error: 'Stripe customer ID is required'
       });
       return;
     }
     
-    if (amount === undefined) {
+    if (amountInUSDCents === undefined) {
       res.status(400).json({
         success: false,
         error: 'Amount is required'
@@ -179,13 +177,13 @@ export async function deductCreditById(req: ExpressRequest, res: ExpressResponse
       return;
     }
     
-    console.log(`Deducting ${amount} credit from customer: ${customerId}`);
+    console.log(`Deducting ${amountInUSDCents} credit from customer: ${stripeCustomerId}`);
     
     // Check if customer exists
-    const customer = await stripe.customers.retrieve(customerId);
+    const customer = await stripe.customers.retrieve(stripeCustomerId);
     
     if (!customer || customer.deleted) {
-      console.error(`Customer not found with ID: ${customerId}`);
+      console.error(`Customer not found with ID: ${stripeCustomerId}`);
       res.status(404).json({
         success: false,
         error: 'Customer not found'
@@ -194,44 +192,36 @@ export async function deductCreditById(req: ExpressRequest, res: ExpressResponse
     }
     
     // Check if customer has enough credit
-    const credits = await customerService.calculateCustomerCredits(customerId);
+    const credits = await customerService.calculateCustomerCredits(stripeCustomerId);
     
-    if (credits.remaining < amount) {
-      console.warn(`Insufficient credit for customer: ${customerId}. Requested: ${amount}, Available: ${credits.remaining}`);
+    if (credits.remainingInUSDCents < amountInUSDCents) {
+      console.warn(`Insufficient credit for customer: ${stripeCustomerId}. Requested: $${(amountInUSDCents/100).toFixed(2)}, Available: $${(credits.remainingInUSDCents/100).toFixed(2)}`);
       res.status(400).json({
         success: false,
         error: 'Insufficient credit',
-        data: {
-          remainingCredit: credits.remaining,
-          requestedAmount: amount
-        }
+        details: `Remaining credit: $${(credits.remainingInUSDCents/100).toFixed(2)}, Requested amount: $${(amountInUSDCents/100).toFixed(2)}`
       });
       return;
     }
     
     // Deduct credit by updating the customer's balance
-    const transaction = await creditService.deductCredit(
-      customerId, 
-      amount, 
+    const deductCreditResult: DeductCreditResponse = await creditService.deductCredit(
+      stripeCustomerId, 
+      amountInUSDCents, 
       description || 'API usage'
     );
     
-    // Get updated credit balance
-    const updatedCredits = await customerService.calculateCustomerCredits(customerId);
-    
+
     res.status(200).json({
       success: true,
-      data: {
-        transaction,
-        newBalance: updatedCredits.remaining
-      }
+      data: deductCreditResult
     });
     return;
   } catch (error) {
     console.error('Error deducting credit:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to deduct credit'
+      error: 'Failed to deduct credit:' + error
     });
     return;
   }

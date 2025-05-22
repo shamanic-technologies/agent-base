@@ -1,16 +1,16 @@
 /**
  * Customer service for managing Stripe customers
  */
-import { stripe } from '../config';
-import { AutoRechargeSettings, CustomerData, CustomerCredits } from '../types';
+import { stripe } from '../config/index.js';
+import { AutoRechargeSettings, CustomerCredits, Pricing, StripeCustomerInformation } from '@agent-base/types';
 import Stripe from 'stripe';
 
 /**
  * Find a customer by user ID
  */
-export async function findCustomerByUserId(userId: string): Promise<Stripe.Customer | null> {
+export async function findStripeCustomerByPlatformUserId(platformUserId: string): Promise<Stripe.Customer | null> {
   const customers = await stripe.customers.search({
-    query: `metadata['userId']:'${userId}'`,
+    query: `metadata['platformUserId']:'${platformUserId}'`,
     limit: 1
   });
   
@@ -20,16 +20,16 @@ export async function findCustomerByUserId(userId: string): Promise<Stripe.Custo
 /**
  * Create a new customer in Stripe
  */
-export async function createCustomer(userId: string, email?: string, name?: string): Promise<Stripe.Customer> {
+export async function createCustomer(platformUserId: string, platformUserEmail?: string, platformUserName?: string): Promise<Stripe.Customer> {
   const customerParams: Stripe.CustomerCreateParams = {
     metadata: {
-      userId: userId
+      platformUserId: platformUserId
     }
   };
   
   // Add email and name if available
-  if (email) customerParams.email = email;
-  if (name) customerParams.name = name;
+  if (platformUserEmail) customerParams.email = platformUserEmail;
+  if (platformUserName) customerParams.name = platformUserName;
   
   console.log(`Creating new customer with params:`, customerParams);
   return await stripe.customers.create(customerParams);
@@ -38,11 +38,11 @@ export async function createCustomer(userId: string, email?: string, name?: stri
 /**
  * Add free sign-up credit to a new customer
  */
-export async function addFreeSignupCredit(customerId: string, amount: number = 5): Promise<Stripe.CustomerBalanceTransaction> {
-  const freeCredits = amount * -100; // $5.00 in cents (negative for customer credit)
+export async function addFreeSignupCredit(stripeCustomerId: string, amountInUSDCents: number = Pricing.FREE_SIGNUP_CREDIT_AMOUNT_IN_USD_CENTS): Promise<Stripe.CustomerBalanceTransaction> {
+  const freeCreditsInUSDCents = amountInUSDCents * -1; // $5.00 in cents (negative for customer credit)
   
-  return await stripe.customers.createBalanceTransaction(customerId, {
-    amount: freeCredits,
+  return await stripe.customers.createBalanceTransaction(stripeCustomerId, {
+    amount: freeCreditsInUSDCents,
     currency: 'usd',
     description: 'Free Sign-up Credit'
   });
@@ -51,43 +51,43 @@ export async function addFreeSignupCredit(customerId: string, amount: number = 5
 /**
  * Calculate customer credit balance from transaction history
  */
-export async function calculateCustomerCredits(customerId: string): Promise<CustomerCredits> {
+export async function calculateCustomerCredits(stripeCustomerId: string): Promise<CustomerCredits> {
   const balanceTransactions = await stripe.customers.listBalanceTransactions(
-    customerId,
+    stripeCustomerId,
     { limit: 100 }
   );
   
   // Calculate total credits granted (all negative transactions)
-  const totalCredits = balanceTransactions.data
+  const totalCreditsInUSDCents = balanceTransactions.data
     .filter(tx => tx.amount < 0)
     .reduce((sum, tx) => sum + Math.abs(tx.amount), 0) / 100;
   
   // Calculate used credits (all positive transactions)
-  const usedCredits = balanceTransactions.data
+  const usedCreditsInUSDCents = balanceTransactions.data
     .filter(tx => tx.amount > 0)
     .reduce((sum, tx) => sum + tx.amount, 0) / 100;
   
   // Calculate remaining credits
-  const remainingCredits = totalCredits - usedCredits;
+  const remainingCreditsInUSDCents = totalCreditsInUSDCents - usedCreditsInUSDCents;
   
-  console.log(`Credit calculation for customer ${customerId}:`, {
-    totalCredits,
-    usedCredits,
-    remainingCredits
+  console.log(`Credit calculation for customer ${stripeCustomerId}:`, {
+    totalCreditsInUSDCents,
+    usedCreditsInUSDCents,
+    remainingCreditsInUSDCents
   });
   
   return {
-    total: totalCredits,
-    used: usedCredits,
-    remaining: remainingCredits
+    totalInUSDCents: totalCreditsInUSDCents,
+    usedInUSDCents: usedCreditsInUSDCents,
+    remainingInUSDCents: remainingCreditsInUSDCents
   };
 }
 
 /**
  * Get customer's auto-recharge settings from metadata
  */
-export async function getAutoRechargeSettings(customerId: string): Promise<AutoRechargeSettings | null> {
-  const customer = await stripe.customers.retrieve(customerId);
+export async function getAutoRechargeSettings(stripeCustomerId: string): Promise<AutoRechargeSettings | null> {
+  const customer = await stripe.customers.retrieve(stripeCustomerId);
   
   if ('deleted' in customer) {
     return null;
@@ -97,16 +97,16 @@ export async function getAutoRechargeSettings(customerId: string): Promise<AutoR
   
   if (
     !metadata?.auto_recharge_enabled || 
-    !metadata?.auto_recharge_threshold || 
-    !metadata?.auto_recharge_amount
+    !metadata?.auto_recharge_threshold_in_usd_cents || 
+    !metadata?.auto_recharge_amount_in_usd_cents
   ) {
     return null;
   }
   
   return {
     enabled: metadata.auto_recharge_enabled === 'true',
-    thresholdAmount: parseFloat(metadata.auto_recharge_threshold),
-    rechargeAmount: parseFloat(metadata.auto_recharge_amount)
+    thresholdAmountInUSDCents: parseFloat(metadata.auto_recharge_threshold_in_usd_cents),
+    rechargeAmountInUSDCents: parseFloat(metadata.auto_recharge_amount_in_usd_cents)
   };
 }
 
@@ -114,14 +114,14 @@ export async function getAutoRechargeSettings(customerId: string): Promise<AutoR
  * Update customer's auto-recharge settings
  */
 export async function updateAutoRechargeSettings(
-  customerId: string, 
+  stripeCustomerId: string, 
   settings: AutoRechargeSettings
 ): Promise<Stripe.Customer> {
-  return await stripe.customers.update(customerId, {
+  return await stripe.customers.update(stripeCustomerId, {
     metadata: {
       auto_recharge_enabled: settings.enabled.toString(),
-      auto_recharge_threshold: settings.thresholdAmount.toString(),
-      auto_recharge_amount: settings.rechargeAmount.toString()
+      auto_recharge_threshold_in_usd_cents: settings.thresholdAmountInUSDCents.toString(),
+      auto_recharge_amount_in_usd_cents: settings.rechargeAmountInUSDCents.toString()
     }
   });
 }
@@ -129,29 +129,29 @@ export async function updateAutoRechargeSettings(
 /**
  * Format customer data for API response
  */
-export function formatCustomerData(customer: Stripe.Customer, credits: CustomerCredits): CustomerData {
+export function formatCustomerData(customer: Stripe.Customer, credits: CustomerCredits): StripeCustomerInformation {
   // Extract auto-recharge settings from metadata if they exist
-  let autoRecharge: AutoRechargeSettings | undefined;
+  let autoRechargeSettings: AutoRechargeSettings | undefined;
   
   if (
     customer.metadata?.auto_recharge_enabled && 
-    customer.metadata?.auto_recharge_threshold && 
-    customer.metadata?.auto_recharge_amount
+    customer.metadata?.auto_recharge_threshold_in_usd_cents && 
+    customer.metadata?.auto_recharge_amount_in_usd_cents
   ) {
-    autoRecharge = {
+    autoRechargeSettings = {
       enabled: customer.metadata.auto_recharge_enabled === 'true',
-      thresholdAmount: parseFloat(customer.metadata.auto_recharge_threshold),
-      rechargeAmount: parseFloat(customer.metadata.auto_recharge_amount)
+      thresholdAmountInUSDCents: parseFloat(customer.metadata.auto_recharge_threshold_in_usd_cents),
+      rechargeAmountInUSDCents: parseFloat(customer.metadata.auto_recharge_amount_in_usd_cents)
     };
   }
   
   return {
-    id: customer.id,
-    userId: customer.metadata.userId || 'unknown',
-    email: customer.email,
-    name: customer.name,
-    createdAt: new Date(customer.created * 1000),
-    credits,
-    autoRecharge
+    stripeCustomerId: customer.id,
+    stripePlatformUserId: customer.metadata.platformUserId,
+    stripeEmail: customer.email,
+    stripeName: customer.name,
+    stripeCreatedAt: new Date(customer.created * 1000),
+    stripeCredits: credits,
+    autoRechargeSettings
   };
 } 

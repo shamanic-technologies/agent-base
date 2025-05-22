@@ -1,9 +1,9 @@
 /**
  * Controller for handling Stripe webhook events
  */
-import { ExpressRequest, ExpressResponse } from '../types';
-import { stripe } from '../config';
-import * as creditService from '../services/creditService';
+import { Request, Response } from 'express';
+import { stripe } from '../config/index.js';
+import * as creditService from '../services/creditService.js';
 
 // Webhook secret from environment variable
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
@@ -11,14 +11,15 @@ const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 /**
  * Process Stripe webhook events
  */
-export async function handleWebhook(req: ExpressRequest, res: ExpressResponse): Promise<void> {
+export async function handleWebhook(req: Request, res: Response): Promise<void> {
   const signature = req.headers['stripe-signature'];
   
   if (!signature || !STRIPE_WEBHOOK_SECRET) {
     console.error('Webhook error: Missing signature or webhook secret');
     res.status(400).json({
       success: false,
-      error: 'Missing signature or webhook secret'
+      error: 'Webhook error',
+      details: 'Missing signature or webhook secret'
     });
     return;
   }
@@ -74,7 +75,8 @@ export async function handleWebhook(req: ExpressRequest, res: ExpressResponse): 
     console.error('Webhook error:', err);
     res.status(400).json({
       success: false,
-      error: 'Webhook processing failed'
+      error: 'Webhook processing failed',
+      details: err
     });
     return;
   }
