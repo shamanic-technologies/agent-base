@@ -38,7 +38,7 @@ export const validateProviderUser = async (
   providerUserId: string
 ): Promise<ServiceResponse<PlatformUserId>> => {
 
-  const endpoint = '/provider-users/validate'; // Endpoint path
+  const endpoint = '/provider-user/validate'; // Endpoint path
   const input = {
     serviceUrl: getUserServiceUrl(),
     method: 'post',
@@ -50,7 +50,7 @@ export const validateProviderUser = async (
     input.serviceUrl,
     input.method as Method,
     input.endpoint,
-    input.providerUserId
+    { providerUserId: input.providerUserId } // Send as an object
   );
 
 };

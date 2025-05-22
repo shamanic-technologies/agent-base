@@ -435,7 +435,9 @@ export async function makeWebAnonymousServiceRequest<T>(
     method,
     url: fullUrl,
     params,
-    headers: {}, // No auth headers
+    headers: {
+      'Content-Type': 'application/json', // Explicitly set Content-Type
+    }, 
     data
   };
 

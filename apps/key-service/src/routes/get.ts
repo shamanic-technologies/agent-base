@@ -54,14 +54,11 @@ router.get('/by-name', async (req, res): Promise<void> => {
     }
 
     // Get all user keys and filter by name
-    const userKeys = await getUserApiKeys(platformUserId);
+    const userKeys: ServiceResponse<ApiKey[]> = await getUserApiKeys(platformUserId);
     
     if (!userKeys.success) {
       console.error('Error retrieving user keys:', userKeys.error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to retrieve user keys'
-      });
+      res.status(500).json(userKeys);
       return;
     }
     
@@ -87,19 +84,11 @@ router.get('/by-name', async (req, res): Promise<void> => {
 
       // Check if the retrieved key value is valid
       if (platformApiKey) {
-
-        const serviceResponse : ServiceResponse<SecretValue> = {
-          success: true,
-          data: {
-            value: platformApiKey,
-          },
-        };
-
         // Return just the secret value (as raw text, Content-Type will be set automatically)
         // The client expects raw text for 200 OK status
         res.setHeader('Content-Type', 'text/plain'); 
 
-        res.status(200).json(serviceResponse);
+        res.status(200).json(secretValueResponse);
         return;
       } 
     } 

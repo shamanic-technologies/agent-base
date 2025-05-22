@@ -33,3 +33,6 @@ export * from './types/api-tool.js';
 
 // Export credential types
 export * from './types/oauth.js';
+
+// Export credit types
+export * from './types/credit.js';

@@ -6,7 +6,7 @@
 import { Router } from 'express';
 import { 
   validateProviderUserHandler
-} from '../controllers/provider-users.controller';
+} from '../controllers/provider-user.controller';
 
 const router = Router();
 

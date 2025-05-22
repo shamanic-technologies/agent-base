@@ -18,6 +18,15 @@ interface ValidateProviderUserInput {
  * Returns the internal platformUserId.
  */
 export const validateProviderUserHandler: AsyncRequestHandler = async (req, res) => {
+  // Check if req.body exists
+  if (!req.body) {
+    console.log('[User Service] Request body is missing or undefined');
+    return res.status(400).json({
+      success: false,
+      error: 'Request body is missing',
+    });
+  }
+
   const { providerUserId } = req.body as ValidateProviderUserInput;
 
   if (!providerUserId) {
@@ -52,7 +61,6 @@ export const validateProviderUserHandler: AsyncRequestHandler = async (req, res)
     }
 
     // Successfully found or created the user
-    console.log(`[User Service] Successfully validated platform user for providerUserId ${providerUserId}, platformUserId: ${dbResponse.data.id}`);
     return res.json({
       success: true,
       data: {

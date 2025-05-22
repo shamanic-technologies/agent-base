@@ -2,6 +2,8 @@
  * Common base types for the agent system.
  */
 
+import { CreditConsumption } from "./credit.js";
+
 /**
  * Generic success/error response structure.
  */
@@ -10,6 +12,7 @@ export interface BaseResponse {
   error?: string;
   details?: string;
   hint?: string; // Concrete next steps for the agent to take
+  creditConsumption?: CreditConsumption;
 }
 
 /**

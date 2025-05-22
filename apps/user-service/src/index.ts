@@ -8,7 +8,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 // import session from 'express-session'; // No longer needed
 // import passport from './utils/passport'; // No longer needed
-import providerUserRoutes from './routes/provider-users.routes'; // Import specific user routes
+import providerUserRoutes from './routes/provider-user.routes'; // Import specific user routes
 import { config, logConfig } from './config/env';
 
 // Initialize Express app
