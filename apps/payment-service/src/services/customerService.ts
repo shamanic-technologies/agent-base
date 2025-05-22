@@ -5,35 +5,6 @@ import { stripe } from '../config/index.js';
 import { AutoRechargeSettings, CustomerCredits, Pricing, StripeCustomerInformation } from '@agent-base/types';
 import Stripe from 'stripe';
 
-/**
- * Find a customer by user ID
- */
-export async function findStripeCustomerByPlatformUserId(platformUserId: string): Promise<Stripe.Customer | null> {
-  const customers = await stripe.customers.search({
-    query: `metadata['platformUserId']:'${platformUserId}'`,
-    limit: 1
-  });
-  
-  return customers.data.length > 0 ? customers.data[0] : null;
-}
-
-/**
- * Create a new customer in Stripe
- */
-export async function createCustomer(platformUserId: string, platformUserEmail?: string, platformUserName?: string): Promise<Stripe.Customer> {
-  const customerParams: Stripe.CustomerCreateParams = {
-    metadata: {
-      platformUserId: platformUserId
-    }
-  };
-  
-  // Add email and name if available
-  if (platformUserEmail) customerParams.email = platformUserEmail;
-  if (platformUserName) customerParams.name = platformUserName;
-  
-  console.log(`Creating new customer with params:`, customerParams);
-  return await stripe.customers.create(customerParams);
-}
 
 /**
  * Add free sign-up credit to a new customer
@@ -154,4 +125,66 @@ export function formatCustomerData(customer: Stripe.Customer, credits: CustomerC
     stripeCredits: credits,
     autoRechargeSettings
   };
+}
+
+/**
+ * Get or create a Stripe customer.
+ * If the customer exists, it returns the existing customer.
+ * If the customer does not exist, it creates a new customer and adds free sign-up credit.
+ *
+ * @param platformUserId The platform user ID.
+ * @param platformUserEmail Optional email for the new customer.
+ * @param platformUserName Optional name for the new customer.
+ * @returns The Stripe Customer object.
+ */
+export async function getOrCreateStripeCustomer(
+  platformUserId: string,
+  platformUserEmail?: string,
+  platformUserName?: string
+): Promise<Stripe.Customer> {
+  // Try to find an existing customer
+  let customer = await _findStripeCustomerByPlatformUserId(platformUserId);
+
+  // If customer doesn't exist, create a new one and add free credit
+  if (!customer) {
+    console.log(`Customer with platformUserId ${platformUserId} not found. Creating new customer.`);
+    customer = await _createCustomer(platformUserId, platformUserEmail, platformUserName);
+    // Add free sign-up credit to the new customer
+    await addFreeSignupCredit(customer.id);
+    console.log(`Added free sign-up credit to new customer ${customer.id}.`);
+  } else {
+    console.log(`Found existing customer ${customer.id} for platformUserId ${platformUserId}.`);
+  }
+
+  return customer;
 } 
+
+/**
+ * Find a customer by user ID
+ */
+async function _findStripeCustomerByPlatformUserId(platformUserId: string): Promise<Stripe.Customer | null> {
+  const customers = await stripe.customers.search({
+    query: `metadata['platformUserId']:'${platformUserId}'`,
+    limit: 1
+  });
+  
+  return customers.data.length > 0 ? customers.data[0] : null;
+}
+
+/**
+ * Create a new customer in Stripe
+ */
+async function _createCustomer(platformUserId: string, platformUserEmail?: string, platformUserName?: string): Promise<Stripe.Customer> {
+  const customerParams: Stripe.CustomerCreateParams = {
+    metadata: {
+      platformUserId: platformUserId
+    }
+  };
+  
+  // Add email and name if available
+  if (platformUserEmail) customerParams.email = platformUserEmail;
+  if (platformUserName) customerParams.name = platformUserName;
+  
+  console.log(`Creating new customer with params:`, customerParams);
+  return await stripe.customers.create(customerParams);
+}

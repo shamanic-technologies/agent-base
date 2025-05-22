@@ -7,7 +7,9 @@ import { Router, Request, Response, NextFunction } from 'express';
 import {
     ServiceResponse,
     Agent,
-    AgentServiceCredentials
+    AgentServiceCredentials,
+    DeductCreditRequest,
+    DeductCreditResponse
 } from '@agent-base/types';
 // AI SDK imports
 import { anthropic } from '@ai-sdk/anthropic';
@@ -22,7 +24,8 @@ import {
     createListUtilitiesTool,
     createGetUtilityInfoTool,
     createCallUtilityTool,
-    createFunctionalToolObject
+    createFunctionalToolObject,
+    deductCreditByPlatformUserIdInternalService
 } from '@agent-base/api-client';
 
 // @ts-ignore - createIdGenerator may not be directly exported
@@ -205,7 +208,7 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
             prefix: 'msgs',
             size: 16,
         }),
-        async onFinish({ response }) { // Destructure response directly
+        async onFinish({ response, toolCalls, usage }) { // Destructure response directly
             try {
               // Construct the final list including the latest assistant/tool responses
               // When saving, we should save the full original history plus the new interaction,
@@ -228,10 +231,32 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
 
               if (!saveResult.success) {
                   console.error("[Agent Service /run] Error saving messages to DB in onFinish:", saveResult.error);
+                  throw new Error(saveResult.error);
               }
 
             } catch (dbError) {
               console.error("[Agent Service /run] Exception calling database service to save messages in onFinish:", dbError);
+            }
+            try {
+              // Deduct credit from the customer's balance
+              const deductCreditRequest: DeductCreditRequest = {
+                toolCalls: toolCalls,
+                inputTokens: usage.promptTokens,
+                outputTokens: usage.completionTokens
+              };
+              const deductCreditResponse: ServiceResponse<DeductCreditResponse> = await deductCreditByPlatformUserIdInternalService(
+                platformUserId,
+                platformApiKey,
+                clientUserId,
+                deductCreditRequest
+              );
+
+              if (!deductCreditResponse.success) {
+                console.error("[Agent Service /run] Error deducting credit in onFinish:", deductCreditResponse.error);
+                throw new Error(deductCreditResponse.error);
+              }
+            } catch (deductCreditError) {
+              console.error("[Agent Service /run] Exception deducting credit in onFinish:", deductCreditError);
             }
         },
       });
@@ -240,7 +265,6 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       // even when the client response is aborted:
       result.consumeStream(); // no await
       // --- Pipe Stream --- 
-      // @ts-ignore - Assuming pipeDataStreamToResponse exists
       await result.pipeDataStreamToResponse(res, {
         getErrorMessage: handleToolError
       });
@@ -250,7 +274,7 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
        console.error("[Agent Service /run] Unhandled error in handleAgentRun:", error);
        // Ensure response isn't already sent before sending error
        if (!res.headersSent) {
-           res.status(500).json({ success: false, error: 'Internal Server Error' });
+           res.status(500).json({ success: false, error: 'Internal Server Error:' + error });
        }
        // Don't call next(error) if response is already sent, log instead.
        // next(error); // Avoid calling next if headers sent

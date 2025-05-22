@@ -1,5 +1,5 @@
 import Stripe from "stripe";
-
+import { ToolCall } from "ai";
 
 
 export type CreditConsumption = {
@@ -10,7 +10,7 @@ export type CreditConsumption = {
 export interface CreditConsumptionItem {
   totalAmountInUSDCents: number;
   consumptionType: CreditConsumptionType;
-  consumptionUnit: number;
+  consumptionUnits: number;
 }
 
 export enum CreditConsumptionType {
@@ -47,14 +47,14 @@ export interface StripeCustomerInformation {
 }
 
 // Plan types
-export interface StripePlan {
-  id: string;
-  name: string;
-  description: string | null;
-  priceInUSDCents: number;
-  active: boolean;
-  metadata: Stripe.Metadata;
-}
+// export interface StripePlan {
+//   id: string;
+//   name: string;
+//   description: string | null;
+//   priceInUSDCents: number;
+//   active: boolean;
+//   metadata: Stripe.Metadata;
+// }
 
 // Transaction types
 export interface StripeTransaction {
@@ -90,12 +90,13 @@ export interface ValidateCreditResponse {
 }
 
 export interface DeductCreditRequest {
-  amountInUSDCents: number;
-  description: string;
+  toolCalls: ToolCall<string, string>[];
+  inputTokens: number;
+  outputTokens: number;
 }
 
 export interface DeductCreditResponse {
-  transaction: Stripe.CustomerBalanceTransaction;
+  creditConsumption: CreditConsumption;
   newBalanceInUSDCents: number;
 }
 

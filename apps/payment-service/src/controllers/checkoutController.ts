@@ -14,7 +14,7 @@ import Stripe from 'stripe';
 export async function createCheckoutSession(req: Request, res: Response): Promise<void> {
   try {
     // The authMiddleware ensures platformUser and platformUser.platformUserId are present.
-    const platformUserId = req.platformUser!.platformUserId;
+    const { platformUserId, platformUserEmail, platformUserName } = req.platformUser!;
     const { amountInUSDCents, successUrl, cancelUrl }: CreateCheckoutSessionRequest = req.body;
     
     // Validate required parameters
@@ -38,7 +38,7 @@ export async function createCheckoutSession(req: Request, res: Response): Promis
     console.log(`Creating checkout session for user: ${platformUserId}, amount: $${(amountInUSDCents/100).toFixed(2)}`);
     
     // Find or create customer for the user
-    const stripeCustomer = await customerService.findStripeCustomerByPlatformUserId(platformUserId);
+    const stripeCustomer = await customerService.getOrCreateStripeCustomer(platformUserId, platformUserEmail, platformUserName);
     
     if (!stripeCustomer) {
       console.error(`No customer found for user ID: ${platformUserId}`);

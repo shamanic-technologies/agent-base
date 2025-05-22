@@ -8,8 +8,12 @@ import { stripe } from '../config/index.js';
 import {
   DeductCreditRequest,
   DeductCreditResponse,
+  Pricing,
   ValidateCreditRequest,
   ValidateCreditResponse,
+  CreditConsumptionType,
+  CreditConsumptionItem,
+  CreditConsumption
 } from "@agent-base/types";
 /**
  * Validate if a customer has sufficient credit for a specific operation
@@ -19,7 +23,7 @@ import {
 export async function validateCredit(req: Request, res: Response): Promise<void> {
   try {
     // The authMiddleware ensures platformUser and platformUser.platformUserId are present.
-    const platformUserId = req.platformUser!.platformUserId;
+    const { platformUserId, platformUserEmail, platformUserName } = req.platformUser!;
     const { amountInUSDCents }: ValidateCreditRequest = req.body;
     
     if (amountInUSDCents === undefined) {
@@ -33,7 +37,7 @@ export async function validateCredit(req: Request, res: Response): Promise<void>
     console.log(`Validating credit for userId: ${platformUserId}, amount: $${(amountInUSDCents/100).toFixed(2)}`);
     
     // Find the customer
-    const customer = await customerService.findStripeCustomerByPlatformUserId(platformUserId);
+    const customer = await customerService.getOrCreateStripeCustomer(platformUserId, platformUserEmail, platformUserName);
     
     if (!customer) {
       console.error(`Customer not found with userId: ${platformUserId}`);
@@ -74,21 +78,21 @@ export async function validateCredit(req: Request, res: Response): Promise<void>
 export async function deductCreditByPlatformUserId(req: Request, res: Response): Promise<void> {
   try {
     // The authMiddleware ensures platformUser and platformUser.platformUserId are present.
-    const platformUserId = req.platformUser!.platformUserId;
-    const { amountInUSDCents, description }: DeductCreditRequest = req.body;
+    const { platformUserId, platformUserEmail, platformUserName } = req.platformUser!;
+    const { toolCalls, inputTokens, outputTokens }: DeductCreditRequest = req.body;
     
-    if (amountInUSDCents === undefined) {
+    if (toolCalls === undefined || inputTokens === undefined || outputTokens === undefined) {
       res.status(400).json({
         success: false,
-        error: 'Amount is required'
+        error: 'Tool calls, input tokens, and output tokens are required'
       });
       return;
     }
     
-    console.log(`Deducting ${amountInUSDCents} credit from user: ${platformUserId}`);
+    console.log(`Deducting ${toolCalls.length} tool calls, ${inputTokens} input tokens, ${outputTokens} output tokens from user: ${platformUserId}`);
     
     // Find the customer
-    const stripeCustomer = await customerService.findStripeCustomerByPlatformUserId(platformUserId);
+    const stripeCustomer = await customerService.getOrCreateStripeCustomer(platformUserId, platformUserEmail, platformUserName);
     
     if (!stripeCustomer) {
       console.error(`No customer found for user ID: ${platformUserId}`);
@@ -98,30 +102,41 @@ export async function deductCreditByPlatformUserId(req: Request, res: Response):
       });
       return;
     }
-    
-    // Check if customer has enough credit
-    const stripeCustomerCredits = await customerService.calculateCustomerCredits(stripeCustomer.id);
-    
-    if (stripeCustomerCredits.remainingInUSDCents < amountInUSDCents) {
-      console.warn(`Insufficient credit for user: ${platformUserId}. Requested: ${amountInUSDCents}, Available: ${stripeCustomerCredits.remainingInUSDCents}`);
-      res.status(400).json({
-        success: false,
-        error: 'Insufficient credit',
-        details: `Remaining credit: $${(stripeCustomerCredits.remainingInUSDCents/100).toFixed(2)}, Requested amount: $${(amountInUSDCents/100).toFixed(2)}`
-      });
-      return;
+
+    // Calculate the credit consumption
+    const toolCallsConsumption : CreditConsumptionItem = {
+      totalAmountInUSDCents: Math.round(toolCalls.length * Pricing.TOOL_CALL_PRICE_IN_USD_CENTS),
+      consumptionType: CreditConsumptionType.TOOL_CALL,
+      consumptionUnits: toolCalls.length
     }
-    
+    const inputTokensConsumption : CreditConsumptionItem = {
+      totalAmountInUSDCents: Math.round(inputTokens/1000000 * Pricing.MILLION_INPUT_TOKENS_PRICE_IN_USD_CENTS),
+      consumptionType: CreditConsumptionType.INPUT_TOKEN,
+      consumptionUnits: inputTokens
+    }
+    const outputTokensConsumption : CreditConsumptionItem = {
+      totalAmountInUSDCents: Math.round(outputTokens/1000000 * Pricing.MILLION_OUTPUT_TOKENS_PRICE_IN_USD_CENTS),
+      consumptionType: CreditConsumptionType.OUTPUT_TOKEN,
+      consumptionUnits: outputTokens
+    }
+    const creditConsumption : CreditConsumption = {
+      items: [toolCallsConsumption, inputTokensConsumption, outputTokensConsumption],
+      totalAmountInUSDCents: toolCallsConsumption.totalAmountInUSDCents + inputTokensConsumption.totalAmountInUSDCents + outputTokensConsumption.totalAmountInUSDCents
+    }
+
     // Deduct credit by updating the customer's balance
-    const deductCreditResult: DeductCreditResponse = await creditService.deductCredit(
+    const newBalanceInUSDCents = await creditService.deductCredit(
       stripeCustomer.id, 
-      amountInUSDCents, 
-      description
+      creditConsumption.totalAmountInUSDCents,
+      'API usage'
     );
 
     res.status(200).json({
       success: true,
-      data: deductCreditResult
+      data: {
+        creditConsumption,
+        newBalanceInUSDCents
+      } as DeductCreditResponse
     });
     return;
   } catch (error) {
@@ -134,79 +149,79 @@ export async function deductCreditByPlatformUserId(req: Request, res: Response):
   }
 }
 
-/**
- * Deduct credit from a customer's balance by customer ID
- * 
- * Used for direct access by admins or other services
- */
-export async function deductCreditByStripeCustomerId(req: Request, res: Response): Promise<void> {
-  try {
-    const { stripeCustomerId } = req.params;
+// /**
+//  * Deduct credit from a customer's balance by customer ID
+//  * 
+//  * Used for direct access by admins or other services
+//  */
+// export async function deductCreditByStripeCustomerId(req: Request, res: Response): Promise<void> {
+//   try {
+//     const { stripeCustomerId } = req.params;
 
-    const { amountInUSDCents, description } : DeductCreditRequest = req.body;
+//     const { amountInUSDCents, description } : DeductCreditRequest = req.body;
     
-    if (!stripeCustomerId) {
-      res.status(400).json({
-        success: false,
-        error: 'Stripe customer ID is required'
-      });
-      return;
-    }
+//     if (!stripeCustomerId) {
+//       res.status(400).json({
+//         success: false,
+//         error: 'Stripe customer ID is required'
+//       });
+//       return;
+//     }
     
-    if (amountInUSDCents === undefined) {
-      res.status(400).json({
-        success: false,
-        error: 'Amount is required'
-      });
-      return;
-    }
+//     if (amountInUSDCents === undefined) {
+//       res.status(400).json({
+//         success: false,
+//         error: 'Amount is required'
+//       });
+//       return;
+//     }
     
-    console.log(`Deducting ${amountInUSDCents} credit from customer: ${stripeCustomerId}`);
+//     console.log(`Deducting ${amountInUSDCents} credit from customer: ${stripeCustomerId}`);
     
-    // Check if customer exists
-    const customer = await stripe.customers.retrieve(stripeCustomerId);
+//     // Check if customer exists
+//     const customer = await stripe.customers.retrieve(stripeCustomerId);
     
-    if (!customer || customer.deleted) {
-      console.error(`Customer not found with ID: ${stripeCustomerId}`);
-      res.status(404).json({
-        success: false,
-        error: 'Customer not found'
-      });
-      return;
-    }
+//     if (!customer || customer.deleted) {
+//       console.error(`Customer not found with ID: ${stripeCustomerId}`);
+//       res.status(404).json({
+//         success: false,
+//         error: 'Customer not found'
+//       });
+//       return;
+//     }
     
-    // Check if customer has enough credit
-    const credits = await customerService.calculateCustomerCredits(stripeCustomerId);
+//     // Check if customer has enough credit
+//     const credits = await customerService.calculateCustomerCredits(stripeCustomerId);
     
-    if (credits.remainingInUSDCents < amountInUSDCents) {
-      console.warn(`Insufficient credit for customer: ${stripeCustomerId}. Requested: $${(amountInUSDCents/100).toFixed(2)}, Available: $${(credits.remainingInUSDCents/100).toFixed(2)}`);
-      res.status(400).json({
-        success: false,
-        error: 'Insufficient credit',
-        details: `Remaining credit: $${(credits.remainingInUSDCents/100).toFixed(2)}, Requested amount: $${(amountInUSDCents/100).toFixed(2)}`
-      });
-      return;
-    }
+//     if (credits.remainingInUSDCents < amountInUSDCents) {
+//       console.warn(`Insufficient credit for customer: ${stripeCustomerId}. Requested: $${(amountInUSDCents/100).toFixed(2)}, Available: $${(credits.remainingInUSDCents/100).toFixed(2)}`);
+//       res.status(400).json({
+//         success: false,
+//         error: 'Insufficient credit',
+//         details: `Remaining credit: $${(credits.remainingInUSDCents/100).toFixed(2)}, Requested amount: $${(amountInUSDCents/100).toFixed(2)}`
+//       });
+//       return;
+//     }
     
-    // Deduct credit by updating the customer's balance
-    const deductCreditResult: DeductCreditResponse = await creditService.deductCredit(
-      stripeCustomerId, 
-      amountInUSDCents, 
-      description || 'API usage'
-    );
+//     // Deduct credit by updating the customer's balance
+//     const deductCreditResult: DeductCreditResponse = await creditService.deductCredit(
+//       stripeCustomerId, 
+//       amountInUSDCents, 
+//       description || 'API usage'
+//     );
     
 
-    res.status(200).json({
-      success: true,
-      data: deductCreditResult
-    });
-    return;
-  } catch (error) {
-    console.error('Error deducting credit:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to deduct credit:' + error
-    });
-    return;
-  }
-} 
+//     res.status(200).json({
+//       success: true,
+//       data: deductCreditResult
+//     });
+//     return;
+//   } catch (error) {
+//     console.error('Error deducting credit:', error);
+//     res.status(500).json({
+//       success: false,
+//       error: 'Failed to deduct credit:' + error
+//     });
+//     return;
+//   }
+// } 

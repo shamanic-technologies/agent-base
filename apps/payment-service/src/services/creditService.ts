@@ -56,33 +56,31 @@ export async function deductCredit(
   stripeCustomerId: string, 
   amountInUSDCents: number, 
   description: string = 'API usage'
-): Promise<DeductCreditResponse> {
-  // Get existing balance first
-  const existingCredits = await calculateCustomerCredits(stripeCustomerId);
-  
-  // Check if customer has enough credit
-  if (existingCredits.remainingInUSDCents < amountInUSDCents) {
-    throw new Error(`Insufficient credit: ${existingCredits.remainingInUSDCents} available, ${amountInUSDCents} requested`);
+): Promise<number> {
+  try {
+    // Get existing balance first
+    const existingCredits = await calculateCustomerCredits(stripeCustomerId);
+    
+    // Create a positive balance transaction to deduct credit
+    await stripe.customers.createBalanceTransaction(stripeCustomerId, {
+      amount: Math.round(amountInUSDCents), // positive for deduction
+      currency: 'usd',
+      description
+    });
+    
+    // Calculate new balance after deduction
+    const newUsedCreditsInUSDCents = existingCredits.usedInUSDCents + amountInUSDCents;
+    const newBalanceInUSDCents = existingCredits.totalInUSDCents - newUsedCreditsInUSDCents;
+      
+    // Check if auto-recharge should be triggered
+    await checkAndTriggerAutoRecharge(stripeCustomerId, newBalanceInUSDCents);
+    
+    return newBalanceInUSDCents;
+
+  } catch (error) {
+    console.error('Error deducting credit:', error);
+    throw error;
   }
-  
-  // Create a positive balance transaction to deduct credit
-  const balanceTransaction = await stripe.customers.createBalanceTransaction(stripeCustomerId, {
-    amount: Math.round(amountInUSDCents), // positive for deduction
-    currency: 'usd',
-    description
-  });
-  
-  // Calculate new balance after deduction
-  const newUsedCreditsInUSDCents = existingCredits.usedInUSDCents + amountInUSDCents;
-  const newBalanceInUSDCents = existingCredits.totalInUSDCents - newUsedCreditsInUSDCents;
-  
-  // Check if auto-recharge should be triggered
-  await checkAndTriggerAutoRecharge(stripeCustomerId, newBalanceInUSDCents);
-  
-  return { 
-    transaction: balanceTransaction,
-    newBalanceInUSDCents
-  };
 }
 
 /**

@@ -7,51 +7,47 @@ import * as customerService from '../services/customerService.js';
 import * as creditService from '../services/creditService.js';
 import { stripe } from '../config/index.js';
 import Stripe from 'stripe';
-/**
- * Get or create a Stripe customer
- * 
- * Gets the user ID from x-user-id header (set by web-gateway auth middleware)
- */
-export async function getOrCreateCustomer(req: Request, res: Response): Promise<void> {
-  try {
-    // The authMiddleware ensures platformUser and platformUser.platformUserId are present.
-    const platformUserId = req.platformUser!.platformUserId;
-    // Email and name can be sourced from req.platformUser if not in body, or body takes precedence.
-    const bodyValues = req.body as createCustomerRequest;
-    const platformUserEmail = bodyValues.platformUserEmail || req.platformUser!.platformUserEmail || undefined;
-    const platformUserName = bodyValues.platformUserName || req.platformUser!.platformUserName || undefined;
+// /**
+//  * Get or create a Stripe customer
+//  * 
+//  * Gets the user ID from x-user-id header (set by web-gateway auth middleware)
+//  */
+// export async function getOrCreateCustomer(req: Request, res: Response): Promise<void> {
+//   try {
+//     // The authMiddleware ensures platformUser and platformUser.platformUserId are present.
+//     const { platformUserId, platformUserEmail, platformUserName } = req.platformUser!;
 
-    // Try to find existing customer
-    let stripeCustomer = await customerService.findStripeCustomerByPlatformUserId(platformUserId);
+//     // Try to find existing customer
+//     let stripeCustomer = await customerService.getOrCreateStripeCustomer(platformUserId, platformUserEmail, platformUserName);
     
-    // If customer exists, return it
-    if (!stripeCustomer) {
-      // If no customer exists, create one in Stripe
-      stripeCustomer = await customerService.createCustomer(platformUserId, platformUserEmail, platformUserName);
+//     // If customer exists, return it
+//     if (!stripeCustomer) {
+//       // If no customer exists, create one in Stripe
+//       stripeCustomer = await customerService.createCustomer(platformUserId, platformUserEmail, platformUserName);
       
-      // Add initial $5 free credit
-      await customerService.addFreeSignupCredit(stripeCustomer.id);
-    }
+//       // Add initial $5 free credit
+//       await customerService.addFreeSignupCredit(stripeCustomer.id);
+//     }
 
-    // Get the updated credit balance
-    const credits: CustomerCredits = await customerService.calculateCustomerCredits(stripeCustomer.id);
-    const stripeCustomerInformation: StripeCustomerInformation = customerService.formatCustomerData(stripeCustomer, credits);
+//     // Get the updated credit balance
+//     const credits: CustomerCredits = await customerService.calculateCustomerCredits(stripeCustomer.id);
+//     const stripeCustomerInformation: StripeCustomerInformation = customerService.formatCustomerData(stripeCustomer, credits);
         
-    res.status(201).json({
-      success: true,
-      data: stripeCustomerInformation,
-    });
-    return;
-  } catch (error) {
-    console.error('Error in get/create customer endpoint:', error);
-    res.status(500).json({
-      success: false,
-      error: 'An unexpected error occurred',
-      details: error
-    });
-    return;
-  }
-}
+//     res.status(201).json({
+//       success: true,
+//       data: stripeCustomerInformation,
+//     });
+//     return;
+//   } catch (error) {
+//     console.error('Error in get/create customer endpoint:', error);
+//     res.status(500).json({
+//       success: false,
+//       error: 'An unexpected error occurred',
+//       details: error
+//     });
+//     return;
+//   }
+// }
 
 /**
  * Get a customer's credit balance by user ID
@@ -61,12 +57,12 @@ export async function getOrCreateCustomer(req: Request, res: Response): Promise<
 export async function getStripeCustomerCreditByPlatformUserId(req: Request, res: Response): Promise<void> {
   try {
     // The authMiddleware ensures platformUser and platformUser.platformUserId are present.
-    const platformUserId = req.platformUser!.platformUserId;
+    const { platformUserId, platformUserEmail, platformUserName } = req.platformUser!;
 
     console.log(`Getting credit balance for userId: ${platformUserId}`);
     
     // Find the customer
-    const stripeCustomer = await customerService.findStripeCustomerByPlatformUserId(platformUserId);
+    const stripeCustomer = await customerService.getOrCreateStripeCustomer(platformUserId, platformUserEmail, platformUserName);
     
     if (!stripeCustomer) {
       console.error(`Customer not found with userId: ${platformUserId}`);
@@ -267,12 +263,12 @@ export async function getStripeTransactionsByStripeCustomerId(req: Request, res:
 export async function getAutoRechargeSettings(req: Request, res: Response): Promise<void> {
   try {
     // The authMiddleware ensures platformUser and platformUser.platformUserId are present.
-    const platformUserId = req.platformUser!.platformUserId;
+    const { platformUserId, platformUserEmail, platformUserName } = req.platformUser!;
 
     console.log(`Getting auto-recharge settings for userId: ${platformUserId}`);
     
     // Find customer associated with this user
-    const stripeCustomer = await customerService.findStripeCustomerByPlatformUserId(platformUserId);
+    const stripeCustomer = await customerService.getOrCreateStripeCustomer(platformUserId, platformUserEmail, platformUserName);
     
     if (!stripeCustomer) {
       console.error(`Customer not found with userId: ${platformUserId}`);
@@ -326,7 +322,7 @@ export async function getAutoRechargeSettings(req: Request, res: Response): Prom
 export async function updateAutoRechargeSettings(req: Request, res: Response): Promise<void> {
   try {
     // The authMiddleware ensures platformUser and platformUser.platformUserId are present.
-    const platformUserId = req.platformUser!.platformUserId;
+    const { platformUserId, platformUserEmail, platformUserName } = req.platformUser!;
     const { enabled, thresholdAmountInUSDCents, rechargeAmountInUSDCents } : AutoRechargeSettings = req.body;
     
     console.log(`Updating auto-recharge settings for userId: ${platformUserId}`);
@@ -351,7 +347,7 @@ export async function updateAutoRechargeSettings(req: Request, res: Response): P
     }
     
     // Find customer associated with this user
-    const customer = await customerService.findStripeCustomerByPlatformUserId(platformUserId);
+    const customer = await customerService.getOrCreateStripeCustomer(platformUserId, platformUserEmail, platformUserName);
     
     if (!customer) {
       res.status(404).json({
