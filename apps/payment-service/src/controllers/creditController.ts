@@ -18,17 +18,9 @@ import {
  */
 export async function validateCredit(req: Request, res: Response): Promise<void> {
   try {
-    const platformUserId = req.headers['x-platform-user-id'] as string;
+    // The authMiddleware ensures platformUser and platformUser.platformUserId are present.
+    const platformUserId = req.platformUser!.platformUserId;
     const { amountInUSDCents }: ValidateCreditRequest = req.body;
-    
-    if (!platformUserId) {
-      console.log('Missing x-platform-user-id header in request to /payment/validate-credit');
-      res.status(401).json({
-        success: false,
-        error: 'Authentication required'
-      });
-      return;
-    }
     
     if (amountInUSDCents === undefined) {
       res.status(400).json({
@@ -81,17 +73,9 @@ export async function validateCredit(req: Request, res: Response): Promise<void>
  */
 export async function deductCreditByPlatformUserId(req: Request, res: Response): Promise<void> {
   try {
-    const platformUserId = req.headers['x-platform-user-id'] as string;
+    // The authMiddleware ensures platformUser and platformUser.platformUserId are present.
+    const platformUserId = req.platformUser!.platformUserId;
     const { amountInUSDCents, description }: DeductCreditRequest = req.body;
-    
-    if (!platformUserId) {
-      console.log('Missing x-platform-user-id header in request to /payment/deduct-credit');
-      res.status(401).json({
-        success: false,
-        error: 'Authentication required'
-      });
-      return;
-    }
     
     if (amountInUSDCents === undefined) {
       res.status(400).json({

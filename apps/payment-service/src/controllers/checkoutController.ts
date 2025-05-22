@@ -13,18 +13,9 @@ import Stripe from 'stripe';
  */
 export async function createCheckoutSession(req: Request, res: Response): Promise<void> {
   try {
-    const platformUserId = req.headers['x-platform-user-id'] as string;
+    // The authMiddleware ensures platformUser and platformUser.platformUserId are present.
+    const platformUserId = req.platformUser!.platformUserId;
     const { amountInUSDCents, successUrl, cancelUrl }: CreateCheckoutSessionRequest = req.body;
-    
-    // Check for authentication
-    if (!platformUserId) {
-      console.log('Missing x-platform-user-id header in request to /payment/create-checkout-session');
-      res.status(401).json({
-        success: false,
-        error: 'Authentication required'
-      });
-      return;
-    }
     
     // Validate required parameters
     if (amountInUSDCents === undefined || !successUrl || !cancelUrl) {

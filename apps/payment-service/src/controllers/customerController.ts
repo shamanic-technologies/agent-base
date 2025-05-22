@@ -14,19 +14,13 @@ import Stripe from 'stripe';
  */
 export async function getOrCreateCustomer(req: Request, res: Response): Promise<void> {
   try {
-    const platformUserId = req.headers['x-platform-user-id'] as string;
-    const { platformUserEmail, platformUserName } : createCustomerRequest = req.body;
-    
-    if (!platformUserId) {
-      console.log('Missing x-platform-user-id header in request to /payment/customers');
-      res.status(401).json({
-        success: false,
-        error: 'Authentication required',
-        details: 'Missing x-platform-user-id header in request to /payment/customers'
-      });
-      return;
-    }
-    
+    // The authMiddleware ensures platformUser and platformUser.platformUserId are present.
+    const platformUserId = req.platformUser!.platformUserId;
+    // Email and name can be sourced from req.platformUser if not in body, or body takes precedence.
+    const bodyValues = req.body as createCustomerRequest;
+    const platformUserEmail = bodyValues.platformUserEmail || req.platformUser!.platformUserEmail || undefined;
+    const platformUserName = bodyValues.platformUserName || req.platformUser!.platformUserName || undefined;
+
     // Try to find existing customer
     let stripeCustomer = await customerService.findStripeCustomerByPlatformUserId(platformUserId);
     
@@ -66,18 +60,9 @@ export async function getOrCreateCustomer(req: Request, res: Response): Promise<
  */
 export async function getStripeCustomerCreditByPlatformUserId(req: Request, res: Response): Promise<void> {
   try {
-    const platformUserId = req.headers['x-platform-user-id'] as string;
-    
-    if (!platformUserId) {
-      console.log('Missing x-platform-user-id header in request to /payment/customers/:platformUserId/credit');
-      res.status(401).json({
-        success: false,
-        error: 'Authentication required',
-        details: 'Missing x-platform-user-id header in request to /payment/customers/:platformUserId/credit'
-      });
-      return;
-    }
-    
+    // The authMiddleware ensures platformUser and platformUser.platformUserId are present.
+    const platformUserId = req.platformUser!.platformUserId;
+
     console.log(`Getting credit balance for userId: ${platformUserId}`);
     
     // Find the customer
@@ -281,18 +266,9 @@ export async function getStripeTransactionsByStripeCustomerId(req: Request, res:
  */
 export async function getAutoRechargeSettings(req: Request, res: Response): Promise<void> {
   try {
-    const platformUserId = req.headers['x-platform-user-id'] as string;
-    
-    if (!platformUserId) {
-      console.log('Missing x-platform-user-id header in request to /payment/auto-recharge');
-      res.status(401).json({
-        success: false,
-        error: 'Authentication required',
-        details: 'Missing x-platform-user-id header in request to /payment/auto-recharge'
-      });
-      return;
-    }
-    
+    // The authMiddleware ensures platformUser and platformUser.platformUserId are present.
+    const platformUserId = req.platformUser!.platformUserId;
+
     console.log(`Getting auto-recharge settings for userId: ${platformUserId}`);
     
     // Find customer associated with this user
@@ -349,17 +325,9 @@ export async function getAutoRechargeSettings(req: Request, res: Response): Prom
  */
 export async function updateAutoRechargeSettings(req: Request, res: Response): Promise<void> {
   try {
-    const platformUserId = req.headers['x-platform-user-id'] as string;
+    // The authMiddleware ensures platformUser and platformUser.platformUserId are present.
+    const platformUserId = req.platformUser!.platformUserId;
     const { enabled, thresholdAmountInUSDCents, rechargeAmountInUSDCents } : AutoRechargeSettings = req.body;
-    
-    if (!platformUserId) {
-      console.log('Missing x-platform-user-id header in request to /payment/auto-recharge');
-      res.status(401).json({
-        success: false,
-        error: 'Authentication required'
-      });
-      return;
-    }
     
     console.log(`Updating auto-recharge settings for userId: ${platformUserId}`);
     
