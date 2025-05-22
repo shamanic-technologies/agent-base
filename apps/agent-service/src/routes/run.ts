@@ -9,11 +9,12 @@ import {
     Agent,
     AgentServiceCredentials,
     DeductCreditRequest,
-    DeductCreditResponse
+    DeductCreditResponse,
+    ConversationId
 } from '@agent-base/types';
 // AI SDK imports
 import { anthropic } from '@ai-sdk/anthropic';
-import { streamText } from 'ai';
+import { streamText, StreamData } from 'ai';
 
 // Import necessary API client functions
 import {
@@ -59,6 +60,8 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
     let platformUserId: string | undefined;
     let platformApiKey: string | undefined;
 
+    const streamData = new StreamData(); // Instantiate StreamData
+
     try {
       // --- Extraction & Validation ---
       ({ message: currentMessage, conversationId } = req.body);
@@ -73,7 +76,11 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
                           !platformUserId ? 'Missing x-platform-user-id' :
                           !platformApiKey ? 'Missing x-platform-api-key' :
                                             'Missing message or conversationId';
-        res.status(400).json({ success: false, error: `Bad Request: ${errorDetail}` });
+        res.status(400).json({
+          success: false,
+          error: `Bad Request: ${errorDetail}`,
+          details: `clientUserId: ${clientUserId}, platformUserId: ${platformUserId}, platformApiKey: ${platformApiKey}, currentMessage: ${currentMessage}, conversationId: ${conversationId}`
+         });
         return;
       }
       // --- End Extraction & Validation ---
@@ -222,7 +229,7 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
                   responseMessages: response.messages
               });
 
-              const saveResult = await updateConversationInternalApiService(
+              const saveResult= await updateConversationInternalApiService(
                 { conversationId: conversationId, messages: messagesToSave }, // Save complete, non-truncated history + new messages
                 platformUserId,
                 platformApiKey,
@@ -231,12 +238,15 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
 
               if (!saveResult.success) {
                   console.error("[Agent Service /run] Error saving messages to DB in onFinish:", saveResult.error);
-                  throw new Error(saveResult.error);
+                  // Decide if this error should prevent credit deduction or be appended to streamData
+                  // For now, logging and proceeding to credit deduction
               }
 
             } catch (dbError) {
               console.error("[Agent Service /run] Exception calling database service to save messages in onFinish:", dbError);
+              // Log and proceed
             }
+
             try {
               // Deduct credit from the customer's balance
               const deductCreditRequest: DeductCreditRequest = {
@@ -251,12 +261,37 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
                 deductCreditRequest
               );
 
-              if (!deductCreditResponse.success) {
-                console.error("[Agent Service /run] Error deducting credit in onFinish:", deductCreditResponse.error);
-                throw new Error(deductCreditResponse.error);
+              if (deductCreditResponse.success && deductCreditResponse.data) {
+                const { creditConsumption, newBalanceInUSDCents } = deductCreditResponse.data;
+                streamData.append({
+                    type: 'credit_info', // Custom type for client to identify this data
+                    success: true,
+                    data: {
+                        // Stringify complex objects to ensure they are valid JSONValue
+                        creditConsumption: JSON.stringify(creditConsumption),
+                        newBalanceInUSDCents
+                    }
+                });
+              } else {
+                console.error("[Agent Service /run] Error deducting credit in onFinish (will append to stream):", deductCreditResponse.error);
+                streamData.append({
+                    type: 'credit_info',
+                    success: false,
+                    error: 'Failed to deduct credit',
+                    details: deductCreditResponse.error
+                });
               }
             } catch (deductCreditError) {
-              console.error("[Agent Service /run] Exception deducting credit in onFinish:", deductCreditError);
+              console.error("[Agent Service /run] Exception deducting credit in onFinish (will append to stream):", deductCreditError);
+              streamData.append({
+                type: 'credit_info',
+                success: false,
+                error: 'Exception during credit deduction',
+                details: deductCreditError instanceof Error ? deductCreditError.message : String(deductCreditError)
+              });
+            } finally {
+                // This is crucial: always close streamData when onFinish is done with appending custom data.
+                streamData.close();
             }
         },
       });
@@ -266,6 +301,7 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       result.consumeStream(); // no await
       // --- Pipe Stream --- 
       await result.pipeDataStreamToResponse(res, {
+        data: streamData, // Pass the StreamData instance here
         getErrorMessage: handleToolError
       });
       // --- End Pipe Stream ---
