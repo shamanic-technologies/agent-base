@@ -18,6 +18,7 @@ import { configureApiToolRoutes } from './api-tool.routes.js';
  * @param app Express application
  * @param serviceUrls URLs for all dependent services
  * @param authMiddleware Authentication middleware
+ * @param creditValidationMiddleware Credit validation middleware
  */
 export const configureRoutes = (
   app: express.Express,
@@ -30,7 +31,8 @@ export const configureRoutes = (
     webhookTool: string;
     apiTool: string;
   },
-  authMiddleware: express.RequestHandler
+  authMiddleware: express.RequestHandler,
+  creditValidationMiddleware: express.RequestHandler
 ) => {
 
   // Health check routes
@@ -40,7 +42,7 @@ export const configureRoutes = (
   
   // /agent prefix
   const agentRouter = express.Router();
-  configureAgentRoutes(agentRouter, serviceUrls.agent, authMiddleware);
+  configureAgentRoutes(agentRouter, serviceUrls.agent, authMiddleware, creditValidationMiddleware);
   app.use('/agent', agentRouter);
 
   // // /message prefix
@@ -60,23 +62,23 @@ export const configureRoutes = (
   
   // Utility tool service routes
   const utilityToolRouter = express.Router();
-  configureUtilityRoutes(utilityToolRouter, serviceUrls.utilityTool, authMiddleware);
+  configureUtilityRoutes(utilityToolRouter, serviceUrls.utilityTool, authMiddleware, creditValidationMiddleware);
   app.use('/utility-tool', utilityToolRouter);
 
   // Secret service routes
   const secretRouter = express.Router();
-  configureSecretRoutes(secretRouter, serviceUrls.secret, authMiddleware);
+  configureSecretRoutes(secretRouter, serviceUrls.secret, authMiddleware, creditValidationMiddleware);
   app.use('/secret', secretRouter);
 
   // Webhook service routes
   const webhookRouter = express.Router();
   // Pass the renamed key from serviceUrls
-  configureWebhookRoutes(webhookRouter, serviceUrls.webhookTool, authMiddleware);
+  configureWebhookRoutes(webhookRouter, serviceUrls.webhookTool, authMiddleware, creditValidationMiddleware);
   app.use('/webhook', webhookRouter);
 
   // API tool service routes
   const apiToolRouter = express.Router();
-  configureApiToolRoutes(apiToolRouter, serviceUrls.apiTool, authMiddleware);
+  configureApiToolRoutes(apiToolRouter, serviceUrls.apiTool, authMiddleware, creditValidationMiddleware);
   app.use('/api-tool', apiToolRouter);
 
 }; 

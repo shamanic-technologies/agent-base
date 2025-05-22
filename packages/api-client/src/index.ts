@@ -45,6 +45,8 @@ export * from './internal/agent-clients/agent-client.js';
 
 // Export the new manual webhook client
 export * from './internal/webhook-client.js';
+export * from './internal/payment-client.js';
+
 
 // Export tool creators
 export * from './internal/tools/tool-creators.js';

@@ -20,6 +20,7 @@ import express from 'express';
 import cors from 'cors';
 import { authMiddleware } from './middlewares/auth.middleware.js';
 import { apiLoggerMiddleware } from './middlewares/logging.middleware.js';
+import { creditValidationMiddleware } from './middlewares/creditValidationMiddleware.js';
 import { configureRoutes } from './routes/index.js';
 
 
@@ -60,7 +61,8 @@ configureRoutes(
     webhookTool: WEBHOOK_TOOL_API_URL, // Pass renamed variable
     apiTool: API_TOOL_API_URL // Add API Tool URL to the configuration
   },
-  authMiddleware()
+  authMiddleware(),
+  creditValidationMiddleware // Pass the imported middleware
 );
 
 // Start server

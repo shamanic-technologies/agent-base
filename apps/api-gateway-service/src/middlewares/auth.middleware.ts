@@ -25,7 +25,7 @@ export const authMiddleware = () => {
       
       // 1. Platform API Key Validation
       const platformApiKey = req.headers['x-platform-api-key'] as string;
-      (req as any).platformApiKey = platformApiKey; 
+      req.platformApiKey = platformApiKey; 
       
       if (!platformApiKey) {
         console.log(`[Auth Middleware] No API key provided`);
@@ -61,7 +61,7 @@ export const authMiddleware = () => {
       }
       
       // Assign platformUserId to request and headers
-      (req as any).platformUserId = platformUserId; 
+      req.platformUserId = platformUserId; 
       req.headers['x-platform-user-id'] = platformUserId;
 
       // 2. Platform Client User ID Validation (Optional)
@@ -93,7 +93,7 @@ export const authMiddleware = () => {
         }
 
         // Assign clientUserId to request and headers
-        (req as any).clientUserId = clientUserId; 
+        req.clientUserId = clientUserId; 
         req.headers['x-client-user-id'] = clientUserId;
 
       }

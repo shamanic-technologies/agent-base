@@ -8,7 +8,6 @@
  */
 import express from 'express';
 import { createApiProxy } from '../utils/proxy.util.js';
-import { injectCustomHeaders } from '../middlewares/header.middleware.js';
 
 /**
  * Configure secret service routes
@@ -16,19 +15,22 @@ import { injectCustomHeaders } from '../middlewares/header.middleware.js';
  * @param {express.Router} router - The Express router instance to configure.
  * @param {string} targetServiceUrl - The base URL of the target Secret Service.
  * @param {express.RequestHandler} authMiddleware - Middleware for authenticating requests.
+ * @param {express.RequestHandler} creditValidationMiddleware - Middleware for credit validation.
  * @returns {express.Router} The configured router.
  */
 export const configureSecretRoutes = (
   router: express.Router,
   targetServiceUrl: string, // Renamed from serviceUrl for consistency
-  authMiddleware: express.RequestHandler
+  authMiddleware: express.RequestHandler,
+  creditValidationMiddleware: express.RequestHandler
 ) => {
 
   // Apply authentication middleware first.
   router.use(authMiddleware);
 
-  // Apply the middleware to inject custom headers (x-platform-user-id, etc.)
-  router.use(injectCustomHeaders);
+
+  // Apply credit validation middleware
+  router.use(creditValidationMiddleware);
 
   // Create the proxy middleware instance for the Secret Service (no path rewrite).
   const secretProxy = createApiProxy(targetServiceUrl, 'Secret Service');

@@ -7,7 +7,6 @@
  */
 import express from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
-import { injectCustomHeaders } from '../middlewares/header.middleware.js'; // Import header injector
 
 /**
  * Configures webhook service proxy routes.
@@ -15,11 +14,13 @@ import { injectCustomHeaders } from '../middlewares/header.middleware.js'; // Im
  * @param router Express Router
  * @param webhookToolApiUrl Base URL for the webhook store service
  * @param authMiddleware Authentication middleware
+ * @param creditValidationMiddleware Credit validation middleware
  */
 export const configureWebhookRoutes = (
   router: express.Router,
   webhookToolApiUrl: string,
-  authMiddleware: express.RequestHandler
+  authMiddleware: express.RequestHandler,
+  creditValidationMiddleware: express.RequestHandler
 ) => {
   // --- Environment Variable Checks ---
   if (!webhookToolApiUrl) {
@@ -41,8 +42,9 @@ export const configureWebhookRoutes = (
   // 1. Apply authentication middleware first.
   router.use(authMiddleware);
 
-  // 2. Apply the middleware to inject standard custom headers (x-platform-user-id, etc.)
-  router.use(injectCustomHeaders); 
+
+  // 2. Apply credit validation middleware
+  router.use(creditValidationMiddleware);
 
   // --- Proxy Configuration ---
   // Use createProxyMiddleware directly because we need onProxyReq to add the specific API key.
