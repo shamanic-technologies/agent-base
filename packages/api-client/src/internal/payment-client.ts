@@ -2,6 +2,7 @@ import { getPaymentServiceUrl } from "../utils/config.js";
 import { makeInternalAPIServiceRequest, makeWebAuthenticatedServiceRequest } from "../utils/service-client.js";
 import { ServiceResponse, ValidateCreditRequest, ValidateCreditResponse, DeductCreditRequest, DeductCreditResponse, PlatformUserId } from "@agent-base/types";
 import Stripe from "stripe";
+
 /**
  * Validates credit via the payment service using API key authentication.
  * 

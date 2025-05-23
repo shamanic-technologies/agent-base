@@ -261,19 +261,22 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
                 deductCreditRequest
               );
 
+              console.log('🔵 [Agent Service /run backend onFinish] Deduct credit response:', JSON.stringify(deductCreditResponse));
+
               if (deductCreditResponse.success && deductCreditResponse.data) {
-                const { creditConsumption, newBalanceInUSDCents } = deductCreditResponse.data;
+                const { creditConsumption, newBalanceInUSDCents } : DeductCreditResponse = deductCreditResponse.data;
+                console.log('🔵 [Agent Service /run backend onFinish] Attempting to append credit_info to streamData. Data:', JSON.stringify({ creditConsumption, newBalanceInUSDCents }));
                 streamData.append({
                     type: 'credit_info', // Custom type for client to identify this data
                     success: true,
                     data: {
-                        // Stringify complex objects to ensure they are valid JSONValue
                         creditConsumption: JSON.stringify(creditConsumption),
-                        newBalanceInUSDCents
+                        newBalanceInUSDCents,
                     }
                 });
+                console.log('🔵 [Agent Service /run backend onFinish] Successfully appended credit_info to streamData.');
               } else {
-                console.error("[Agent Service /run] Error deducting credit in onFinish (will append to stream):", deductCreditResponse.error);
+                console.error("[Agent Service /run backend onFinish] Error deducting credit (will append to stream as error):", deductCreditResponse.error);
                 streamData.append({
                     type: 'credit_info',
                     success: false,
