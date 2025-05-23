@@ -1,7 +1,7 @@
-import { getPaymentServiceUrl } from "@/utils/config.js";
-import { makeInternalAPIServiceRequest } from "@/utils/service-client.js";
-import { ServiceResponse, ValidateCreditRequest, ValidateCreditResponse, DeductCreditRequest, DeductCreditResponse } from "@agent-base/types";
-
+import { getPaymentServiceUrl } from "../utils/config.js";
+import { makeInternalAPIServiceRequest, makeWebAuthenticatedServiceRequest } from "../utils/service-client.js";
+import { ServiceResponse, ValidateCreditRequest, ValidateCreditResponse, DeductCreditRequest, DeductCreditResponse, PlatformUserId } from "@agent-base/types";
+import Stripe from "stripe";
 /**
  * Validates credit via the payment service using API key authentication.
  * 
@@ -57,3 +57,24 @@ export async function deductCreditByPlatformUserIdInternalService(
     undefined // No query parameters (params)
   );
 }
+
+/**
+ * Retrieves transactions for a specific platform user.
+ * GET /customer/transactions
+ *
+ * @param platformUserId - The ID of the platform user whose transactions to retrieve.
+ * @returns A promise resolving to ServiceResponse<Stripe.CustomerBalanceTransaction[]>.
+ */
+export const getPlatformUserTransations = async (
+  platformUserId: string
+): Promise<ServiceResponse<Stripe.CustomerBalanceTransaction[]>> => {
+
+  return await makeWebAuthenticatedServiceRequest<Stripe.CustomerBalanceTransaction[]>(
+    getPaymentServiceUrl(), // Use dynamic getter
+    'get',
+    '/customer/transactions',
+    platformUserId,
+    undefined, // No body
+    undefined // No query parameters
+  );
+};

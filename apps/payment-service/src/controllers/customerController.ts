@@ -209,41 +209,44 @@ export async function getStripeCustomerCreditByStripeCustomerId(req: Request, re
 /**
  * Get customer transaction history
  */
-export async function getStripeTransactionsByStripeCustomerId(req: Request, res: Response): Promise<void> {
-  try {
-    const { stripeCustomerId } = req.params;
-    const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
+export async function getStripeTransactions(req: Request, res: Response): Promise<void> {
+   // The authMiddleware ensures platformUser and platformUser.platformUserId are present.
+   const { platformUserId, platformUserEmail, platformUserName } = req.platformUser!;
+   const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
+   
+   try {
+      // Find the customer
+    const stripeCustomer = await customerService.getOrCreateStripeCustomer(platformUserId, platformUserEmail, platformUserName);
     
-    try {
-      // Get customer and check if it exists
-      const stripeCustomer = await stripe.customers.retrieve(stripeCustomerId);
-      
-      if ('deleted' in stripeCustomer) {
-        res.status(404).json({
-          success: false,
-          error: 'Customer has been deleted',
-          details: `Customer has been deleted with stripeCustomerId: ${stripeCustomerId}`
-        });
-        return;
-      }
-      
-      // Get transaction history
-      const transactions: Stripe.CustomerBalanceTransaction[] = await creditService.getTransactionHistory(stripeCustomer.id, limit);
-
-      res.status(200).json({
-        success: true,
-        data: transactions
-      });
-      return;
-    } catch (error) {
-      console.error('Error retrieving transactions by ID:', error);
+    if (!stripeCustomer) {
+      console.error(`Customer not found with userId: ${platformUserId}`);
       res.status(404).json({
         success: false,
         error: 'Customer not found',
-        details: error
+        details: `Customer not found with userId: ${platformUserId}`
       });
       return;
     }
+
+    // Get customer and check if it exists    
+    if ('deleted' in stripeCustomer) {
+      res.status(404).json({
+        success: false,
+        error: 'Customer has been deleted',
+        details: `Customer has been deleted with stripeCustomerId: ${stripeCustomer.id}`
+      });
+      return;
+    }
+    
+    // Get transaction history
+    const transactions: Stripe.CustomerBalanceTransaction[] = await creditService.getTransactionHistory(stripeCustomer.id, limit);
+
+    res.status(200).json({
+      success: true,
+      data: transactions
+    });
+    return;
+
   } catch (error) {
     console.error('Error in transactions endpoint:', error);
     res.status(500).json({
@@ -254,6 +257,56 @@ export async function getStripeTransactionsByStripeCustomerId(req: Request, res:
     return;
   }
 }
+
+
+// /**
+//  * Get customer transaction history
+//  */
+// export async function getStripeTransactionsByStripeCustomerId(req: Request, res: Response): Promise<void> {
+//   try {
+//     const { stripeCustomerId } = req.params;
+//     const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
+    
+//     try {
+//       // Get customer and check if it exists
+//       const stripeCustomer = await stripe.customers.retrieve(stripeCustomerId);
+      
+//       if ('deleted' in stripeCustomer) {
+//         res.status(404).json({
+//           success: false,
+//           error: 'Customer has been deleted',
+//           details: `Customer has been deleted with stripeCustomerId: ${stripeCustomerId}`
+//         });
+//         return;
+//       }
+      
+//       // Get transaction history
+//       const transactions: Stripe.CustomerBalanceTransaction[] = await creditService.getTransactionHistory(stripeCustomer.id, limit);
+
+//       res.status(200).json({
+//         success: true,
+//         data: transactions
+//       });
+//       return;
+//     } catch (error) {
+//       console.error('Error retrieving transactions by ID:', error);
+//       res.status(404).json({
+//         success: false,
+//         error: 'Customer not found',
+//         details: error
+//       });
+//       return;
+//     }
+//   } catch (error) {
+//     console.error('Error in transactions endpoint:', error);
+//     res.status(500).json({
+//       success: false,
+//       error: 'An unexpected error occurred',
+//       details: error
+//     });
+//     return;
+//   }
+// }
 
 /**
  * Get auto-recharge settings for a customer

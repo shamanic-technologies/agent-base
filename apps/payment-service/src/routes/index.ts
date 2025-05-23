@@ -22,6 +22,7 @@ router.get('/customer/credit', authMiddleware, customerController.getStripeCusto
 // router.get('/customer/:stripeCustomerId', customerController.getStripeCustomerByStripeCustomerId);
 // router.get('/customer/credit/:stripeCustomerId', customerController.getStripeCustomerCreditByStripeCustomerId);
 // router.get('/customer/transactions/:stripeCustomerId', customerController.getStripeTransactionsByStripeCustomerId);
+router.get('/customer/transactions', customerController.getStripeTransactions);
 
 // Auto-recharge endpoints
 router.get('/auto-recharge', authMiddleware, customerController.getAutoRechargeSettings);

@@ -135,7 +135,7 @@ export function getAgentBaseApiUrl(): string {
  * @returns The Payment Service URL string.
  */
 export function getPaymentServiceUrl(): string {
-  const url = process.env.PAYMENT_SERVICE_URL || 'http://localhost:3004';
+  const url = process.env.PAYMENT_SERVICE_URL || 'http://localhost:3007';
   if (!process.env.PAYMENT_SERVICE_URL) {
     console.warn('[api-client/config] PAYMENT_SERVICE_URL environment variable not set. Defaulting to ' + url);
   }
