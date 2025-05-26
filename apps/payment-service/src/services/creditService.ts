@@ -23,14 +23,18 @@ export async function addCredit(
   description: string = 'Added credit'
 ): Promise<{ transaction: Stripe.CustomerBalanceTransaction, newBalance: number }> {
   // Get existing balance first
+  console.log(`[creditService.addCredit] About to call calculateCustomerCredits for customer ${stripeCustomerId} (from within addCredit)`);
   const existingCredits: AgentBaseCustomerCredits = await calculateCustomerCredits(stripeCustomerId);
+  console.log(`[creditService.addCredit] Finished calculateCustomerCredits for customer ${stripeCustomerId} (from within addCredit)`);
   
   // Create a negative balance transaction to add credit
+  console.log(`[creditService.addCredit] About to call stripe.customers.createBalanceTransaction for customer ${stripeCustomerId}`);
   const balanceTransaction = await stripe.customers.createBalanceTransaction(stripeCustomerId, {
     amount: Math.round(amountInUSDCents * -1), // negative for credit
     currency: 'usd',
     description
   });
+  console.log(`[creditService.addCredit] Finished stripe.customers.createBalanceTransaction for customer ${stripeCustomerId}`);
   
   // Calculate new balance after adding credit
   const newTotalCredits = existingCredits.totalInUSDCents + amountInUSDCents;
@@ -59,14 +63,18 @@ export async function deductCredit(
 ): Promise<number> {
   try {
     // Get existing balance first
+    console.log(`[creditService.deductCredit] About to call calculateCustomerCredits for customer ${stripeCustomerId}`);
     const existingCredits = await calculateCustomerCredits(stripeCustomerId);
+    console.log(`[creditService.deductCredit] Finished calculateCustomerCredits for customer ${stripeCustomerId}`);
     
     // Create a positive balance transaction to deduct credit
+    console.log(`[creditService.deductCredit] About to call stripe.customers.createBalanceTransaction for customer ${stripeCustomerId}, amount: ${amountInUSDCents}`);
     await stripe.customers.createBalanceTransaction(stripeCustomerId, {
       amount: Math.round(amountInUSDCents), // positive for deduction
       currency: 'usd',
       description
     });
+    console.log(`[creditService.deductCredit] Finished stripe.customers.createBalanceTransaction for customer ${stripeCustomerId}`);
     
     // Calculate new balance after deduction
     const newUsedCreditsInUSDCents = existingCredits.usedInUSDCents + amountInUSDCents;
@@ -100,13 +108,15 @@ export async function checkAndTriggerAutoRecharge(
     }
     
     // Check if balance is below threshold
-    if (currentBalanceInUSDCents <= settings.rechargeAmountInUSDCents) {
-      console.log(`Auto-recharge triggered for customer ${stripeCustomerId}. Balance: $${(currentBalanceInUSDCents/100).toFixed(2)}, Threshold: $${(settings.rechargeAmountInUSDCents/100).toFixed(2)}`);
+    if (currentBalanceInUSDCents <= settings.thresholdAmountInUSDCents) {
+      console.log(`Auto-recharge triggered for customer ${stripeCustomerId}. Balance: $${(currentBalanceInUSDCents/100).toFixed(2)}, Threshold: $${(settings.thresholdAmountInUSDCents/100).toFixed(2)}`);
       
       // Get customer to find payment methods
+      console.log(`[creditService.checkAndTriggerAutoRecharge] About to call stripe.customers.retrieve for customer ${stripeCustomerId}`);
       const customer = await stripe.customers.retrieve(stripeCustomerId, {
         expand: ['default_source']
       });
+      console.log(`[creditService.checkAndTriggerAutoRecharge] Finished stripe.customers.retrieve for customer ${stripeCustomerId}`);
       
       if ('deleted' in customer) {
         console.error(`Cannot process auto-recharge: Customer ${stripeCustomerId} has been deleted`);
@@ -126,6 +136,7 @@ export async function checkAndTriggerAutoRecharge(
           : customer.default_source as string;
       
       // Create payment intent & confirm immediately (off-session)
+      console.log(`[creditService.checkAndTriggerAutoRecharge] About to call stripe.paymentIntents.create for customer ${stripeCustomerId}`);
       const paymentIntent = await stripe.paymentIntents.create({
         amount: Math.round(settings.rechargeAmountInUSDCents),
         currency: 'usd',
@@ -135,6 +146,7 @@ export async function checkAndTriggerAutoRecharge(
         confirm: true,
         description: 'Automatic recharge'
       });
+      console.log(`[creditService.checkAndTriggerAutoRecharge] Finished stripe.paymentIntents.create for customer ${stripeCustomerId}. Status: ${paymentIntent.status}`);
       
       if (paymentIntent.status === 'succeeded') {
         // Add credits to customer balance
@@ -166,10 +178,12 @@ export async function getTransactionHistory(
   stripeCustomerId: string, 
   limit: number = 100
 ): Promise<Stripe.CustomerBalanceTransaction[]> {
+  console.log(`[creditService.getTransactionHistory] About to call stripe.customers.listBalanceTransactions for customer ${stripeCustomerId}`);
   const transactions = await stripe.customers.listBalanceTransactions(
     stripeCustomerId,
     { limit }
   );
+  console.log(`[creditService.getTransactionHistory] Finished stripe.customers.listBalanceTransactions for customer ${stripeCustomerId}. Count: ${transactions.data.length}`);
   if (transactions) {
     return transactions.data;
   }
@@ -185,7 +199,8 @@ export async function processPayment(
   paymentMethodId: string, 
   description: string = 'Add credit to account'
 ): Promise<Stripe.PaymentIntent> {
-  return await stripe.paymentIntents.create({
+  console.log(`[creditService.processPayment] About to call stripe.paymentIntents.create for customer ${stripeCustomerId}`);
+  const paymentIntent = await stripe.paymentIntents.create({
     amount: Math.round(amountInUSDCents), // Convert to cents
     currency: 'usd',
     customer: stripeCustomerId,
@@ -193,4 +208,6 @@ export async function processPayment(
     confirm: true,
     description
   });
+  console.log(`[creditService.processPayment] Finished stripe.paymentIntents.create for customer ${stripeCustomerId}. Status: ${paymentIntent.status}`);
+  return paymentIntent;
 } 

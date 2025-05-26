@@ -254,12 +254,15 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
 
             // Manually extract tool calls from response.messages as a workaround
             const extractedToolCalls: ToolCall<string, string>[] = (response?.messages ?? [])
+                .flatMap(message => (message.role === 'assistant' && Array.isArray(message.content)) ? message.content : [])
                 .filter(contentPart =>(contentPart as any).type === 'tool-call')
                 .map(toolCallContent => ({
                     toolCallId: (toolCallContent as any).toolCallId,
                     toolName: (toolCallContent as any).toolName,
                     args: (toolCallContent as any).args,
-                }));
+                })
+                )
+                ;
 
             console.debug('⭐️ [Agent Service /run backend onFinish] Extracted tool calls:', JSON.stringify(extractedToolCalls, null, 2));
 
