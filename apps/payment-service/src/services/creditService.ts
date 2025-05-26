@@ -2,7 +2,7 @@
  * Credit service for managing customer credits
  */
 import { stripe } from '../config/index.js';
-import { CustomerCredits, DeductCreditResponse, StripeTransaction } from '@agent-base/types';
+import { AgentBaseCustomerCredits, AgentBaseDeductCreditRequest, AgentBaseStripeTransaction } from '@agent-base/types';
 import { calculateCustomerCredits, getAutoRechargeSettings } from './customerService.js';
 import Stripe from 'stripe';
 
@@ -23,7 +23,7 @@ export async function addCredit(
   description: string = 'Added credit'
 ): Promise<{ transaction: Stripe.CustomerBalanceTransaction, newBalance: number }> {
   // Get existing balance first
-  const existingCredits: CustomerCredits = await calculateCustomerCredits(stripeCustomerId);
+  const existingCredits: AgentBaseCustomerCredits = await calculateCustomerCredits(stripeCustomerId);
   
   // Create a negative balance transaction to add credit
   const balanceTransaction = await stripe.customers.createBalanceTransaction(stripeCustomerId, {
@@ -100,8 +100,8 @@ export async function checkAndTriggerAutoRecharge(
     }
     
     // Check if balance is below threshold
-    if (currentBalanceInUSDCents <= settings.thresholdAmountInUSDCents) {
-      console.log(`Auto-recharge triggered for customer ${stripeCustomerId}. Balance: $${(currentBalanceInUSDCents/100).toFixed(2)}, Threshold: $${(settings.thresholdAmountInUSDCents/100).toFixed(2)}`);
+    if (currentBalanceInUSDCents <= settings.rechargeAmountInUSDCents) {
+      console.log(`Auto-recharge triggered for customer ${stripeCustomerId}. Balance: $${(currentBalanceInUSDCents/100).toFixed(2)}, Threshold: $${(settings.rechargeAmountInUSDCents/100).toFixed(2)}`);
       
       // Get customer to find payment methods
       const customer = await stripe.customers.retrieve(stripeCustomerId, {

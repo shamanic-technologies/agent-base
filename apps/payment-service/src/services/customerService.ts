@@ -2,14 +2,14 @@
  * Customer service for managing Stripe customers
  */
 import { stripe } from '../config/index.js';
-import { AutoRechargeSettings, CustomerCredits, Pricing, StripeCustomerInformation } from '@agent-base/types';
+import { AgentBaseAutoRechargeSettings, AgentBaseCustomerCredits, AgentBasePricing, AgentBaseStripeCustomerInformation } from '@agent-base/types';
 import Stripe from 'stripe';
 
 
 /**
  * Add free sign-up credit to a new customer
  */
-export async function addFreeSignupCredit(stripeCustomerId: string, amountInUSDCents: number = Pricing.FREE_SIGNUP_CREDIT_AMOUNT_IN_USD_CENTS): Promise<Stripe.CustomerBalanceTransaction> {
+export async function addFreeSignupCredit(stripeCustomerId: string, amountInUSDCents: number = AgentBasePricing.AGENT_BASE_FREE_SIGNUP_CREDIT_AMOUNT_IN_USD_CENTS): Promise<Stripe.CustomerBalanceTransaction> {
   const freeCreditsInUSDCents = amountInUSDCents * -1; // $5.00 in cents (negative for customer credit)
   
   return await stripe.customers.createBalanceTransaction(stripeCustomerId, {
@@ -22,7 +22,7 @@ export async function addFreeSignupCredit(stripeCustomerId: string, amountInUSDC
 /**
  * Calculate customer credit balance from transaction history
  */
-export async function calculateCustomerCredits(stripeCustomerId: string): Promise<CustomerCredits> {
+export async function calculateCustomerCredits(stripeCustomerId: string): Promise<AgentBaseCustomerCredits> {
   const balanceTransactions = await stripe.customers.listBalanceTransactions(
     stripeCustomerId,
     { limit: 100 }
@@ -51,13 +51,13 @@ export async function calculateCustomerCredits(stripeCustomerId: string): Promis
     totalInUSDCents: totalCreditsInUSDCents,
     usedInUSDCents: usedCreditsInUSDCents,
     remainingInUSDCents: remainingCreditsInUSDCents
-  };
+  } as AgentBaseCustomerCredits;
 }
 
 /**
  * Get customer's auto-recharge settings from metadata
  */
-export async function getAutoRechargeSettings(stripeCustomerId: string): Promise<AutoRechargeSettings | null> {
+export async function getAutoRechargeSettings(stripeCustomerId: string): Promise<AgentBaseAutoRechargeSettings | null> {
   const customer = await stripe.customers.retrieve(stripeCustomerId);
   
   if ('deleted' in customer) {
@@ -67,6 +67,7 @@ export async function getAutoRechargeSettings(stripeCustomerId: string): Promise
   const { metadata } = customer;
   
   if (
+    !metadata?.platformUserId ||
     !metadata?.auto_recharge_enabled || 
     !metadata?.auto_recharge_threshold_in_usd_cents || 
     !metadata?.auto_recharge_amount_in_usd_cents
@@ -75,6 +76,7 @@ export async function getAutoRechargeSettings(stripeCustomerId: string): Promise
   }
   
   return {
+    platformUserId: metadata.platformUserId,
     enabled: metadata.auto_recharge_enabled === 'true',
     thresholdAmountInUSDCents: parseFloat(metadata.auto_recharge_threshold_in_usd_cents),
     rechargeAmountInUSDCents: parseFloat(metadata.auto_recharge_amount_in_usd_cents)
@@ -86,7 +88,7 @@ export async function getAutoRechargeSettings(stripeCustomerId: string): Promise
  */
 export async function updateAutoRechargeSettings(
   stripeCustomerId: string, 
-  settings: AutoRechargeSettings
+  settings: AgentBaseAutoRechargeSettings
 ): Promise<Stripe.Customer> {
   return await stripe.customers.update(stripeCustomerId, {
     metadata: {
@@ -100,16 +102,18 @@ export async function updateAutoRechargeSettings(
 /**
  * Format customer data for API response
  */
-export function formatCustomerData(customer: Stripe.Customer, credits: CustomerCredits): StripeCustomerInformation {
+export function formatCustomerData(customer: Stripe.Customer, credits: AgentBaseCustomerCredits): AgentBaseStripeCustomerInformation {
   // Extract auto-recharge settings from metadata if they exist
-  let autoRechargeSettings: AutoRechargeSettings | undefined;
+  let autoRechargeSettings: AgentBaseAutoRechargeSettings | undefined;
   
   if (
+    customer.metadata?.platformUserId &&
     customer.metadata?.auto_recharge_enabled && 
     customer.metadata?.auto_recharge_threshold_in_usd_cents && 
     customer.metadata?.auto_recharge_amount_in_usd_cents
   ) {
     autoRechargeSettings = {
+      platformUserId: customer.metadata.platformUserId,
       enabled: customer.metadata.auto_recharge_enabled === 'true',
       thresholdAmountInUSDCents: parseFloat(customer.metadata.auto_recharge_threshold_in_usd_cents),
       rechargeAmountInUSDCents: parseFloat(customer.metadata.auto_recharge_amount_in_usd_cents)

@@ -2,48 +2,45 @@ import Stripe from "stripe";
 import { ToolCall } from "ai";
 
 
-export type CreditConsumption = {
-  items: CreditConsumptionItem[];
+export type AgentBaseCreditConsumption = {
+  items: AgentBaseCreditConsumptionItem[];
   totalAmountInUSDCents: number;
 };
 
-export interface CreditConsumptionItem {
+export interface AgentBaseCreditConsumptionItem {
   totalAmountInUSDCents: number;
-  consumptionType: CreditConsumptionType;
+  consumptionType: AgentBaseCreditConsumptionType;
   consumptionUnits: number;
 }
 
-export enum CreditConsumptionType {
+export enum AgentBaseCreditConsumptionType {
   TOOL_CALL = "TOOL_CALL",
   INPUT_TOKEN = "INPUT_TOKEN",
   OUTPUT_TOKEN = "OUTPUT_TOKEN",
 }
 
-export enum Pricing {
-  FREE_SIGNUP_CREDIT_AMOUNT_IN_USD_CENTS = 500,
-  TOOL_CALL_PRICE_IN_USD_CENTS = 1,
-  MILLION_INPUT_TOKENS_PRICE_IN_USD_CENTS = 600,
-  MILLION_OUTPUT_TOKENS_PRICE_IN_USD_CENTS = 3000,
-  AUTO_RECHARGE_THRESHOLD_IN_USDCENTS = 5000,
-  AUTO_RECHARGE_RECHARGE_AMOUNT_IN_USDCENTS = 10000,
+export enum AgentBasePricing {
+  AGENT_BASE_FREE_SIGNUP_CREDIT_AMOUNT_IN_USD_CENTS = 200,
+  AGENT_BASE_TOOL_CALL_PRICE_IN_USD_CENTS = 1,
+  AGENT_BASE_MILLION_INPUT_TOKENS_PRICE_IN_USD_CENTS = 600,
+  AGENT_BASE_MILLION_OUTPUT_TOKENS_PRICE_IN_USD_CENTS = 3000,
 }
 
-
 // Customer types
-export interface CustomerCredits {
+export interface AgentBaseCustomerCredits {
   totalInUSDCents: number;
   usedInUSDCents: number;
   remainingInUSDCents: number;
 }
 
-export interface StripeCustomerInformation {
+export interface AgentBaseStripeCustomerInformation {
   stripeCustomerId: string;
   stripePlatformUserId: string;
   stripeEmail: string | null;
   stripeName: string | null;
   stripeCreatedAt: Date;
-  stripeCredits: CustomerCredits;
-  autoRechargeSettings?: AutoRechargeSettings; // Optional auto-recharge settings
+  stripeCredits: AgentBaseCustomerCredits;
+  autoRechargeSettings?: AgentBaseAutoRechargeSettings; // Optional auto-recharge settings
 }
 
 // Plan types
@@ -57,7 +54,7 @@ export interface StripeCustomerInformation {
 // }
 
 // Transaction types
-export interface StripeTransaction {
+export interface AgentBaseStripeTransaction {
   id: string;
   stripeCustomerId: string;
   platformUserId: string;
@@ -68,42 +65,66 @@ export interface StripeTransaction {
 }
 
 // Auto-recharge types
-export interface AutoRechargeSettings {
+export interface AgentBaseAutoRechargeSettings {
+  platformUserId: string;
   enabled: boolean;
-  thresholdAmountInUSDCents: number;
-  rechargeAmountInUSDCents: number;
+  thresholdAmountInUSDCents?: number;
+  rechargeAmountInUSDCents?: number;
 } 
 
-export interface CreateCheckoutSessionRequest {
+export interface AgentBaseCreateCheckoutSessionRequest {
   amountInUSDCents: number;
   successUrl: string;
   cancelUrl: string;
 }
 
-export interface ValidateCreditRequest {
+export interface AgentBaseValidateCreditRequest {
   amountInUSDCents: number;
 }
 
-export interface ValidateCreditResponse {
+export interface AgentBaseValidateCreditResponse {
   hasEnoughCredit: boolean;
   remainingCreditInUSDCents: number;
 }
 
-export interface DeductCreditRequest {
+export interface AgentBaseDeductCreditRequest {
   toolCalls: ToolCall<string, string>[];
   inputTokens: number;
   outputTokens: number;
 }
 
-export interface DeductCreditResponse {
-  creditConsumption: CreditConsumption;
+export interface AgentBaseDeductCreditResponse {
+  creditConsumption: AgentBaseCreditConsumption;
   newBalanceInUSDCents: number;
 }
 
-export interface createCustomerRequest {
+export interface AgentBaseCreateCustomerRequest {
   platformUserEmail?: string;
   platformUserName?: string;
 }
 
+export interface AgentBaseConsumeCreditsRequest {
+  totalAmountInUSDCents: number;
+  conversationId?: string;
+}
+
+export interface AgentBaseConsumeCreditsResponse {
+  remainingBalanceInUSDCents: number;
+  transactionId?: string;
+}
+
+export interface AgentBaseCreditStreamPayloadData {
+  creditConsumption?: AgentBaseCreditConsumption;
+  newBalanceInUSDCents?: number;
+  assistantMessageId: string;
+}
+
+export interface AgentBaseCreditStreamPayload {
+  type: 'credit_info';
+  success: boolean;
+  data?: AgentBaseCreditStreamPayloadData;
+  error?: string;
+  details?: string;
+}
 
 

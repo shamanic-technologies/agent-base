@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { ValidateCreditRequest, ValidateCreditResponse } from '@agent-base/types';
+import { AgentBaseValidateCreditRequest, AgentBaseValidateCreditResponse } from '@agent-base/types';
 import { validateCreditInternalService } from '@agent-base/api-client';
 
 /**
@@ -24,7 +24,7 @@ export const creditValidationMiddleware = async (req: Request, res: Response, ne
     
     const amountToValidateInUSDCents = 0; // Validate credit is positive
 
-    const validateCreditPayload: ValidateCreditRequest = {
+    const validateCreditPayload: AgentBaseValidateCreditRequest = {
       amountInUSDCents: amountToValidateInUSDCents,
     };
 

@@ -8,13 +8,14 @@ import {
     ServiceResponse,
     Agent,
     AgentServiceCredentials,
-    DeductCreditRequest,
-    DeductCreditResponse,
-    ConversationId
+    AgentBaseDeductCreditRequest,
+    AgentBaseDeductCreditResponse,
+    AgentBaseCreditStreamPayloadData,
+    AgentBaseCreditStreamPayload
 } from '@agent-base/types';
 // AI SDK imports
 import { anthropic } from '@ai-sdk/anthropic';
-import { streamText, StreamData } from 'ai';
+import { streamText, StreamData, ToolCall } from 'ai';
 
 // Import necessary API client functions
 import {
@@ -215,7 +216,7 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
             prefix: 'msgs',
             size: 16,
         }),
-        async onFinish({ response, toolCalls, usage }) { // Destructure response directly
+        async onFinish({ response, usage }) { // Destructure response directly
             try {
               // Construct the final list including the latest assistant/tool responses
               // When saving, we should save the full original history plus the new interaction,
@@ -223,6 +224,7 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
               // The 'fullHistoryMessages' already contains the state before this interaction.
               // We append the 'currentMessage' (user's latest) and 'response.messages' (AI's reply).
               
+              console.debug('⭐️ [Agent Service /run backend onFinish] Raw response messages:', JSON.stringify(response.messages, null, 2));
               let messagesToSave = [...fullHistoryMessages, currentMessage];
               messagesToSave = appendResponseMessages({
                   messages: messagesToSave,
@@ -247,14 +249,28 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
               // Log and proceed
             }
 
+            // Find the assistant's response message ID
+            const assistantMessageId = response.messages[response.messages.length - 1].id; // Added optional chaining for safety
+
+            // Manually extract tool calls from response.messages as a workaround
+            const extractedToolCalls: ToolCall<string, string>[] = (response?.messages ?? [])
+                .filter(contentPart =>(contentPart as any).type === 'tool-call')
+                .map(toolCallContent => ({
+                    toolCallId: (toolCallContent as any).toolCallId,
+                    toolName: (toolCallContent as any).toolName,
+                    args: (toolCallContent as any).args,
+                }));
+
+            console.debug('⭐️ [Agent Service /run backend onFinish] Extracted tool calls:', JSON.stringify(extractedToolCalls, null, 2));
+
             try {
               // Deduct credit from the customer's balance
-              const deductCreditRequest: DeductCreditRequest = {
-                toolCalls: toolCalls,
+              const deductCreditRequest: AgentBaseDeductCreditRequest = {
+                toolCalls: extractedToolCalls, // Use the manually extracted tool calls
                 inputTokens: usage.promptTokens,
                 outputTokens: usage.completionTokens
               };
-              const deductCreditResponse: ServiceResponse<DeductCreditResponse> = await deductCreditByPlatformUserIdInternalService(
+              const deductCreditResponse: ServiceResponse<AgentBaseDeductCreditResponse> = await deductCreditByPlatformUserIdInternalService(
                 platformUserId,
                 platformApiKey,
                 clientUserId,
@@ -264,34 +280,47 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
               console.log('🔵 [Agent Service /run backend onFinish] Deduct credit response:', JSON.stringify(deductCreditResponse));
 
               if (deductCreditResponse.success && deductCreditResponse.data) {
-                const { creditConsumption, newBalanceInUSDCents } : DeductCreditResponse = deductCreditResponse.data;
-                console.log('🔵 [Agent Service /run backend onFinish] Attempting to append credit_info to streamData. Data:', JSON.stringify({ creditConsumption, newBalanceInUSDCents }));
-                streamData.append({
-                    type: 'credit_info', // Custom type for client to identify this data
+                const { creditConsumption, newBalanceInUSDCents } : AgentBaseDeductCreditResponse = deductCreditResponse.data;
+                const creditData: AgentBaseCreditStreamPayloadData = {
+                    creditConsumption: creditConsumption, // Stringify CreditConsumption
+                    newBalanceInUSDCents,
+                    assistantMessageId: assistantMessageId, // Use camelCase and ensure it can be undefined
+                };
+                const dataToAppend: AgentBaseCreditStreamPayload = {
+                    type: 'credit_info',
                     success: true,
-                    data: {
-                        creditConsumption: JSON.stringify(creditConsumption),
-                        newBalanceInUSDCents,
-                    }
-                });
+                    data: creditData
+                };
+                console.log('🔵 [Agent Service /run backend onFinish] Attempting to append credit_info to streamData. Data:', JSON.stringify(dataToAppend));
+                streamData.append(JSON.stringify(dataToAppend)); // Cast to any to bypass strict JSONValue check for now, StreamData should handle it.
                 console.log('🔵 [Agent Service /run backend onFinish] Successfully appended credit_info to streamData.');
               } else {
-                console.error("[Agent Service /run backend onFinish] Error deducting credit (will append to stream as error):", deductCreditResponse.error);
-                streamData.append({
+                const creditData: AgentBaseCreditStreamPayloadData = {
+                  assistantMessageId: assistantMessageId, // Use camelCase and ensure it can be undefined
+                };
+                const dataToAppend: AgentBaseCreditStreamPayload = {
                     type: 'credit_info',
                     success: false,
                     error: 'Failed to deduct credit',
-                    details: deductCreditResponse.error
-                });
+                    details: deductCreditResponse.error,
+                    data: creditData
+                };
+                console.error("[Agent Service /run backend onFinish] Error deducting credit (will append to stream as error):", deductCreditResponse.error);
+                streamData.append(JSON.stringify(dataToAppend)); // Cast to any for simplicity here too
               }
             } catch (deductCreditError) {
+              const creditData: AgentBaseCreditStreamPayloadData = {
+                assistantMessageId: assistantMessageId, // Use camelCase and ensure it can be undefined
+              };
+              const dataToAppend: AgentBaseCreditStreamPayload = {
+                  type: 'credit_info',
+                  success: false,
+                  error: 'Exception during credit deduction',
+                  details: deductCreditError instanceof Error ? deductCreditError.message : String(deductCreditError),
+                  data: creditData
+              };
               console.error("[Agent Service /run] Exception deducting credit in onFinish (will append to stream):", deductCreditError);
-              streamData.append({
-                type: 'credit_info',
-                success: false,
-                error: 'Exception during credit deduction',
-                details: deductCreditError instanceof Error ? deductCreditError.message : String(deductCreditError)
-              });
+              streamData.append(JSON.stringify(dataToAppend)); // Cast to any for simplicity here too
             } finally {
                 // This is crucial: always close streamData when onFinish is done with appending custom data.
                 streamData.close();

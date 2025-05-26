@@ -6,14 +6,15 @@ import * as customerService from '../services/customerService.js';
 import * as creditService from '../services/creditService.js';
 import { stripe } from '../config/index.js';
 import {
-  DeductCreditRequest,
-  DeductCreditResponse,
-  Pricing,
-  ValidateCreditRequest,
-  ValidateCreditResponse,
-  CreditConsumptionType,
-  CreditConsumptionItem,
-  CreditConsumption
+  AgentBaseValidateCreditResponse,
+  AgentBaseDeductCreditRequest,
+  AgentBaseCreditConsumptionItem,
+  AgentBaseCreditConsumption,
+  AgentBaseCreateCheckoutSessionRequest,
+  AgentBaseDeductCreditResponse,
+  AgentBasePricing,
+  AgentBaseCreditConsumptionType,
+  AgentBaseValidateCreditRequest
 } from "@agent-base/types";
 /**
  * Validate if a customer has sufficient credit for a specific operation
@@ -24,7 +25,7 @@ export async function validateCredit(req: Request, res: Response): Promise<void>
   try {
     // The authMiddleware ensures platformUser and platformUser.platformUserId are present.
     const { platformUserId, platformUserEmail, platformUserName } = req.platformUser!;
-    const { amountInUSDCents }: ValidateCreditRequest = req.body;
+    const { amountInUSDCents }: AgentBaseValidateCreditRequest = req.body;
     
     if (amountInUSDCents === undefined) {
       res.status(400).json({
@@ -57,7 +58,7 @@ export async function validateCredit(req: Request, res: Response): Promise<void>
       data: {
         hasEnoughCredit,
         remainingCreditInUSDCents: credits.remainingInUSDCents
-      } as ValidateCreditResponse
+      } as AgentBaseValidateCreditResponse
     });
     return;
   } catch (error) {
@@ -79,7 +80,8 @@ export async function deductCreditByPlatformUserId(req: Request, res: Response):
   try {
     // The authMiddleware ensures platformUser and platformUser.platformUserId are present.
     const { platformUserId, platformUserEmail, platformUserName } = req.platformUser!;
-    const { toolCalls, inputTokens, outputTokens }: DeductCreditRequest = req.body;
+    const { toolCalls, inputTokens, outputTokens }: AgentBaseDeductCreditRequest = req.body;
+    console.debug('DeductCreditByPlatformUserIdInternalService', JSON.stringify(req.body, null, 2));
     
     if (toolCalls === undefined || inputTokens === undefined || outputTokens === undefined) {
       res.status(400).json({
@@ -89,7 +91,7 @@ export async function deductCreditByPlatformUserId(req: Request, res: Response):
       return;
     }
     
-    console.log(`Deducting ${toolCalls.length} tool calls, ${inputTokens} input tokens, ${outputTokens} output tokens from user: ${platformUserId}`);
+    console.debug(`Deducting ${toolCalls.length} tool calls, ${inputTokens} input tokens, ${outputTokens} output tokens from user: ${platformUserId}`);
     
     // Find the customer
     const stripeCustomer = await customerService.getOrCreateStripeCustomer(platformUserId, platformUserEmail, platformUserName);
@@ -104,39 +106,41 @@ export async function deductCreditByPlatformUserId(req: Request, res: Response):
     }
 
     // Calculate the credit consumption
-    const toolCallsConsumption : CreditConsumptionItem = {
-      totalAmountInUSDCents: Math.round(toolCalls.length * Pricing.TOOL_CALL_PRICE_IN_USD_CENTS),
-      consumptionType: CreditConsumptionType.TOOL_CALL,
+    const toolCallsConsumption : AgentBaseCreditConsumptionItem = {
+      totalAmountInUSDCents: Math.round(toolCalls.length * AgentBasePricing.AGENT_BASE_TOOL_CALL_PRICE_IN_USD_CENTS),
+      consumptionType: AgentBaseCreditConsumptionType.TOOL_CALL,
       consumptionUnits: toolCalls.length
     }
-    const inputTokensConsumption : CreditConsumptionItem = {
-      totalAmountInUSDCents: Math.round(inputTokens/1000000 * Pricing.MILLION_INPUT_TOKENS_PRICE_IN_USD_CENTS),
-      consumptionType: CreditConsumptionType.INPUT_TOKEN,
+    const inputTokensConsumption : AgentBaseCreditConsumptionItem = {
+      totalAmountInUSDCents: Math.max(1, Math.round(inputTokens/1000000 * AgentBasePricing.AGENT_BASE_MILLION_INPUT_TOKENS_PRICE_IN_USD_CENTS)),
+      consumptionType: AgentBaseCreditConsumptionType.INPUT_TOKEN,
       consumptionUnits: inputTokens
     }
-    const outputTokensConsumption : CreditConsumptionItem = {
-      totalAmountInUSDCents: Math.round(outputTokens/1000000 * Pricing.MILLION_OUTPUT_TOKENS_PRICE_IN_USD_CENTS),
-      consumptionType: CreditConsumptionType.OUTPUT_TOKEN,
+    const outputTokensConsumption : AgentBaseCreditConsumptionItem = {
+      totalAmountInUSDCents: Math.max(1, Math.round(outputTokens/1000000 * AgentBasePricing.AGENT_BASE_MILLION_OUTPUT_TOKENS_PRICE_IN_USD_CENTS)),
+      consumptionType: AgentBaseCreditConsumptionType.OUTPUT_TOKEN,
       consumptionUnits: outputTokens
     }
-    const creditConsumption : CreditConsumption = {
+    const creditConsumption : AgentBaseCreditConsumption = {
       items: [toolCallsConsumption, inputTokensConsumption, outputTokensConsumption],
       totalAmountInUSDCents: toolCallsConsumption.totalAmountInUSDCents + inputTokensConsumption.totalAmountInUSDCents + outputTokensConsumption.totalAmountInUSDCents
     }
 
     // Deduct credit by updating the customer's balance
-    const newBalanceInUSDCents = await creditService.deductCredit(
+    const newBalanceInUSDCents: number = await creditService.deductCredit(
       stripeCustomer.id, 
       creditConsumption.totalAmountInUSDCents,
       'API usage'
     );
+    const response: AgentBaseDeductCreditResponse = {
+      creditConsumption,
+      newBalanceInUSDCents
+    }
+    console.debug('DeductCreditByPlatformUserIdInternalService response', JSON.stringify(response, null, 2));
 
     res.status(200).json({
       success: true,
-      data: {
-        creditConsumption,
-        newBalanceInUSDCents
-      } as DeductCreditResponse
+      data: response
     });
     return;
   } catch (error) {

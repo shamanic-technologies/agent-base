@@ -4,7 +4,7 @@
 import { Request, Response } from 'express';
 import * as customerService from '../services/customerService.js';
 import { stripe } from '../config/index.js';
-import { CreateCheckoutSessionRequest } from '@agent-base/types';
+import { AgentBaseCreateCheckoutSessionRequest } from '@agent-base/types';
 import Stripe from 'stripe';
 /**
  * Create a Stripe Checkout session for adding credit to a user's account
@@ -15,7 +15,7 @@ export async function createCheckoutSession(req: Request, res: Response): Promis
   try {
     // The authMiddleware ensures platformUser and platformUser.platformUserId are present.
     const { platformUserId, platformUserEmail, platformUserName } = req.platformUser!;
-    const { amountInUSDCents, successUrl, cancelUrl }: CreateCheckoutSessionRequest = req.body;
+    const { amountInUSDCents, successUrl, cancelUrl }: AgentBaseCreateCheckoutSessionRequest = req.body;
     
     // Validate required parameters
     if (amountInUSDCents === undefined || !successUrl || !cancelUrl) {

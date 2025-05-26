@@ -8,6 +8,7 @@ import { configureHealthRoutes } from './health.routes.js';
 import { configureAgentRoutes } from './agent.routes.js';
 import { configureUtilityRoutes } from './utility.routes.js';
 import { configureSecretRoutes } from './secret.routes.js';
+// import { configurePaymentRoutes } from './payment.routes.js';
 // Import webhook routes config
 import { configureWebhookRoutes } from './webhook.routes.js';
 import { configureApiToolRoutes } from './api-tool.routes.js';
@@ -30,6 +31,7 @@ export const configureRoutes = (
     secret: string;
     webhookTool: string;
     apiTool: string;
+    // payment: string;
   },
   authMiddleware: express.RequestHandler,
   creditValidationMiddleware: express.RequestHandler
@@ -45,20 +47,11 @@ export const configureRoutes = (
   configureAgentRoutes(agentRouter, serviceUrls.agent, authMiddleware, creditValidationMiddleware);
   app.use('/agent', agentRouter);
 
-  // // /message prefix
-  // const messageRouter = express.Router();
-  // configureMessageRoutes(messageRouter, serviceUrls.agent, authMiddleware);
-  // app.use('/message', messageRouter);
+  // // Payment service routes
+  // const paymentRouter = express.Router();
+  // configurePaymentRoutes(paymentRouter, serviceUrls.payment, authMiddleware, creditValidationMiddleware);
+  // app.use('/payment', paymentRouter);
 
-  // // // /conversation prefix
-  // const conversationRouter = express.Router();
-  // configureConversationRoutes(conversationRouter, serviceUrls.agent, authMiddleware);
-  // app.use('/conversation', conversationRouter);
-
-  // // /run prefix
-  // const runRouter = express.Router();
-  // configureRunRoutes(runRouter, serviceUrls.agent, authMiddleware);
-  // app.use('/run', runRouter);
   
   // Utility tool service routes
   const utilityToolRouter = express.Router();
