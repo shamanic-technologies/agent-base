@@ -4,6 +4,7 @@
 import { stripe } from '../config/index.js';
 import { AgentBaseAutoRechargeSettings, AgentBaseCustomerCredits, AgentBasePricing, AgentBaseStripeCustomerInformation } from '@agent-base/types';
 import Stripe from 'stripe';
+import { addCredit } from './creditService.js';
 
 
 /**
@@ -13,11 +14,13 @@ export async function addFreeSignupCredit(stripeCustomerId: string, amountInUSDC
   const freeCreditsInUSDCents = amountInUSDCents * -1; // $5.00 in cents (negative for customer credit)
   
   console.log(`[customerService.addFreeSignupCredit] About to call stripe.customers.createBalanceTransaction for customer ${stripeCustomerId}`);
-  const transaction = await stripe.customers.createBalanceTransaction(stripeCustomerId, {
-    amount: freeCreditsInUSDCents,
-    currency: 'usd',
-    description: 'Free Sign-up Credit'
-  });
+  // Add credits to customer balance
+  const addedCreditResponse = await addCredit(
+    stripeCustomerId, 
+    freeCreditsInUSDCents, 
+    'Free Sign-up Credit'
+  );
+  const { transaction, newBalance } = addedCreditResponse;
   console.log(`[customerService.addFreeSignupCredit] Finished stripe.customers.createBalanceTransaction for customer ${stripeCustomerId}`);
   return transaction;
 }
