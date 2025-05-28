@@ -4,15 +4,15 @@
     "builder": "DOCKERFILE",
     "dockerfilePath": "apps/agent-service/Dockerfile",
     "watchPatterns": [
-      "./**",
-      "../../packages/types/**",
-      "../../packages/api-client/**",
-      "../../packages/secret-client/**",
-      "../../pnpm-lock.yaml",
-      "../../package.json",
-      "../../pnpm-workspace.yaml",
-      "../../tsconfig.json",
-      "../../tooling/typescript/**"
+      "apps/agent-service/**",
+      "packages/types/**",
+      "packages/api-client/**",
+      "packages/secret-client/**",
+      "pnpm-lock.yaml",
+      "package.json",
+      "pnpm-workspace.yaml",
+      "tsconfig.json",
+      "tooling/typescript/**"
     ]
   },
   "deploy": {

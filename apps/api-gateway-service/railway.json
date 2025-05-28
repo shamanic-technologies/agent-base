@@ -4,15 +4,15 @@
     "builder": "DOCKERFILE",
     "dockerfilePath": "apps/api-gateway-service/Dockerfile",
     "watchPatterns": [
-      "./**",
-      "../../packages/types/**",
-      "../../packages/api-client/**",
-      "../../packages/secret-client/**",
-      "../../pnpm-lock.yaml",
-      "../../package.json",
-      "../../pnpm-workspace.yaml",
-      "../../tsconfig.json",
-      "../../tooling/typescript/**"
+      "apps/api-gateway-service/**",
+      "packages/types/**",
+      "packages/api-client/**",
+      "packages/secret-client/**",
+      "pnpm-lock.yaml",
+      "package.json",
+      "pnpm-workspace.yaml",
+      "tsconfig.json",
+      "tooling/typescript/**"
     ]
   },
   "deploy": {

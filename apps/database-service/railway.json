@@ -4,15 +4,15 @@
     "builder": "DOCKERFILE",
     "dockerfilePath": "apps/database-service/Dockerfile",
     "watchPatterns": [
-      "./**",
-      "../../packages/types/**",
-      "../../packages/api-client/**",
-      "../../packages/secret-client/**",
-      "../../pnpm-lock.yaml",
-      "../../package.json",
-      "../../pnpm-workspace.yaml",
-      "../../tsconfig.json",
-      "../../tooling/typescript/**"
+      "apps/database-service/**",
+      "packages/types/**",
+      "packages/api-client/**",
+      "packages/secret-client/**",
+      "pnpm-lock.yaml",
+      "package.json",
+      "pnpm-workspace.yaml",
+      "tsconfig.json",
+      "tooling/typescript/**"
     ]
   },
   "deploy": {
