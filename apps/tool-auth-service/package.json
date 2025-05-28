@@ -11,8 +11,8 @@
     "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf .next"
   },
   "dependencies": {
-    "@agent-base/types": "workspace:^",
-    "@agent-base/api-client": "workspace:^",
+    "@agent-base/types": "workspace:*",
+    "@agent-base/api-client": "workspace:*",
     "@radix-ui/react-slot": "^1.1.2",
     "axios": "^1.8.4",
     "class-variance-authority": "^0.7.1",

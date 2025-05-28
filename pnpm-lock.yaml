@@ -121,10 +121,10 @@ importers:
   apps/agent-service:
     dependencies:
       '@agent-base/api-client':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/api-client
       '@agent-base/types':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/types
       '@ai-sdk/anthropic':
         specifier: ^1.2.11
@@ -240,7 +240,7 @@ importers:
   apps/database-service:
     dependencies:
       '@agent-base/types':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/types
       '@types/uuid':
         specifier: ^10.0.0
@@ -310,10 +310,10 @@ importers:
   apps/key-service:
     dependencies:
       '@agent-base/api-client':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/api-client
       '@agent-base/types':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/types
       axios:
         specifier: ^1.9.0
@@ -542,7 +542,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/api-client
       '@agent-base/types':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/types
       '@xata.io/client':
         specifier: ^0.30.1
