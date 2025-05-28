@@ -23,7 +23,7 @@
       "import": "./dist/types.js",
       "types": "./dist/types.d.ts"
     }
-  }, 
+  },
   "scripts": {
     "build": "npx rimraf dist && tsc -p tsconfig.json",
     "clean": "rm -rf dist"
