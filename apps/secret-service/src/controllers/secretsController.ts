@@ -91,11 +91,20 @@ export async function storeSecretHandler(req: Request, res: Response, next: Next
  */
 export async function getSecretHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-        const secretTypeParam: UtilitySecretType = req.params.secretTypeParam as UtilitySecretType;
+        const secretTypeParam: UtilitySecretType = req.params.secretType as UtilitySecretType;
         const userType: UserType = req.query.userType as UserType;
         const secretUtilityProvider: UtilityProvider = req.query.secretUtilityProvider as UtilityProvider;
         const secretUtilitySubProvider: string | undefined = req.query.secretUtilitySubProvider as string | undefined;
         
+        // --- BEGIN ADDED DEBUG LOGGING ---
+        console.log('[SecretService Debug] getSecretHandler - Raw Query Params:', JSON.stringify(req.query));
+        console.log('[SecretService Debug] getSecretHandler - Raw Path Params:', JSON.stringify(req.params));
+        console.log(`[SecretService Debug] getSecretHandler - Parsed userType: ${userType} (type: ${typeof userType})`);
+        console.log(`[SecretService Debug] getSecretHandler - Parsed secretTypeParam: ${secretTypeParam} (type: ${typeof secretTypeParam})`);
+        console.log(`[SecretService Debug] getSecretHandler - Parsed secretUtilityProvider: ${secretUtilityProvider} (type: ${typeof secretUtilityProvider})`);
+        console.log(`[SecretService Debug] getSecretHandler - Parsed secretUtilitySubProvider: ${secretUtilitySubProvider} (type: ${typeof secretUtilitySubProvider})`);
+        // --- END ADDED DEBUG LOGGING ---
+
         const serviceCredentialsResponse: ServiceResponse<ServiceCredentials> = await getAuthHeaders(req);
 
         if (!serviceCredentialsResponse.success || !serviceCredentialsResponse.data) {
@@ -154,7 +163,7 @@ export async function getSecretHandler(req: Request, res: Response, next: NextFu
  */
 export async function checkSecretExistsHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-        const secretTypeParam: UtilitySecretType = req.params.secretTypeParam as UtilitySecretType;
+        const secretTypeParam: UtilitySecretType = req.params.secretType as UtilitySecretType;
         const userType: UserType = req.query.userType as UserType;
         const secretUtilityProvider: UtilityProvider = req.query.secretUtilityProvider as UtilityProvider;
         const secretUtilitySubProvider: string | undefined = req.query.secretUtilitySubProvider as string | undefined;
