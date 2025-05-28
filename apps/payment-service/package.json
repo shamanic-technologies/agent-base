@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently \"stripe listen --forward-to http://localhost:3007/payment/webhook\" \"tsx watch src/index.ts\"",
-    "dev:service": "tsx watch src/index.ts",
+    "dev:no-watch": "concurrently \"stripe listen --forward-to http://localhost:3007/payment/webhook\" \"tsx src/index.ts\"",
     "build": "tsc",
     "start": "node dist/index.js",
     "lint": "eslint . --max-warnings 0",

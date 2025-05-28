@@ -6,6 +6,7 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "nodemon --exec tsx src/server.ts",
+    "dev:no-watch": "tsx src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
     "lint": "eslint src/**/*.ts",
