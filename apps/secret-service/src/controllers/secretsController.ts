@@ -64,7 +64,8 @@ export async function storeSecretHandler(req: Request, res: Response, next: Next
             userType,
             userId,
             secretUtilityProvider, 
-            secretType
+            secretType,
+            secretUtilitySubProvider
         );
 
         await gsmClient.storeSecret(secretIdToStore, secretValue);
@@ -122,8 +123,8 @@ export async function getSecretHandler(req: Request, res: Response, next: NextFu
             userType,
             userId,
             secretUtilityProvider,
-            secretUtilitySubProvider || '', // Pass empty string
-            secretTypeParam
+            secretTypeParam,
+            secretUtilitySubProvider
         );
         
         const secretValue = await gsmClient.getSecret(secretIdToGet);
@@ -185,8 +186,8 @@ export async function checkSecretExistsHandler(req: Request, res: Response, next
             userType,
             userId,
             secretUtilityProvider,
-            secretUtilitySubProvider || '', // Pass empty string
-            secretTypeParam
+            secretTypeParam,
+            secretUtilitySubProvider
         );
 
         const exists = await gsmClient.secretExists(secretIdToCheck);

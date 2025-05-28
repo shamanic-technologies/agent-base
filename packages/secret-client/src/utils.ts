@@ -1,4 +1,4 @@
-import { UserType, UtilityInputSecret, UtilityProvider } from '@agent-base/types';
+import { UserType, UtilityProvider, UtilitySecretType } from '@agent-base/types';
 
 /**
  * Generates a standardized Google Secret Manager (GSM) compatible secret ID.
@@ -10,7 +10,7 @@ import { UserType, UtilityInputSecret, UtilityProvider } from '@agent-base/types
  * @param userType The type of user (e.g., UserType.Client, UserType.Platform). Must not be empty.
  * @param userId The unique ID of the user. Must be a non-empty string.
  * @param utilityProvider The primary context for the secret (e.g., a UtilityProvider string/enum). Must be non-empty.
- * @param secretType The specific name or type of the secret (e.g., UtilityInputSecret string/enum). Must be non-empty.
+ * @param secretType The specific name or type of the secret (e.g., UtilitySecretType string/enum). Must be non-empty.
  * @param webhookSubscribedEvent Optional specific identifier or sub-context (e.g., tool ID, webhook event). If provided, must be a non-empty string.
  * @returns A sanitized, GSM-compatible secret ID string, truncated to 255 characters.
  * @throws Error if mandatory parameters are invalid.
@@ -19,7 +19,7 @@ export const generateSecretManagerId = (
     userType: UserType,
     userId: string,
     utilityProvider: UtilityProvider,
-    secretType: UtilityInputSecret,
+    secretType: UtilitySecretType,
     webhookSubscribedEvent?: string,
 ): string => {
     // Validate mandatory parameters
