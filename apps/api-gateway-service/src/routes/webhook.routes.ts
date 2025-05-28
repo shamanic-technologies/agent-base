@@ -29,11 +29,11 @@ export const configureWebhookRoutes = (
     throw new Error('Webhook Store Service URL is required.'); 
   }
   
-  const webhookStoreApiKey = process.env.WEBHOOK_STORE_API_KEY;
+  const webhookStoreApiKey = process.env.WEBHOOK_TOOL_API_KEY;
   if (!webhookStoreApiKey) {
-    console.error('[WebhookRoutes] WEBHOOK_STORE_API_KEY environment variable is not set!');
+    console.error('[WebhookRoutes] .WEBHOOK_TOOL_API_KEY environment variable is not set!');
     // Throw error to prevent startup with missing credentials
-    throw new Error('WEBHOOK_STORE_API_KEY is required.'); 
+    throw new Error('.WEBHOOK_TOOL_API_KEY is required.'); 
   }
 
   console.log(`[WebhookRoutes] Configuring proxy for Webhook Store Service at: ${webhookToolApiUrl}`);
