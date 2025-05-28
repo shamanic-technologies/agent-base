@@ -17,7 +17,7 @@ if (fs.existsSync(envFile)) {
  * A central entry point for web applications to access all microservices.
  * Handles routing, authentication, and request forwarding to appropriate services.
  */
-import express, { Request, Response, NextFunction } from 'express';
+import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { rateLimit } from 'express-rate-limit';
@@ -30,8 +30,8 @@ const requiredEnvVars = [
   'PORT',
   'KEY_SERVICE_URL',
   'PAYMENT_SERVICE_URL',
-  'LOGGING_SERVICE_URL',
-  'DATABASE_SERVICE_URL',
+  // 'LOGGING_SERVICE_URL',
+  // 'DATABASE_SERVICE_URL',
   'WEB_GATEWAY_API_KEY'
 ];
 
@@ -47,8 +47,8 @@ const PORT = process.env.PORT;
 // Service URLs with non-null assertion to handle TypeScript
 const KEY_SERVICE_URL = process.env.KEY_SERVICE_URL!;
 const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL!;
-const LOGGING_SERVICE_URL = process.env.LOGGING_SERVICE_URL!;
-const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL!;
+// const LOGGING_SERVICE_URL = process.env.LOGGING_SERVICE_URL!;
+// const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL!;
 // API key for gateway access
 // const WEB_GATEWAY_API_KEY = process.env.WEB_GATEWAY_API_KEY!; // Removed as it's handled in middleware
 
@@ -89,8 +89,8 @@ app.get('/health', (req, res) => {
     services: {
       keys: KEY_SERVICE_URL,
       payment: PAYMENT_SERVICE_URL,
-      logging: LOGGING_SERVICE_URL,
-      database: DATABASE_SERVICE_URL
+      // logging: LOGGING_SERVICE_URL,
+      // database: DATABASE_SERVICE_URL
     }
   });
   // Implicit void return is fine here, but can be explicit for clarity if desired
@@ -112,22 +112,22 @@ paymentRouter.all('/*', async (req, res) => {
   await forwardRequest(PAYMENT_SERVICE_URL, req, res);
 });
 
-// Logging service route handler
-loggingRouter.all('/*', async (req, res) => {
-  await forwardRequest(LOGGING_SERVICE_URL, req, res);
-});
+// // Logging service route handler
+// loggingRouter.all('/*', async (req, res) => {
+//   await forwardRequest(LOGGING_SERVICE_URL, req, res);
+// });
 
-// Database service route handler
-databaseRouter.all('/*', async (req, res) => {
-  console.log('🗄️ Database service route handler'+ req.path);
-  await forwardRequest(DATABASE_SERVICE_URL, req, res);
-});
+// // Database service route handler
+// databaseRouter.all('/*', async (req, res) => {
+//   console.log('🗄️ Database service route handler'+ req.path);
+//   await forwardRequest(DATABASE_SERVICE_URL, req, res);
+// });
 
 // Mount the allowed routers
 app.use('/keys', keysRouter);
 app.use('/payment', paymentRouter);
-app.use('/logging', loggingRouter);
-app.use('/database', databaseRouter);
+// app.use('/logging', loggingRouter);
+// app.use('/database', databaseRouter);
 /**
  * 404 Handler for unknown routes
  */
@@ -145,6 +145,6 @@ app.listen(PORT, () => {
   console.log('Connected to services:');
   console.log(`🔑 Key Service: ${KEY_SERVICE_URL}`);
   console.log(`💳 Payment Service: ${PAYMENT_SERVICE_URL}`);
-  console.log(`📝 Logging Service: ${LOGGING_SERVICE_URL}`);
-  console.log(`🗄️ Database Service: ${DATABASE_SERVICE_URL}`);
+  // console.log(`📝 Logging Service: ${LOGGING_SERVICE_URL}`);
+  // console.log(`🗄️ Database Service: ${DATABASE_SERVICE_URL}`);
 }); 

@@ -17,7 +17,6 @@ import { makePlatformUserApiServiceRequest, makeClientUserApiServiceRequest } fr
 import { getAgentBaseApiUrl } from '../../utils/config.js'; // Added .js
 import { Method } from 'axios';
 
-const AGENT_BASE_API_URL = getAgentBaseApiUrl();
 const AGENT_SERVICE_ROUTE_PREFIX = '/agent'; // Assuming API Gateway prefixes agent routes with /agent
 
 /**
@@ -32,6 +31,7 @@ export const getOrCreateConversationsPlatformUserApiService = async (
     params: { agentId: string }, 
     platformUserApiServiceCredentials: PlatformUserApiServiceCredentials
 ): Promise<ServiceResponse<Conversation[]>> => {
+    const AGENT_BASE_API_URL = getAgentBaseApiUrl();
     const { agentId } = params;
     const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/conversation/get-or-create-conversations-from-agent`;
     const queryParams = { agentId }; 
@@ -59,6 +59,7 @@ export const createConversationExternalApiService = async (
     body: CreateConversationInput,
     platformUserApiServiceCredentials: PlatformUserApiServiceCredentials
 ): Promise<ServiceResponse<ConversationId>> => {
+    const AGENT_BASE_API_URL = getAgentBaseApiUrl();
     const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/conversation/create-conversation`;    
     return makePlatformUserApiServiceRequest<ConversationId>( 
         AGENT_BASE_API_URL,
@@ -82,6 +83,7 @@ export const getOrCreateConversationClientUserApiService = async (
     body: CreateConversationInput,
     clientUserApiServiceCredentials: ClientUserApiServiceCredentials
 ): Promise<ServiceResponse<ConversationId>> => {
+    const AGENT_BASE_API_URL = getAgentBaseApiUrl();
     const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/conversation/get-or-create-conversation`;    
     return makeClientUserApiServiceRequest<ConversationId>( 
         AGENT_BASE_API_URL,
@@ -103,6 +105,7 @@ export const getOrCreateConversationClientUserApiService = async (
 export const getAllUserConversationsPlatformUserApiService = async (
     platformUserApiServiceCredentials: PlatformUserApiServiceCredentials
 ): Promise<ServiceResponse<Conversation[]>> => {
+    const AGENT_BASE_API_URL = getAgentBaseApiUrl();
     const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/conversation/get-all-user-conversations`;
 
     return makePlatformUserApiServiceRequest<Conversation[]>(

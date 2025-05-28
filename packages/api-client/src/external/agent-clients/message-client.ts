@@ -11,7 +11,6 @@ import { makePlatformUserApiServiceRequest } from '../../utils/service-client.js
 import { getAgentBaseApiUrl } from '../../utils/config.js'; // Added .js
 import { Message } from 'ai';
 
-const AGENT_BASE_API_URL = getAgentBaseApiUrl();
 const AGENT_SERVICE_ROUTE_PREFIX = '/agent'; // Assuming API Gateway prefixes agent routes with /agent
 
 /**
@@ -26,6 +25,7 @@ export const getMessagesFromConversationExternalApiService = async (
     params: { conversationId: string }, 
     externalApiServiceCredentials: PlatformUserApiServiceCredentials
 ): Promise<ServiceResponse<Message[]>> => {
+    const AGENT_BASE_API_URL = getAgentBaseApiUrl();
     const { conversationId } = params;
     const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/message/get-messages-from-conversation`;
     const queryParams = { conversationId }; 

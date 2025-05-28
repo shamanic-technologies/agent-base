@@ -7,7 +7,6 @@ import { getAgentBaseApiUrl } from '../../utils/config.js';
 import { Message } from 'ai';
 
 const AGENT_SERVICE_ROUTE_PREFIX = '/agent'; // Assuming API Gateway prefixes agent routes with /agent
-const AGENT_BASE_API_URL = getAgentBaseApiUrl();
 
 /**
  * Triggers the agent run process for a given conversation and message.
@@ -23,6 +22,7 @@ export const triggerAgentRunClientUserApiService = async (
     message: Message,
     clientUserApiServiceCredentials: ClientUserApiServiceCredentials
 ): Promise<ServiceResponse<void>> => { // Returns void as we don't process the stream here
+    const AGENT_BASE_API_URL = getAgentBaseApiUrl(); // Call getAgentBaseApiUrl here
     const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/run`;    
     return makeClientUserApiServiceRequest<void>( 
         AGENT_BASE_API_URL,
