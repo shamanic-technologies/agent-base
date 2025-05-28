@@ -2,10 +2,21 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "DOCKERFILE",
-    "dockerfilePath": "apps/secret-service/Dockerfile"
+    "dockerfilePath": "Dockerfile",
+    "watchPatterns": [
+      "./**",
+      "../../packages/types/**",
+      "../../packages/secret-client/**",
+      "../../packages/api-client/**",
+      "../../pnpm-lock.yaml",
+      "../../package.json",
+      "../../pnpm-workspace.yaml",
+      "../../tsconfig.json",
+      "../../tooling/typescript/**"
+    ]
   },
   "deploy": {
-    "startCommand": "node dist/server.js",
+    "startCommand": "pnpm run start",
     "healthcheckPath": "/health",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
