@@ -3,7 +3,17 @@
   "build": {
     "builder": "DOCKERFILE",
     "dockerfilePath": "apps/utility-tool-service/Dockerfile",
-    "watchPatterns": ["apps/utility-tool-service/**"]
+    "watchPatterns": [
+      "./**",
+      "../../packages/types/**",
+      "../../packages/api-client/**",
+      "../../packages/secret-client/**",
+      "../../pnpm-lock.yaml",
+      "../../package.json",
+      "../../pnpm-workspace.yaml",
+      "../../tsconfig.json",
+      "../../tooling/typescript/**"
+    ]
   },
   "deploy": {
     "numReplicas": 1,

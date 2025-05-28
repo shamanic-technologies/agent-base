@@ -4,11 +4,15 @@
     "builder": "DOCKERFILE",
     "dockerfilePath": "apps/database-service/Dockerfile",
     "watchPatterns": [
-      "apps/database-service/**",
-      "packages/**",
-      "package.json",
-      "turbo.json",
-      "Dockerfile"
+      "./**",
+      "../../packages/types/**",
+      "../../packages/api-client/**",
+      "../../packages/secret-client/**",
+      "../../pnpm-lock.yaml",
+      "../../package.json",
+      "../../pnpm-workspace.yaml",
+      "../../tsconfig.json",
+      "../../tooling/typescript/**"
     ]
   },
   "deploy": {

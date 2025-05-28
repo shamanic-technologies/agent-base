@@ -2,7 +2,18 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "DOCKERFILE",
-    "dockerfilePath": "apps/web-gateway-service/Dockerfile"
+    "dockerfilePath": "apps/web-gateway-service/Dockerfile",
+    "watchPatterns": [
+      "./**",
+      "../../packages/types/**",
+      "../../packages/api-client/**",
+      "../../packages/secret-client/**",
+      "../../pnpm-lock.yaml",
+      "../../package.json",
+      "../../pnpm-workspace.yaml",
+      "../../tsconfig.json",
+      "../../tooling/typescript/**"
+    ]
   },
   "deploy": {
     "startCommand": "node dist/index.js",
