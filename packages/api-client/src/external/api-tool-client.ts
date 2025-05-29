@@ -22,11 +22,13 @@ import { getAgentBaseApiUrl, getApiToolApiUrl } from '../utils/config.js';
  */
 export async function listApiTools(
     serviceCredentials: ExternalServiceCredentials,
+    apiToolApiKey: string,
 ): Promise<ServiceResponse<ApiToolInfo[]>> {
     const customHeaders : Record<string, string> = {
         'x-platform-user-id': serviceCredentials.platformUserId,
         'x-client-user-id': serviceCredentials.clientUserId,
         'x-platform-api-key': serviceCredentials.platformApiKey,
+        'Authorization': `Bearer ${apiToolApiKey}`,
     };
     if (serviceCredentials.agentId) {
         customHeaders['x-agent-id'] = serviceCredentials.agentId;
@@ -51,12 +53,14 @@ export async function listApiTools(
  */
 export async function getApiToolInfo(
     externalApiServiceCredentials: ExternalServiceCredentials,
+    apiToolApiKey: string,
     id: string
 ): Promise<ServiceResponse<ApiToolInfo>> {
     const customHeaders : Record<string, string> = {
         'x-platform-user-id': externalApiServiceCredentials.platformUserId,
         'x-client-user-id': externalApiServiceCredentials.clientUserId,
         'x-platform-api-key': externalApiServiceCredentials.platformApiKey,
+        'Authorization': `Bearer ${apiToolApiKey}`,
     };
     if (externalApiServiceCredentials.agentId) {
         customHeaders['x-agent-id'] = externalApiServiceCredentials.agentId;
@@ -79,12 +83,14 @@ export async function getApiToolInfo(
  */
 export async function createApiTool(
     externalserviceCredentials: ExternalServiceCredentials,
+    apiToolApiKey: string,
     apiTool: ApiTool
 ): Promise<ServiceResponse<ApiTool>> {
     const customHeaders : Record<string, string> = {
         'x-platform-user-id': externalserviceCredentials.platformUserId,
         'x-client-user-id': externalserviceCredentials.clientUserId,
         'x-platform-api-key': externalserviceCredentials.platformApiKey,
+        'Authorization': `Bearer ${apiToolApiKey}`,
     };
     if (externalserviceCredentials.agentId) {
         customHeaders['x-agent-id'] = externalserviceCredentials.agentId;
@@ -107,6 +113,7 @@ export async function createApiTool(
  */
 export async function executeApiTool(
     externalApiServiceCredentials: ExternalServiceCredentials,
+    apiToolApiKey: string,
     id: string,
     executeToolPayload: ExecuteToolPayload
 ): Promise<ServiceResponse<ApiToolExecutionResponse>> {
@@ -114,6 +121,7 @@ export async function executeApiTool(
         'x-platform-user-id': externalApiServiceCredentials.platformUserId,
         'x-client-user-id': externalApiServiceCredentials.clientUserId,
         'x-platform-api-key': externalApiServiceCredentials.platformApiKey,
+        'Authorization': `Bearer ${apiToolApiKey}`,
     };
     if (externalApiServiceCredentials.agentId) {
         customHeaders['x-agent-id'] = externalApiServiceCredentials.agentId;

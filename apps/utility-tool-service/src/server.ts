@@ -152,9 +152,13 @@ app.get('/get-details/:id', async (req, res): Promise<void> => {
   
   try {
     // 1. Try internal registry
-    const internalUtility: InternalUtilityTool = registry.getInternalUtility(id);
+    const internalUtility: InternalUtilityTool | undefined = registry.getInternalUtility(id);
     if (internalUtility) {
-        res.status(200).json(internalUtility);
+        const response: ServiceResponse<InternalUtilityTool> = {
+            success: true,
+            data: internalUtility
+        };
+        res.status(200).json(response);
         return;
     }
 
@@ -188,7 +192,8 @@ app.post('/call-tool/:id', async (req, res): Promise<void> => {
   // Basic input validation
   if (!conversationId) {
     console.log(`${logPrefix} Conversation ID is required`);
-    res.status(400).json({ success: false, error: 'conversationId is required' });
+    const errorResponse: ErrorResponse = { success: false, error: 'conversationId is required' };
+    res.status(400).json(errorResponse);
     return;
   }
   const authHeaders = getAuthHeadersFromAgent(req);
@@ -201,11 +206,11 @@ app.post('/call-tool/:id', async (req, res): Promise<void> => {
 
   try {
     // 1. Try internal registry
-    const internalUtility: InternalUtilityTool = registry.getInternalUtility(id);
+    const internalUtility: InternalUtilityTool | undefined = registry.getInternalUtility(id);
     if (internalUtility) {
         // Pass clientUserId as the 'userId' parameter for internal execution
         // Ensure platformUserId and platformApiKey are passed according to the updated interface
-        const result: any = await registry.executeInternalUtility(
+        const result: ExecuteToolResult = await registry.executeInternalUtility(
             id, 
             agentServiceCredentials.clientUserId, 
             agentServiceCredentials.platformUserId,
@@ -215,7 +220,11 @@ app.post('/call-tool/:id', async (req, res): Promise<void> => {
             agentServiceCredentials.agentId
         );
         
-        res.status(200).json(result); 
+        const response: ServiceResponse<ExecuteToolResult> = {
+            success: true,
+            data: result 
+        };
+        res.status(200).json(response); 
         return;
     }
 

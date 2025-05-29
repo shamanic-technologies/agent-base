@@ -16,6 +16,10 @@ async function _makeServiceRequest<T>(
   try {
     const response = await axios.request<ServiceResponse<T>>(config);
 
+    // --- TEMPORARY DEBUG LOG ---
+    console.log(`${logContext} Raw response.data from ${fullUrl}:`, JSON.stringify(response.data));
+    // --- END TEMPORARY DEBUG LOG ---
+
     // Check if the response looks like a standard ServiceResponse
     if (typeof response.data === 'object' && response.data !== null && 'success' in response.data) {
        return response.data;
