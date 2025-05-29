@@ -10,7 +10,8 @@ import {
     ServiceCredentials,
     ApiToolInfo,
     PlatformUserApiServiceCredentials,
-    SearchApiToolResult
+    SearchApiToolResult,
+    CreateApiToolRequest
 } from '@agent-base/types';
 import { makeExternalApiServiceRequest, makePlatformUserApiServiceRequest } from '../utils/service-client.js';
 import { getAgentBaseApiUrl, getApiToolApiUrl } from '../utils/config.js';
@@ -84,7 +85,7 @@ export async function getApiToolInfo(
 export async function createApiTool(
     externalserviceCredentials: ExternalServiceCredentials,
     apiToolApiKey: string,
-    apiTool: ApiTool
+    createApiToolRequest: CreateApiToolRequest
 ): Promise<ServiceResponse<ApiTool>> {
     const customHeaders : Record<string, string> = {
         'x-platform-user-id': externalserviceCredentials.platformUserId,
@@ -99,7 +100,7 @@ export async function createApiTool(
         getApiToolApiUrl(),
         'POST',
         '/',
-        apiTool,
+        createApiToolRequest,
         undefined,
         customHeaders
     );
