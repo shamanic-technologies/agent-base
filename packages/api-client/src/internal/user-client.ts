@@ -19,13 +19,13 @@ import { Method } from 'axios';
 // --- Endpoint Client Functions --- //
 
 /**
- * Validates a provider user.
- * POST /provider-user/validate
+ * Validates a platform user.
+ * POST /platform-user/validate
  *
- * @param platformAuthUserId - The provider user ID to validate.
+ * @param platformAuthUserId - The platform user ID to validate.
  * @returns A promise resolving to ServiceResponse<PlatformUserId>.
  */
-export const validatePlatformAuthUser = async (
+export const validatePlatformUser = async (
   platformAuthUserId: string
 ): Promise<ServiceResponse<PlatformUserId>> => {
 

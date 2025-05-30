@@ -5,9 +5,9 @@
  * populates req.platformUser, and adds x-platform-user-* headers for downstream services.
  */
 import { Request, Response, NextFunction } from 'express';
-import { validateProviderUser } from '@agent-base/api-client';
 import { PlatformUserId } from '@agent-base/types';
 import { ServiceResponse } from '@agent-base/types';
+import { validatePlatformUser } from '@agent-base/api-client';
 
 // Define endpoints that should skip this specific user ID check
 // Health check is a common one.
@@ -39,26 +39,25 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
     return next();
   }
 
-  const providerUserId = req.headers['x-provider-user-id'] as string | undefined;
+  const platformAuthUserId = req.headers['x-platform-auth-user-id'] as string | undefined;
   let platformUserId = req.headers['x-platform-user-id'] as string | undefined;
 
-  if (providerUserId) {
+  if (platformAuthUserId) {
     try {
-      console.log(`[Auth Middleware] Validating providerUserId: ${providerUserId} for path: ${req.path}`);
-      const validationResponse: ServiceResponse<PlatformUserId> = await validateProviderUser(providerUserId);
+      const validationResponse: ServiceResponse<PlatformUserId> = await validatePlatformUser(platformAuthUserId);
 
       if (validationResponse.success && validationResponse.data) {
         platformUserId = validationResponse.data.platformUserId;
         // Set the validated platformUserId for downstream services
         req.headers['x-platform-user-id'] = platformUserId; 
       } else {
-        console.warn(`[Auth Middleware] Failed to validate providerUserId '${providerUserId}': ${validationResponse.error}`);
+        console.warn(`[Auth Middleware] Failed to validate providerUserId '${platformAuthUserId}': ${validationResponse.error}`);
         // Send a 401 Unauthorized or 403 Forbidden, as the provider ID is invalid/not found
         res.status(401).json({ success: false, error: validationResponse.error || "Invalid or unknown provider user ID." });
         return; // Stop processing
       }
     } catch (error: any) {
-      console.error(`[Auth Middleware] Error during providerUserId validation for '${providerUserId}':`, error);
+      console.error(`[Auth Middleware] Error during providerUserId validation for '${platformAuthUserId}':`, error);
       res.status(500).json({ success: false, error: 'Internal server error during provider user ID validation.' });
       return; // Stop processing
     }
