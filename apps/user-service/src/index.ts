@@ -8,8 +8,8 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 // import session from 'express-session'; // No longer needed
 // import passport from './utils/passport'; // No longer needed
-import providerUserRoutes from './routes/provider-user.routes'; // Import specific user routes
 import { config, logConfig } from './config/env';
+import authUserRoutes from './routes/auth-user.routes';
 
 // Initialize Express app
 const app = express();
@@ -31,7 +31,7 @@ app.use(express.json() as express.RequestHandler);
 
 // Register user routes
 // All user-related routes will be prefixed with /users (or whatever you prefer)
-app.use('/provider-user', providerUserRoutes);
+app.use('/auth-user', authUserRoutes);
 
 // Health check endpoint (optional, but good practice)
 app.get('/health', (req, res) => {

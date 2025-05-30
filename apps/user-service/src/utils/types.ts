@@ -4,18 +4,17 @@
  * Type definitions used across the auth service
  */
 import { Request, Response, NextFunction } from 'express';
-import { ProviderUser } from '@agent-base/types';
 
 // Extend Express Request type to include Passport user
-declare global {
-  namespace Express {
-    interface User extends ProviderUser {}
+// declare global {
+//   namespace Express {
+//     interface User extends ProviderUser {}
     
-    interface Request {
-      providerUser?: ProviderUser;
-    }
-  }
-}
+//     interface Request {
+//       providerUser?: ProviderUser;
+//     }
+//   }
+// }
 
 /**
  * Async request handler type that allows returning responses

@@ -50,6 +50,16 @@ export interface PlatformUser {
   updatedAt: Date;
 } 
 
+/**
+ * Input for getting or creating a user
+ */
+export interface GetOrCreateClientUserInput {
+  authUserId: string;
+  email?: string;
+  displayName?: string;
+  profileImage?: string;
+}
+
 export interface ClientUser {
   id: string;
   platformUserId: string;
@@ -57,6 +67,7 @@ export interface ClientUser {
   createdAt: Date;
   updatedAt: Date;
 }
+
 /**
  * Maps a snake_case user database record to camelCase user object
  * @param record The user record from the database
