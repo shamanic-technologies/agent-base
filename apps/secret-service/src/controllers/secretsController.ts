@@ -70,7 +70,7 @@ export async function storeSecretHandler(req: Request, res: Response, next: Next
         const secretIdToStore = generateSecretManagerId(
             userType,
             userId,
-            organizationId: clientOrganizationId,
+            clientOrganizationId,
             secretUtilityProvider, 
             secretType,
             secretUtilitySubProvider
@@ -104,14 +104,14 @@ export async function getSecretHandler(req: Request, res: Response, next: NextFu
         const secretUtilityProvider: UtilityProvider = req.query.secretUtilityProvider as UtilityProvider;
         const secretUtilitySubProvider: string | undefined = req.query.secretUtilitySubProvider as string | undefined;
         
-        const serviceCredentialsResponse: ServiceResponse<ServiceCredentials> = await getAuthHeaders(req);
+        const serviceCredentialsResponse: ServiceResponse<InternalCredentials> = await getAuthHeaders(req);
 
         if (!serviceCredentialsResponse.success || !serviceCredentialsResponse.data) {
             console.error('Error getting service credentials or data missing:', serviceCredentialsResponse.error);
             res.status(401).json({ success: false, error: 'Authentication failed or user data missing.' });
             return;
         }
-        const { platformUserId, clientUserId } = serviceCredentialsResponse.data;
+        const { platformUserId, clientUserId, clientOrganizationId } = serviceCredentialsResponse.data;
 
         if (!userType || !secretTypeParam || !secretUtilityProvider) {
             const errorResponse: ErrorResponse = { success: false, error: 'Missing required query parameters: userType, secretTypeParam (in path), secretUtilityProvider.' };
@@ -125,11 +125,18 @@ export async function getSecretHandler(req: Request, res: Response, next: NextFu
             res.status(400).json(errorResponse);
             return;
         }
+        if (!clientOrganizationId) {
+            console.error('Client organization ID could not be determined:', req.query);
+            const errorResponse: ErrorResponse = { success: false, error: 'Client organization ID could not be determined.' };
+            res.status(400).json(errorResponse);
+            return;
+        }
 
         const gsmClient = getGsmClient();
         const secretIdToGet = generateSecretManagerId(
             userType,
             userId,
+            clientOrganizationId,
             secretUtilityProvider,
             secretTypeParam,
             secretUtilitySubProvider
@@ -167,14 +174,14 @@ export async function checkSecretExistsHandler(req: Request, res: Response, next
         const secretUtilityProvider: UtilityProvider = req.query.secretUtilityProvider as UtilityProvider;
         const secretUtilitySubProvider: string | undefined = req.query.secretUtilitySubProvider as string | undefined;
 
-        const serviceCredentialsResponse: ServiceResponse<ServiceCredentials> = await getAuthHeaders(req);
+        const serviceCredentialsResponse: ServiceResponse<InternalCredentials> = await getAuthHeaders(req);
 
         if (!serviceCredentialsResponse.success || !serviceCredentialsResponse.data) {
             console.error('Error getting service credentials or data missing:', serviceCredentialsResponse.error);
             res.status(401).json({ success: false, error: 'Authentication failed or user data missing.' });
             return;
         }
-        const { platformUserId, clientUserId } = serviceCredentialsResponse.data;
+        const { platformUserId, clientUserId, clientOrganizationId } = serviceCredentialsResponse.data;
 
         if (!userType || !secretTypeParam || !secretUtilityProvider) {
             const errorResponse: ErrorResponse = { success: false, error: 'Missing required query parameters: userType, secretTypeParam (in path), secretUtilityProvider.' };
@@ -188,11 +195,18 @@ export async function checkSecretExistsHandler(req: Request, res: Response, next
             res.status(400).json(errorResponse);
             return;
         }
-        
+        if (!clientOrganizationId) {
+            console.error('Client organization ID could not be determined:', req.query);
+            const errorResponse: ErrorResponse = { success: false, error: 'Client organization ID could not be determined.' };
+            res.status(400).json(errorResponse);
+            return;
+        }
+
         const gsmClient = getGsmClient();
         const secretIdToCheck = generateSecretManagerId(
             userType,
             userId,
+            clientOrganizationId,
             secretUtilityProvider,
             secretTypeParam,
             secretUtilitySubProvider
