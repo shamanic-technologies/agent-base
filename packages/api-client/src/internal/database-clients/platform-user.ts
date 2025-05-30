@@ -16,28 +16,6 @@ import { makeWebAuthenticatedServiceRequest, makeWebAnonymousServiceRequest } fr
 import { getDatabaseServiceUrl } from '../../utils/config.js'; // Import the centralized getter
 import { Method } from 'axios';
 
-// Ensure the URL points to the correct database service
-
-/**
- * Retrieves the Database Service URL from environment variables or defaults.
- * Includes a warning if the environment variable is not set.
- * @returns The Database Service URL string.
- */
-/*
- * Removed duplicate function definition:
- * function getDatabaseServiceUrl(): string {
- *   const url = process.env.DATABASE_SERVICE_URL || 'http://localhost:3006';
- *   if (!process.env.DATABASE_SERVICE_URL) {
- *     console.warn('[api-client/database-client] DATABASE_SERVICE_URL environment variable not set. Defaulting to ' + url);
- *   }
- *   return url;
- * }
- */
-
-
-// ==============================================================================
-// Platform User Client Functions
-// ==============================================================================
 
 /**
  * Fetches the current platform user's data based on the propagated ID.

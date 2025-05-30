@@ -7,7 +7,7 @@ import {
     InternalUtilityTool,
     ErrorResponse,
     ServiceResponse,
-    InternalServiceCredentials,
+    HumanInternalCredentials,
     UserWebhook,
     SetupNeeded
 } from '@agent-base/types';
@@ -36,6 +36,7 @@ const webhookLinkUserUtility: InternalUtilityTool = {
   
     execute: async (
         clientUserId: string, 
+        clientOrganizationId: string,
         platformUserId: string,
         platformApiKey: string,
         conversationId: string, 
@@ -54,9 +55,10 @@ const webhookLinkUserUtility: InternalUtilityTool = {
             }
 
             // Prepare credentials for the API client call
-            const credentials: InternalServiceCredentials = {
+            const credentials: HumanInternalCredentials = {
                 platformUserId,
                 clientUserId,
+                clientOrganizationId,
                 platformApiKey,
                 agentId
             };

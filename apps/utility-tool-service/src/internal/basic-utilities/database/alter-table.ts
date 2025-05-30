@@ -103,7 +103,7 @@ const alterTableUtility: InternalUtilityTool = {
     required: ['table'],
   },
   
-  execute: async (clientUserId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: AlterTableRequest): Promise<AlterTableResponse> => {
+  execute: async (clientUserId: string, clientOrganizationId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: AlterTableRequest): Promise<AlterTableResponse> => {
     const logPrefix = '📊 [DB_ALTER_TABLE]';
     try {
       // Use raw params

@@ -32,14 +32,10 @@ import {
     InternalUtilityInfo,
     ExecuteToolPayload,
     InternalUtilityTool,
-    AgentServiceCredentials,
-    InternalServiceCredentials,
     ExecuteToolResult,
-    PlatformUserApiServiceCredentials,
-    ClientUserApiServiceCredentials,
-    ExternalServiceCredentials,
     ApiToolInfo,
-    ApiToolExecutionResponse
+    ApiToolExecutionResponse,
+    AgentInternalCredentials
 } from '@agent-base/types';
 
 // --- Ensure internal utilities are registered (if needed by side-effect imports)
@@ -103,7 +99,7 @@ app.get('/get-list', async (req, res): Promise<void> => {
     res.status(401).json(authHeaders);
     return;
   }
-  const agentServiceCredentials : AgentServiceCredentials = authHeaders.data;
+  const agentServiceCredentials : AgentInternalCredentials = authHeaders.data;
 
   try {
     // Get internal tools
@@ -146,7 +142,7 @@ app.get('/get-details/:id', async (req, res): Promise<void> => {
     res.status(401).json(authHeaders);
     return;
   }
-  const agentServiceCredentials : AgentServiceCredentials = authHeaders.data;
+  const agentServiceCredentials : AgentInternalCredentials = authHeaders.data;
   // Extract conversationId from query parameters
   const conversationId = req.query.conversationId as string | undefined;
   
@@ -202,7 +198,7 @@ app.post('/call-tool/:id', async (req, res): Promise<void> => {
     res.status(401).json(authHeaders);
     return;
   }
-  const agentServiceCredentials : AgentServiceCredentials = authHeaders.data;
+  const agentServiceCredentials : AgentInternalCredentials = authHeaders.data;
 
   try {
     // 1. Try internal registry
@@ -213,6 +209,7 @@ app.post('/call-tool/:id', async (req, res): Promise<void> => {
         const result: ExecuteToolResult = await registry.executeInternalUtility(
             id, 
             agentServiceCredentials.clientUserId, 
+            agentServiceCredentials.clientOrganizationId,
             agentServiceCredentials.platformUserId,
             agentServiceCredentials.platformApiKey,
             conversationId, 

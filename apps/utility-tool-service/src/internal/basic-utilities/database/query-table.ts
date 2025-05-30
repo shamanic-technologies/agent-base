@@ -115,7 +115,7 @@ const queryTableUtility: InternalUtilityTool = {
     required: ['table', 'query']
   },
   
-  execute: async (clientUserId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: QueryTableRequest): Promise<QueryTableResponse> => {
+  execute: async (clientUserId: string, clientOrganizationId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: QueryTableRequest): Promise<QueryTableResponse> => {
     const logPrefix = '📊 [DB_QUERY_TABLE]';
     try {
       // Use raw params - validation primarily via Zod schema on the caller side

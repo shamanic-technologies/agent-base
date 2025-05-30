@@ -83,7 +83,7 @@ const getTableUtility: InternalUtilityTool = {
     required: ['table'] // Added required field
   },
   
-  execute: async (clientUserId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: GetTableRequest): Promise<GetTableResponse> => {
+  execute: async (clientUserId: string, clientOrganizationId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: GetTableRequest): Promise<GetTableResponse> => {
     const logPrefix = '📊 [DB_GET_TABLE]';
     try {
       // Use raw params - validation primarily via Zod schema on the caller side

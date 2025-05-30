@@ -9,7 +9,7 @@ import {
   ApiTool, // Type for the tool configuration object
   ServiceResponse,
   UtilityInputSecret,
-  AgentServiceCredentials,
+  AgentInternalCredentials,
 } from '@agent-base/types';
 // Import the correct function from api-client
 import { createApiToolInternal } from '@agent-base/api-client';
@@ -202,6 +202,7 @@ const createExternalToolUtility: InternalUtilityTool = {
   
   execute: async (
     clientUserId: string, 
+    clientOrganizationId: string,
     platformUserId: string,
     platformApiKey: string,
     conversationId: string,
@@ -229,9 +230,10 @@ const createExternalToolUtility: InternalUtilityTool = {
       if (!platformApiKey) return { success: false, error: 'Internal Error: platformApiKey is required.' };
             
       // Restore AgentServiceCredentials creation
-      const agentServiceCredentials : AgentServiceCredentials = {
+      const agentInternalCredentials : AgentInternalCredentials = {
         platformUserId, 
-        clientUserId, 
+        clientUserId,
+        clientOrganizationId,
         platformApiKey, 
         agentId
       };
@@ -239,7 +241,7 @@ const createExternalToolUtility: InternalUtilityTool = {
       // Call the correct client function with correct arguments
       // createApiTool does not take conversationId
       const resultResponse: ServiceResponse<ApiTool> = await createApiToolInternal(
-        agentServiceCredentials, 
+        agentInternalCredentials, 
         toolConfiguration    // Pass the tool configuration object
       );
 

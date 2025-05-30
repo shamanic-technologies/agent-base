@@ -64,9 +64,10 @@ const curlCommandUtility: InternalUtilityTool = {
   
   execute: async (
     clientUserId: string, 
+    clientOrganizationId: string, 
     platformUserId: string, 
     platformApiKey: string, 
-    conversationId: string, 
+    conversationId: string,
     params: unknown // Validate unknown params with Zod
   ): Promise<CurlSuccessResponse | ErrorResponse> => {
     console.log(`[CURL Utility] Executing for conversation ${conversationId}, clientUser ${clientUserId}, platformUser ${platformUserId}`);

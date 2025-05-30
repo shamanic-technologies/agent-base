@@ -7,7 +7,7 @@ import {
     InternalUtilityTool,
     ErrorResponse,
     ServiceResponse,
-    InternalServiceCredentials,
+    HumanInternalCredentials, 
     Webhook
 } from '@agent-base/types';
 import { searchWebhooksInternalApiService } from '@agent-base/api-client'; // Import the client function
@@ -40,6 +40,7 @@ const webhookSearchWebhooksUtility: InternalUtilityTool = {
   
     execute: async (
         clientUserId: string, 
+        clientOrganizationId: string,
         platformUserId: string,
         platformApiKey: string,
         conversationId: string, 
@@ -59,8 +60,9 @@ const webhookSearchWebhooksUtility: InternalUtilityTool = {
             }
 
             // Prepare credentials for the API client call
-            const credentials: InternalServiceCredentials = {
+            const credentials: HumanInternalCredentials = {
                 platformUserId,
+                clientOrganizationId,
                 clientUserId,
                 platformApiKey,
                 agentId

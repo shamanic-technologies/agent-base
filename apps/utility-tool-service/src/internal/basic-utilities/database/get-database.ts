@@ -246,11 +246,11 @@ const getDatabaseUtility: InternalUtilityTool = {
     properties: {}
   },
   
-  execute: async (userId: string, conversationId: string): Promise<GetDatabaseResponse> => {
+  execute: async (clientUserId: string, clientOrganizationId: string, platformUserId: string, platformApiKey: string, conversationId: string): Promise<GetDatabaseResponse> => {
     const logPrefix = '📊 [DB_GET_DATABASE]';
     try {
-      console.log(`${logPrefix} Getting database information for user ${userId}`);
-      const databaseInfo = await getUserDatabase(userId);
+      console.log(`${logPrefix} Getting database information for user ${clientUserId}`);
+      const databaseInfo = await getUserDatabase(clientUserId);
       
       const successResponse: GetDatabaseSuccessResponse = {
         status: 'success',

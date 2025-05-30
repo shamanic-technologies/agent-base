@@ -91,7 +91,7 @@ const createTableUtility: InternalUtilityTool = {
     required: ['name', 'description', 'schema'] // Added required fields
   },
   
-  execute: async (clientUserId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: CreateTableRequest): Promise<CreateTableResponse> => {
+  execute: async (clientUserId: string, clientOrganizationId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: CreateTableRequest): Promise<CreateTableResponse> => {
     const logPrefix = '📊 [DB_CREATE_TABLE]';
     try {
       // Use raw params

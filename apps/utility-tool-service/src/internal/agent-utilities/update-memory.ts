@@ -42,6 +42,7 @@ const updateAgentMemoryUtility: InternalUtilityTool = {
 
   execute: async (
     clientUserId: string,
+    clientOrganizationId: string,
     platformUserId: string,
     platformApiKey: string,
     conversationId: string,
@@ -53,8 +54,8 @@ const updateAgentMemoryUtility: InternalUtilityTool = {
       const { memory } = params;
 
       // Validate authentication details passed to the utility execute function
-      if (!clientUserId || !platformUserId || !platformApiKey) {
-        console.error(`${logPrefix} Authentication details (clientUserId, platformUserId, platformApiKey) are missing.`);
+      if (!clientUserId || !clientOrganizationId || !platformUserId || !platformApiKey) {
+        console.error(`${logPrefix} Authentication details (clientUserId, clientOrganizationId, platformUserId, platformApiKey) are missing.`);
         return {
           success: false,
           error: 'Internal Error: Authentication details are required to execute this utility.',
@@ -74,6 +75,7 @@ const updateAgentMemoryUtility: InternalUtilityTool = {
 
       const agentUpdateData: UpdateClientUserAgentInput = {
         clientUserId: clientUserId,
+        clientOrganizationId: clientOrganizationId,
         agentId: agentId,
         agentMemory: memory
       };
@@ -84,7 +86,8 @@ const updateAgentMemoryUtility: InternalUtilityTool = {
         agentUpdateData,
         platformUserId,
         platformApiKey,
-        clientUserId
+        clientUserId,
+        clientOrganizationId
       );
 
       if (!resultResponse.success) {

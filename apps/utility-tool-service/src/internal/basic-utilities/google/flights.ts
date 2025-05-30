@@ -137,7 +137,7 @@ const googleFlightsUtility: InternalUtilityTool = {
     required: ['origin', 'destination', 'departure_date']
   },
   
-  execute: async (clientUserId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: GoogleFlightsRequest): Promise<GoogleFlightsResponse> => {
+  execute: async (clientUserId: string, clientOrganizationId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: GoogleFlightsRequest): Promise<GoogleFlightsResponse> => {
     const logPrefix = '✈️ [GOOGLE_FLIGHTS]';
     try {
       // Use raw params

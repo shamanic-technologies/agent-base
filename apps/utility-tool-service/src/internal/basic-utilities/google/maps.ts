@@ -84,7 +84,7 @@ const googleMapsUtility: InternalUtilityTool = {
     required: ['query']
   },
   
-  execute: async (clientUserId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: GoogleMapsRequest): Promise<GoogleMapsResponse> => {
+  execute: async (clientUserId: string, clientOrganizationId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: GoogleMapsRequest): Promise<GoogleMapsResponse> => {
     const logPrefix = '🗺️ [GOOGLE_MAPS]';
     try {
       // Use raw params

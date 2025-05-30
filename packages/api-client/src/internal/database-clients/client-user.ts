@@ -9,6 +9,8 @@ import {
     ClientUser, // For platform user creation
     ClientUserRecord,
     ClientOrganization,
+    GetOrCreatePlatformUserInput,
+    GetOrCreateClientUserInput,
     // Import only necessary types from @agent-base/types
     // Add specific record/input types here if they become available and are needed
 } from '@agent-base/types';
@@ -93,3 +95,42 @@ export const upsertClientOrganizationApiClient = async (
   );
 };
 
+// /**
+//  * Fetches the current platform user's data based on the propagated ID.
+//  * 
+//  * Corresponds to: GET /platform-users/me
+//  * 
+//  * @param platformUserId - The platform user ID (typically from headers, passed explicitly here).
+//  * @returns A ServiceResponse containing the PlatformUser object or an error.
+//  */
+// export const getCurrentClientUser = async (
+//   clientUserId: string
+// ): Promise<ServiceResponse<ClientUser>> => {
+
+//     const endpoint = '/client-users/me'; 
+//   return makeWebAuthenticatedServiceRequest<ClientUser>(
+//     getDatabaseServiceUrl(), // Use dynamic getter
+//     'GET',
+//     endpoint,
+//     clientUserId // Pass the ID for the header
+//     // No params or data needed for this GET request
+//   );
+// };
+
+// /**
+//  * Gets or creates a platform user based on external auth ID and email.
+//  * Corresponds to: POST /platform-users/get-or-create-by-provider-user-id
+//  */
+// export const getOrCreateClientUser = async (
+//   data: GetOrCreateClientUserInput,
+// ): Promise<ServiceResponse<ClientUser>> => {
+//   const endpoint = '/client-users/get-or-create-by-provider-user-id';
+  
+//   return makeWebAnonymousServiceRequest<ClientUser>(
+//     getDatabaseServiceUrl(), // Use dynamic getter
+//     'POST',
+//     endpoint,
+//     data,       // Send data in the body
+//     undefined   // No params needed
+//   );
+// };

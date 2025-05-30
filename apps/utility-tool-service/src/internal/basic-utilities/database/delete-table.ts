@@ -57,7 +57,7 @@ const deleteTableUtility: InternalUtilityTool = {
     required: ['table', 'confirm']
   },
   
-  execute: async (clientUserId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: DeleteTableRequest): Promise<DeleteTableResponse> => {
+  execute: async (clientUserId: string, clientOrganizationId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: DeleteTableRequest): Promise<DeleteTableResponse> => {
     const logPrefix = '📊 [DB_DELETE_TABLE]';
     try {
       // Use raw params

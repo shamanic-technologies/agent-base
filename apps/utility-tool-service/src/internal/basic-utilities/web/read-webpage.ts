@@ -79,7 +79,7 @@ const readWebPage: InternalUtilityTool = {
     required: ['url']
   },
   
-  execute: async (clientUserId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: FireCrawlExtractContentRequest): Promise<ReadWebPageResponse> => {
+  execute: async (clientUserId: string, clientOrganizationId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: FireCrawlExtractContentRequest): Promise<ReadWebPageResponse> => {
     const logPrefix = '🔥 [FIRECRAWL]';
     try {
       // Defaults are now 0-indexed: fromLine=0, toLine=199 (inclusive)
