@@ -51,9 +51,9 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
         // Set the validated platformUserId for downstream services
         req.headers['x-platform-user-id'] = platformUserId; 
       } else {
-        console.warn(`[Auth Middleware] Failed to validate providerUserId '${platformAuthUserId}': ${validationResponse.error}`);
-        // Send a 401 Unauthorized or 403 Forbidden, as the provider ID is invalid/not found
-        res.status(401).json({ success: false, error: validationResponse.error || "Invalid or unknown provider user ID." });
+        console.warn(`[Auth Middleware] Failed to validate platformUserId '${platformAuthUserId}': ${validationResponse.error}`);
+        // Send a 401 Unauthorized or 403 Forbidden, as the platform ID is invalid/not found
+        res.status(401).json({ success: false, error: validationResponse.error || "Invalid or unknown platform user ID." });
         return; // Stop processing
       }
     } catch (error: any) {
