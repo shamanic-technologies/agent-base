@@ -4,16 +4,10 @@
 import { 
   ServiceResponse, 
   StoreSecretRequest,
-  SecretValue,
-  GetSecretRequest,
-  SecretExists,
-  CheckSecretRequest,
-  UserType,
-  PlatformUserApiServiceCredentials // Import UserType
+  AgentBaseCredentials,
 } from '@agent-base/types';
-import { makeWebAuthenticatedServiceRequest, makeInternalAPIServiceRequest, makePlatformUserApiServiceRequest } from '../utils/service-client.js';
-import { getApiGatewayServiceUrl, getSecretServiceUrl } from '../utils/config.js'; // Import the centralized getter
-import { Method } from 'axios';
+import { makeAgentBaseRequest } from '../utils/service-client.js';
+import { getApiGatewayServiceUrl } from '../utils/config.js'; // Import the centralized getter
 
 /**
  * Calls a specific utility tool via the API Gateway using makeAPIServiceRequest.
@@ -26,15 +20,15 @@ import { Method } from 'axios';
  */
 export async function storeSecretExternalApiClient(
   storeSecretRequest: StoreSecretRequest,
-  externalApiServiceCredentials: PlatformUserApiServiceCredentials,
+  agentBaseCredentials: AgentBaseCredentials,
 ): Promise<ServiceResponse<string>> {
 
   // Use makeAPIServiceRequest, passing conversationId in data and agentId for header
-  return await makePlatformUserApiServiceRequest<string>(
+  return await makeAgentBaseRequest<string>(
       getApiGatewayServiceUrl(),
       'post',
       'secret/api/secrets', // Endpoint for storing secrets
-      externalApiServiceCredentials,
+      agentBaseCredentials,
       storeSecretRequest, // Request body (data)
       undefined // No query parameters (params)
   );

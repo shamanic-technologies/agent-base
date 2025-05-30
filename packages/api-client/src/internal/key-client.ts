@@ -9,14 +9,12 @@ import {
   PlatformUserId,
   GetApiKeyByIdRequest,
   GetApiKeyByNameRequest,
-  InternalServiceCredentials
 } from '@agent-base/types';
 
 // Import the shared request helpers
 import { 
   makeWebAuthenticatedServiceRequest, 
   makePlatformUserValidationRequest,
-  makeInternalAPIServiceRequest
 } from '../utils/service-client.js';
 
 import { getKeyServiceUrl } from '../utils/config.js'; // Added .js

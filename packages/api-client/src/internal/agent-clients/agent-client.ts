@@ -13,7 +13,7 @@ import {
   UpdateClientUserAgentInput,
   // UserAgentResponse // Not directly used, ServiceResponse<AgentRecord> is used
 } from '@agent-base/types';
-import { makeInternalAPIServiceRequest } from '../../utils/service-client.js'; // Reverted .js extension
+import { makeInternalRequest } from '../../utils/service-client.js'; // Reverted .js extension
 import { getAgentServiceUrl } from '../../utils/config.js'; // Reverted .js extension
 
 /**
@@ -32,17 +32,19 @@ export async function updateAgentInternalService(
   agentUpdateData: UpdateClientUserAgentInput,
   platformUserId: string,
   platformApiKey: string,
-  clientUserId: string
+  clientUserId: string,
+  clientOrganizationId: string
 ): Promise<ServiceResponse<Agent>> {
   const requestPath = `/update-user-agent`; // Construct path with agentId
   const requestBody = agentUpdateData;
 
-  return await makeInternalAPIServiceRequest<Agent>(
+  return await makeInternalRequest<Agent>(
     getAgentServiceUrl(),
     'POST',
     requestPath,
     platformUserId,
     clientUserId,
+    clientOrganizationId,
     platformApiKey,
     requestBody,
     undefined,

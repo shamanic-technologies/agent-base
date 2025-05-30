@@ -8,12 +8,9 @@ import {
   GetSecretRequest,
   SecretExists,
   CheckSecretRequest,
-  UserType,
-  PlatformUserApiServiceCredentials // Import UserType
 } from '@agent-base/types';
-import { makeWebAuthenticatedServiceRequest, makeInternalAPIServiceRequest, makePlatformUserApiServiceRequest } from '../utils/service-client.js';
-import { getApiGatewayServiceUrl, getSecretServiceUrl } from '../utils/config.js'; // Import the centralized getter
-import { Method } from 'axios';
+import { makeWebAuthenticatedServiceRequest, makeInternalRequest } from '../utils/service-client.js';
+import { getSecretServiceUrl } from '../utils/config.js'; // Import the centralized getter
 
 // Determine the correct URL for the secret-service
 // Removed top-level constant: const SECRET_SERVICE_URL = ...
@@ -48,22 +45,25 @@ export async function storeSecretWebClient(
  * @param platformUserId The platform user ID (for x-platform-user-id header).
  * @param platformApiKey The platform API key (for x-platform-api-key header).
  * @param clientUserId The client user ID (for x-client-user-id header).
+ * @param clientOrganizationId The client organization ID (for x-client-organization-id header).
  * @returns ServiceResponse containing a success message or error.
  */
 export async function storeSecretInternalApiClient(
   storeSecretRequest: StoreSecretRequest,
   platformUserId: string,
   platformApiKey: string,
-  clientUserId: string
+  clientUserId: string,
+  clientOrganizationId: string
 ): Promise<ServiceResponse<string>> {
 
   // POST requests send data in the body.
-  return await makeInternalAPIServiceRequest<string>(
+  return await makeInternalRequest<string>(
     getSecretServiceUrl(), // Use dynamic getter
     'post',
     '/api/secrets', // Endpoint for storing secrets
     platformUserId, // ID value for x-platform-user-id header
     clientUserId,   // ID value for x-client-user-id header
+    clientOrganizationId, // ID value for x-client-organization-id header
     platformApiKey, // API key for x-platform-api-key header
     storeSecretRequest, // Request body (data)
     undefined // No query parameters (params)
@@ -100,23 +100,26 @@ export async function getSecretWebClient(
  * @param platformUserId The platform user ID (for x-platform-user-id header).
  * @param platformApiKey The platform API key (for x-platform-api-key header).
  * @param clientUserId The client user ID (for x-client-user-id header).
+ * @param clientOrganizationId The client organization ID (for x-client-organization-id header).
  * @returns ServiceResponse containing the secret value or error.
  */
 export async function getSecretApiClient(
   getSecretRequest: GetSecretRequest,
   platformUserId: string,
   platformApiKey: string,
-  clientUserId: string
+  clientUserId: string,
+  clientOrganizationId: string
 ): Promise<ServiceResponse<SecretValue>> {
   const { userType, secretUtilityProvider, secretType } = getSecretRequest; // Include userId
 
   // GET requests use path params and query params. userType goes in query. userId is implicit via headers.
-  return await makeInternalAPIServiceRequest<SecretValue>(
+  return await makeInternalRequest<SecretValue>(
     getSecretServiceUrl(), // Use dynamic getter
     'get',
     `/api/secrets/${secretType}`, // Endpoint with path param
     platformUserId, // ID value for x-platform-user-id header
     clientUserId,   // ID value for x-client-user-id header
+    clientOrganizationId, // ID value for x-client-organization-id header
     platformApiKey, // API key for x-platform-api-key header
     undefined,      // No request body (data) for GET
     { userType, secretUtilityProvider } // Query parameters (params)
@@ -154,23 +157,26 @@ export async function checkSecretExistsWebClient(
  * @param platformUserId The platform user ID (for x-platform-user-id header).
  * @param platformApiKey The platform API key (for x-platform-api-key header).
  * @param clientUserId The client user ID (for x-client-user-id header).
+ * @param clientOrganizationId The client organization ID (for x-client-organization-id header).
  * @returns ServiceResponse containing boolean existence status or error.
  */
 export async function checkSecretExistsApiClient(
   checkSecretRequest: CheckSecretRequest,
   platformUserId: string,
   platformApiKey: string,
-  clientUserId: string
+  clientUserId: string,
+  clientOrganizationId: string
 ): Promise<ServiceResponse<SecretExists>> {
   const { userType, secretUtilityProvider, secretType } = checkSecretRequest; // Include userId
 
   // GET requests use path params and query params. userType goes in query. userId is implicit via headers.
-  return await makeInternalAPIServiceRequest<SecretExists>(
+  return await makeInternalRequest<SecretExists>(
     getSecretServiceUrl(), // Use dynamic getter
     'get',
     `/api/secrets/exists/${secretType}`, // Endpoint with path param
     platformUserId, // ID value for x-platform-user-id header
     clientUserId,   // ID value for x-client-user-id header
+    clientOrganizationId, // ID value for x-client-organization-id header
     platformApiKey, // API key for x-platform-api-key header
     undefined,      // No request body (data) for GET
     { userType, secretUtilityProvider } // Query parameters (params)

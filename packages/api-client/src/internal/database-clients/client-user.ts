@@ -11,7 +11,7 @@ import {
     // Import only necessary types from @agent-base/types
     // Add specific record/input types here if they become available and are needed
 } from '@agent-base/types';
-import { makeClientUserValidationRequest } from '../../utils/service-client.js'; // Reverted import, added .js
+import { makeClientAuthValidationRequest } from '../../utils/service-client.js'; // Reverted import, added .js
 import { getDatabaseServiceUrl } from '../../utils/config.js'; // Added .js
 import { Method } from 'axios';
 
@@ -33,7 +33,8 @@ import { Method } from 'axios';
  * @returns {Promise<ServiceResponse<ClientUser>>} A promise resolving to a ServiceResponse containing the upserted ClientUser data or an error.
  */
 export const upsertClientUserApiClient = async (
-  platformClientUserId: string,
+  clientAuthUserId: string,
+  clientAuthOrganizationId: string,
   platformUserId: string
 ): Promise<ServiceResponse<ClientUser>> => {
 
@@ -41,14 +42,16 @@ export const upsertClientUserApiClient = async (
     serviceUrl: getDatabaseServiceUrl(),
     method: 'POST' as Method,
     endpoint: '/client-users',
-    platformClientUserId: platformClientUserId, // Required
+    clientAuthUserId: clientAuthUserId, // Required
+    clientAuthOrganizationId: clientAuthOrganizationId, // Required
     platformUserId: platformUserId, // Required
   }
-  return makeClientUserValidationRequest<ClientUser>( // Reverted function call
+  return makeClientAuthValidationRequest<ClientUser>( // Reverted function call
     input.serviceUrl,
     input.method as Method,
     input.endpoint,
-    input.platformClientUserId, // Required
+    input.clientAuthUserId,
+    input.clientAuthOrganizationId,
     input.platformUserId // Required
     // data and params are undefined for this GET request
   );

@@ -12,14 +12,14 @@
 import { Method } from 'axios';
 import {
     ServiceResponse,
-    InternalServiceCredentials,
+    HumanInternalCredentials,
     ApiToolInfo,       // Basic info for listing tools
     ApiTool,           // Detailed tool information, including schema
     ExecuteToolPayload,  // Payload for executing a tool (likely from @agent-base/types)
     ApiToolExecutionResponse, // Response from executing a tool
     ApiToolExecution  // Record of a tool execution (renamed from ApiToolExecutionRecord)
 } from '@agent-base/types';
-import { makeInternalAPIServiceRequest } from '../utils/service-client.js';
+import { makeInternalRequest } from '../utils/service-client.js';
 import { getApiGatewayServiceUrl } from '../utils/config.js';
 
 // Define the base path for API tool routes on the API Gateway.
@@ -38,17 +38,18 @@ const API_TOOL_ROUTE_PREFIX = '/api-tool';
  * @returns {Promise<ServiceResponse<ApiToolInfo[]>>} Service response containing the list of tool infos or an error.
  */
 export async function listApiToolsInternal(
-  credentials: InternalServiceCredentials
+  humanInternalCredentials: HumanInternalCredentials
 ): Promise<ServiceResponse<ApiToolInfo[]>> {
-  const { platformUserId, clientUserId, platformApiKey, agentId } = credentials;
+  const { platformUserId, clientUserId, clientOrganizationId, platformApiKey, agentId } = humanInternalCredentials;
   const endpoint = `${API_TOOL_ROUTE_PREFIX}/`;
 
-  return makeInternalAPIServiceRequest<ApiToolInfo[]>(
+  return makeInternalRequest<ApiToolInfo[]>(
     getApiGatewayServiceUrl(),
     'GET' as Method,
     endpoint,
     platformUserId,
     clientUserId,
+    clientOrganizationId,
     platformApiKey,
     undefined, // No data body for GET
     undefined, // No query params
@@ -62,23 +63,24 @@ export async function listApiToolsInternal(
  * Exposed via API Gateway at: GET {API_GATEWAY_URL}{API_TOOL_ROUTE_PREFIX}/:id
  * Authentication: API Gateway handles service key.
  *
- * @param {InternalServiceCredentials} credentials - Credentials.
+ * @param {HumanInternalCredentials} humanInternalCredentials - Credentials.
  * @param {string} toolId - The ID of the tool to retrieve.
  * @returns {Promise<ServiceResponse<ApiToolInfo>>} Service response containing the tool details or an error.
  */
 export async function getApiToolInfoInternal(
-  credentials: InternalServiceCredentials,
+  humanInternalCredentials: HumanInternalCredentials,
   toolId: string
 ): Promise<ServiceResponse<ApiToolInfo>> {
-  const { platformUserId, clientUserId, platformApiKey, agentId } = credentials;
+  const { platformUserId, clientUserId, clientOrganizationId, platformApiKey, agentId } = humanInternalCredentials;
   const endpoint = `${API_TOOL_ROUTE_PREFIX}/${toolId}`;
 
-  return makeInternalAPIServiceRequest<ApiToolInfo>(
+  return makeInternalRequest<ApiToolInfo>(
     getApiGatewayServiceUrl(),
     'GET' as Method,
     endpoint,
     platformUserId,
     clientUserId,
+    clientOrganizationId,
     platformApiKey,
     undefined, // No data body for GET
     undefined, // No query params
@@ -92,21 +94,22 @@ export async function getApiToolInfoInternal(
  * Exposed via API Gateway at: GET {API_GATEWAY_URL}{API_TOOL_ROUTE_PREFIX}/user-api-tools
  * Authentication: API Gateway handles service key + agentAuthMiddleware in api-tool-backend.
  *
- * @param {InternalServiceCredentials} credentials - Credentials including platformUserId, clientUserId, platformApiKey.
+ * @param {HumanInternalCredentials} humanInternalCredentials - Credentials including platformUserId, clientUserId, platformApiKey.
  * @returns {Promise<ServiceResponse<ApiTool[]>>} Service response containing the list of user-specific API tools or an error.
  */
 export async function getUserApiToolsInternal(
-  credentials: InternalServiceCredentials
+  humanInternalCredentials: HumanInternalCredentials
 ): Promise<ServiceResponse<ApiTool[]>> {
-  const { platformUserId, clientUserId, platformApiKey, agentId } = credentials;
+  const { platformUserId, clientUserId, clientOrganizationId, platformApiKey, agentId } = humanInternalCredentials;
   const endpoint = `${API_TOOL_ROUTE_PREFIX}/user-api-tools`;
 
-  return makeInternalAPIServiceRequest<ApiTool[]>(
+  return makeInternalRequest<ApiTool[]>(
     getApiGatewayServiceUrl(),
     'GET' as Method,
     endpoint,
     platformUserId,
     clientUserId,
+    clientOrganizationId,
     platformApiKey,
     undefined, // No data body for GET
     undefined, // No query params
@@ -120,21 +123,22 @@ export async function getUserApiToolsInternal(
  * Exposed via API Gateway at: GET {API_GATEWAY_URL}{API_TOOL_ROUTE_PREFIX}/user-tool-executions
  * Authentication: API Gateway handles service key + agentAuthMiddleware in api-tool-backend.
  *
- * @param {InternalServiceCredentials} credentials - Credentials.
+ * @param {HumanInternalCredentials} humanInternalCredentials - Credentials.
  * @returns {Promise<ServiceResponse<ApiToolExecution[]>>} Service response containing execution records or an error.
  */
 export async function getUserToolExecutionsInternal(
-  credentials: InternalServiceCredentials
+  humanInternalCredentials: HumanInternalCredentials
 ): Promise<ServiceResponse<ApiToolExecution[]>> {
-  const { platformUserId, clientUserId, platformApiKey, agentId } = credentials;
+  const { platformUserId, clientUserId, clientOrganizationId, platformApiKey, agentId } = humanInternalCredentials;
   const endpoint = `${API_TOOL_ROUTE_PREFIX}/user-tool-executions`;
 
-  return makeInternalAPIServiceRequest<ApiToolExecution[]>(
+  return makeInternalRequest<ApiToolExecution[]>(
     getApiGatewayServiceUrl(),
     'GET' as Method,
     endpoint,
     platformUserId,
     clientUserId,
+    clientOrganizationId,
     platformApiKey,
     undefined, // No data body for GET
     undefined, // No query params
@@ -148,23 +152,24 @@ export async function getUserToolExecutionsInternal(
  * Exposed via API Gateway at: POST {API_GATEWAY_URL}{API_TOOL_ROUTE_PREFIX}/
  * Authentication: API Gateway handles service key + agentAuthMiddleware in api-tool-backend.
  *
- * @param {InternalServiceCredentials} credentials - Credentials.
+ * @param {HumanInternalCredentials} humanInternalCredentials - Credentials.
  * @param {Record<string, any>} payload - The data required to create the tool. Should be refined to CreateApiToolPayload type.
  * @returns {Promise<ServiceResponse<ApiTool>>} Service response containing the newly created tool or an error.
  */
 export async function createApiToolInternal(
-  credentials: InternalServiceCredentials,
+  humanInternalCredentials: HumanInternalCredentials,
   payload: Record<string, any>
 ): Promise<ServiceResponse<ApiTool>> {
-  const { platformUserId, clientUserId, platformApiKey, agentId } = credentials;
+  const { platformUserId, clientUserId, clientOrganizationId, platformApiKey, agentId } = humanInternalCredentials;
   const endpoint = `${API_TOOL_ROUTE_PREFIX}/`;
 
-  return makeInternalAPIServiceRequest<ApiTool>(
+  return makeInternalRequest<ApiTool>(
     getApiGatewayServiceUrl(),
     'POST' as Method,
     endpoint,
     platformUserId,
     clientUserId,
+    clientOrganizationId,
     platformApiKey,
     payload,   // Request body
     undefined, // No query params
@@ -184,19 +189,20 @@ export async function createApiToolInternal(
  * @returns {Promise<ServiceResponse<ApiToolExecutionResponse>>} Service response containing the execution result or an error.
  */
 export async function executeApiToolInternal(
-  credentials: InternalServiceCredentials,
+  humanInternalCredentials: HumanInternalCredentials,
   toolId: string,
   payload: ExecuteToolPayload // Assuming ExecuteToolPayload is suitable here
 ): Promise<ServiceResponse<ApiToolExecutionResponse>> {
-  const { platformUserId, clientUserId, platformApiKey, agentId } = credentials;
+  const { platformUserId, clientUserId, clientOrganizationId, platformApiKey, agentId } = humanInternalCredentials;
   const endpoint = `${API_TOOL_ROUTE_PREFIX}/${toolId}/execute`;
 
-  return makeInternalAPIServiceRequest<ApiToolExecutionResponse>(
+  return makeInternalRequest<ApiToolExecutionResponse>(
     getApiGatewayServiceUrl(),
     'POST' as Method,
     endpoint,
     platformUserId,
     clientUserId,
+    clientOrganizationId,
     platformApiKey,
     payload,   // Request body
     undefined, // No query params

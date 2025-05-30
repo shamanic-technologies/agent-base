@@ -3,17 +3,16 @@
  */
 import {
     ServiceResponse,
-    ExternalServiceCredentials,
     ApiTool,
     ApiToolExecutionResponse,
     ExecuteToolPayload,
-    ServiceCredentials,
     ApiToolInfo,
-    PlatformUserApiServiceCredentials,
     SearchApiToolResult,
-    CreateApiToolRequest
+    CreateApiToolRequest,
+    ExternalCredentials,
+    AgentBaseCredentials
 } from '@agent-base/types';
-import { makeExternalApiServiceRequest, makePlatformUserApiServiceRequest } from '../utils/service-client.js';
+import { makeExternalApiServiceRequest, makeAgentBaseRequest } from '../utils/service-client.js';
 import { getAgentBaseApiUrl, getApiToolApiUrl } from '../utils/config.js';
 
 /**
@@ -22,17 +21,18 @@ import { getAgentBaseApiUrl, getApiToolApiUrl } from '../utils/config.js';
  * @returns ServiceResponse containing an array of Webhooks or an error.
  */
 export async function listApiTools(
-    serviceCredentials: ExternalServiceCredentials,
+    externalCredentials: ExternalCredentials,
     apiToolApiKey: string,
 ): Promise<ServiceResponse<ApiToolInfo[]>> {
     const customHeaders : Record<string, string> = {
-        'x-platform-user-id': serviceCredentials.platformUserId,
-        'x-client-user-id': serviceCredentials.clientUserId,
-        'x-platform-api-key': serviceCredentials.platformApiKey,
+        'x-platform-user-id': externalCredentials.platformUserId,
+        'x-client-user-id': externalCredentials.clientUserId,
+        'x-client-organization-id': externalCredentials.clientOrganizationId,
+        'x-platform-api-key': externalCredentials.platformApiKey,
         'Authorization': `Bearer ${apiToolApiKey}`,
     };
-    if (serviceCredentials.agentId) {
-        customHeaders['x-agent-id'] = serviceCredentials.agentId;
+    if (externalCredentials.agentId) {
+        customHeaders['x-agent-id'] = externalCredentials.agentId;
     }
 
     return makeExternalApiServiceRequest<ApiToolInfo[]>(
@@ -53,18 +53,19 @@ export async function listApiTools(
  * @returns ServiceResponse containing an array of Webhooks or an error.
  */
 export async function getApiToolInfo(
-    externalApiServiceCredentials: ExternalServiceCredentials,
+    externalCredentials: ExternalCredentials,
     apiToolApiKey: string,
     id: string
 ): Promise<ServiceResponse<ApiToolInfo>> {
     const customHeaders : Record<string, string> = {
-        'x-platform-user-id': externalApiServiceCredentials.platformUserId,
-        'x-client-user-id': externalApiServiceCredentials.clientUserId,
-        'x-platform-api-key': externalApiServiceCredentials.platformApiKey,
+        'x-platform-user-id': externalCredentials.platformUserId,
+        'x-client-user-id': externalCredentials.clientUserId,
+        'x-client-organization-id': externalCredentials.clientOrganizationId,
+        'x-platform-api-key': externalCredentials.platformApiKey,
         'Authorization': `Bearer ${apiToolApiKey}`,
     };
-    if (externalApiServiceCredentials.agentId) {
-        customHeaders['x-agent-id'] = externalApiServiceCredentials.agentId;
+    if (externalCredentials.agentId) {
+        customHeaders['x-agent-id'] = externalCredentials.agentId;
     }
     return makeExternalApiServiceRequest<ApiToolInfo>(
         getApiToolApiUrl(),
@@ -83,18 +84,19 @@ export async function getApiToolInfo(
  * @returns ServiceResponse containing an array of Webhooks or an error.
  */
 export async function createApiTool(
-    externalserviceCredentials: ExternalServiceCredentials,
+    externalCredentials: ExternalCredentials,
     apiToolApiKey: string,
     createApiToolRequest: CreateApiToolRequest
 ): Promise<ServiceResponse<ApiTool>> {
     const customHeaders : Record<string, string> = {
-        'x-platform-user-id': externalserviceCredentials.platformUserId,
-        'x-client-user-id': externalserviceCredentials.clientUserId,
-        'x-platform-api-key': externalserviceCredentials.platformApiKey,
+        'x-platform-user-id': externalCredentials.platformUserId,
+        'x-client-user-id': externalCredentials.clientUserId,
+        'x-client-organization-id': externalCredentials.clientOrganizationId,
+        'x-platform-api-key': externalCredentials.platformApiKey,
         'Authorization': `Bearer ${apiToolApiKey}`,
     };
-    if (externalserviceCredentials.agentId) {
-        customHeaders['x-agent-id'] = externalserviceCredentials.agentId;
+    if (externalCredentials.agentId) {
+        customHeaders['x-agent-id'] = externalCredentials.agentId;
     }
     return makeExternalApiServiceRequest<ApiTool>(
         getApiToolApiUrl(),
@@ -113,19 +115,20 @@ export async function createApiTool(
  * @returns ServiceResponse containing an array of Webhooks or an error.
  */
 export async function executeApiTool(
-    externalApiServiceCredentials: ExternalServiceCredentials,
+    externalCredentials: ExternalCredentials,
     apiToolApiKey: string,
     id: string,
     executeToolPayload: ExecuteToolPayload
 ): Promise<ServiceResponse<ApiToolExecutionResponse>> {
     const customHeaders : Record<string, string> = {
-        'x-platform-user-id': externalApiServiceCredentials.platformUserId,
-        'x-client-user-id': externalApiServiceCredentials.clientUserId,
-        'x-platform-api-key': externalApiServiceCredentials.platformApiKey,
+        'x-platform-user-id': externalCredentials.platformUserId,
+        'x-client-user-id': externalCredentials.clientUserId,
+        'x-client-organization-id': externalCredentials.clientOrganizationId,
+        'x-platform-api-key': externalCredentials.platformApiKey,
         'Authorization': `Bearer ${apiToolApiKey}`,
     };
-    if (externalApiServiceCredentials.agentId) {
-        customHeaders['x-agent-id'] = externalApiServiceCredentials.agentId;
+    if (externalCredentials.agentId) {
+        customHeaders['x-agent-id'] = externalCredentials.agentId;
     }
     return makeExternalApiServiceRequest<ApiToolExecutionResponse>(
         getApiToolApiUrl(),
@@ -139,17 +142,17 @@ export async function executeApiTool(
 
 /**
  * Fetches all API tools for the authenticated user.
- * @param serviceCredentials - Platform user service credentials.
+ * @param externalCredentials - Platform user service credentials.
  * @returns ServiceResponse containing an array of ApiTool or an error.
  */
 export async function getUserApiTools(
-    serviceCredentials: PlatformUserApiServiceCredentials,
+    agentBaseCredentials: AgentBaseCredentials,
 ): Promise<ServiceResponse<SearchApiToolResult>> {
-    return makePlatformUserApiServiceRequest<SearchApiToolResult>(
+    return makeAgentBaseRequest<SearchApiToolResult>(
         getAgentBaseApiUrl(),
         'GET',
         '/api-tool/user-api-tools',
-        serviceCredentials,
+        agentBaseCredentials,
         undefined,
         undefined
     );

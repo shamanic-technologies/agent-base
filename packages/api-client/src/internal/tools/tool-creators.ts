@@ -9,12 +9,12 @@ import type { Tool } from 'ai'; // Use type import for clarity
 // @ts-ignore
 import { jsonSchema } from 'ai'; // Import the jsonSchema helper
 import {
-    AgentServiceCredentials,
     ServiceResponse,
     UtilityInfo,
     ListUtilities,
     ExecuteToolResult,
     ExecuteToolPayload,
+    AgentInternalCredentials,
 
 } from '@agent-base/types';
 import {
@@ -31,7 +31,7 @@ import {
  * @returns A Vercel AI Tool object.
  */
 export function createListUtilitiesTool(
-    agentServiceCredentials: AgentServiceCredentials,
+    agentInternalCredentials: AgentInternalCredentials,
     conversationId: string
 ): Tool {
     return {
@@ -39,7 +39,7 @@ export function createListUtilitiesTool(
         parameters: z.object({}), // No parameters needed for listing
         execute: async (args: {}): Promise<ServiceResponse<ListUtilities>> => { // Return type often expected to be JSON serializable by AI SDK
             console.log('[tool-creators] Executing utility_list_utilities');
-            const listResponse: ServiceResponse<ListUtilities> = await listUtilitiesFromAgent(agentServiceCredentials, conversationId);
+            const listResponse: ServiceResponse<ListUtilities> = await listUtilitiesFromAgent(agentInternalCredentials, conversationId);
             if (!listResponse.success) {
                 console.error(`[tool-creators] Error executing tool via listUtilitiesFromAgent:`, listResponse);
                 return listResponse;
@@ -57,7 +57,7 @@ export function createListUtilitiesTool(
  * @returns A Vercel AI Tool object.
  */
 export function createGetUtilityInfoTool(
-    agentServiceCredentials: AgentServiceCredentials,
+    agentInternalCredentials: AgentInternalCredentials,
     conversationId: string
 ): Tool {
     return {
@@ -67,7 +67,7 @@ export function createGetUtilityInfoTool(
         }),
         execute: async (args: { toolId: string }): Promise<ServiceResponse<UtilityInfo>> => { // Return type often expected to be JSON serializable
             console.log(`[tool-creators] Executing utility_get_utility_info for tool: ${args.toolId}`);
-            const getResponse: ServiceResponse<UtilityInfo> = await getUtilityInfoFromAgent(agentServiceCredentials, conversationId, args.toolId);
+            const getResponse: ServiceResponse<UtilityInfo> = await getUtilityInfoFromAgent(agentInternalCredentials, conversationId, args.toolId);
             if (!getResponse.success) {
                 console.error(`[tool-creators] Error executing tool ${args.toolId} via getUtilityInfoFromAgent:`, getResponse);
                 return getResponse;
@@ -85,7 +85,7 @@ export function createGetUtilityInfoTool(
  * @returns A Vercel AI Tool object.
  */
 export function createCallUtilityTool(
-    agentServiceCredentials: AgentServiceCredentials,
+    agentInternalCredentials: AgentInternalCredentials,
     conversationId: string
 ): Tool {
     return {
@@ -100,7 +100,7 @@ export function createCallUtilityTool(
                 params: args.params,
                 conversationId: conversationId 
             };
-            const callResponse: ServiceResponse<ExecuteToolResult> = await callUtilityFromAgent(agentServiceCredentials, args.toolId, payload);
+            const callResponse: ServiceResponse<ExecuteToolResult> = await callUtilityFromAgent(agentInternalCredentials, args.toolId, payload);
             if (!callResponse.success) {
                 console.error(`[tool-creators] Error executing tool ${args.toolId} via callUtilityFromAgent:`, callResponse);
                 return callResponse; 
@@ -123,13 +123,13 @@ export function createCallUtilityTool(
  */
 export async function createFunctionalToolObject(
     toolId: string,
-    agentServiceCredentials: AgentServiceCredentials,
+    agentInternalCredentials: AgentInternalCredentials,
     conversationId: string
 ): Promise<{ id: string, tool: Tool }> { 
     console.log(`[tool-creators] Fetching functional tool object info for: ${toolId}`);
     
     // 1. Fetch tool info (description, JSON schema)
-    const infoResponse = await getUtilityInfoFromAgent(agentServiceCredentials, conversationId, toolId);
+    const infoResponse = await getUtilityInfoFromAgent(agentInternalCredentials, conversationId, toolId);
 
     if (!infoResponse.success || !infoResponse.data) {
         console.error(`[tool-creators] Failed to get info for tool ${toolId}:`, infoResponse.error);
@@ -161,7 +161,7 @@ export async function createFunctionalToolObject(
                     params: args,
                     conversationId: conversationId 
                 };
-                const callResponse: ServiceResponse<ExecuteToolResult> = await callUtilityFromAgent(agentServiceCredentials, toolId, payload);
+                const callResponse: ServiceResponse<ExecuteToolResult> = await callUtilityFromAgent(agentInternalCredentials, toolId, payload);
 
                 if (!callResponse.success) {
                     console.error(`🟢🕥[tool-creators] Error executing tool ${toolId} via callUtilityFromAgent:`, callResponse);

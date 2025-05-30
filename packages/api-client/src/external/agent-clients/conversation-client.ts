@@ -6,14 +6,12 @@ import {
     Conversation, 
     CreateConversationInput, 
     ConversationId,
-    InternalServiceCredentials,
-    PlatformUserApiServiceCredentials, // Import credentials type
-    ConversationRecord,
-    ClientUserApiServiceCredentials
+    AgentBaseCredentials,
+    MinimalInternalCredentials,
 } from '@agent-base/types';
 //@ts-ignore
 import { Message } from 'ai'; // Import Message from 'ai'
-import { makePlatformUserApiServiceRequest, makeClientUserApiServiceRequest } from '../../utils/service-client.js'; // Added .js
+import { makeAgentBaseRequest, makeMinimalInternalRequest } from '../../utils/service-client.js'; // Added .js
 import { getAgentBaseApiUrl } from '../../utils/config.js'; // Added .js
 import { Method } from 'axios';
 
@@ -29,18 +27,18 @@ const AGENT_SERVICE_ROUTE_PREFIX = '/agent'; // Assuming API Gateway prefixes ag
  */
 export const getOrCreateConversationsPlatformUserApiService = async (
     params: { agentId: string }, 
-    platformUserApiServiceCredentials: PlatformUserApiServiceCredentials
+    agentBaseCredentials: AgentBaseCredentials
 ): Promise<ServiceResponse<Conversation[]>> => {
     const AGENT_BASE_API_URL = getAgentBaseApiUrl();
     const { agentId } = params;
     const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/conversation/get-or-create-conversations-from-agent`;
     const queryParams = { agentId }; 
 
-    return makePlatformUserApiServiceRequest<Conversation[]>( 
+    return makeAgentBaseRequest<Conversation[]>( 
         AGENT_BASE_API_URL,
         'GET',
         endpoint,
-        platformUserApiServiceCredentials,
+        agentBaseCredentials,
         undefined, // No body for GET
         queryParams // Pass query params here
     );
@@ -57,15 +55,15 @@ export const getOrCreateConversationsPlatformUserApiService = async (
  */
 export const createConversationExternalApiService = async (
     body: CreateConversationInput,
-    platformUserApiServiceCredentials: PlatformUserApiServiceCredentials
+    agentBaseCredentials: AgentBaseCredentials
 ): Promise<ServiceResponse<ConversationId>> => {
     const AGENT_BASE_API_URL = getAgentBaseApiUrl();
     const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/conversation/create-conversation`;    
-    return makePlatformUserApiServiceRequest<ConversationId>( 
+    return makeAgentBaseRequest<ConversationId>( 
         AGENT_BASE_API_URL,
         'POST',
         endpoint,
-        platformUserApiServiceCredentials,
+        agentBaseCredentials,
         body, // Pass body here
         undefined // No query params for POST
     );
@@ -81,15 +79,15 @@ export const createConversationExternalApiService = async (
  */
 export const getOrCreateConversationClientUserApiService = async (
     body: CreateConversationInput,
-    clientUserApiServiceCredentials: ClientUserApiServiceCredentials
+    minimalInternalCredentials: MinimalInternalCredentials
 ): Promise<ServiceResponse<ConversationId>> => {
     const AGENT_BASE_API_URL = getAgentBaseApiUrl();
     const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/conversation/get-or-create-conversation`;    
-    return makeClientUserApiServiceRequest<ConversationId>( 
+    return makeMinimalInternalRequest<ConversationId>( 
         AGENT_BASE_API_URL,
         'POST',
         endpoint,
-        clientUserApiServiceCredentials,
+        minimalInternalCredentials,
         body, // Pass body here
         undefined // No query params for POST
     );
@@ -103,16 +101,16 @@ export const getOrCreateConversationClientUserApiService = async (
  * @returns A promise resolving to the ServiceResponse containing the list of all conversations for the user.
  */
 export const getAllUserConversationsPlatformUserApiService = async (
-    platformUserApiServiceCredentials: PlatformUserApiServiceCredentials
+    agentBaseCredentials: AgentBaseCredentials
 ): Promise<ServiceResponse<Conversation[]>> => {
     const AGENT_BASE_API_URL = getAgentBaseApiUrl();
     const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/conversation/get-all-user-conversations`;
 
-    return makePlatformUserApiServiceRequest<Conversation[]>(
+    return makeAgentBaseRequest<Conversation[]>(
         AGENT_BASE_API_URL,
         'GET',
         endpoint,
-        platformUserApiServiceCredentials,
+        agentBaseCredentials,
         undefined, // No body for GET
         undefined  // No query parameters for this specific endpoint
     );

@@ -12,7 +12,7 @@ import {
     ConversationId,
     CreateConversationInput,
 } from '@agent-base/types';
-import { makeInternalAPIServiceRequest } from '../../utils/service-client.js';
+import { makeInternalRequest } from '../../utils/service-client.js';
 import { getDatabaseServiceUrl } from '../../utils/config.js';
 
 // ==============================================================================
@@ -31,15 +31,17 @@ import { getDatabaseServiceUrl } from '../../utils/config.js';
 export const getOrCreateConversationsInternalApiService = async (
     params: AgentId, // Original type was AgentId { agentId: string }
     clientUserId: string, 
+    clientOrganizationId: string,
     platformUserId: string, 
     platformApiKey: string
 ): Promise<ServiceResponse<Conversation[]>> => {
-    return makeInternalAPIServiceRequest<Conversation[]>(
+    return makeInternalRequest<Conversation[]>(
         getDatabaseServiceUrl(),
         'GET',
         '/conversations/get-or-create-conversations-from-agent',
         platformUserId,
         clientUserId,
+        clientOrganizationId,
         platformApiKey,
         undefined, 
         params 
@@ -58,15 +60,17 @@ export const getOrCreateConversationsInternalApiService = async (
 export const createConversationInternalApiService = async (
     data: CreateConversationInput, 
     clientUserId: string, 
+    clientOrganizationId: string,
     platformUserId: string, 
     platformApiKey: string
 ): Promise<ServiceResponse<ConversationId>> => {
-    return makeInternalAPIServiceRequest<ConversationId>(
+    return makeInternalRequest<ConversationId>(
         getDatabaseServiceUrl(),
         'POST',
         '/conversations/create-conversation',
         platformUserId,
         clientUserId,
+        clientOrganizationId,
         platformApiKey,
         data, 
         undefined 
@@ -86,15 +90,17 @@ export const createConversationInternalApiService = async (
 export const getConversationByIdInternalApiService = async (
     params: ConversationId,
     clientUserId: string, 
+    clientOrganizationId: string,
     platformUserId: string, 
     platformApiKey: string
 ): Promise<ServiceResponse<Conversation>> => {
-    return makeInternalAPIServiceRequest<Conversation>(
+    return makeInternalRequest<Conversation>(
         getDatabaseServiceUrl(),
         'GET',
         `/conversations/get-conversation/${params.conversationId}`,
         platformUserId,
         clientUserId,
+        clientOrganizationId,
         platformApiKey,
         undefined, 
         undefined 
@@ -113,7 +119,8 @@ export const getConversationByIdInternalApiService = async (
  */
 export const getAllUserConversationsFromDbService = async (
     params: { clientUserId: string }, 
-    clientUserIdAuth: string,      
+    clientUserId: string,      
+    clientOrganizationId: string,
     platformUserId: string,
     platformApiKey: string
 ): Promise<ServiceResponse<Conversation[]>> => {
@@ -122,16 +129,17 @@ export const getAllUserConversationsFromDbService = async (
         // For now, throwing an error which will be caught by the caller or break if unhandled.
         throw new Error('clientUserId query parameter is required to fetch all user conversations.');
     }
-    if (!clientUserIdAuth || !platformUserId || !platformApiKey) {
-        throw new Error('Authentication details (clientUserIdAuth, platformUserId, platformApiKey) are required.');
+    if (!clientUserId || !clientOrganizationId || !platformUserId || !platformApiKey) {
+        throw new Error('Authentication details (clientAuthUserId, clientAuthOrganizationId, platformUserId, platformApiKey) are required.');
     }
 
-    return makeInternalAPIServiceRequest<Conversation[]>(
+    return makeInternalRequest<Conversation[]>(
         getDatabaseServiceUrl(),
         'GET',
         '/conversations/get-all-user-conversations', 
         platformUserId,       
-        clientUserIdAuth,     
+        clientUserId,     
+        clientOrganizationId,
         platformApiKey,       
         undefined,            
         { clientUserId: params.clientUserId } 
@@ -150,18 +158,20 @@ export const getAllUserConversationsFromDbService = async (
 export const updateConversationInternalApiService = async (
     data: { conversationId: string; messages: any[] }, // Assuming messages type, adjust if UpdateConversationInput is defined and different
     clientUserId: string, 
+    clientOrganizationId: string,
     platformUserId: string, 
     platformApiKey: string
 ): Promise<ServiceResponse<ConversationId>> => { // Database route returns ConversationId upon successful update
     if (!data.conversationId || !data.messages) {
         throw new Error('conversationId and messages are required for updating a conversation.');
     }
-    return makeInternalAPIServiceRequest<ConversationId>(
+    return makeInternalRequest<ConversationId>(
         getDatabaseServiceUrl(),
         'POST',
         '/conversations/update-conversation', // The endpoint for updating conversations
         platformUserId,
         clientUserId,
+        clientOrganizationId,
         platformApiKey,
         data, // Request Body containing conversation_id and messages
         undefined // No Query Params

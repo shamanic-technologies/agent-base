@@ -44,47 +44,48 @@ export interface HealthStatusResponse {
 }
 
 
-export interface ServiceCredentialsForPlatformUserTokenValidation {
-  platformUserToken: string;
-}
+// export interface ServiceCredentialsForPlatformUserTokenValidation {
+//   platformUserToken: string;
+// }
 
-export interface PlatformUserApiServiceCredentials {
+export interface AgentBaseCredentials {
   platformApiKey: string;
-  platformClientUserId: string;
+  clientAuthUserId: string; // Ex platformClientUserId
+  clientAuthOrganizationId: string;
 }
 
-export interface ClientUserApiServiceCredentials {
+export interface MinimalInternalCredentials {
   platformApiKey: string;
   clientUserId: string;
+  clientOrganizationId: string;
 }
 
-export type ExternalApiServiceCredentials = PlatformUserApiServiceCredentials | ClientUserApiServiceCredentials;
+export type ExternalApiServiceCredentials = AgentBaseCredentials | MinimalInternalCredentials;
 
-export interface ServiceCredentialsForPlatformClientUserValidation {
+export interface ClientProviderUserValidationInternalCredentials {
   platformApiKey: string;
-  platformClientUserId: string;
   platformUserId: string;
+  clientAuthUserId: string; // Ex platformClientUserId
 }
 
 
-export interface ServiceCredentials {
+export interface InternalCredentials {
   platformApiKey: string;
   clientUserId: string;
+  clientOrganizationId: string;
   platformUserId?: string;
   agentId?: string;
 }
 
-export interface InternalServiceCredentials extends ServiceCredentials {
+export interface HumanInternalCredentials extends InternalCredentials {
   platformUserId: string;
 }
 
-export interface ExternalServiceCredentials extends ServiceCredentials {
+export interface ExternalCredentials extends InternalCredentials {
   platformUserId: string;
 }
 
-export interface AgentServiceCredentials  {
-  platformApiKey: string;
-  clientUserId: string;
+export interface AgentInternalCredentials extends InternalCredentials {
   platformUserId: string;
   agentId: string;
 }

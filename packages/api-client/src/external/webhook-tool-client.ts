@@ -4,10 +4,10 @@
 import {
     Webhook,
     ServiceResponse,
-    PlatformUserApiServiceCredentials,
-    WebhookEvent
+    WebhookEvent,
+    AgentBaseCredentials
 } from '@agent-base/types';
-import { makePlatformUserApiServiceRequest } from '../utils/service-client.js';
+import { makeAgentBaseRequest } from '../utils/service-client.js';
 import { getAgentBaseApiUrl } from '../utils/config.js';
 
 /**
@@ -16,14 +16,14 @@ import { getAgentBaseApiUrl } from '../utils/config.js';
  * @returns ServiceResponse containing an array of Webhooks or an error.
  */
 export async function getUserCreatedWebhooks(
-    externalApiServiceCredentials: PlatformUserApiServiceCredentials
+    agentBaseCredentials: AgentBaseCredentials
 ): Promise<ServiceResponse<Webhook[]>> {
 
-    return makePlatformUserApiServiceRequest<Webhook[]>(
+    return makeAgentBaseRequest<Webhook[]>(
         getAgentBaseApiUrl(),
         'GET',
         '/webhook/get-user-created-webhooks',
-        externalApiServiceCredentials,
+        agentBaseCredentials,
         undefined,
         undefined
     );
@@ -36,14 +36,14 @@ export async function getUserCreatedWebhooks(
  */
 export async function getWebhookEvents(
     webhookId: string,
-    externalApiServiceCredentials: PlatformUserApiServiceCredentials,
+    agentBaseCredentials: AgentBaseCredentials,
 ): Promise<ServiceResponse<WebhookEvent[]>> {
 
-    return makePlatformUserApiServiceRequest<WebhookEvent[]>(
+    return makeAgentBaseRequest<WebhookEvent[]>(
         getAgentBaseApiUrl(),
         'GET',
         `/webhook/${webhookId}/events`,
-        externalApiServiceCredentials,
+        agentBaseCredentials,
         undefined,
         undefined
     );

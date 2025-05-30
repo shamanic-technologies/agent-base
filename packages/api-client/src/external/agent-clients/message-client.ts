@@ -3,11 +3,9 @@
  */
 import { 
     ServiceResponse, 
-    CreateConversationInput, 
-    ConversationId,
-    PlatformUserApiServiceCredentials, // Import credentials type
+    AgentBaseCredentials,
 } from '@agent-base/types';
-import { makePlatformUserApiServiceRequest } from '../../utils/service-client.js'; // Added .js
+import { makeAgentBaseRequest } from '../../utils/service-client.js'; // Added .js
 import { getAgentBaseApiUrl } from '../../utils/config.js'; // Added .js
 import { Message } from 'ai';
 
@@ -23,18 +21,18 @@ const AGENT_SERVICE_ROUTE_PREFIX = '/agent'; // Assuming API Gateway prefixes ag
  */
 export const getMessagesFromConversationExternalApiService = async (
     params: { conversationId: string }, 
-    externalApiServiceCredentials: PlatformUserApiServiceCredentials
+    agentBaseCredentials: AgentBaseCredentials
 ): Promise<ServiceResponse<Message[]>> => {
     const AGENT_BASE_API_URL = getAgentBaseApiUrl();
     const { conversationId } = params;
     const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/message/get-messages-from-conversation`;
     const queryParams = { conversationId }; 
 
-    return makePlatformUserApiServiceRequest<Message[]>( 
+    return makeAgentBaseRequest<Message[]>( 
         AGENT_BASE_API_URL,
         'GET',
         endpoint,
-        externalApiServiceCredentials,
+        agentBaseCredentials,
         undefined, // No body for GET
         queryParams // Pass query params here
     );

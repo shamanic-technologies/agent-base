@@ -1,8 +1,8 @@
 /**
  * Client functions for interacting with the Agent Service.
  */
-import { ServiceResponse, ClientUserApiServiceCredentials, PlatformUserApiServiceCredentials } from '@agent-base/types'; // Assuming Agent type exists
-import { makeClientUserApiServiceRequest } from '../../utils/service-client.js';
+import { ServiceResponse, AgentBaseCredentials, MinimalInternalCredentials } from '@agent-base/types'; // Assuming Agent type exists
+import { makeMinimalInternalRequest } from '../../utils/service-client.js';
 import { getAgentBaseApiUrl } from '../../utils/config.js';
 import { Message } from 'ai';
 
@@ -20,15 +20,15 @@ const AGENT_SERVICE_ROUTE_PREFIX = '/agent'; // Assuming API Gateway prefixes ag
 export const triggerAgentRunClientUserApiService = async (
     conversationId: string,
     message: Message,
-    clientUserApiServiceCredentials: ClientUserApiServiceCredentials
+    minimalInternalCredentials: MinimalInternalCredentials
 ): Promise<ServiceResponse<void>> => { // Returns void as we don't process the stream here
     const AGENT_BASE_API_URL = getAgentBaseApiUrl(); // Call getAgentBaseApiUrl here
     const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/run`;    
-    return makeClientUserApiServiceRequest<void>( 
+    return makeMinimalInternalRequest<void>( 
         AGENT_BASE_API_URL,
         'POST',
         endpoint,
-        clientUserApiServiceCredentials,
+        minimalInternalCredentials,
         { conversationId, message }, // Pass body here
         undefined // No query params for POST
     );
@@ -47,7 +47,7 @@ export const triggerAgentRunClientUserApiService = async (
 export const triggerAgentRunPlatformUserApiServiceStream = async (
     conversationId: string,
     message: Message,
-    platformUserApiServiceCredentials: PlatformUserApiServiceCredentials
+    agentBaseCredentials: AgentBaseCredentials
 ): Promise<Response> => {
     const AGENT_BASE_API_URL = getAgentBaseApiUrl();
     const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/run`;
@@ -58,8 +58,9 @@ export const triggerAgentRunPlatformUserApiServiceStream = async (
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'x-platform-client-user-id': platformUserApiServiceCredentials.platformClientUserId,
-                'x-platform-api-key': platformUserApiServiceCredentials.platformApiKey,
+                'x-client-auth-user-id': agentBaseCredentials.clientAuthUserId,
+                'x-client-auth-organization-id': agentBaseCredentials.clientAuthOrganizationId,
+                'x-platform-api-key': agentBaseCredentials.platformApiKey,
                 'Accept': 'text/event-stream'
             },
             body: JSON.stringify(body)

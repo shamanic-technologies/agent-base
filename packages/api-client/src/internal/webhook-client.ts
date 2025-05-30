@@ -9,15 +9,10 @@ import {
     SetupNeeded,
     CreateAgentUserWebhookRequest,
     ServiceResponse,
-    InternalServiceCredentials,
-
+    HumanInternalCredentials
 } from '@agent-base/types';
-import { makeExternalApiServiceRequest, makeInternalAPIServiceRequest } from '../utils/service-client.js';
-import { getApiGatewayServiceUrl, getWebhookToolApiUrl } from '../utils/config.js';
-
-// --- Define specific credential types needed by this client ---
-
-// InternalServiceCredentials from @agent-base/types will be used for PlatformClientAuth
+import { makeInternalRequest } from '../utils/service-client.js';
+import { getApiGatewayServiceUrl } from '../utils/config.js';
 
 // --- API Wrapper Functions ---
 
@@ -30,15 +25,16 @@ import { getApiGatewayServiceUrl, getWebhookToolApiUrl } from '../utils/config.j
  */
 export async function createWebhookInternalApiService(
     data: WebhookData,
-    credentials: InternalServiceCredentials 
+    credentials: HumanInternalCredentials 
 ): Promise<ServiceResponse<Webhook>> {
-    const { platformUserId, clientUserId, platformApiKey, agentId: credentialsAgentId } = credentials;
-    return makeInternalAPIServiceRequest<Webhook>(
+    const { platformUserId, clientUserId, clientOrganizationId, platformApiKey, agentId: credentialsAgentId } = credentials;
+    return makeInternalRequest<Webhook>(
         getApiGatewayServiceUrl(),
         'POST' as Method,
         '/webhook/',
         platformUserId, 
         clientUserId, 
+        clientOrganizationId,
         platformApiKey,
         data,
         undefined,
@@ -55,15 +51,16 @@ export async function createWebhookInternalApiService(
  */
 export async function searchWebhooksInternalApiService(
     searchParams: { query: string; limit?: number },
-    credentials: InternalServiceCredentials
+    credentials: HumanInternalCredentials
 ): Promise<ServiceResponse<Webhook[]>> {
-    const { platformUserId, clientUserId, platformApiKey, agentId: credentialsAgentId } = credentials;
-    return makeInternalAPIServiceRequest<Webhook[]>(
+    const { platformUserId, clientUserId, clientOrganizationId, platformApiKey, agentId: credentialsAgentId } = credentials;
+    return makeInternalRequest<Webhook[]>(
         getApiGatewayServiceUrl(),
         'POST' as Method,
         '/webhook/search',
         platformUserId,
         clientUserId,
+        clientOrganizationId,
         platformApiKey,
         searchParams,
         undefined,
@@ -79,15 +76,16 @@ export async function searchWebhooksInternalApiService(
  */
 export async function linkUserToWebhookInternalApiService(
     webhookId: string,
-    credentials: InternalServiceCredentials
+    credentials: HumanInternalCredentials
 ): Promise<ServiceResponse<UserWebhook | SetupNeeded>> {
-    const { platformUserId, clientUserId, platformApiKey, agentId: credentialsAgentId } = credentials;
-    return makeInternalAPIServiceRequest<UserWebhook | SetupNeeded>(
+    const { platformUserId, clientUserId, clientOrganizationId, platformApiKey, agentId: credentialsAgentId } = credentials;
+    return makeInternalRequest<UserWebhook | SetupNeeded>(
         getApiGatewayServiceUrl(),
         'POST' as Method,
         `/webhook/${webhookId}/link-user`,
         platformUserId,
         clientUserId,
+        clientOrganizationId,
         platformApiKey,
         {},
         undefined,
@@ -105,15 +103,16 @@ export async function linkUserToWebhookInternalApiService(
 export async function linkAgentToWebhookInternalApiService(
     webhookId: string,
     agentId: string,
-    credentials: InternalServiceCredentials
+    credentials: HumanInternalCredentials
 ): Promise<ServiceResponse<CreateAgentUserWebhookRequest>> {
-    const { platformUserId, clientUserId, platformApiKey, agentId: credentialsAgentId } = credentials;
-    return makeInternalAPIServiceRequest<CreateAgentUserWebhookRequest>(
+    const { platformUserId, clientUserId, clientOrganizationId, platformApiKey, agentId: credentialsAgentId } = credentials;
+    return makeInternalRequest<CreateAgentUserWebhookRequest>(
         getApiGatewayServiceUrl(),
         'POST' as Method,
         `/webhook/${webhookId}/link-agent`,
         platformUserId,
         clientUserId,
+        clientOrganizationId,
         platformApiKey,
         { agentId },
         undefined,
@@ -127,18 +126,19 @@ export async function linkAgentToWebhookInternalApiService(
  * @returns ServiceResponse containing an array of Webhooks or an error.
  */
 export async function getUserCreatedWebhooksInternalApiService(
-    credentials: InternalServiceCredentials
+    credentials: HumanInternalCredentials
 ): Promise<ServiceResponse<Webhook[]>> {
-    const { platformUserId, clientUserId, platformApiKey, agentId: credentialsAgentId } = credentials;
+    const { platformUserId, clientUserId, clientOrganizationId, platformApiKey, agentId: credentialsAgentId } = credentials;
     if (!clientUserId) {
         return { success: false, error: 'Client Error', details: 'clientUserId is required for getUserCreatedWebhooks.' };
     }
-    return makeInternalAPIServiceRequest<Webhook[]>(
+    return makeInternalRequest<Webhook[]>(
         getApiGatewayServiceUrl(),
         'POST' as Method,
         '/webhook/get-user-created-webhooks',
         platformUserId,
         clientUserId,
+        clientOrganizationId,
         platformApiKey,
         {},
         undefined,

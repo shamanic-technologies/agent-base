@@ -7,17 +7,13 @@
 import { 
     ServiceResponse, 
     UtilityInfo, 
-    UtilitiesList ,
-    AgentServiceCredentials,
     ExecuteToolResult,
     ListUtilities,
-    ExecuteToolPayload
+    ExecuteToolPayload,
+    AgentInternalCredentials
 } from '@agent-base/types';
-import { makeInternalAPIServiceRequest } from '../utils/service-client.js'; // Import the shared helper
+import { makeInternalRequest } from '../utils/service-client.js'; // Import the shared helper
 import { getApiGatewayServiceUrl } from '../utils/config.js';
-
-
-
 
 /**
  * Calls a specific utility tool via the API Gateway using makeAPIServiceRequest.
@@ -29,20 +25,21 @@ import { getApiGatewayServiceUrl } from '../utils/config.js';
  * @throws Throws AxiosError if the request fails (handled by makeAPIServiceRequest, returning ErrorResponse).
  */
 export async function callUtilityFromAgent(
-    agentServiceCredentials: AgentServiceCredentials,
+    agentInternalCredentials: AgentInternalCredentials,
     utilityId: string,
     executeToolPayload: ExecuteToolPayload
 ): Promise<ServiceResponse<ExecuteToolResult>> {
-    const { clientUserId, platformUserId, platformApiKey, agentId } = agentServiceCredentials;
+    const { clientUserId, platformUserId, clientOrganizationId, platformApiKey, agentId } = agentInternalCredentials;
     const endpoint = `utility-tool/call-tool/${utilityId}`;
 
     // Use makeAPIServiceRequest, passing conversationId in data and agentId for header
-    return await makeInternalAPIServiceRequest<ExecuteToolResult>(
+    return await makeInternalRequest<ExecuteToolResult>(
         getApiGatewayServiceUrl(),
         'post',
         endpoint,
         platformUserId,
         clientUserId,
+        clientOrganizationId,
         platformApiKey,
         executeToolPayload, // Pass data containing input and conversationId
         undefined,
@@ -59,20 +56,21 @@ export async function callUtilityFromAgent(
  * @throws Throws AxiosError if the request fails (handled by makeAPIServiceRequest, returning ErrorResponse).
  */
 export async function getUtilityInfoFromAgent(
-    agentServiceCredentials: AgentServiceCredentials,
+    agentInternalCredentials: AgentInternalCredentials,
     conversationId: string,
     utilityId: string
 ): Promise<ServiceResponse<UtilityInfo>> {
-    const { clientUserId, platformUserId, platformApiKey, agentId } = agentServiceCredentials;
+    const { clientUserId, platformUserId, clientOrganizationId, platformApiKey, agentId } = agentInternalCredentials;
     const endpoint = `utility-tool/get-details/${utilityId}`;
 
 
-    return await makeInternalAPIServiceRequest<UtilityInfo>(
+    return await makeInternalRequest<UtilityInfo>(
         getApiGatewayServiceUrl(),
         'get',
         endpoint,
         platformUserId,
         clientUserId,
+        clientOrganizationId,
         platformApiKey,
         undefined,    // No data body for GET
         {conversationId},
@@ -88,19 +86,20 @@ export async function getUtilityInfoFromAgent(
  * @throws Throws AxiosError if the request fails (handled by makeAPIServiceRequest, returning ErrorResponse).
  */
 export async function listUtilitiesFromAgent(
-    agentServiceCredentials: AgentServiceCredentials,
+    agentInternalCredentials: AgentInternalCredentials,
     conversationId: string
 ): Promise<ServiceResponse<ListUtilities>> {
-    const { clientUserId, platformUserId, platformApiKey, agentId } = agentServiceCredentials;
+    const { clientUserId, platformUserId, clientOrganizationId, platformApiKey, agentId } = agentInternalCredentials;
     // conversationId not needed for this endpoint
     const endpoint = 'utility-tool/get-list';
    // Use makeAPIServiceRequest, passing agentId for header and conversationId as query param
-    return await makeInternalAPIServiceRequest<ListUtilities>(
+    return await makeInternalRequest<ListUtilities>(
         getApiGatewayServiceUrl(),
         'get',
         endpoint,
         platformUserId,
         clientUserId,
+        clientOrganizationId,
         platformApiKey,
         undefined, // No data body for GET
         { conversationId: conversationId }, // Pass conversationId as a query parameter object

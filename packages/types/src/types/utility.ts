@@ -1,7 +1,7 @@
 /**
  * Types related to Utility.
  */
-import { AgentServiceCredentials, ErrorResponse, ServiceResponse, SuccessResponse } from './common.js';
+import { AgentInternalCredentials, ErrorResponse, ServiceResponse, SuccessResponse } from './common.js';
 import { ApiToolInfo } from './api-tool.js';
 import { InternalUtilityInfo } from './internal-utility.js';
 
@@ -42,7 +42,7 @@ UtilityInputSecret
  * UtilityToolCredentials Interface
  * Standard credentials required by all utility tools.
  */
-export interface UtilityToolCredentials extends AgentServiceCredentials {
+export interface UtilityToolCredentials extends AgentInternalCredentials {
     conversationId: string;
   }
 
