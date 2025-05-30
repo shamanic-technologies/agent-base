@@ -43,7 +43,5 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
     platformUserName: platformUserName || null, // Ensure it's null if undefined
   };
 
-  // Log successful authentication and proceed to the next middleware or route handler.
-  console.log(`Authenticated platform user: ${platformUserId}`);
   next();
 } 

@@ -10,10 +10,9 @@ import { addCredit } from './creditService.js';
 /**
  * Add free sign-up credit to a new customer
  */
-export async function addFreeSignupCredit(stripeCustomerId: string, amountInUSDCents: number = AgentBasePricing.AGENT_BASE_FREE_SIGNUP_CREDIT_AMOUNT_IN_USD_CENTS): Promise<Stripe.CustomerBalanceTransaction> {
-  const freeCreditsInUSDCents = amountInUSDCents * -1; // $5.00 in cents (negative for customer credit)
+export async function addFreeSignupCredit(stripeCustomerId: string): Promise<Stripe.CustomerBalanceTransaction> {
+  const freeCreditsInUSDCents = AgentBasePricing.AGENT_BASE_FREE_SIGNUP_CREDIT_AMOUNT_IN_USD_CENTS; // $5.00 in cents (negative for customer credit)
   
-  console.log(`[customerService.addFreeSignupCredit] About to call stripe.customers.createBalanceTransaction for customer ${stripeCustomerId}`);
   // Add credits to customer balance
   const addedCreditResponse = await addCredit(
     stripeCustomerId, 
@@ -21,7 +20,6 @@ export async function addFreeSignupCredit(stripeCustomerId: string, amountInUSDC
     'Free Sign-up Credit'
   );
   const { transaction, newBalance } = addedCreditResponse;
-  console.log(`[customerService.addFreeSignupCredit] Finished stripe.customers.createBalanceTransaction for customer ${stripeCustomerId}`);
   return transaction;
 }
 
@@ -29,12 +27,10 @@ export async function addFreeSignupCredit(stripeCustomerId: string, amountInUSDC
  * Calculate customer credit balance from transaction history
  */
 export async function calculateCustomerCredits(stripeCustomerId: string): Promise<AgentBaseCustomerCredits> {
-  console.log(`[customerService.calculateCustomerCredits] About to call stripe.customers.listBalanceTransactions for customer ${stripeCustomerId}`);
   const balanceTransactions = await stripe.customers.listBalanceTransactions(
     stripeCustomerId,
     { limit: 100 }
   );
-  console.log(`[customerService.calculateCustomerCredits] Finished stripe.customers.listBalanceTransactions for customer ${stripeCustomerId}. Count: ${balanceTransactions.data.length}`);
   
   // Calculate total credits granted (all negative transactions)
   const totalCreditsInUSDCents = balanceTransactions.data
@@ -49,11 +45,6 @@ export async function calculateCustomerCredits(stripeCustomerId: string): Promis
   // Calculate remaining credits
   const remainingCreditsInUSDCents = totalCreditsInUSDCents - usedCreditsInUSDCents;
   
-  console.log(`Credit calculation for customer ${stripeCustomerId}:`, {
-    totalCreditsInUSDCents,
-    usedCreditsInUSDCents,
-    remainingCreditsInUSDCents
-  });
   
   return {
     totalInUSDCents: totalCreditsInUSDCents,
@@ -66,9 +57,7 @@ export async function calculateCustomerCredits(stripeCustomerId: string): Promis
  * Get customer's auto-recharge settings from metadata
  */
 export async function getAutoRechargeSettings(stripeCustomerId: string): Promise<AgentBaseAutoRechargeSettings | null> {
-  console.log(`[customerService.getAutoRechargeSettings] About to call stripe.customers.retrieve for customer ${stripeCustomerId}`);
   const customer = await stripe.customers.retrieve(stripeCustomerId);
-  console.log(`[customerService.getAutoRechargeSettings] Finished stripe.customers.retrieve for customer ${stripeCustomerId}`);
   
   if ('deleted' in customer) {
     return null;
@@ -100,7 +89,6 @@ export async function updateAutoRechargeSettings(
   stripeCustomerId: string, 
   settings: AgentBaseAutoRechargeSettings
 ): Promise<Stripe.Customer> {
-  console.log(`[customerService.updateAutoRechargeSettings] About to call stripe.customers.update for customer ${stripeCustomerId}`);
   const updatedCustomer = await stripe.customers.update(stripeCustomerId, {
     metadata: {
       auto_recharge_enabled: settings.enabled.toString(),
@@ -108,7 +96,6 @@ export async function updateAutoRechargeSettings(
       auto_recharge_amount_in_usd_cents: settings.rechargeAmountInUSDCents.toString()
     }
   });
-  console.log(`[customerService.updateAutoRechargeSettings] Finished stripe.customers.update for customer ${stripeCustomerId}`);
   return updatedCustomer;
 }
 
@@ -164,13 +151,9 @@ export async function getOrCreateStripeCustomer(
 
   // If customer doesn't exist, create a new one and add free credit
   if (!customer) {
-    console.log(`Customer with platformUserId ${platformUserId} not found. Creating new customer.`);
     customer = await _createCustomer(platformUserId, platformUserEmail, platformUserName);
     // Add free sign-up credit to the new customer
     await addFreeSignupCredit(customer.id);
-    console.log(`Added free sign-up credit to new customer ${customer.id}.`);
-  } else {
-    console.log(`Found existing customer ${customer.id} for platformUserId ${platformUserId}.`);
   }
 
   return customer;
@@ -180,12 +163,10 @@ export async function getOrCreateStripeCustomer(
  * Find a customer by user ID
  */
 async function _findStripeCustomerByPlatformUserId(platformUserId: string): Promise<Stripe.Customer | null> {
-  console.log(`[customerService._findStripeCustomerByPlatformUserId] About to search for customer with platformUserId: ${platformUserId}`);
   const customers = await stripe.customers.search({
     query: `metadata['platformUserId']:'${platformUserId}'`,
     limit: 1
   });
-  console.log(`[customerService._findStripeCustomerByPlatformUserId] Finished searching for customer. Found: ${customers.data.length > 0}`);
   
   return customers.data.length > 0 ? customers.data[0] : null;
 }
@@ -204,9 +185,6 @@ async function _createCustomer(platformUserId: string, platformUserEmail?: strin
   if (platformUserEmail) customerParams.email = platformUserEmail;
   if (platformUserName) customerParams.name = platformUserName;
   
-  console.log(`[customerService._createCustomer] Creating new customer with params:`, JSON.stringify(customerParams));
-  console.log(`[customerService._createCustomer] About to call stripe.customers.create`);
   const customer = await stripe.customers.create(customerParams);
-  console.log(`[customerService._createCustomer] Finished stripe.customers.create. New customer ID: ${customer.id}`);
   return customer;
 }
