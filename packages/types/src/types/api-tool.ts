@@ -38,6 +38,7 @@ export interface ApiToolData {
      };
     isVerified: boolean;
     creatorUserId?: string;
+    creatorOrganizationId?: string;
     embedding?: number[];
 }
 
