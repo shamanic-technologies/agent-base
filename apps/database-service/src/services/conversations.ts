@@ -3,7 +3,6 @@ import {
   CreateConversationInput, 
   AgentId,
   ConversationRecord,
-  BaseResponse,
   ConversationId,
   ServiceResponse,
   Conversation,
@@ -21,8 +20,6 @@ const CONVERSATIONS_TABLE = 'conversations'; // Define table name constant
  */
 export async function createConversation(input: CreateConversationInput): Promise<ServiceResponse<ConversationId>> {
   const { conversationId, agentId, channelId } = input;
-
-  console.log(`[DB Service] Creating conversation: ID=${conversationId}, Agent=${agentId}, Channel=${channelId}`);
 
   if (!conversationId || !agentId || !channelId) {
     return { success: false, error: 'Missing required fields: conversationId, agentId, channelId' };
@@ -45,9 +42,7 @@ export async function createConversation(input: CreateConversationInput): Promis
       channelId,
       '[]' // Empty JSON array for messages
     ]);
-    console.log(`[DB Service] Result: ${JSON.stringify(result)}`);
     if (result.rowCount === 1 && result.rows[0]?.conversation_id) {
-      console.log(`[DB Service] Conversation created with ID: ${result.rows[0].conversation_id}`);
       return { 
         success: true, 
         data: { conversationId: result.rows[0].conversation_id }
@@ -80,7 +75,6 @@ export async function updateConversationMessages(
   conversationId: string, 
   messages: Message[]
 ): Promise<ServiceResponse<ConversationId>> {
-  console.log(`[DB Service] Updating all messages in conversation: ${conversationId}`);
 
   const query = `
     UPDATE "${CONVERSATIONS_TABLE}"
@@ -98,7 +92,6 @@ export async function updateConversationMessages(
     const result = await client.query(query, [messagesJson, conversationId]);
 
     if (result.rowCount === 1) {
-      console.log(`[DB Service] Updated messages in conversation: ${conversationId}`);
       return { success: true, data: { conversationId: conversationId } };
     } else {
       console.error(`[DB Service] Conversation ${conversationId} not found.`);
@@ -121,7 +114,6 @@ export async function updateConversationMessages(
 export async function getConversation(
   conversationId: string
 ): Promise<ServiceResponse<Conversation | null>> {
-  console.log(`[DB Service] Getting conversation: ${conversationId}`);
 
   const query = `
     SELECT * FROM "${CONVERSATIONS_TABLE}"
@@ -137,9 +129,7 @@ export async function getConversation(
     if (result.rowCount === 1) {
       // Parse messages from JSONB to array of UIMessage
       const conversation = result.rows[0] as any;
-      
-      console.log(`[DB Service] Found conversation: ${conversationId} with ${(conversation.messages || []).length} messages`);
-      
+            
       // Return the conversation with proper type structure
       return {
         success: true,
@@ -167,9 +157,8 @@ export async function getConversationsByAgent(input: AgentId)
 : Promise<ServiceResponse<Conversation[]>> {
   const { agentId } = input;
 
-  console.log(`[DB Service] Getting conversations for agent: ${agentId}`);
-
   if (!agentId) {
+    console.error('[DB Service/getConversationsByAgent] agentId is required');
     return { success: false, error: 'agentId is required' };
   }
 
@@ -191,7 +180,6 @@ export async function getConversationsByAgent(input: AgentId)
       return conversation as ConversationRecord;
     });
 
-    console.log(`[DB Service] Found ${conversations.length} conversations for agent ${agentId}`);
     return { 
       success: true, 
       data: conversations.map(mapConversationFromDatabase)
@@ -212,11 +200,14 @@ export async function getConversationsByAgent(input: AgentId)
  * Get all conversations associated with a specific client_user_id.
  * This involves finding all agents linked to the client_user_id and then fetching their conversations.
  */
-export async function getConversationsByClientUserId(clientUserId: string): Promise<ServiceResponse<Conversation[]>> {
-  console.log(`[DB Service] Getting all conversations for client_user_id: ${clientUserId}`);
-
+export async function getConversationsByClientUserId(clientUserId: string, clientOrganizationId: string): Promise<ServiceResponse<Conversation[]>> {
   if (!clientUserId) {
+    console.error('[DB Service/getConversationsByClientUserId] clientUserId is required');
     return { success: false, error: 'clientUserId is required' };
+  }
+  if (!clientOrganizationId) {
+    console.error('[DB Service/getConversationsByClientUserId] clientOrganizationId is required');
+    return { success: false, error: 'clientOrganizationId is required' };
   }
 
   // SQL query to fetch conversations by joining with client_user_agents table
@@ -227,14 +218,14 @@ export async function getConversationsByClientUserId(clientUserId: string): Prom
     SELECT c.* 
     FROM "${CONVERSATIONS_TABLE}" c
     JOIN "client_user_agents" cua ON c.agent_id = cua.agent_id
-    WHERE cua.client_user_id = $1
+    WHERE cua.client_user_id = $1 AND cua.client_organization_id = $2
     ORDER BY c.updated_at DESC;
   `;
 
   let client: PoolClient | null = null;
   try {
     client = await getClient();
-    const result = await client.query(query, [clientUserId]);
+    const result = await client.query(query, [clientUserId, clientOrganizationId]);
 
     const conversations = result.rows.map(row => {
       // Assuming row structure matches ConversationRecord and messages is JSONB
@@ -242,7 +233,6 @@ export async function getConversationsByClientUserId(clientUserId: string): Prom
       return mapConversationFromDatabase(row as any); // Use 'as any' if row structure isn't strictly typed here
     });
 
-    console.log(`[DB Service] Found ${conversations.length} conversations for client_user_id ${clientUserId}`);
     return {
       success: true,
       data: conversations

@@ -4,14 +4,11 @@
  * Handles all database operations related to user credentials
  */
 import { PoolClient } from 'pg';
-import { v4 as uuidv4 } from 'uuid';
 import { getClient } from '../db.js';
 import { 
   OAuth,
   ServiceResponse,
   CreateOrUpdateOAuthInput,
-  CreateOrUpdateOAuthInputItem,
-  mapOAuthToDatabase,
   mapOAuthFromDatabase,
   GetUserOAuthInput,
   OAuthRecord
@@ -28,7 +25,7 @@ export async function createOrUpdateOAuth(
   input: CreateOrUpdateOAuthInput
 ): Promise<ServiceResponse<string>> {
     let client: PoolClient | null = null;
-    const { userId: clientUserId, oauthProvider, accessToken, refreshToken, expiresAt, scopes } = input;
+    const { userId: clientUserId, organizationId: clientOrganizationId, oauthProvider, accessToken, refreshToken, expiresAt, scopes } = input;
     try {
         client = await getClient();
         // --- Start Fix ---
@@ -50,10 +47,11 @@ export async function createOrUpdateOAuth(
             // Check if a record exists for this user, provider, and scope
             const selectResult = await client.query(
                 // Use correct column name `oauth_provider`
-                `SELECT 1 FROM "${CLIENT_USER_OAUTH_TABLE}" WHERE client_user_id = $1 AND oauth_provider = $2 AND scope = $3`,
+                `SELECT 1 FROM "${CLIENT_USER_OAUTH_TABLE}" WHERE client_user_id = $1 AND client_organization_id = $2 AND oauth_provider = $3 AND scope = $4`,
                 [
                     clientUserId,
-                    oauthProvider, // Use correct mapped property
+                    clientOrganizationId,
+                    oauthProvider,
                     scope
                 ]
             );
@@ -64,12 +62,13 @@ export async function createOrUpdateOAuth(
                     // Use correct column name `oauth_provider`
                     `UPDATE "${CLIENT_USER_OAUTH_TABLE}" 
                     SET access_token = $1, refresh_token = $2, expires_at = $3, updated_at = CURRENT_TIMESTAMP
-                    WHERE client_user_id = $4 AND oauth_provider = $5 AND scope = $6`,
+                    WHERE client_user_id = $4 AND client_organization_id = $5 AND oauth_provider = $6 AND scope = $7`,
                     [
                         accessToken,
                         refreshToken,
                         expiresAt,
                         clientUserId,
+                        clientOrganizationId,
                         oauthProvider, // Use correct mapped property
                         scope
                     ]
@@ -79,10 +78,11 @@ export async function createOrUpdateOAuth(
                 await client.query(
                     // Use correct column name `oauth_provider`
                     `INSERT INTO "${CLIENT_USER_OAUTH_TABLE}" 
-                    (client_user_id, oauth_provider, scope, access_token, refresh_token, expires_at)
-                    VALUES ($1, $2, $3, $4, $5, $6)`,
+                    (client_user_id, client_organization_id, oauth_provider, scope, access_token, refresh_token, expires_at)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7)`,
                     [
                         clientUserId,
+                        clientOrganizationId,
                         oauthProvider, // Use correct mapped property
                         scope,
                         accessToken,
@@ -124,10 +124,11 @@ export async function getCredentials(
     client = await getClient();
     
     // Validate input
-    if (!input.userId || !input.oauthProvider || !Array.isArray(input.requiredScopes) || input.requiredScopes.length === 0) {
+    if (!input.userId || !input.organizationId || !input.oauthProvider || !Array.isArray(input.requiredScopes) || input.requiredScopes.length === 0) {
+        console.error('[DB Service/getCredentials] Invalid input: Missing userId, organizationId, oauthProvider, or requiredScopes.');
         return {
             success: false,
-            error: 'Invalid input: Missing userId, oauthProvider, or requiredScopes.',
+            error: 'Invalid input: Missing userId, organizationId, oauthProvider, or requiredScopes.',
         };
     }
 
@@ -138,14 +139,13 @@ export async function getCredentials(
     const result = await client.query(
       // Use correct column name `oauth_provider`
       `SELECT * FROM "${CLIENT_USER_OAUTH_TABLE}" 
-       WHERE client_user_id = $1 AND oauth_provider = $2 AND scope IN (${placeholders}) 
+       WHERE client_user_id = $1 AND client_organization_id = $2 AND oauth_provider = $3 AND scope IN (${placeholders}) 
        ORDER BY updated_at DESC`, // Optional: order by update time
-      [input.userId, input.oauthProvider, ...input.requiredScopes]
+      [input.userId, input.organizationId, input.oauthProvider, ...input.requiredScopes]
     );
 
     // If no rows are found, return success with empty data (consistent with check-auth logic)
     if (result.rows.length === 0) {
-      console.log(`No credentials found for user ${input.userId}, provider ${input.oauthProvider} matching scopes: ${input.requiredScopes.join(', ')}`);
       return {
         success: true, // Success, but no matching data
         data: []

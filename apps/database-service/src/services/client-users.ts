@@ -15,8 +15,8 @@ import { CLIENT_USERS_TABLE } from '../utils/schema-initializer.js';
 import { mapClientUserFromDatabase } from '@agent-base/types';
 
 /**
- * Creates or updates a client user record based on platform_client_user_id.
- * If a user with the given platform_client_user_id exists, it returns the existing record.
+ * Creates or updates a client user record based on platform_user_id and auth_user_id.
+ * If a user with the given platform_user_id and auth_user_id exists, it returns the existing record.
  * Otherwise, it creates a new record with the provided details.
  * 
  * @param {UpsertClientUserInput} input - The details of the client user to upsert.

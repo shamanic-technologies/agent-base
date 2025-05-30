@@ -63,10 +63,10 @@ export async function getPlatformUserById(platformUserId: string): Promise<Servi
 /**
  * Gets user data by provider user ID
  * Internal function for get-or-create workflow
- * @param providerUserId - The provider user ID to look up
+ * @param authUserId - The provider auth_user_id to look up
  * @returns A response with user data if found
  */
-async function getPlatformUserByProviderUserId(providerUserId: string): Promise<ServiceResponse<PlatformUser>> {
+async function getPlatformUserByAuthUserId(authUserId: string): Promise<ServiceResponse<PlatformUser>> {
   let client: PoolClient | null = null;
   
   try {
@@ -75,13 +75,14 @@ async function getPlatformUserByProviderUserId(providerUserId: string): Promise<
     // Query the users table for the record with matching provider user ID
     const query = `
       SELECT * FROM "${PLATFORM_USERS_TABLE}" 
-      WHERE provider_user_id = $1 
+      WHERE auth_user_id = $1 
       LIMIT 1
     `;
     
-    const result = await client.query(query, [providerUserId]);
+    const result = await client.query(query, [authUserId]);
     
     if (result.rowCount === 0) {
+      console.error(`[DB Service/getPlatformUserByAuthUserId] User not found for authUserId: ${authUserId}`);
       return {
         success: false,
         error: 'User not found'
@@ -116,15 +117,16 @@ export async function getOrCreatePlatformUserByProviderUserId(userData: GetOrCre
   try {
     client = await getClient();
     
-    if (!userData.providerUserId) {
+    if (!userData.authUserId) {
+      console.error('[DB Service/getOrCreatePlatformUserByProviderUserId] Missing required field: authUserId');
       return {
         success: false,
-        error: 'Missing required field: providerUserId'
+        error: 'Missing required field: authUserId'
       };
     }
     
     // First check if user exists
-    const getResponse: ServiceResponse<PlatformUser> = await getPlatformUserByProviderUserId(userData.providerUserId);
+    const getResponse: ServiceResponse<PlatformUser> = await getPlatformUserByAuthUserId(userData.providerUserId);
     
     if (getResponse.success && getResponse.data) {
       // User exists, update it
@@ -162,7 +164,7 @@ export async function getOrCreatePlatformUserByProviderUserId(userData: GetOrCre
       const createQuery = `
         INSERT INTO "${PLATFORM_USERS_TABLE}" (
           id,
-          provider_user_id,
+          auth_user_id,
           email,
           display_name,
           profile_image,
@@ -179,7 +181,7 @@ export async function getOrCreatePlatformUserByProviderUserId(userData: GetOrCre
       
       const createValues = [
         userId,
-        userData.providerUserId,
+        userData.authUserId,
         userData.email || null,
         userData.displayName || null,
         userData.profileImage || null

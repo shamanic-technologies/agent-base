@@ -18,12 +18,14 @@ export const PLATFORM_USERS_TABLE = 'platform_users';
 export const CLIENT_USERS_TABLE = 'client_users';
 export const CLIENT_USER_OAUTH_TABLE = 'client_user_oauth';
 export const PLATFORM_USER_API_KEY_TABLE = 'platform_user_api_keys';
+export const CLIENT_ORGANIZATIONS_TABLE = 'client_organizations';
+export const CLIENT_USER_CLIENT_ORGANIZATION_TABLE = 'client_user_client_organization';
 
 // SQL definitions for table creation
 const PLATFORM_USERS_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS "${PLATFORM_USERS_TABLE}" (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    provider_user_id VARCHAR(255) NOT NULL UNIQUE,
+    auth_user_id VARCHAR(255) NOT NULL UNIQUE,
     email VARCHAR(255),
     display_name VARCHAR(255),
     profile_image TEXT,
@@ -37,7 +39,7 @@ const CLIENT_USERS_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS "${CLIENT_USERS_TABLE}" (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     platform_user_id UUID NOT NULL,
-    platform_client_user_id VARCHAR(255) NOT NULL UNIQUE,
+    auth_user_id VARCHAR(255) NOT NULL UNIQUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     FOREIGN KEY (platform_user_id) REFERENCES "${PLATFORM_USERS_TABLE}"("id") ON DELETE CASCADE
@@ -62,12 +64,26 @@ const AGENTS_TABLE_SQL = `
 const CLIENT_USER_AGENTS_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS "${CLIENT_USER_AGENTS_TABLE}" (
     client_user_id UUID NOT NULL,
+    client_organization_id UUID NOT NULL,
     agent_id UUID NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (client_user_id, agent_id),
+    PRIMARY KEY (client_user_id, client_organization_id, agent_id),
     FOREIGN KEY (agent_id) REFERENCES "${AGENTS_TABLE}"("id") ON DELETE CASCADE,
-    FOREIGN KEY (client_user_id) REFERENCES "${CLIENT_USERS_TABLE}"("id") ON DELETE CASCADE
+    FOREIGN KEY (client_user_id) REFERENCES "${CLIENT_USERS_TABLE}"("id") ON DELETE CASCADE,
+    FOREIGN KEY (client_organization_id) REFERENCES "${CLIENT_ORGANIZATIONS_TABLE}"("id") ON DELETE CASCADE
+  )
+`;
+const CLIENT_ORGANIZATIONS_TABLE_SQL = `
+  CREATE TABLE IF NOT EXISTS "${CLIENT_ORGANIZATIONS_TABLE}" (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    profile_image TEXT,
+    creator_client_user_id UUID NOT NULL,
+    client_auth_organization_id VARCHAR(255) NOT NULL UNIQUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (creator_client_user_id) REFERENCES "${CLIENT_USERS_TABLE}"("id") ON DELETE CASCADE
   )
 `;
 
@@ -104,34 +120,35 @@ const CONVERSATIONS_TABLE_SQL = `
   EXECUTE FUNCTION update_updated_at_column();
 `;
 
-const WEBHOOK_TABLE_SQL = `
-  CREATE TABLE IF NOT EXISTS "${WEBHOOK_TABLE}" (
-    webhook_provider_id VARCHAR(50) NOT NULL,
-    client_user_id UUID NOT NULL,
-    webhook_credentials JSONB NOT NULL DEFAULT '{}',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (webhook_provider_id, client_user_id),
-    FOREIGN KEY (client_user_id) REFERENCES "${CLIENT_USERS_TABLE}"("id") ON DELETE CASCADE
-  )
-`;
+// const WEBHOOK_TABLE_SQL = `
+//   CREATE TABLE IF NOT EXISTS "${WEBHOOK_TABLE}" (
+//     webhook_provider_id VARCHAR(50) NOT NULL,
+//     client_user_id UUID NOT NULL,
+//     webhook_credentials JSONB NOT NULL DEFAULT '{}',
+//     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+//     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+//     PRIMARY KEY (webhook_provider_id, client_user_id),
+//     FOREIGN KEY (client_user_id) REFERENCES "${CLIENT_USERS_TABLE}"("id") ON DELETE CASCADE
+//   )
+// `;
 
-const AGENT_WEBHOOK_TABLE_SQL = `
-  CREATE TABLE IF NOT EXISTS "${AGENT_WEBHOOK_TABLE}" (
-    agent_id UUID NOT NULL,
-    webhook_provider_id VARCHAR(50) NOT NULL,
-    client_user_id UUID NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (webhook_provider_id, client_user_id) REFERENCES "${WEBHOOK_TABLE}" (webhook_provider_id, client_user_id) ON DELETE CASCADE,
-    FOREIGN KEY (agent_id) REFERENCES "${AGENTS_TABLE}"("id") ON DELETE CASCADE,
-    FOREIGN KEY (client_user_id) REFERENCES "${CLIENT_USERS_TABLE}"("id") ON DELETE CASCADE,
-    PRIMARY KEY (agent_id,webhook_provider_id, client_user_id)
-  )
-`;
+// const AGENT_WEBHOOK_TABLE_SQL = `
+//   CREATE TABLE IF NOT EXISTS "${AGENT_WEBHOOK_TABLE}" (
+//     agent_id UUID NOT NULL,
+//     webhook_provider_id VARCHAR(50) NOT NULL,
+//     client_user_id UUID NOT NULL,
+//     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+//     FOREIGN KEY (webhook_provider_id, client_user_id) REFERENCES "${WEBHOOK_TABLE}" (webhook_provider_id, client_user_id) ON DELETE CASCADE,
+//     FOREIGN KEY (agent_id) REFERENCES "${AGENTS_TABLE}"("id") ON DELETE CASCADE,
+//     FOREIGN KEY (client_user_id) REFERENCES "${CLIENT_USERS_TABLE}"("id") ON DELETE CASCADE,
+//     PRIMARY KEY (agent_id,webhook_provider_id, client_user_id)
+//   )
+// `;
 
 const CLIENT_USER_OAUTH_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS "${CLIENT_USER_OAUTH_TABLE}" (
     client_user_id UUID NOT NULL,
+    client_organization_id UUID NOT NULL,
     oauth_provider VARCHAR(50) NOT NULL,
     scope TEXT NOT NULL,
     access_token TEXT NOT NULL,
@@ -139,23 +156,24 @@ const CLIENT_USER_OAUTH_TABLE_SQL = `
     expires_at BIGINT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (client_user_id, oauth_provider, scope),
-    FOREIGN KEY (client_user_id) REFERENCES "${CLIENT_USERS_TABLE}"("id") ON DELETE CASCADE
+    PRIMARY KEY (client_user_id, client_organization_id, oauth_provider, scope),
+    FOREIGN KEY (client_user_id) REFERENCES "${CLIENT_USERS_TABLE}"("id") ON DELETE CASCADE,
+    FOREIGN KEY (client_organization_id) REFERENCES "${CLIENT_ORGANIZATIONS_TABLE}"("id") ON DELETE CASCADE
   )
 `;
 
-const WEBHOOK_EVENTS_TABLE_SQL = `
-  CREATE TABLE IF NOT EXISTS "${WEBHOOK_EVENTS_TABLE}" (
-    webhook_provider_id VARCHAR(50) NOT NULL,
-    client_user_id UUID NOT NULL,
-    webhook_event_payload JSONB NOT NULL DEFAULT '{}',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (webhook_provider_id, client_user_id, created_at),
-    FOREIGN KEY (client_user_id) REFERENCES "${CLIENT_USERS_TABLE}"("id") ON DELETE CASCADE,
-    FOREIGN KEY (webhook_provider_id, client_user_id) REFERENCES "${WEBHOOK_TABLE}" (webhook_provider_id, client_user_id) ON DELETE CASCADE
-  )
-`;
+// const WEBHOOK_EVENTS_TABLE_SQL = `
+//   CREATE TABLE IF NOT EXISTS "${WEBHOOK_EVENTS_TABLE}" (
+//     webhook_provider_id VARCHAR(50) NOT NULL,
+//     client_user_id UUID NOT NULL,
+//     webhook_event_payload JSONB NOT NULL DEFAULT '{}',
+//     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+//     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+//     PRIMARY KEY (webhook_provider_id, client_user_id, created_at),
+//     FOREIGN KEY (client_user_id) REFERENCES "${CLIENT_USERS_TABLE}"("id") ON DELETE CASCADE,
+//     FOREIGN KEY (webhook_provider_id, client_user_id) REFERENCES "${WEBHOOK_TABLE}" (webhook_provider_id, client_user_id) ON DELETE CASCADE
+//   )
+// `;
 
 const PLATFORM_USER_API_KEY_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS "${PLATFORM_USER_API_KEY_TABLE}" (
@@ -180,6 +198,18 @@ const PLATFORM_USER_API_KEY_TABLE_SQL = `
   CREATE INDEX IF NOT EXISTS idx_api_keys_prefix ON "${PLATFORM_USER_API_KEY_TABLE}"(key_prefix);
 `;
 
+const CLIENT_USER_CLIENT_ORGANIZATION_TABLE_SQL = `
+  CREATE TABLE IF NOT EXISTS "${CLIENT_USER_CLIENT_ORGANIZATION_TABLE}" (
+    client_user_id UUID NOT NULL,
+    client_organization_id UUID NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (client_user_id, client_organization_id),
+    FOREIGN KEY (client_user_id) REFERENCES "${CLIENT_USERS_TABLE}"("id") ON DELETE CASCADE,
+    FOREIGN KEY (client_organization_id) REFERENCES "${CLIENT_ORGANIZATIONS_TABLE}"("id") ON DELETE CASCADE
+  )
+`;
+
 /**
  * Ensures the users table exists
  */
@@ -192,6 +222,17 @@ async function ensurePlatformUsersTableExists(client: PoolClient): Promise<void>
     throw error;
   }
 }
+
+async function ensureClientOrganizationsTableExists(client: PoolClient): Promise<void> {
+  try {
+    await client.query(CLIENT_ORGANIZATIONS_TABLE_SQL);
+    console.log(`Table "${CLIENT_ORGANIZATIONS_TABLE}" ensured.`);
+  } catch (error) {
+    console.error('Error ensuring client organizations table exists:', error);
+    throw error;
+  }
+}   
+
 
 async function ensureClientUsersTableExists(client: PoolClient): Promise<void> {
   try {
@@ -231,21 +272,21 @@ async function ensureConversationsTableExists(client: PoolClient): Promise<void>
   }
 }
 
-/**
- * Ensures the webhook tables exist
- */
-async function ensureWebhookTablesExist(client: PoolClient): Promise<void> {
-  try {
-    await client.query(WEBHOOK_TABLE_SQL);
-    console.log(`Table "${WEBHOOK_TABLE}" ensured.`);
+// /**
+//  * Ensures the webhook tables exist
+//  */
+// async function ensureWebhookTablesExist(client: PoolClient): Promise<void> {
+//   try {
+//     await client.query(WEBHOOK_TABLE_SQL);
+//     console.log(`Table "${WEBHOOK_TABLE}" ensured.`);
     
-    await client.query(AGENT_WEBHOOK_TABLE_SQL);
-    console.log(`Table "${AGENT_WEBHOOK_TABLE}" ensured.`);
-  } catch (error) {
-    console.error('Error ensuring webhook tables exist:', error);
-    throw error;
-  }
-}
+//     await client.query(AGENT_WEBHOOK_TABLE_SQL);
+//     console.log(`Table "${AGENT_WEBHOOK_TABLE}" ensured.`);
+//   } catch (error) {
+//     console.error('Error ensuring webhook tables exist:', error);
+//     throw error;
+//   }
+// }
 
 /**
  * Ensures the user credentials table exists
@@ -260,18 +301,18 @@ async function ensureClientUserOauthTableExists(client: PoolClient): Promise<voi
   }
 }
 
-/**
- * Ensures the webhook events table exists
- */
-async function ensureWebhookEventsTableExists(client: PoolClient): Promise<void> {
-  try {
-    await client.query(WEBHOOK_EVENTS_TABLE_SQL);
-    console.log(`Table "${WEBHOOK_EVENTS_TABLE}" ensured.`);
-  } catch (error) {
-    console.error('Error ensuring webhook events table exists:', error);
-    throw error;
-  }
-}
+// /**
+//  * Ensures the webhook events table exists
+//  */
+// async function ensureWebhookEventsTableExists(client: PoolClient): Promise<void> {
+//   try {
+//     await client.query(WEBHOOK_EVENTS_TABLE_SQL);
+//     console.log(`Table "${WEBHOOK_EVENTS_TABLE}" ensured.`);
+//   } catch (error) {
+//     console.error('Error ensuring webhook events table exists:', error);
+//     throw error;
+//   }
+// }
 
 /**
  * Ensures the API keys table exists
@@ -287,7 +328,20 @@ async function ensurePlatformUserApiKeysTableExists(client: PoolClient): Promise
 }
 
 /**
- * Initialize all database schemas
+ * Ensures the client user client organization table exists
+ */
+async function ensureClientUserClientOrganizationTableExists(client: PoolClient): Promise<void> {
+  try {
+    await client.query(CLIENT_USER_CLIENT_ORGANIZATION_TABLE_SQL);
+    console.log(`Table "${CLIENT_USER_CLIENT_ORGANIZATION_TABLE}" ensured.`);
+  } catch (error) {
+    console.error('Error ensuring client user client organization table exists:', error);
+    throw error;
+  }
+}
+
+/**
+  * Initialize all database schemas
  * This function ensures all tables required by the application exist
  * Call this at server startup
  */
@@ -301,13 +355,12 @@ export async function initializeAllSchemas(): Promise<void> {
     // Create tables in order of dependencies
     await ensurePlatformUsersTableExists(client);
     await ensureClientUsersTableExists(client);
+    await ensureClientOrganizationsTableExists(client);
     await ensureAgentsTablesExist(client);
     await ensureConversationsTableExists(client);
-    await ensureWebhookTablesExist(client);
     await ensureClientUserOauthTableExists(client);
-    await ensureWebhookEventsTableExists(client);
     await ensurePlatformUserApiKeysTableExists(client);
-    
+    await ensureClientUserClientOrganizationTableExists(client);
     console.log('All database schemas initialized successfully.');
   } catch (error) {
     console.error('Failed to initialize database schemas:', error);
@@ -325,8 +378,7 @@ export {
   ensureClientUsersTableExists,
   ensureAgentsTablesExist,
   ensureConversationsTableExists,
-  ensureWebhookTablesExist,
   ensureClientUserOauthTableExists,
-  ensureWebhookEventsTableExists,
-  ensurePlatformUserApiKeysTableExists
+  ensurePlatformUserApiKeysTableExists,
+  ensureClientUserClientOrganizationTableExists
 }; 
