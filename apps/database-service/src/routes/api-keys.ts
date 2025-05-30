@@ -2,7 +2,7 @@
  * API Key routes for managing metadata (secrets stored elsewhere)
  */
 import { Router, Request, Response } from 'express';
-import { CreateApiKeyRequest, ValidateApiKeyRequest } from '@agent-base/types';
+import { ApiKey, CreateApiKeyRequest, ServiceResponse, ValidateApiKeyRequest } from '@agent-base/types';
 import { upsertApiKey, getApiKeys, validateApiKey } from '../services/api-keys.js';
 
 const router = Router();
@@ -113,7 +113,7 @@ router.post('/validate', async (req: Request, res: Response): Promise<void> => {
     }
 
     // Call service to update API key
-    const validateResponse = await validateApiKey({ hashedKey, keyPrefix });
+    const validateResponse: ServiceResponse<ApiKey> = await validateApiKey({ hashedKey, keyPrefix });
 
     if (!validateResponse.success) {
       if (validateResponse.error?.includes('Invalid API key')) {

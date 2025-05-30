@@ -29,7 +29,7 @@ export const validatePlatformUser = async (
   platformAuthUserId: string
 ): Promise<ServiceResponse<PlatformUserId>> => {
 
-  const endpoint = '/provider-user/validate'; // Endpoint path
+  const endpoint = '/auth-user/validate-platform-user'; // Endpoint path
   const input = {
     serviceUrl: getUserServiceUrl(),
     method: 'post',

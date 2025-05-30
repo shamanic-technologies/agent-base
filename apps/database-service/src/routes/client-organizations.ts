@@ -1,27 +1,25 @@
 /**
- * Client Users Routes
+ * Client Organizations Routes
  * 
- * Defines API endpoints related to client users.
+ * Defines API endpoints related to client organizations.
  */
 import express, { Request, Response, Router } from 'express';
-import {
-  upsertClientUser
-} from '../services/client-users.js';
 import {
   UpsertClientOrganizationInput, // Input type for validation
   ClientOrganization,              // Expected user data type
   ServiceResponse          // Standard service response wrapper
 } from '@agent-base/types';
+import { upsertClientOrganization } from '../services/client-organizations.js';
 
 // Create a new Express router
 const router: Router = express.Router();
 
 /**
- * POST /client-users
+ * POST /client-organizations
  * 
- * Endpoint to create or retrieve a client user based on platform details.
- * Expects platformUserId, clientAuthUserId, and clientAuthOrganizationId in the request body.
- * Returns the client user data upon success.
+ * Endpoint to create or retrieve a client organization based on platform details.
+ * Expects platformUserId, clientAuthOrganizationId in the request body.
+ * Returns the client organization data upon success.
  */
 router.post('/', async (req: Request, res: Response): Promise<void> => {
 
@@ -30,14 +28,14 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
   const clientAuthOrganizationId = req.headers['x-client-auth-organization-id'] as string;
 
   if (!platformUserId) {
-    console.error('[POST /client-users] Missing required fields in body: platformUserId');
+    console.error('[POST /client-organizations] Missing required fields in body: platformUserId');
     res.status(400).json({ 
       error: 'Missing required fields in body: platformUserId' 
     });
     return;
   }
   if (!clientAuthOrganizationId) {
-    console.error('[POST /client-users] Missing required fields in body: clientAuthOrganizationId');
+    console.error('[POST /client-organizations] Missing required fields in body: clientAuthOrganizationId');
     res.status(400).json({ 
       error: 'Missing required fields in body: clientAuthOrganizationId' 
     });
@@ -59,7 +57,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
       res.status(500).json(upsertResponse);
       return;
     }
-    // Success: return 200 OK with the user data
+    // Success: return 200 OK with the organization data
     res.status(200).json(upsertResponse);
   } catch (error: any) {
     // Catch unexpected errors during the process (e.g., network issues, uncaught exceptions in service)

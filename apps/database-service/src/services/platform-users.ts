@@ -126,7 +126,7 @@ export async function getOrCreatePlatformUserByProviderUserId(userData: GetOrCre
     }
     
     // First check if user exists
-    const getResponse: ServiceResponse<PlatformUser> = await getPlatformUserByAuthUserId(userData.providerUserId);
+    const getResponse: ServiceResponse<PlatformUser> = await getPlatformUserByAuthUserId(userData.authUserId);
     
     if (getResponse.success && getResponse.data) {
       // User exists, update it

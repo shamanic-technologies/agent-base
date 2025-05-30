@@ -13,8 +13,8 @@ import {
 import { 
   getOrCreatePlatformUser, 
   getCurrentPlatformUser,
-  getOrCreateClientUser,
-  getCurrentClientUser
+  // getOrCreateClientUser,
+  // getCurrentClientUser
 } from '@agent-base/api-client';
 
 // const dbServiceUrl = config.databaseServiceUrl; // No longer used, API client handles its own URL config
@@ -56,39 +56,39 @@ export async function getPlatformUserFromDatabase(platformUserId: string): Promi
   return response;
 } 
 
-/**
- * Saves or retrieves a user in the database service based on client ID.
- * Uses the API client.
- * 
- * @param inputData User information, including clientUserId.
- * @returns Promise resolving to the platform user data
- */
-export async function getOrCreateClientUserInDatabase(inputData: GetOrCreateClientUserInput): Promise<ServiceResponse<ClientUser>> {
-  // Use the API client function
-  const response = await getOrCreateClientUser(inputData);
+// /**
+//  * Saves or retrieves a user in the database service based on client ID.
+//  * Uses the API client.
+//  * 
+//  * @param inputData User information, including clientUserId.
+//  * @returns Promise resolving to the platform user data
+//  */
+// export async function getOrCreateClientUserInDatabase(inputData: GetOrCreateClientUserInput): Promise<ServiceResponse<ClientUser>> {
+//   // Use the API client function
+//   const response = await getOrCreateClientUser(inputData);
   
-  if (!response.success) {
-    console.error(`[User Service] Failed to save/get user via api-client: ${response.error}`);
-  }
-  return response;
-}
+//   if (!response.success) {
+//     console.error(`[User Service] Failed to save/get user via api-client: ${response.error}`);
+//   }
+//   return response;
+// }
 
-/**
- * Retrieves a user from the database service by their client ID.
- * Uses the API client.
- * 
- * @param clientUserId The client user ID (UUID)
- * @returns Promise resolving to the user data or null if not found
- */
-export async function getClientUserFromDatabase(clientUserId: string): Promise<ServiceResponse<ClientUser>> {
+// /**
+//  * Retrieves a user from the database service by their client ID.
+//  * Uses the API client.
+//  * 
+//  * @param clientUserId The client user ID (UUID)
+//  * @returns Promise resolving to the user data or null if not found
+//  */
+// export async function getClientUserFromDatabase(clientUserId: string): Promise<ServiceResponse<ClientUser>> {
 
-  // Use the API client function
-  // The client function handles passing the clientUserId for the header
-  const response = await getCurrentClientUser(clientUserId);
+//   // Use the API client function
+//   // The client function handles passing the clientUserId for the header
+//   const response = await getCurrentClientUser(clientUserId);
 
-  if (!response.success) {
-    console.error(`[User Service] Failed to get user ${clientUserId} via api-client: ${response.error}`);
-  }
+//   if (!response.success) {
+//     console.error(`[User Service] Failed to get user ${clientUserId} via api-client: ${response.error}`);
+//   }
   
-  return response;
-} 
+//   return response;
+// } 

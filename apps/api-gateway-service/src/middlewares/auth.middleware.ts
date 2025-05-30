@@ -46,10 +46,10 @@ export const authMiddleware = () => {
         const platformApiKeySecret: SecretValue = {
           value: platformApiKey
         };
-        console.log('platformApiKeySecret in authMiddleware:', JSON.stringify(platformApiKeySecret, null, 2));
         // Define the expected success data shape locally if not exported correctly
         const validationResponse: ServiceResponse<PlatformUserId> = await validatePlatformApiKeySecret(platformApiKeySecret);
-
+        console.debug('⚠️⚠️⚠️validationResponse in authMiddleware:', JSON.stringify(validationResponse, null, 2));
+        console.debug('⚠️⚠️⚠️ Is it a PlatformUserId or APIKey?');
         // Check for validation success first
         if (!validationResponse.success ) {
           console.log(`[Auth Middleware] Key validation failed: ${validationResponse.error}`);

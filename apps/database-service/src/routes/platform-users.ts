@@ -63,9 +63,10 @@ router.post('/get-or-create-by-auth-user-id', async (req: Request, res: Response
     console.log(`Get or create user with auth_user_id: ${userData.authUserId}`);
     
     // Call the service function to get or create user
-    const getOrCreateResponse = await getOrCreatePlatformUserByAuthUserId(userData);
+    const getOrCreateResponse = await getOrCreatePlatformUserByProviderUserId(userData);
     
     if (!getOrCreateResponse.success) {
+      console.error('Error in get-or-create user:', getOrCreateResponse.error);
       res.status(400).json(getOrCreateResponse);
       return;
     }
