@@ -13,7 +13,7 @@ import { ModelName } from "../../types/agent-config.js";
  * @param userId - The ID of the user for whom the default agent is being created.
  * @returns The CreateUserAgentInput object for the default agent.
  */
-export function createDefaultAgentPayload(clientUserId: string): CreateClientUserAgentInput {
+export function createDefaultAgentPayload(clientUserId: string,): CreateClientUserAgentInput {
     // Define default agent data (ensure it matches CreateUserAgentInput)
     const defaultAgentPayload: CreateClientUserAgentInput = {
         clientUserId: clientUserId,

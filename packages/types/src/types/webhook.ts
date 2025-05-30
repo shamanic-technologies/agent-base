@@ -17,6 +17,7 @@ export enum WebhookStatus {
 export interface UserWebhook {
   webhookId: string;
   clientUserId: string;
+  clientOrganizationId: string;
   platformUserId: string;
   status: WebhookStatus;
   webhookSecret: string; // Unique secret for this webhook link
@@ -35,6 +36,7 @@ export interface WebhookData {
   subscribedEventId: string;
   conversationIdIdentificationMapping: string;
   creatorClientUserId: string;
+  creatorClientOrganizationId: string;
 }
 
 export interface Webhook extends WebhookData {
@@ -48,6 +50,7 @@ export type CreateWebhookRequest = WebhookData;
 export interface AgentUserWebhook {
   webhookId: string;
   clientUserId: string;
+  clientOrganizationId: string;
   platformUserId: string;
   agentId: string;
 };
@@ -64,6 +67,7 @@ export interface WebhookEvent {
   eventId: string; // Unique identifier for the event record
   webhookId: string;
   clientUserId: string;
+  clientOrganizationId: string;
   platformUserId: string;
   payload: WebhookEventPayload;
   providerId: WebhookProviderId;

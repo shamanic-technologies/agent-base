@@ -22,6 +22,7 @@ export interface AgentRecord {
 
 export interface ClientUserAgentRecord {
   client_user_id: string;
+  client_organization_id: string;
   agent_id: string;
   created_at: Date;
 }
@@ -40,10 +41,12 @@ export interface CreateAgentInput {
 
 export interface CreateClientUserAgentInput extends CreateAgentInput {
   clientUserId: string;
+  clientOrganizationId: string;
 }
 
 export interface LinkAgentToClientUserInput {
   clientUserId: string;
+  clientOrganizationId: string;
   agentId: string;
 }
 
@@ -60,6 +63,7 @@ export interface UpdateAgentInput {
 
 export interface UpdateClientUserAgentInput {
   clientUserId: string;
+  clientOrganizationId: string;
   agentId: string; 
   agentFirstName?: string;
   agentLastName?: string;
@@ -72,10 +76,12 @@ export interface UpdateClientUserAgentInput {
 
 export interface ListClientUserAgentsInput {
   clientUserId: string;
+  clientOrganizationId: string;
 }
 
 export interface GetClientUserAgentInput {
   clientUserId: string;
+  clientOrganizationId: string;
   agentId: string;
 }
 

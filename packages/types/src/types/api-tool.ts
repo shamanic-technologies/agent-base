@@ -18,6 +18,7 @@ export enum ApiToolStatus {
 
 export interface UserApiTool {
     userId: string;
+    organizationId: string;
     apiToolId: string;
     status: ApiToolStatus;
     createdAt: Date;
@@ -54,6 +55,7 @@ export interface ApiTool extends ApiToolData {
 export interface ApiToolExecutionData {
     apiToolId: string;
     userId: string;
+    organizationId: string;
     input: any;
     output: any;
     statusCode: number;
@@ -66,6 +68,7 @@ export interface ApiToolExecution extends ApiToolExecutionData {
     id: string;
     apiToolId: string;
     userId: string;
+    organizationId: string;
     input: any;
     output: any;
     statusCode: number;
@@ -98,6 +101,7 @@ export interface SearchApiToolResultItem {
     securityOption: string;
     isVerified: boolean;
     creatorUserId?: string;
+    creatorOrganizationId?: string;
     // User info
     userId: string;
     status: ApiToolStatus;

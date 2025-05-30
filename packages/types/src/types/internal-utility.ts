@@ -18,6 +18,7 @@ export interface InternalUtilityTool {
      */
     execute: (
         clientUserId: string,
+        clientOrganizationId: string,
         platformUserId: string,
         platformApiKey: string,
         conversationId: string,

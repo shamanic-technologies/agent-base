@@ -22,6 +22,7 @@ export enum OAuthProvider {
  */
 export interface OAuthRecord {
   user_id: string;
+  organization_id: string;
   oauth_provider: OAuthProvider;
   access_token: string;
   refresh_token: string;
@@ -33,6 +34,7 @@ export interface OAuthRecord {
 
 export interface OAuth {
   userId: string;
+  organizationId: string;
   oauthProvider: OAuthProvider;
   accessToken: string;
   refreshToken: string;
@@ -53,6 +55,7 @@ export interface ProviderUser {
 
 export interface JWTPayload {
   userId: string;
+  organizationId: string;
 }
 
 /**
@@ -60,6 +63,7 @@ export interface JWTPayload {
 */
 export interface CreateOrUpdateOAuthInput {
   userId: string;
+  organizationId: string;
   oauthProvider: OAuthProvider;
   accessToken: string;
   refreshToken: string;
@@ -69,6 +73,7 @@ export interface CreateOrUpdateOAuthInput {
 
 export interface CreateOrUpdateOAuthInputItem {
   userId: string;
+  organizationId: string;
   oauthProvider: OAuthProvider;
   accessToken: string;
   refreshToken: string;
@@ -80,6 +85,7 @@ export interface CreateOrUpdateOAuthInputItem {
 */
 export interface GetUserOAuthInput {
   userId: string;
+  organizationId: string;
   oauthProvider: OAuthProvider;
   requiredScopes: string[];
 }
@@ -97,6 +103,7 @@ export interface CheckUserOAuth {
 export function mapOAuthFromDatabase(record: OAuthRecord): OAuth {
   return {
     userId: record.user_id,
+    organizationId: record.organization_id,
     oauthProvider: record.oauth_provider,
     scope: record.scope,
     accessToken: record.access_token,
@@ -114,6 +121,10 @@ export function mapOAuthToDatabase(credentials: OAuth): Partial<OAuthRecord> {
   
   if ('userId' in credentials && credentials.userId !== undefined) {
     mapped.user_id = credentials.userId;
+  }
+
+  if ('organizationId' in credentials && credentials.organizationId !== undefined) {
+    mapped.organization_id = credentials.organizationId;
   }
   
   if ('oauthProvider' in credentials && credentials.oauthProvider !== undefined) {
