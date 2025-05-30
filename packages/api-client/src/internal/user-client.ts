@@ -9,7 +9,8 @@ import {
 
 // Import the shared request helpers
 import { 
-  makeWebAnonymousServiceRequest
+  makeWebAnonymousServiceRequest,
+  makeInternalRequest
 } from '../utils/service-client.js';
 
 import { getUserServiceUrl } from '../utils/config.js'; // Changed to getUserServiceUrl
@@ -43,4 +44,45 @@ export const validatePlatformAuthUser = async (
     { platformAuthUserId: input.platformAuthUserId } // Send as an object
   );
 
+};
+
+/**
+ * Creates or retrieves a client organization record via the database service.
+ * Corresponds to: POST /client-organizations
+ * Sends platformUserId and clientAuthOrganizationId in the request body.
+ * Requires platformUserId for the authentication header (x-platform-user-id).
+ * 
+ * @param {UpsertClientUserInput} data - The data containing platformUserId and platformClientUserId.
+ * @param {string} platformUserId - The ID of the platform user making the request (for x-platform-user-id header).
+ * @returns {Promise<ServiceResponse<boolean>>} A promise resolving to a ServiceResponse containing the upserted ClientUser data or an error.
+ */
+export const validateClientUserClientOrganization = async (
+  platformApiKey: string,
+  platformUserId: string,
+  clientUserId: string,
+  clientOrganizationId: string
+): Promise<ServiceResponse<boolean>> => {
+
+  const input = {
+    serviceUrl: getUserServiceUrl(),
+    method: 'POST' as Method,
+    endpoint: '/validate-client-user-client-organization',
+    platformApiKey: platformApiKey, // Required
+    platformUserId: platformUserId, // Required
+    clientUserId: clientUserId, // Required
+    clientOrganizationId: clientOrganizationId, // Required
+  }
+  
+  return makeInternalRequest<boolean>( // Reverted function call
+    input.serviceUrl,
+    input.method as Method,
+    input.endpoint,
+    input.platformUserId,
+    input.clientUserId,
+    input.clientOrganizationId,
+    input.platformApiKey,
+    undefined,
+    undefined,
+    // data and params are undefined for this GET request
+  );
 };

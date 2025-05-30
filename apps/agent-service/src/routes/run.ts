@@ -7,7 +7,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import {
     ServiceResponse,
     Agent,
-    AgentServiceCredentials,
+    AgentInternalCredentials,
     AgentBaseDeductCreditRequest,
     AgentBaseDeductCreditResponse,
     AgentBaseCreditStreamPayloadData,
@@ -58,6 +58,7 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
     let currentMessage: Message;
     let conversationId: string;
     let clientUserId: string | undefined;
+    let clientOrganizationId: string | undefined;
     let platformUserId: string | undefined;
     let platformApiKey: string | undefined;
 
@@ -67,10 +68,11 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       // --- Extraction & Validation ---
       ({ message: currentMessage, conversationId } = req.body);
       clientUserId = req.clientUserId;
+      clientOrganizationId = req.clientOrganizationId;
       platformUserId = req.platformUserId;
       platformApiKey = req.headers['x-platform-api-key'] as string;
 
-      if (!clientUserId || !platformUserId || !platformApiKey || !currentMessage || !conversationId) {
+      if (!clientUserId || !clientOrganizationId || !platformUserId || !platformApiKey || !currentMessage || !conversationId) {
         console.error('[Agent Service /run] Missing required headers or body fields.');
         // Combine checks for brevity
         let errorDetail = !clientUserId ? 'Missing x-client-user-id' :
@@ -90,6 +92,7 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       const agentResponse: ServiceResponse<Agent> = await getAgentFromConversation(
         { conversationId }, // Pass params object directly
         clientUserId,
+        clientOrganizationId,
         platformUserId,
         platformApiKey
       );
@@ -111,7 +114,8 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
         { conversationId },
         platformUserId,
         platformApiKey,
-        clientUserId
+        clientUserId,
+        clientOrganizationId
       );
       if (conversationResponse.success && conversationResponse.data?.messages) {
           fullHistoryMessages = conversationResponse.data.messages;
@@ -137,8 +141,9 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       // --- End Truncate History ---
 
       // --- Prepare Credentials for API Client ---
-      const agentServiceCredentials: AgentServiceCredentials = {
+      const agentServiceCredentials: AgentInternalCredentials = {
         clientUserId: clientUserId,
+        clientOrganizationId: clientOrganizationId,
         platformApiKey: platformApiKey,
         platformUserId: platformUserId,
         agentId: agent.id
@@ -235,7 +240,8 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
                 { conversationId: conversationId, messages: messagesToSave }, // Save complete, non-truncated history + new messages
                 platformUserId,
                 platformApiKey,
-                clientUserId
+                clientUserId,
+                clientOrganizationId
               );
 
               if (!saveResult.success) {
@@ -277,6 +283,7 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
                 platformUserId,
                 platformApiKey,
                 clientUserId,
+                clientOrganizationId,
                 deductCreditRequest
               );
 

@@ -2,9 +2,13 @@
  * Agent service local types
  */
 
-// Import shared User type for Express Request augmentation
-import { ClientUser, PlatformUser } from '@agent-base/types';
-
+/**
+ * Claude model names
+ * Available Claude model identifiers
+ */
+export enum ModelName {
+  CLAUDE_3_7_SONNET_20250219 = 'claude-3-7-sonnet-20250219'
+}
 /**
  * UtilityError Interface
  * Standardized error structure returned by utility tools or services.
@@ -28,11 +32,9 @@ declare global {
   namespace Express {
     interface Request {
       clientUserId?: string; // Use the imported shared User type
+      clientOrganizationId?: string; // Use the imported shared User type
       platformUserId?: string; // Use the imported shared User type
       platformApiKey?: string; // Use the imported shared User type
     }
   }
 }
-
-// Export only necessary local types
-export * from './agent-config.js'; 

@@ -5,7 +5,7 @@
  */
 
 import { CreateClientUserAgentInput, Gender } from "@agent-base/types";
-import { ModelName } from "../../types/agent-config.js";
+import { ModelName } from "../../types/index.js";
 
 /**
  * Creates the payload object for a default agent.
@@ -13,10 +13,11 @@ import { ModelName } from "../../types/agent-config.js";
  * @param userId - The ID of the user for whom the default agent is being created.
  * @returns The CreateUserAgentInput object for the default agent.
  */
-export function createDefaultAgentPayload(clientUserId: string,): CreateClientUserAgentInput {
+export function createDefaultAgentPayload(clientUserId: string, clientOrganizationId: string): CreateClientUserAgentInput {
     // Define default agent data (ensure it matches CreateUserAgentInput)
     const defaultAgentPayload: CreateClientUserAgentInput = {
         clientUserId: clientUserId,
+        clientOrganizationId: clientOrganizationId,
         firstName: 'Alex',
         lastName: 'Sinnek',
         profilePicture: 'AS', 

@@ -15,6 +15,7 @@ declare global {
       platformUserId?: string;
       platformApiKey?: string;
       clientUserId?: string;
+      clientOrganizationId?: string;
     }
   }
 } 

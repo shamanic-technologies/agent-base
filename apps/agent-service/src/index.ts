@@ -18,17 +18,6 @@ import { configureRoutes } from './routes/index.js';
 // Import specific user types
 import { ClientUser, PlatformUser } from '@agent-base/types'; 
 
-// Extend Express Request interface to include platformUserId
-declare global {
-  namespace Express {
-    interface Request {
-      clientUserId?: string; 
-      platformUserId?: string;
-      platformApiKey?: string;
-    }
-  }
-}
-
 // Load environment variables based on NODE_ENV
 const nodeEnv = process.env.NODE_ENV || 'development';
 
@@ -81,6 +70,7 @@ app.use((req, res, next) => {
 
     // Get user IDs from headers set by API gateway middleware
     const clientUserId = req.headers['x-client-user-id'] as string;
+    const clientOrganizationId = req.headers['x-client-organization-id'] as string;
     const platformUserIdHeader = req.headers['x-platform-user-id'] as string;
     
     if (!clientUserId) {
@@ -91,6 +81,14 @@ app.use((req, res, next) => {
       return; // Explicitly return to end execution here
     }
     req.clientUserId = clientUserId;
+    
+    if (!clientOrganizationId) {
+      console.warn('[Agent Service Auth] Missing x-client-organization-id header.');
+      // Block request if missing
+      res.status(401).json({ success: false, error: 'Missing x-client-organization-id header' });
+      return; // Explicitly return to end execution here
+    }
+    req.clientOrganizationId = clientOrganizationId;
 
     if (!platformUserIdHeader) {
        console.warn('[Agent Service Auth] Missing x-platform-user-id header.');

@@ -9,8 +9,10 @@ import express from 'express';
 import { 
   validatePlatformApiKeySecret, 
   upsertClientUserApiClient,
+  upsertClientOrganizationApiClient,
+  validateClientUserClientOrganization,
 } from '@agent-base/api-client'; 
-import { ServiceResponse, ClientUser, PlatformUserId, SecretValue } from '@agent-base/types';
+import { ServiceResponse, ClientUser, PlatformUserId, SecretValue, ClientOrganization } from '@agent-base/types';
 import { apiCache } from '../utils/api-cache.js'; // Import the API cache
 
 /**
@@ -22,7 +24,8 @@ import { apiCache } from '../utils/api-cache.js'; // Import the API cache
 export const authMiddleware = () => { 
   return async (req: express.Request, res: express.Response, next: express.NextFunction): Promise<void> => {
     try {
-      
+      let clientUserId: string | undefined;
+      let clientOrganizationId: string | undefined;
       // 1. Platform API Key Validation
       const platformApiKey = req.headers['x-platform-api-key'] as string;
       req.platformApiKey = platformApiKey; 
@@ -64,23 +67,25 @@ export const authMiddleware = () => {
       req.platformUserId = platformUserId; 
       req.headers['x-platform-user-id'] = platformUserId;
 
-      // 2. Platform Client User ID Validation (Optional)
-      const platformClientUserId = req.headers['x-platform-client-user-id'] as string;
+      // 2. Client Auth User ID Validation (Optional)
+      const clientAuthUserId = req.headers['x-client-auth-user-id'] as string;
+      const clientAuthOrganizationId = req.headers['x-client-auth-organization-id'] as string;
       
-      if (platformClientUserId) {
+      if (clientAuthUserId) {
 
-        let clientUserId: string | undefined = apiCache.getClientUserId(platformUserId, platformClientUserId);
+        clientUserId = apiCache.getClientUserId(platformUserId, clientAuthUserId);
 
         if (!clientUserId) {
-          console.log(`[Auth Middleware] Client User Cache MISS for ${platformUserId}:${platformClientUserId}. Validating/upserting...`);
+          console.log(`[Auth Middleware] Client User Cache MISS for ${platformUserId}:${clientAuthUserId}. Validating/upserting...`);
           
           const clientUserResponse: ServiceResponse<ClientUser> = await upsertClientUserApiClient(
-            platformClientUserId, 
+            clientAuthUserId, 
+            clientAuthOrganizationId,
             platformUserId // Pass the correct string ID here
           );
 
           if (!clientUserResponse.success) {
-            console.error(`[Auth Middleware] Failed to validate/upsert client user ID ${platformClientUserId} for platform user ${platformUserId}. Error: ${clientUserResponse.error}`);
+            console.error(`[Auth Middleware] Failed to validate/upsert client user ID ${clientAuthUserId} for platform user ${platformUserId}. Error: ${clientUserResponse.error}`);
             res.status(401).json(clientUserResponse);
             return;
           }
@@ -88,16 +93,69 @@ export const authMiddleware = () => {
           // Extract the internal client user ID (UUID)
           clientUserId = clientUserResponse.data.id;
           // Cache the successful result
-          apiCache.setClientUserId(platformUserId, platformClientUserId, clientUserId);
+          apiCache.setClientUserId(platformUserId, clientAuthUserId, clientUserId);
         
         }
 
         // Assign clientUserId to request and headers
         req.clientUserId = clientUserId; 
         req.headers['x-client-user-id'] = clientUserId;
+      }
+
+      // 3. Client Auth Organization ID Validation (Optional)
+
+      if (clientAuthOrganizationId) {
+
+        clientOrganizationId = apiCache.getClientOrganizationId(platformUserId, clientAuthOrganizationId);
+
+        if (!clientOrganizationId) {
+          console.log(`[Auth Middleware] Client Organization Cache MISS for ${platformUserId}:${clientAuthOrganizationId}. Validating/upserting...`);
+          
+          const clientOrganizationResponse: ServiceResponse<ClientOrganization> = await upsertClientOrganizationApiClient(
+            clientAuthUserId, 
+            clientAuthOrganizationId,
+            platformUserId // Pass the correct string ID here
+          );
+
+          if (!clientOrganizationResponse.success) {
+            console.error(`[Auth Middleware] Failed to validate/upsert client organization ID ${clientAuthOrganizationId} for platform user ${platformUserId}. Error: ${clientOrganizationResponse.error}`);
+            res.status(401).json(clientOrganizationResponse);
+            return;
+          }
+
+          // Extract the internal client user ID (UUID)
+          clientOrganizationId = clientOrganizationResponse.data.id;
+          // Cache the successful result
+          apiCache.setClientOrganizationId(platformUserId, clientAuthOrganizationId, clientOrganizationId);
+        
+        }
+
+        // Assign clientUserId to request and headers
+        req.clientOrganizationId = clientOrganizationId; 
+        req.headers['x-client-organization-id'] = clientOrganizationId;
 
       }
 
+      // 4. Client+Organization Validation (Optional)
+      if (clientUserId && clientOrganizationId) {
+        let validateClientUserClientOrganization: boolean | undefined = apiCache.getClientUserClientOrganizationValidation(clientUserId, clientOrganizationId);
+
+        if (!validateClientUserClientOrganization) {
+
+          // Check if the client user is associated with the client organization
+          const clientUserOrganizationResponse: ServiceResponse<boolean> = await validateClientUserClientOrganization(
+            clientUserId,
+            clientOrganizationId
+          );
+          if (!clientUserOrganizationResponse.success) {
+            console.error(`[Auth Middleware] Failed to validate client user ${clientUserId} is associated with client organization ${clientOrganizationId}. Error: ${clientUserOrganizationResponse.error}`);
+            res.status(401).json(clientUserOrganizationResponse);
+            return;
+          }
+          apiCache.setClientUserClientOrganizationValidation(clientUserId, clientOrganizationId, true);
+        
+        }
+      }
       // Proceed to next middleware/route handler
       next();
     } catch (error) {

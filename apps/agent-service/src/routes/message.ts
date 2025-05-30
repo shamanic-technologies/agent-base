@@ -28,6 +28,7 @@ const router = Router();
 router.get('/get-messages-from-conversation', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const conversationId = req.query.conversationId as string;
     const clientUserId = req.clientUserId as string;
+    const clientOrganizationId = req.clientOrganizationId as string;
     const platformUserId = req.platformUserId as string;
     const platformApiKey = req.headers['x-platform-api-key'] as string;
 
@@ -35,7 +36,7 @@ router.get('/get-messages-from-conversation', async (req: Request, res: Response
         res.status(400).json({ success: false, error: 'conversationId query parameter is required' });
         return;
     }
-    if (!clientUserId || !platformUserId || !platformApiKey) {
+    if (!clientUserId || !clientOrganizationId || !platformUserId || !platformApiKey) {
         res.status(401).json({ success: false, error: 'Authentication details missing' });
         return;
     }
@@ -47,7 +48,8 @@ router.get('/get-messages-from-conversation', async (req: Request, res: Response
             { conversationId },
             platformUserId,
             platformApiKey,
-            clientUserId
+            clientUserId,
+            clientOrganizationId
         );
 
         if (conversationResponse.success && conversationResponse.data) {
@@ -73,6 +75,7 @@ router.get('/get-messages-from-conversation', async (req: Request, res: Response
 router.get('/get-messages-from-agent', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const agentId = req.query.agentId as string;
     const clientUserId = req.clientUserId as string;
+    const clientOrganizationId = req.clientOrganizationId as string;
     const platformUserId = req.platformUserId as string;
     const platformApiKey = req.headers['x-platform-api-key'] as string;
 
@@ -80,7 +83,7 @@ router.get('/get-messages-from-agent', async (req: Request, res: Response, next:
         res.status(400).json({ success: false, error: 'agentId query parameter is required' });
         return;
     }
-    if (!clientUserId || !platformUserId || !platformApiKey) {
+    if (!clientUserId || !clientOrganizationId || !platformUserId || !platformApiKey) {
         res.status(401).json({ success: false, error: 'Authentication details missing' });
         return;
     }
@@ -91,6 +94,7 @@ router.get('/get-messages-from-agent', async (req: Request, res: Response, next:
         const conversationsResponse = await getOrCreateConversationsInternalApiService(
             { agentId: agentId },
             clientUserId,
+            clientOrganizationId,
             platformUserId,
             platformApiKey
         );

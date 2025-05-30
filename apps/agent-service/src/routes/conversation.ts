@@ -36,11 +36,12 @@ router.get('/get-or-create-conversations-from-agent', async (req: Request, res: 
         const agentId = req.query.agentId as string;
         // Extract auth details from augmented request
         const clientUserId = req.clientUserId as string;
+        const clientOrganizationId = req.clientOrganizationId as string;
         const platformUserId = req.platformUserId as string;
         const platformApiKey = req.headers['x-platform-api-key'] as string;
 
         // Validate auth details first
-        if (!clientUserId || !platformUserId || !platformApiKey) {
+        if (!clientUserId || !clientOrganizationId || !platformUserId || !platformApiKey) {
             res.status(401).json({ success: false, error: 'Authentication details missing from request headers/context' });
             return;
         }
@@ -57,6 +58,7 @@ router.get('/get-or-create-conversations-from-agent', async (req: Request, res: 
             const conversationsResponse = await getOrCreateConversationsInternalApiService(
                 { agentId }, // Params object
                 clientUserId,
+                clientOrganizationId,
                 platformUserId,
                 platformApiKey
             );
@@ -96,11 +98,12 @@ router.post('/create-conversation', async (req: Request, res: Response, next: Ne
         const { agentId, channelId, conversationId }: CreateConversationInput = req.body;
         // Extract auth details from augmented request
         const clientUserId = req.clientUserId as string;
+        const clientOrganizationId = req.clientOrganizationId as string;
         const platformUserId = req.platformUserId as string;
         const platformApiKey = req.headers['x-platform-api-key'] as string;
 
         // Validate auth details first
-        if (!clientUserId || !platformUserId || !platformApiKey) {
+        if (!clientUserId || !clientOrganizationId || !platformUserId || !platformApiKey) {
             res.status(401).json({ success: false, error: 'Authentication details missing from request headers/context' });
             return;
         }
@@ -127,6 +130,7 @@ router.post('/create-conversation', async (req: Request, res: Response, next: Ne
             const response = await createConversationInternalApiService(
                 req.body, 
                 clientUserId, 
+                clientOrganizationId,
                 platformUserId, 
                 platformApiKey
             );
@@ -159,11 +163,12 @@ router.post('/get-or-create-conversation', async (req: Request, res: Response, n
     try {
         const { agentId, channelId, conversationId }: CreateConversationInput = req.body;
         const clientUserId = req.clientUserId as string;
+        const clientOrganizationId = req.clientOrganizationId as string;
         const platformUserId = req.platformUserId as string;
         const platformApiKey = req.headers['x-platform-api-key'] as string;
 
         // Validate auth details first
-        if (!clientUserId || !platformUserId || !platformApiKey) {
+        if (!clientUserId || !clientOrganizationId || !platformUserId || !platformApiKey) {
             console.log(`[Agent Service] Authentication details missing from request headers/context`);
             res.status(401).json({ success: false, error: 'Authentication details missing from request headers/context' });
             return;
@@ -190,6 +195,7 @@ router.post('/get-or-create-conversation', async (req: Request, res: Response, n
         const getResponse : ServiceResponse<Conversation> = await getConversationByIdInternalApiService(
             { conversationId },
             clientUserId,
+            clientOrganizationId,
             platformUserId,
             platformApiKey
         );
@@ -208,6 +214,7 @@ router.post('/get-or-create-conversation', async (req: Request, res: Response, n
         const createResponse = await createConversationInternalApiService(
             req.body, // Contains agentId, channelId, conversationId
             clientUserId,
+            clientOrganizationId,
             platformUserId,
             platformApiKey
         );
@@ -235,13 +242,14 @@ router.post('/get-or-create-conversation', async (req: Request, res: Response, n
  */
 router.get('/get-all-user-conversations', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const clientUserId = req.clientUserId as string;
+    const clientOrganizationId = req.clientOrganizationId as string;
     const platformUserId = req.platformUserId as string;
     const platformApiKey = req.headers['x-platform-api-key'] as string;
 
     const logPrefix = `[Agent Service /get-all-user-conversations] User ${clientUserId}:`;
 
     // Validate auth details first
-    if (!clientUserId || !platformUserId || !platformApiKey) {
+    if (!clientUserId || !clientOrganizationId || !platformUserId || !platformApiKey) {
         console.error(`${logPrefix} Authentication details missing.`);
         res.status(401).json({ success: false, error: 'Authentication details missing from request headers/context' });
         return;
@@ -254,6 +262,7 @@ router.get('/get-all-user-conversations', async (req: Request, res: Response, ne
         const response = await getAllUserConversationsFromDbService(
             { clientUserId }, // Params object with clientUserId to fetch data for
             clientUserId,                 // clientUserId for authentication context
+            clientOrganizationId,
             platformUserId,
             platformApiKey
         );

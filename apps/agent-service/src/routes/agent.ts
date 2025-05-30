@@ -50,11 +50,12 @@ router.post('/create-user-agent', async (req: Request, res: Response, next: Next
     
     // Extract auth details from augmented request
     const clientUserId = req.clientUserId as string;
+    const clientOrganizationId = req.clientOrganizationId as string;
     const platformUserId = req.platformUserId as string;
     const platformApiKey = req.headers['x-platform-api-key'] as string;
 
     // Validate auth details first
-    if (!clientUserId || !platformUserId || !platformApiKey) {
+    if (!clientUserId || !clientOrganizationId || !platformUserId || !platformApiKey) {
         res.status(401).json({ success: false, error: 'Authentication details missing from request headers/context' });
         return;
     }
@@ -72,7 +73,8 @@ router.post('/create-user-agent', async (req: Request, res: Response, next: Next
     // We no longer combine user_id into the input here, it's passed separately
     const combinedInput: CreateClientUserAgentInput = {
       ...agentInput,
-      clientUserId
+      clientUserId,
+      clientOrganizationId
     };
 
     console.log(`[Agent Service /create-user-agent] Calling createUserAgent service for user ${clientUserId}`);
@@ -81,7 +83,8 @@ router.post('/create-user-agent', async (req: Request, res: Response, next: Next
       combinedInput, // Pass the combined input
       platformUserId,
       platformApiKey,
-      clientUserId
+      clientUserId,
+      clientOrganizationId
     );
 
     if (result.success && result.data) {
@@ -107,11 +110,12 @@ router.post('/update-user-agent', async (req: Request, res: Response, next: Next
     const agentUpdateData: UpdateClientUserAgentInput = req.body;
     // Extract auth details from augmented request
     const clientUserId = req.clientUserId as string;
+    const clientOrganizationId = req.clientOrganizationId as string;
     const platformUserId = req.platformUserId as string;
     const platformApiKey = req.headers['x-platform-api-key'] as string;
 
     // Validate auth details first
-    if (!clientUserId || !platformUserId || !platformApiKey) {
+    if (!clientUserId || !clientOrganizationId || !platformUserId || !platformApiKey) {
         res.status(401).json({ success: false, error: 'Authentication details missing from request headers/context' });
         return;
     }
@@ -127,7 +131,8 @@ router.post('/update-user-agent', async (req: Request, res: Response, next: Next
       agentUpdateData, // Pass the original body as data
       platformUserId,
       platformApiKey,
-      clientUserId
+      clientUserId,
+      clientOrganizationId
     );
 
     if (updateResponse.success && updateResponse.data) {
@@ -153,11 +158,12 @@ router.post('/update-user-agent', async (req: Request, res: Response, next: Next
 router.get('/get-or-create-user-agents', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   // Extract auth details from augmented request
   const clientUserId = req.clientUserId as string;
+  const clientOrganizationId = req.clientOrganizationId as string;
   const platformUserId = req.platformUserId as string;
   const platformApiKey = req.headers['x-platform-api-key'] as string;
 
   // Validate auth details first
-  if (!clientUserId || !platformUserId || !platformApiKey) {
+  if (!clientUserId || !clientOrganizationId || !platformUserId || !platformApiKey) {
       console.error('[Agent Service /get-or-create-user-agents] Authentication details missing from request headers/context.');
       res.status(401).json({ success: false, error: 'Authentication details missing from request headers/context' });
       return;
@@ -173,7 +179,8 @@ router.get('/get-or-create-user-agents', async (req: Request, res: Response, nex
       { clientUserId: clientUserId }, // Params object
       platformUserId,
       platformApiKey,
-      clientUserId
+      clientUserId,
+      clientOrganizationId
     );
 
     // Check for successful response and if agents exist
@@ -192,14 +199,15 @@ router.get('/get-or-create-user-agents', async (req: Request, res: Response, nex
     // Step 2: No agents found, create default using the utility function
     console.log(`${logPrefix} No existing agents found. Creating default agent via service.`);
     // Pass clientUserId to the utility function as required
-    const defaultAgentPayload = createDefaultAgentPayload(clientUserId); 
+    const defaultAgentPayload = createDefaultAgentPayload(clientUserId, clientOrganizationId); 
     
     // Call the createUserAgent service function (returns CreateUserAgentResponse)
     const createResult = await createUserAgent(
       defaultAgentPayload,
       platformUserId,
       platformApiKey,
-      clientUserId
+      clientUserId,
+      clientOrganizationId
     );
 
     if (createResult.success && createResult.data) {
@@ -231,12 +239,13 @@ router.get('/get-user-agent', async (req: Request, res: Response, next: NextFunc
   try {
     // Extract auth details and agentId from query
     const clientUserId = req.clientUserId as string;
+    const clientOrganizationId = req.clientOrganizationId as string;
     const platformUserId = req.platformUserId as string;
     const platformApiKey = req.headers['x-platform-api-key'] as string;
     const agentId = req.query.agent_id as string;
     
     // Validate auth details first
-    if (!clientUserId || !platformUserId || !platformApiKey) {
+    if (!clientUserId || !clientOrganizationId || !platformUserId || !platformApiKey) {
         res.status(401).json({ success: false, error: 'Authentication details missing from request headers/context' });
         return;
     }
@@ -252,7 +261,8 @@ router.get('/get-user-agent', async (req: Request, res: Response, next: NextFunc
       { clientUserId: clientUserId, agentId: agentId }, // Params object
       platformUserId,
       platformApiKey,
-      clientUserId
+      clientUserId,
+      clientOrganizationId
     );
 
     if (result.success && result.data) {
