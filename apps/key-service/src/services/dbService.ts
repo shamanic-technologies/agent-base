@@ -75,7 +75,6 @@ import { generateApiKey, getKeyPrefix, hashApiKey, isValidKeyFormat } from '../u
  */
 export async function getUserApiKeys(platformUserId: string): Promise<ServiceResponse<ApiKey[]>> {
   try {
-    console.log(`Fetching API keys for user: ${platformUserId}`);
     const response = await makeWebAuthenticatedServiceRequest<ApiKey[]>(
       DATABASE_SERVICE_URL, 
       'get', 
@@ -88,7 +87,6 @@ export async function getUserApiKeys(platformUserId: string): Promise<ServiceRes
       return response;
     }
 
-    console.log(`Found ${response.data.length} API keys for user ${platformUserId}`);
     return response;
   } catch (error) {
     console.error('Error in getUserApiKeys:', error);
