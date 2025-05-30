@@ -21,10 +21,10 @@ const PLATFORM_USER_API_KEY_TABLE = 'platform_user_api_keys';
  * Creates or updates API key metadata in the database (Upsert)
  * If a key with the same key_id exists, it updates the name and hashed_key.
  * @param keyData - The API key data to insert or update
- * @param userId - The user ID who owns the key
+ * @param platformUserId - The user ID who owns the key
  * @returns A response with the created or updated API key metadata
  */
-export async function upsertApiKey(keyData: CreateApiKeyRequest, userId: string):
+export async function upsertApiKey(keyData: CreateApiKeyRequest, platformUserId: string):
 Promise<ServiceResponse<ApiKey>> {
   let client: PoolClient | null = null;
   
@@ -34,7 +34,7 @@ Promise<ServiceResponse<ApiKey>> {
     // Prepare data for insertion
     const apiKeyData: ApiKeyRecord = {
       key_id: keyData.keyId,
-      platform_user_id: userId,
+      platform_user_id: platformUserId,
       name: keyData.name,
       key_prefix: keyData.keyPrefix,
       hashed_key: keyData.hashedKey,
@@ -78,11 +78,11 @@ Promise<ServiceResponse<ApiKey>> {
 
 /**
  * Gets all API keys for a specific user
- * @param userId - The user ID to get keys for
+ * @param platformUserId - The user ID to get keys for
  * @param keyPrefix - Optional key prefix to filter by
  * @returns A response with an array of API key metadata
  */
-export async function getApiKeys(userId: string, keyPrefix?: string): Promise<ServiceResponse<ApiKey[]>> {
+export async function getApiKeys(platformUserId: string, keyPrefix?: string): Promise<ServiceResponse<ApiKey[]>> {
   let client: PoolClient | null = null;
   
   try {
@@ -93,7 +93,7 @@ export async function getApiKeys(userId: string, keyPrefix?: string): Promise<Se
       FROM "${PLATFORM_USER_API_KEY_TABLE}"
       WHERE platform_user_id = $1
     `;
-    const queryParams: any[] = [userId];
+    const queryParams: any[] = [platformUserId];
 
     // Add key_prefix filter if provided
     if (keyPrefix) {

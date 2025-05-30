@@ -57,6 +57,40 @@ export interface ClientUser {
   createdAt: Date;
   updatedAt: Date;
 }
+/**
+ * Maps a snake_case user database record to camelCase user object
+ * @param record The user record from the database
+ * @returns A camelCase user object
+ */
+export function mapClientUserFromDatabase(record: ClientUserRecord): ClientUser {
+  if (!record) {
+    throw new Error('Invalid client user record provided to mapClientUserFromDatabase');
+  }
+
+  return {
+    id: record.id,
+    platformUserId: record.platform_user_id,
+    authUserId: record.auth_user_id,
+    createdAt: record.created_at,
+    updatedAt: record.updated_at
+  };
+}
+
+/**
+ * Maps a camelCase user object to snake_case database fields
+ */
+export function mapClientUserToDatabase(user: ClientUser): Partial<ClientUserRecord> {
+  if (!user) {
+    throw new Error('Invalid client user provided to mapClientUserToDatabase');
+  }
+  const record: Partial<ClientUserRecord> = {};
+  if (user.id !== undefined) record.id = user.id;
+  if (user.platformUserId !== undefined) record.platform_user_id = user.platformUserId;
+  if (user.authUserId !== undefined) record.auth_user_id = user.authUserId;
+  return record;
+}
+
+
 
 /**
  * Input for getting or creating a user

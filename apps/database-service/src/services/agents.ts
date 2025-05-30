@@ -156,7 +156,7 @@ export async function updateAgent(input: UpdateAgentInput): Promise<ServiceRespo
 
 /**
  * Links an agent to a user in the database.
- * @param input - An object containing user_id and agent_id.
+ * @param input - An object containing client_user_id, client_organization_id, and agent_id.
  * @returns A BaseResponse indicating success or failure.
  */
 export async function linkAgentToClientUser(input: LinkAgentToClientUserInput): Promise<BaseResponse> {
@@ -164,11 +164,11 @@ export async function linkAgentToClientUser(input: LinkAgentToClientUserInput): 
   try {
     client = await getClient();
     const query = `
-      INSERT INTO ${CLIENT_USER_AGENTS_TABLE} (client_user_id, agent_id)
-      VALUES ($1, $2)
-      ON CONFLICT (client_user_id, agent_id) DO NOTHING
+      INSERT INTO ${CLIENT_USER_AGENTS_TABLE} (client_user_id, client_organization_id, agent_id)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (client_user_id, client_organization_id, agent_id) DO NOTHING
       RETURNING *;`;
-    const values = [input.clientUserId, input.agentId];
+    const values = [input.clientUserId, input.clientOrganizationId, input.agentId];
     await client.query(query, values);
 
     // Even if no new row was created (due to ON CONFLICT DO NOTHING), still consider it a success
@@ -185,7 +185,7 @@ export async function linkAgentToClientUser(input: LinkAgentToClientUserInput): 
 
 /**
  * Lists all agents linked to a specific user.
- * @param input - An object containing the user_id.
+ * @param input - An object containing the client_user_id and client_organization_id.
  * @returns A BaseResponse indicating success or failure, with the list of agents on success.
  */
 export async function listClientUserAgents(input: ListClientUserAgentsInput): Promise<ServiceResponse<Agent[]>> {
@@ -198,9 +198,9 @@ export async function listClientUserAgents(input: ListClientUserAgentsInput): Pr
       `SELECT a.* 
        FROM "${AGENTS_TABLE}" a
        INNER JOIN "${CLIENT_USER_AGENTS_TABLE}" ua ON a.id = ua.agent_id
-       WHERE ua.client_user_id = $1
+       WHERE ua.client_user_id = $1 AND ua.client_organization_id = $2
        ORDER BY a.created_at DESC`,
-      [input.clientUserId]
+      [input.clientUserId, input.clientOrganizationId]
     );
 
     return {
@@ -219,7 +219,7 @@ export async function listClientUserAgents(input: ListClientUserAgentsInput): Pr
 
 /**
  * Gets a specific agent if it is linked to the user.
- * @param input - An object containing user_id and agent_id.
+ * @param input - An object containing client_user_id, client_organization_id, and agent_id.
  * @returns A BaseResponse indicating success or failure, with the agent data on success.
  */
 export async function getClientUserAgent(input: GetClientUserAgentInput): Promise<ServiceResponse<Agent>> {
@@ -232,9 +232,9 @@ export async function getClientUserAgent(input: GetClientUserAgentInput): Promis
       SELECT a.*
       FROM ${AGENTS_TABLE} a
       JOIN ${CLIENT_USER_AGENTS_TABLE} ua ON a.id = ua.agent_id
-      WHERE a.id = $1 AND ua.client_user_id = $2;
+        WHERE a.id = $1 AND ua.client_user_id = $2 AND ua.client_organization_id = $3;
     `;
-    const values = [input.agentId, input.clientUserId];
+    const values = [input.agentId, input.clientUserId, input.clientOrganizationId];
     const result = await client.query(query, values);
 
     // Check if an agent was found for this user
@@ -268,7 +268,6 @@ export async function getClientUserAgent(input: GetClientUserAgentInput): Promis
  */
 export async function getConversationAgent(input: ConversationId): Promise<ServiceResponse<Agent>> {
   const { conversationId } = input;
-  console.log(`[DB Service] Getting agent for conversation: ${conversationId}`);
 
   if (!conversationId) {
     return { success: false, error: 'conversationId is required' };
@@ -287,21 +286,19 @@ export async function getConversationAgent(input: ConversationId): Promise<Servi
     const result = await client.query(query, [conversationId]);
 
     if (result.rowCount === 0) {
-      console.log(`[DB Service] No agent found for conversation ${conversationId}`);
       return { 
         success: false, 
         error: 'No agent found for this conversation'
       };
     } 
 
-    console.log(`[DB Service] Found agent ${result.rows[0].id} for conversation ${conversationId}`);
     return { 
       success: true, 
       data: mapAgentFromDatabase(result.rows[0])
     };
 
   } catch (error) {
-    console.error(`[DB Service] Error getting agent for conversation ${conversationId}:`, error);
+    console.error(`Error getting agent for conversation ${conversationId}:`, error);
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Database error occurred'

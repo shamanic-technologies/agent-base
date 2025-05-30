@@ -24,13 +24,12 @@ router.get('/me', async (req: Request, res: Response): Promise<void> => {
       });
       return;
     }
-    
-    console.log(`Fetching user data for user ID: ${platformUserId}`);
-    
+        
     // Call the service function to get user by user ID
     const getResponse = await getPlatformUserById(platformUserId);
     
     if (!getResponse.success) {
+      console.error('Error fetching user data:', getResponse.error);
       res.status(400).json(getResponse);
       return;
     }
@@ -44,26 +43,27 @@ router.get('/me', async (req: Request, res: Response): Promise<void> => {
 });
 
 /**
- * Get or create a user by provider ID
- * If user with provider_user_id exists, updates and returns it
+ * Get or create a user by auth user ID
+ * If user with auth_user_id exists, updates and returns it
  * Otherwise creates a new user record
  */
-router.post('/get-or-create-by-provider-user-id', async (req: Request, res: Response): Promise<void> => {
+router.post('/get-or-create-by-auth-user-id', async (req: Request, res: Response): Promise<void> => {
   try {
     const userData = req.body as GetOrCreatePlatformUserInput;
     
-    if (!userData || !userData.providerUserId) {
+    if (!userData || !userData.authUserId) {
+      console.error('Missing required field: authUserId');
       res.status(400).json({
         success: false,
-        error: 'Missing required field: providerUserId'
+        error: 'Missing required field: authUserId'
       });
       return;
     }
     
-    console.log(`Get or create user with provider_user_id: ${userData.providerUserId}`);
+    console.log(`Get or create user with auth_user_id: ${userData.authUserId}`);
     
     // Call the service function to get or create user
-    const getOrCreateResponse = await getOrCreatePlatformUserByProviderUserId(userData);
+    const getOrCreateResponse = await getOrCreatePlatformUserByAuthUserId(userData);
     
     if (!getOrCreateResponse.success) {
       res.status(400).json(getOrCreateResponse);

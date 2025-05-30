@@ -44,7 +44,6 @@ router.post('/create-conversation', (async (req: Request, res: Response) => {
       return;
     }
 
-    console.log(`[DB Route /conversations] Received request to create conversation ${conversationId}`);
     const createResponse = await createConversation(req.body);
     
     if (!createResponse.success) {
@@ -57,7 +56,6 @@ router.post('/create-conversation', (async (req: Request, res: Response) => {
     // Return 201 if created, 200 if already existed (service returns success:true in both cases)
     // We don't easily know which happened here without more info from service,
     // so let's return 200 OK consistently for idempotency.
-    console.log(`[DB Route /conversations] Conversation creation/check successful for ID: ${createResponse.data?.conversationId}`);
     res.status(200).json(createResponse);
 
   } catch (error) {
@@ -86,7 +84,6 @@ router.get('/get-conversations-from-agent', (async (req: Request, res: Response,
       return;
     }
 
-    console.log(`[DB Route /conversations] Getting conversations for agent ${agentId}`);
     const input: AgentId = { agentId };
     const getResponse = await getConversationsByAgent(input);
     
@@ -98,7 +95,6 @@ router.get('/get-conversations-from-agent', (async (req: Request, res: Response,
     }
 
     // Return 200 OK with the data (potentially empty array)
-    console.log(`[DB Route /conversations] Retrieved ${getResponse.data?.length ?? 0} conversations.`);
     res.status(200).json(getResponse);
     return;
 
@@ -121,10 +117,10 @@ router.get('/get-or-create-conversations-from-agent', (async (req: Request, res:
     const agentId = req.query.agentId as string;
 
     if (!agentId) {
+      console.error('[DB Route /conversations] agentId query parameter is required');
       return res.status(400).json({ success: false, error: 'agentId query parameter is required' } as ErrorResponse);
     }
 
-    console.log(`[DB Route /conversations] Getting or creating conversation for agent ${agentId}`);
     const getInput: AgentId = { agentId };
     const getConversationsResponse = await getConversationsByAgent(getInput);
 
@@ -142,7 +138,6 @@ router.get('/get-or-create-conversations-from-agent', (async (req: Request, res:
     }
 
     // If no conversations exist, create a new one
-    console.log(`[DB Route /conversations] No conversations found for agent ${agentId}. Creating a new one.`);
     const newConversationId = randomUUID();
     const defaultChannelId = 'web'; 
 
@@ -175,15 +170,14 @@ router.get('/get-or-create-conversations-from-agent', (async (req: Request, res:
  */
 router.get('/get-conversation/:conversationId', (async (req: Request, res: Response, next: NextFunction) => {
   try {
-    console.log(`[DB Route /conversations] Getting conversation ${JSON.stringify(req.params, null, 2)}`);
     const conversationId = req.params.conversationId;
 
     if (!conversationId) {
+      console.error('[DB Route /conversations] conversationId path parameter is required');
       // This case should ideally be caught by Express routing itself
       return res.status(400).json({ success: false, error: 'conversationId path parameter is required' });
     }
 
-    console.log(`[DB Route /conversations] Getting single conversation ${conversationId}`);
     // Directly call the service function
     const getResponse = await getConversation(conversationId);
 
@@ -219,14 +213,15 @@ router.post('/update-conversation', (async (req: Request, res: Response, next: N
     // --- Validation ---
     // Basic validation (can be enhanced, e.g., with Zod)
     if (!conversationId) {
+      console.error('[DB Route /conversations] conversationId is required');
       return res.status(400).json({ success: false, error: 'conversation_id is required' } as ErrorResponse);
     }
     if (!messages || !Array.isArray(messages)) {
+      console.error('[DB Route /conversations] messages is required and must be an array');
       return res.status(400).json({ success: false, error: 'messages is required and must be an array' } as BaseResponse);
     }
     // --- End Validation ---
 
-    console.log(`[DB Route /conversations] Updating messages for conversation ${conversationId}`);
     const updateResponse = await updateConversationMessages(conversationId, messages);
 
     if (!updateResponse.success) {
@@ -238,7 +233,6 @@ router.post('/update-conversation', (async (req: Request, res: Response, next: N
     }
 
     // Success
-    console.log(`[DB Route /conversations] Successfully updated conversation ${conversationId}`);
     res.status(200).json(updateResponse);
     return;
 
@@ -255,13 +249,19 @@ router.post('/update-conversation', (async (req: Request, res: Response, next: N
 router.get('/get-all-user-conversations', (async (req: Request, res: Response, next: NextFunction) => {
   try {
     const clientUserId = req.query.clientUserId as string;
+    const clientOrganizationId = req.query.clientOrganizationId as string;
 
     if (!clientUserId) {
+      console.error('[DB Route /conversations] clientUserId query parameter is required');
       return res.status(400).json({ success: false, error: 'clientUserId query parameter is required' } as ErrorResponse);
     }
 
-    console.log(`[DB Route /conversations] Getting all conversations for client_user_id ${clientUserId}`);
-    const response = await getConversationsByClientUserId(clientUserId);
+    if (!clientOrganizationId) {
+      console.error('[DB Route /conversations] clientOrganizationId query parameter is required');
+      return res.status(400).json({ success: false, error: 'clientOrganizationId query parameter is required' } as ErrorResponse);
+    }
+
+    const response = await getConversationsByClientUserId(clientUserId, clientOrganizationId);
 
     if (!response.success) {
       console.error(`[DB Route /conversations] Service error getting all conversations for client_user_id ${clientUserId}:`, response.error);
@@ -270,7 +270,6 @@ router.get('/get-all-user-conversations', (async (req: Request, res: Response, n
     }
 
     // Success case
-    console.log(`[DB Route /conversations] Retrieved ${response.data?.length ?? 0} conversations for client_user_id ${clientUserId}.`);
     res.status(200).json(response);
 
   } catch (error) {

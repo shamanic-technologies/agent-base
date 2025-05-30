@@ -10,9 +10,9 @@ import {
   ClientUser, // Assuming this type exists in @agent-base/types and includes platformUserId, platformClientUserId
   UpsertClientUserInput,
   ServiceResponse,
-  mapClientUserFromDatabase,
 } from '@agent-base/types';
 import { CLIENT_USERS_TABLE } from '../utils/schema-initializer.js';
+import { mapClientUserFromDatabase } from '@agent-base/types';
 
 /**
  * Creates or updates a client user record based on platform_client_user_id.
@@ -26,10 +26,11 @@ export async function upsertClientUser(input: UpsertClientUserInput): Promise<Se
   let client: PoolClient | null = null;
   
   // Validate input
-  if (!input || !input.platformUserId || !input.platformClientUserId) {
+  if (!input || !input.platformUserId || !input.authUserId) {
+    console.error('Missing required fields: platformUserId and authUserId');
     return {
       success: false,
-      error: 'Missing required fields: platformUserId and platformClientUserId'
+      error: 'Missing required fields: platformUserId and authUserId'
     };
   }
 
@@ -42,32 +43,32 @@ export async function upsertClientUser(input: UpsertClientUserInput): Promise<Se
     // Note: This approach assumes we don't need to update any fields if the user already exists.
     // If updates were needed, DO UPDATE SET would be used.
     const upsertQuery = `
-      INSERT INTO "${CLIENT_USERS_TABLE}" (platform_user_id, platform_client_user_id)
+      INSERT INTO "${CLIENT_USERS_TABLE}" (platform_user_id, auth_user_id)
       VALUES ($1, $2)
-      ON CONFLICT (platform_client_user_id) DO NOTHING;
+      ON CONFLICT (platform_user_id, auth_user_id) DO NOTHING;
     `;
     
     // Log the parameters just before executing the query
     console.log('[Upsert Client User] Executing upsert query with params:', {
       param1: input.platformUserId,
-      param2: input.platformClientUserId
+      param2: input.authUserId
     });
 
-    await client.query(upsertQuery, [input.platformUserId, input.platformClientUserId]);
+    await client.query(upsertQuery, [input.platformUserId, input.authUserId]);
 
     // Regardless of insert or conflict, fetch the record matching platform_client_user_id
     const selectQuery = `
       SELECT * FROM "${CLIENT_USERS_TABLE}"
-      WHERE platform_client_user_id = $1
+      WHERE platform_user_id = $1 AND auth_user_id = $2
       LIMIT 1;
     `;
 
-    const result = await client.query(selectQuery, [input.platformClientUserId]);
+    const result = await client.query(selectQuery, [input.platformUserId, input.authUserId]);
 
     if (result.rowCount === 0 || !result.rows[0]) {
       // This case should ideally not happen if the INSERT or the conflict path worked,
       // but included for robustness.
-      console.error('Failed to find client user after upsert attempt for platformClientUserId:', input.platformClientUserId);
+      console.error('Failed to find client user after upsert attempt for platformUserId:', input.platformUserId);
       return {
         success: false,
         error: 'Failed to upsert client user record.'

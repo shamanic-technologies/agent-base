@@ -8,8 +8,8 @@ import {
   upsertClientUser
 } from '../services/client-users.js';
 import {
-  UpsertClientUserInput, // Input type for validation
-  ClientUser,              // Expected user data type
+  UpsertClientOrganizationInput, // Input type for validation
+  ClientOrganization,              // Expected user data type
   ServiceResponse          // Standard service response wrapper
 } from '@agent-base/types';
 
@@ -26,8 +26,8 @@ const router: Router = express.Router();
 router.post('/', async (req: Request, res: Response): Promise<void> => {
 
   const platformUserId = req.headers['x-platform-user-id'] as string;
-  const clientAuthUserId = req.headers['x-client-auth-user-id'] as string;
-  const clientAuthOrganizationId = req.headers['x-client-auth-organization-id'] as string | undefined;
+  const clientAuthUserId = req.headers['x-client-auth-user-id'] as string | undefined;
+  const clientAuthOrganizationId = req.headers['x-client-auth-organization-id'] as string;
 
   if (!platformUserId) {
     console.error('[POST /client-users] Missing required fields in body: platformUserId');
@@ -36,25 +36,25 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     });
     return;
   }
-  if (!clientAuthUserId) {
-    console.error('[POST /client-users] Missing required fields in body: clientAuthUserId');
+  if (!clientAuthOrganizationId) {
+    console.error('[POST /client-users] Missing required fields in body: clientAuthOrganizationId');
     res.status(400).json({ 
-      error: 'Missing required fields in body: clientAuthUserId' 
+      error: 'Missing required fields in body: clientAuthOrganizationId' 
     });
     return;
   }
 
   // Prepare input for the service function
-  const input: UpsertClientUserInput = { platformUserId, authUserId: clientAuthUserId };
+  const input: UpsertClientOrganizationInput = { platformUserId, authOrganizationId: clientAuthOrganizationId };
 
   try {
     // Call the service function to perform the upsert operation
-    const upsertResponse: ServiceResponse<ClientUser> = await upsertClientUser(input);
+    const upsertResponse: ServiceResponse<ClientOrganization> = await upsertClientOrganization(input);
 
     // Handle the service response
     if (!upsertResponse.success) {
       // Failure: Log the specific error from the service for debugging
-      console.error(`[POST /client-users] Service error: ${upsertResponse.error}`);
+      console.error(`[POST /client-organizations] Service error: ${upsertResponse.error}`);
       // Return a generic 500 error to the client for security
       res.status(500).json(upsertResponse);
       return;
@@ -63,7 +63,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     res.status(200).json(upsertResponse);
   } catch (error: any) {
     // Catch unexpected errors during the process (e.g., network issues, uncaught exceptions in service)
-    console.error('[POST /client-users] Unexpected error:', error);
+    console.error('[POST /client-organizations] Unexpected error:', error);
     res.status(500).json({ error: 'An unexpected server error occurred' });
     return;
   }
