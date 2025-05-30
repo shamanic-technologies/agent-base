@@ -138,12 +138,14 @@ export const authMiddleware = () => {
 
       // 4. Client+Organization Validation (Optional)
       if (clientUserId && clientOrganizationId) {
-        let validateClientUserClientOrganization: boolean | undefined = apiCache.getClientUserClientOrganizationValidation(clientUserId, clientOrganizationId);
+        let clientUserClientOrganizationValidation: boolean | undefined = apiCache.getClientUserClientOrganizationValidation(clientUserId, clientOrganizationId);
 
-        if (!validateClientUserClientOrganization) {
+        if (!clientUserClientOrganizationValidation) {
 
           // Check if the client user is associated with the client organization
           const clientUserOrganizationResponse: ServiceResponse<boolean> = await validateClientUserClientOrganization(
+            platformApiKey,
+            platformUserId,
             clientUserId,
             clientOrganizationId
           );

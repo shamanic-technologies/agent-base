@@ -19,7 +19,7 @@ if (fs.existsSync(envFile)) {
 import express from 'express';
 import cors from 'cors';
 import { authMiddleware } from './middlewares/auth.middleware.js';
-import { apiLoggerMiddleware } from './middlewares/logging.middleware.js';
+// import { apiLoggerMiddleware } from './middlewares/logging.middleware.js';
 import { creditValidationMiddleware } from './middlewares/creditValidationMiddleware.js';
 import { configureRoutes } from './routes/index.js';
 
@@ -32,7 +32,7 @@ const UTILITY_TOOL_SERVICE_URL = process.env.UTILITY_TOOL_SERVICE_URL;
 const KEY_SERVICE_URL = process.env.KEY_SERVICE_URL;
 const LOGGING_SERVICE_URL = process.env.LOGGING_SERVICE_URL;
 const SECRET_SERVICE_URL = process.env.SECRET_SERVICE_URL;
-const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL;
+// const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL;
 // Rename variable and environment key
 const WEBHOOK_TOOL_API_URL = process.env.WEBHOOK_TOOL_API_URL; 
 const API_TOOL_API_URL = process.env.API_TOOL_API_URL; // Add API Tool Service URL

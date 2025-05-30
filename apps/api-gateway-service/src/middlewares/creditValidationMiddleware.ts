@@ -34,6 +34,7 @@ export const creditValidationMiddleware = async (req: Request, res: Response, ne
       req.platformUserId,
       req.platformApiKey,
       req.clientUserId,
+      req.clientOrganizationId,
       validateCreditPayload
     );
 
