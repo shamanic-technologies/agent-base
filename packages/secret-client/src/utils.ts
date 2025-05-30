@@ -9,6 +9,7 @@ import { UserType, UtilityProvider, UtilitySecretType } from '@agent-base/types'
  *
  * @param userType The type of user (e.g., UserType.Client, UserType.Platform). Must not be empty.
  * @param userId The unique ID of the user. Must be a non-empty string.
+ * @param organizationId The unique ID of the organization. Must be a non-empty string.
  * @param utilityProvider The primary context for the secret (e.g., a UtilityProvider string/enum). Must be non-empty.
  * @param secretType The specific name or type of the secret (e.g., UtilitySecretType string/enum). Must be non-empty.
  * @param webhookSubscribedEvent Optional specific identifier or sub-context (e.g., tool ID, webhook event). If provided, must be a non-empty string.
@@ -18,6 +19,7 @@ import { UserType, UtilityProvider, UtilitySecretType } from '@agent-base/types'
 export const generateSecretManagerId = (
     userType: UserType,
     userId: string,
+    organizationId: string,
     utilityProvider: UtilityProvider,
     secretType: UtilitySecretType,
     webhookSubscribedEvent?: string,
@@ -28,6 +30,9 @@ export const generateSecretManagerId = (
     }
     if (!userId || typeof userId !== 'string' || userId.trim() === '') {
         throw new Error('generateSecretManagerId: userId must be a non-empty string.');
+    }
+    if (!organizationId || typeof organizationId !== 'string' || organizationId.trim() === '') {
+        throw new Error('generateSecretManagerId: organizationId must be a non-empty string.');
     }
 
     const utilityProviderString = String(utilityProvider);
@@ -43,6 +48,7 @@ export const generateSecretManagerId = (
     const idParts: string[] = [
         String(userType).toLowerCase(),
         userId.trim().toLowerCase(),
+        organizationId.trim().toLowerCase(),
         utilityProviderString.trim().toLowerCase(),
     ];
 

@@ -21,9 +21,10 @@ import {
     SecretExists,
     ServiceResponse,
     UserType,
-    ServiceCredentials,
     UtilityProvider,
-    UtilitySecretType
+    UtilitySecretType,
+    HumanInternalCredentials,
+    InternalCredentials
 } from '@agent-base/types';
 import { getAuthHeaders } from '@agent-base/api-client';
 
@@ -34,14 +35,14 @@ import { getAuthHeaders } from '@agent-base/api-client';
 export async function storeSecretHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
         const storeRequest: StoreSecretRequest = req.body;
-        const serviceCredentialsResponse: ServiceResponse<ServiceCredentials> = await getAuthHeaders(req);
+        const serviceCredentialsResponse: ServiceResponse<InternalCredentials> = await getAuthHeaders(req);
 
         if (!serviceCredentialsResponse.success || !serviceCredentialsResponse.data) {
             console.error('Error getting service credentials or data missing:', serviceCredentialsResponse.error);
             res.status(401).json({ success: false, error: 'Authentication failed or user data missing.' });
             return;
         }
-        const { platformUserId, clientUserId } = serviceCredentialsResponse.data;
+        const { platformUserId, clientUserId, clientOrganizationId } = serviceCredentialsResponse.data;
         const { userType, secretType, secretUtilityProvider, secretUtilitySubProvider, secretValue } = storeRequest;
         
         if (!userType || !secretType || secretValue === undefined || secretValue === null || !secretUtilityProvider) {
@@ -58,11 +59,18 @@ export async function storeSecretHandler(req: Request, res: Response, next: Next
             res.status(400).json(errorResponse);
             return;
         }
+        if (!clientOrganizationId) {
+            console.error('Client organization ID could not be determined:', storeRequest);
+            const errorResponse: ErrorResponse = { success: false, error: 'Client organization ID could not be determined.' };
+            res.status(400).json(errorResponse);
+            return;
+        }
 
         const gsmClient = getGsmClient();
         const secretIdToStore = generateSecretManagerId(
             userType,
             userId,
+            organizationId: clientOrganizationId,
             secretUtilityProvider, 
             secretType,
             secretUtilitySubProvider
