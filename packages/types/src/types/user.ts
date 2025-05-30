@@ -75,6 +75,15 @@ export interface UpsertClientUserInput {
   authUserId: string; // Unique ID provided by the client's auth provider for this user
 }
 
+/**
+ * Input parameters for creating or updating a client user.
+ */
+export interface UpsertClientOrganizationInput {
+  platformUserId: string; // UUID of the parent platform user
+  authOrganizationId: string; // Unique ID provided by the client's auth provider for this organization
+}
+
+
 
 /**
  * Maps a snake_case user database record to camelCase user object

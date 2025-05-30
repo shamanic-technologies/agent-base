@@ -30,11 +30,10 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
       if (!name) missing.push('name');
       if (!keyPrefix) missing.push('keyPrefix');
       if (!hashedKey) missing.push('hashedKey');
+      console.error(`[DB Service /] Required fields missing: ${missing.join(', ')}`);
       res.status(400).json({ success: false, error: `Required fields missing: ${missing.join(', ')}` });
       return;
     }
-
-    console.log(`Creating API key metadata for user: ${platformUserId}, keyId: ${keyId}`);
 
     // Call service to create API key
     const createResponse = await upsertApiKey({ keyId, name, keyPrefix, hashedKey }, platformUserId);
@@ -69,6 +68,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
     const platformUserId = req.headers['x-platform-user-id'] as string;
 
     if (!platformUserId) {
+      console.error('[DB Service /] Authentication required (x-platform-user-id header missing)');
       res.status(401).json({ success: false, error: 'Authentication required (x-platform-user-id header missing)' });
       return;
     }
@@ -77,6 +77,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
     const getResponse = await getApiKeys(platformUserId);
 
     if (!getResponse.success) {
+      console.error(`[DB Service /] Error fetching API keys: ${getResponse.error}`);
       res.status(500).json(getResponse);
       return;
     }
@@ -106,19 +107,20 @@ router.post('/validate', async (req: Request, res: Response): Promise<void> => {
       const missing = [];
       if (!hashedKey) missing.push('hashedKey');
       if (!keyPrefix) missing.push('keyPrefix');
+      console.error(`[DB Service /validate] Required fields missing: ${missing.join(', ')}`);
       res.status(400).json({ success: false, error: `Required fields missing: ${missing.join(', ')}` });
       return;
     }
-
-    console.log(`Validating API key with prefix: ${keyPrefix}`);
 
     // Call service to update API key
     const validateResponse = await validateApiKey({ hashedKey, keyPrefix });
 
     if (!validateResponse.success) {
       if (validateResponse.error?.includes('Invalid API key')) {
+        console.error(`[DB Service /validate] Invalid API key: ${hashedKey} with prefix: ${keyPrefix}`);
         res.status(404).json(validateResponse);
       } else {
+        console.error(`[DB Service /validate] Error validating API key: ${hashedKey} with prefix: ${keyPrefix}`);
         res.status(500).json(validateResponse);
       }
       return;

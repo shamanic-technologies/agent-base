@@ -20,23 +20,38 @@ const router: Router = express.Router();
  * POST /client-users
  * 
  * Endpoint to create or retrieve a client user based on platform details.
- * Expects platformUserId and platformClientUserId in the request body.
+ * Expects platformUserId, clientAuthUserId, and clientAuthOrganizationId in the request body.
  * Returns the client user data upon success.
  */
 router.post('/', async (req: Request, res: Response): Promise<void> => {
 
   const platformUserId = req.headers['x-platform-user-id'] as string;
-  const platformClientUserId = req.headers['x-platform-client-user-id'] as string;
+  const clientAuthUserId = req.headers['x-client-auth-user-id'] as string;
+  const clientAuthOrganizationId = req.headers['x-client-auth-organization-id'] as string;
 
-  if (!platformUserId || !platformClientUserId) {
+  if (!platformUserId) {
+    console.error('[POST /client-users] Missing required fields in body: platformUserId');
     res.status(400).json({ 
-      error: 'Missing required fields in body: platformUserId and platformClientUserId' 
+      error: 'Missing required fields in body: platformUserId' 
     });
     return;
   }
-
+  if (!clientAuthUserId) {
+    console.error('[POST /client-users] Missing required fields in body: clientAuthUserId');
+    res.status(400).json({ 
+      error: 'Missing required fields in body: clientAuthUserId' 
+    });
+    return;
+  }
+  if (!clientAuthOrganizationId) {
+    console.error('[POST /client-users] Missing required fields in body: clientAuthOrganizationId');
+    res.status(400).json({ 
+      error: 'Missing required fields in body: clientAuthOrganizationId' 
+    });
+    return;
+  }
   // Prepare input for the service function
-  const input: UpsertClientUserInput = { platformUserId, platformClientUserId };
+  const input: UpsertClientUserInput = { platformUserId, clientAuthUserId, clientAuthOrganizationId };
 
   try {
     // Call the service function to perform the upsert operation

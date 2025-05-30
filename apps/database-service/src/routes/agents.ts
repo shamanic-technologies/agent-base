@@ -27,15 +27,20 @@ const router = express.Router();
 router.post('/create-user-agent', async (req: Request, res: Response): Promise<void> => {
   try {
     const input = req.body as CreateClientUserAgentInput;
-    const { clientUserId, ...agentData } = input; // Separate user_id from agent creation data
+    const { clientUserId, clientOrganizationId, ...agentData } = input; // Separate user_id from agent creation data
 
     // --- Validation ---
     // 1. Validate user_id presence
     if (!clientUserId) {
+      console.error('[DB Service /create-user-agent] clientUserId is required in the request body');
       res.status(400).json({ success: false, error: 'clientUserId is required in the request body' });
       return;
     }
-
+    if (!clientOrganizationId) {
+      console.error('[DB Service /create-user-agent] clientOrganizationId is required in the request body');
+      res.status(400).json({ success: false, error: 'clientOrganizationId is required in the request body' });
+      return;
+    }
     // 2. Validate required agent fields (copied from original /create)
     if (!agentData.firstName || !agentData.lastName || !agentData.profilePicture || 
         !agentData.gender || !agentData.modelId || 
@@ -46,7 +51,6 @@ router.post('/create-user-agent', async (req: Request, res: Response): Promise<v
     // --- End Validation ---
 
     // --- Step 1: Create Agent ---
-    console.log(`[DB Service /create-user-agent] Attempting to create agent for user ${clientUserId}`);
     const createResponse : ServiceResponse<Agent> = await createAgent(agentData);
     
     if (!createResponse.success || !createResponse.data) {
@@ -57,12 +61,10 @@ router.post('/create-user-agent', async (req: Request, res: Response): Promise<v
     }
     
     const newAgentId = createResponse.data.id;
-    console.log(`[DB Service /create-user-agent] Agent ${newAgentId} created successfully.`);
     // --- End Step 1 ---
 
     // --- Step 2: Link Agent to User ---
-    console.log(`[DB Service /create-user-agent] Attempting to link agent ${newAgentId} to user ${clientUserId}`);
-    const linkInput = { clientUserId, agentId: newAgentId };
+    const linkInput = { clientUserId, clientOrganizationId, agentId: newAgentId };
     const linkResponse : BaseResponse = await linkAgentToClientUser(linkInput);
 
     if (!linkResponse.success) {
@@ -76,7 +78,6 @@ router.post('/create-user-agent', async (req: Request, res: Response): Promise<v
       } as ErrorResponse);
       return;
     }
-    console.log(`[DB Service /create-user-agent] Successfully linked agent ${newAgentId} to user ${clientUserId}.`);
     // --- End Step 2 ---
 
     res.status(201).json(createResponse);
@@ -97,27 +98,33 @@ router.post('/create-user-agent', async (req: Request, res: Response): Promise<v
 router.post('/update-user-agent', async (req: Request, res: Response): Promise<void> => {
   try {
     const input = req.body as UpdateClientUserAgentInput;
-    const { clientUserId, agentId, ...agentUpdateData } = input;
-    console.log(`[DB Service /update-user-agent] Received request ${JSON.stringify(input, null, 2)}`);
+    const { clientUserId, clientOrganizationId, agentId, ...agentUpdateData } = input;
     
     // --- Validation ---
     if (!clientUserId) {
+      console.error('[DB Service /update-user-agent] clientUserId is required in the request body');
       res.status(400).json({ success: false, error: 'clientUserId is required' });
       return;
     }
+    if (!clientOrganizationId) {
+      console.error('[DB Service /update-user-agent] clientOrganizationId is required in the request body');
+      res.status(400).json({ success: false, error: 'clientOrganizationId is required' });
+      return;
+    }
     if (!agentId) {
+      console.error('[DB Service /update-user-agent] agentId is required in the request body');
       res.status(400).json({ success: false, error: 'agentId is required' });
       return;
     }
     if (Object.keys(agentUpdateData).length === 0) {
+      console.error('[DB Service /update-user-agent] No update data provided');
        res.status(400).json({ success: false, error: 'No update data provided' });
        return;
     }
     // --- End Validation ---
 
     // --- Authorization Check ---
-    console.log(`[DB Service /update-user-agent] Checking ownership for agent ${agentId} by user ${clientUserId}`);
-    const ownershipCheckResponse : ServiceResponse<Agent> = await getClientUserAgent({ clientUserId, agentId });
+    const ownershipCheckResponse : ServiceResponse<Agent> = await getClientUserAgent({ clientUserId, clientOrganizationId, agentId });
 
     if (!ownershipCheckResponse.success) {
         // This means agent not found OR not linked to this user.
@@ -128,12 +135,10 @@ router.post('/update-user-agent', async (req: Request, res: Response): Promise<v
         } as ErrorResponse);
          return;
     }
-    console.log(`[DB Service /update-user-agent] Ownership confirmed for agent ${agentId}, user ${clientUserId}.`);
     // --- End Authorization Check ---
 
     // --- Perform Update ---
     // Now we know the user is authorized, proceed with the update.
-    console.log(`[DB Service /update-user-agent] Attempting update for agent ${agentId} by user ${clientUserId}`);
     
     // Assuming updateAgent service needs agent_id within the data payload
     const updatePayload: UpdateAgentInput = {
@@ -156,7 +161,6 @@ router.post('/update-user-agent', async (req: Request, res: Response): Promise<v
        return;
     }
 
-    console.log(`[DB Service /update-user-agent] Agent ${agentId} updated successfully.`);
     res.status(200).json(updateResponse);
     // --- End Perform Update ---
 
@@ -177,17 +181,19 @@ router.post('/update-user-agent', async (req: Request, res: Response): Promise<v
 router.get('/list-user-agents', async (req: Request, res: Response): Promise<void> => {
   try {
     const clientUserId = req.query.clientUserId as string;
-    
+    const clientOrganizationId = req.query.clientOrganizationId as string;
     if (!clientUserId) {
-      res.status(400).json({
-        success: false,
-        error: 'clientUserId query parameter is required'
-      });
+      console.error('[DB Service /list-user-agents] clientUserId is required in the request body');
+      res.status(400).json({ success: false, error: 'clientUserId is required in the request body' });
        return;
     }
+    if (!clientOrganizationId) {
+      console.error('[DB Service /list-user-agents] clientOrganizationId is required in the request body');
+      res.status(400).json({ success: false, error: 'clientOrganizationId is required in the request body' });
+      return;
+    }
 
-    console.log(`[DB Service /list-user-agents] Fetching agents for user ${clientUserId}`);
-    const input: ListClientUserAgentsInput = { clientUserId };
+    const input: ListClientUserAgentsInput = { clientUserId, clientOrganizationId };
     const listResponse : ServiceResponse<Agent[]> = await listClientUserAgents(input);
     
     // Check for actual errors from the service
@@ -204,7 +210,6 @@ router.get('/list-user-agents', async (req: Request, res: Response): Promise<voi
 
     // If service call was successful (result.success is true),
     // return 200 OK with the data (which might be an empty array [] if no agents found)
-    console.log(`[DB Service /list-user-agents] Successfully retrieved agent list for user ${clientUserId}. Count: ${listResponse.data?.length ?? 0}`);
     res.status(200).json(listResponse);
 
   } catch (error) {
@@ -226,26 +231,23 @@ router.get('/get-user-agent', async (req: Request, res: Response): Promise<void>
   try {
     // Extract user_id and agent_id from query parameters
     const clientUserId = req.query.clientUserId as string;
+    const clientOrganizationId = req.query.clientOrganizationId as string;
     const agentId = req.query.agentId as string;
-    const input: GetClientUserAgentInput = { clientUserId, agentId };
+    const input: GetClientUserAgentInput = { clientUserId, clientOrganizationId, agentId };
 
     // Validate required query parameters
     if (!clientUserId) {
-      res.status(400).json({
-        success: false,
-        error: 'clientUserId query parameter is required'
-      });
+      res.status(400).json({ success: false, error: 'clientUserId is required in the request body' });
        return;
+    }
+    if (!clientOrganizationId) {
+      res.status(400).json({ success: false, error: 'clientOrganizationId is required in the request body' });
+      return;
     }
     if (!agentId) {
-      res.status(400).json({
-        success: false,
-        error: 'agentId query parameter is required'
-      });
+      res.status(400).json({ success: false, error: 'agentId is required in the request body' });
        return;
     }
-
-    console.log(`[Database Service /get-user-agent] Request for user: ${clientUserId}, agent: ${agentId}`);
 
     // Call the service function to fetch the agent
     const getAgentResponse : ServiceResponse<Agent> = await getClientUserAgent(input);
@@ -257,7 +259,6 @@ router.get('/get-user-agent', async (req: Request, res: Response): Promise<void>
        return;
     }
 
-    console.log(`[Database Service /get-user-agent] Found agent: ${agentId} for user: ${clientUserId}`);
     res.status(200).json(getAgentResponse); // Return agent data
 
   } catch (error) {
@@ -289,7 +290,6 @@ router.get('/get-conversation-agent', async (req: Request, res: Response, next: 
       return;
     }
 
-    console.log(`[DB Route /agents] Getting agent for conversation ${conversationId}`);
     const getResponse : ServiceResponse<Agent> = await getConversationAgent({ conversationId });
     
     if (!getResponse.success) {
@@ -298,7 +298,6 @@ router.get('/get-conversation-agent', async (req: Request, res: Response, next: 
       return;
     }
 
-    console.log(`[DB Route /agents] Retrieved agent for conversation ${conversationId}`);
     res.status(200).json(getResponse);
 
   } catch (error) {
