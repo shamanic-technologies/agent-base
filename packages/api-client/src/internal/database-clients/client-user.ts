@@ -8,6 +8,7 @@ import {
     ServiceResponse,
     ClientUser, // For platform user creation
     ClientUserRecord,
+    ClientOrganization,
     // Import only necessary types from @agent-base/types
     // Add specific record/input types here if they become available and are needed
 } from '@agent-base/types';
@@ -65,13 +66,13 @@ export const upsertClientUserApiClient = async (
  * 
  * @param {UpsertClientUserInput} data - The data containing platformUserId and platformClientUserId.
  * @param {string} platformUserId - The ID of the platform user making the request (for x-platform-user-id header).
- * @returns {Promise<ServiceResponse<ClientUser>>} A promise resolving to a ServiceResponse containing the upserted ClientUser data or an error.
+ * @returns {Promise<ServiceResponse<ClientOrganization>>} A promise resolving to a ServiceResponse containing the upserted ClientOrganization data or an error.
  */
 export const upsertClientOrganizationApiClient = async (
   clientAuthUserId: string,
   clientAuthOrganizationId: string,
   platformUserId: string
-): Promise<ServiceResponse<ClientUser>> => {
+): Promise<ServiceResponse<ClientOrganization>> => {
 
   const input = {
     serviceUrl: getDatabaseServiceUrl(),
@@ -81,7 +82,7 @@ export const upsertClientOrganizationApiClient = async (
     clientAuthOrganizationId: clientAuthOrganizationId, // Required
     platformUserId: platformUserId, // Required
   }
-  return makeClientAuthValidationRequest<ClientUser>( // Reverted function call
+  return makeClientAuthValidationRequest<ClientOrganization>( // Reverted function call
     input.serviceUrl,
     input.method as Method,
     input.endpoint,
