@@ -8,13 +8,10 @@ import express from 'express';
 import cors from 'cors';
 import { PORT } from './config/index.js';
 import routes from './routes/index.js';
-import { authMiddleware } from './middlewares/authMiddleware.js';
 // Initialize Express app
 const app = express();
 // Middleware
 app.use(cors());
-// Use the dedicated authentication middleware
-app.use(authMiddleware);
 // Special handling for webhook path which requires raw body
 app.use((req, res, next) => {
     if (req.originalUrl === '/webhook') {
