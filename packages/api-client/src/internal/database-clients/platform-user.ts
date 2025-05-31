@@ -41,12 +41,12 @@ export const getCurrentPlatformUser = async (
 
 /**
  * Gets or creates a platform user based on external auth ID and email.
- * Corresponds to: POST /platform-users/get-or-create-by-provider-user-id
+ * Corresponds to: POST /platform-users/get-or-create-by-auth-user-id
  */
 export const getOrCreatePlatformUser = async (
   data: GetOrCreatePlatformUserInput,
 ): Promise<ServiceResponse<PlatformUser>> => {
-  const endpoint = '/platform-users/get-or-create-by-provider-user-id';
+  const endpoint = '/platform-users/get-or-create-by-auth-user-id';
   
   return makeWebAnonymousServiceRequest<PlatformUser>(
     getDatabaseServiceUrl(), // Use dynamic getter
