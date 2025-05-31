@@ -11,8 +11,8 @@ import {
   UpsertClientUserInput,
   ServiceResponse,
 } from '@agent-base/types';
-import { CLIENT_USERS_TABLE } from '../utils/schema-initializer.js';
 import { mapClientUserFromDatabase } from '@agent-base/types';
+import { CLIENT_USERS_TABLE } from '../types/database-constants.js';
 
 /**
  * Creates or updates a client user record based on platform_user_id and auth_user_id.

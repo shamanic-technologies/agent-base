@@ -32,7 +32,7 @@ import routes from './routes/index.js';
 // Import initDbPool and testConnection from db.js
 import { initDbPool, testConnection } from './db.js';
 // Import the schema initializer
-import { initializeAllSchemas } from './utils/schema-initializer.js';
+// import { initializeAllSchemas } from './utils/schema-initializer.js'; // Removed
 // Function to start the server
 async function startServer() {
     console.log('Starting server process...');
@@ -52,15 +52,14 @@ async function startServer() {
         console.error('Failed to connect to database after initialization, exiting...');
         process.exit(1);
     }
-    // Initialize all database schemas
-    try {
-        await initializeAllSchemas();
-        console.log('All database tables initialized successfully');
-    }
-    catch (error) {
-        console.error('Failed to initialize database schemas:', error);
-        process.exit(1);
-    }
+    // Initialize all database schemas - REMOVED
+    // try {
+    //   await initializeAllSchemas();
+    //   console.log('All database tables initialized successfully');
+    // } catch (error) {
+    //   console.error('Failed to initialize database schemas:', error);
+    //   process.exit(1);
+    // }
     // Initialize Express app
     const app = express();
     const PORT = process.env.PORT || 3006;

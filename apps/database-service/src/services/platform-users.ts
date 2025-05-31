@@ -14,7 +14,7 @@ import {
   ServiceResponse,
   mapPlatformUserFromDatabase
 } from '@agent-base/types';
-import { PLATFORM_USERS_TABLE } from '../utils/schema-initializer.js';
+import { PLATFORM_USERS_TABLE } from '../types/database-constants.js';
 
 /**
  * Gets user data by internal user_id

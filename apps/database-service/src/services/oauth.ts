@@ -13,7 +13,7 @@ import {
   GetUserOAuthInput,
   OAuthRecord
 } from '@agent-base/types';
-import { CLIENT_USER_OAUTH_TABLE } from '../utils/schema-initializer.js';
+import { CLIENT_USER_OAUTH_TABLE } from '../types/database-constants.js';
 /**
  * Create or update user credentials in the database.
  * Handles individual scopes by either updating an existing record for that scope

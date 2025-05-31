@@ -1,4 +1,4 @@
- /**
+/**
  * Client Organizations Service
  * 
  * Handles all database operations related to client organizations.
@@ -12,8 +12,8 @@ import {
   ServiceResponse,
   mapClientUserFromDatabase,
 } from '@agent-base/types';
-import { CLIENT_ORGANIZATIONS_TABLE, CLIENT_USERS_TABLE } from '../utils/schema-initializer.js';
 import { mapClientOrganizationFromDatabase } from '@agent-base/types';
+import { CLIENT_ORGANIZATIONS_TABLE, CLIENT_USERS_TABLE } from '../types/database-constants.js';
 
 /**
  * Creates or updates a client organization record based on platform_user_id and auth_organization_id.
