@@ -40,8 +40,12 @@ RUN pnpm --filter @agent-base/types build
 # Build only the target service (database-service) and its dependencies
 RUN pnpm --filter database-service... build
 
+# Copy migrations folder to the location pnpm deploy will pick up for database-service
+# Assuming database-service is in apps/database-service
+COPY apps/database-service/migrations ./apps/database-service/migrations
 
 # Prepare deployment bundle in the builder stage
+# This will now include the migrations folder if it's within the package contents
 RUN pnpm --filter database-service --prod deploy --legacy ./deploy_temp
 
 # Stage 3: Production Runner - Create a smaller final image using pnpm deploy
@@ -52,9 +56,14 @@ WORKDIR /app
 # Copy the pre-built deployment bundle from the builder stage
 COPY --from=builder_stage /app/deploy_temp .
 
+# IMPORTANT: For production, DATABASE_URL should be injected as an environment variable 
+# into the container, not from a .env file. Copying .env here for convenience in environments
+# where it might be used, but this is not a recommended production practice.
+COPY apps/database-service/.env .env
+
 # Expose the port the service listens on (ensure this matches your service, 8080 default for railway)
 EXPOSE 8080
 
-# Define the command to run the built service from the root of the runner stage
-# Assumes the main entry point is dist/index.js, adjust if necessary
-CMD ["node", "dist/index.js"] 
+# Define the command to run migrations and then run the built service
+# This assumes migrate:up script correctly loads .env or DATABASE_URL is in the environment
+CMD sh -c "pnpm migrate:up && node dist/index.js" 
