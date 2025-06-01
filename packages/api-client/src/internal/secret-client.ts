@@ -24,7 +24,7 @@ import { getSecretServiceUrl } from '../utils/config.js'; // Import the centrali
  */
 export async function storeSecretWebClient(
   platformUserId: string, // This ID value will be placed in the header determined by storeSecretRequest.userType
-  platformOrgId: string, // This ID value will be placed in the header determined by storeSecretRequest.userType
+  platformOrganizationId: string, // This ID value will be placed in the header determined by storeSecretRequest.userType
   storeSecretRequest: StoreSecretRequest
 ): Promise<ServiceResponse<string>> {
   // storeSecretHandler in secret-service expects the full StoreSecretRequest in the body
@@ -34,7 +34,7 @@ export async function storeSecretWebClient(
     'post',
     '/api/secrets', // Endpoint for storing secrets
     platformUserId, // ID value for the header (x-platform-user-id)
-    platformOrgId, // ID value for the header (x-platform-org-id)
+    platformOrganizationId, // ID value for the header (x-platform-organization-id)
     storeSecretRequest, // Request body (data)
     undefined // No query parameters (params)
   );
@@ -81,7 +81,7 @@ export async function storeSecretInternalApiClient(
  */
 export async function getSecretWebClient(
   platformUserId: string, // This ID value will be placed in the header determined by getSecretRequest.userType
-  platformOrgId: string, // This ID value will be placed in the header determined by getSecretRequest.userType
+  platformOrganizationId: string, // This ID value will be placed in the header determined by getSecretRequest.userType
   getSecretRequest: GetSecretRequest
 ): Promise<ServiceResponse<SecretValue>> {
   const { userType, secretUtilityProvider, secretType } = getSecretRequest; // Include userId
@@ -91,7 +91,7 @@ export async function getSecretWebClient(
     'get',
     `/api/secrets/${secretType}`, // Endpoint with path param
     platformUserId, // ID value for header (x-platform-user-id)
-    platformOrgId, // ID value for header (x-platform-org-id)
+    platformOrganizationId, // ID value for header (x-platform-organization-id)
     undefined, // No request body (data) for GET
     { userType, secretUtilityProvider } // Query parameters (params)
   );
@@ -139,7 +139,7 @@ export async function getSecretApiClient(
  */
 export async function checkSecretExistsWebClient(
   platformUserId: string, // This ID value will be placed in the header determined by checkSecretRequest.userType
-  platformOrgId: string, // This ID value will be placed in the header determined by checkSecretRequest.userType
+  platformOrganizationId: string, // This ID value will be placed in the header determined by checkSecretRequest.userType
   checkSecretRequest: CheckSecretRequest
 ): Promise<ServiceResponse<SecretExists>> {
   const { userType, secretUtilityProvider, secretType } = checkSecretRequest; // Include userId
@@ -150,7 +150,7 @@ export async function checkSecretExistsWebClient(
     'get',
     `/api/secrets/exists/${secretType}`, // Endpoint with path param
     platformUserId, // ID value for header (x-platform-user-id)
-    platformOrgId, // ID value for header (x-platform-org-id)
+    platformOrganizationId, // ID value for header (x-platform-organization-id)
     undefined, // No request body (data) for GET
     { userType, secretUtilityProvider } // Query parameters (params)
   );

@@ -42,7 +42,7 @@ export async function storeSecretHandler(req: Request, res: Response, next: Next
             res.status(401).json({ success: false, error: 'Authentication failed or user data missing.' });
             return;
         }
-        const { platformUserId, clientUserId, clientOrganizationId } = serviceCredentialsResponse.data;
+        const { platformUserId, platformOrganizationId, clientUserId, clientOrganizationId } = serviceCredentialsResponse.data;
         const { userType, secretType, secretUtilityProvider, secretUtilitySubProvider, secretValue } = storeRequest;
         
         if (!userType || !secretType || secretValue === undefined || secretValue === null || !secretUtilityProvider) {
@@ -59,9 +59,10 @@ export async function storeSecretHandler(req: Request, res: Response, next: Next
             res.status(400).json(errorResponse);
             return;
         }
-        if (!clientOrganizationId) {
-            console.error('Client organization ID could not be determined:', storeRequest);
-            const errorResponse: ErrorResponse = { success: false, error: 'Client organization ID could not be determined.' };
+        const organizationId = userType === UserType.Platform ? platformOrganizationId : clientOrganizationId;
+        if (!organizationId) {
+            console.error('Organization ID could not be determined:', storeRequest);
+            const errorResponse: ErrorResponse = { success: false, error: 'Organization ID could not be determined.' };
             res.status(400).json(errorResponse);
             return;
         }
@@ -70,7 +71,7 @@ export async function storeSecretHandler(req: Request, res: Response, next: Next
         const secretIdToStore = generateSecretManagerId(
             userType,
             userId,
-            clientOrganizationId,
+            organizationId,
             secretUtilityProvider, 
             secretType,
             secretUtilitySubProvider
@@ -111,7 +112,7 @@ export async function getSecretHandler(req: Request, res: Response, next: NextFu
             res.status(401).json({ success: false, error: 'Authentication failed or user data missing.' });
             return;
         }
-        const { platformUserId, clientUserId, clientOrganizationId } = serviceCredentialsResponse.data;
+        const { platformUserId, platformOrganizationId, clientUserId, clientOrganizationId } = serviceCredentialsResponse.data;
 
         if (!userType || !secretTypeParam || !secretUtilityProvider) {
             const errorResponse: ErrorResponse = { success: false, error: 'Missing required query parameters: userType, secretTypeParam (in path), secretUtilityProvider.' };
@@ -125,9 +126,10 @@ export async function getSecretHandler(req: Request, res: Response, next: NextFu
             res.status(400).json(errorResponse);
             return;
         }
-        if (!clientOrganizationId) {
-            console.error('Client organization ID could not be determined:', req.query);
-            const errorResponse: ErrorResponse = { success: false, error: 'Client organization ID could not be determined.' };
+        const organizationId = userType === UserType.Platform ? platformOrganizationId : clientOrganizationId;
+        if (!organizationId) {
+            console.error('Organization ID could not be determined:', req.query);
+            const errorResponse: ErrorResponse = { success: false, error: 'Organization ID could not be determined.' };
             res.status(400).json(errorResponse);
             return;
         }
@@ -136,7 +138,7 @@ export async function getSecretHandler(req: Request, res: Response, next: NextFu
         const secretIdToGet = generateSecretManagerId(
             userType,
             userId,
-            clientOrganizationId,
+            organizationId,
             secretUtilityProvider,
             secretTypeParam,
             secretUtilitySubProvider
@@ -181,7 +183,7 @@ export async function checkSecretExistsHandler(req: Request, res: Response, next
             res.status(401).json({ success: false, error: 'Authentication failed or user data missing.' });
             return;
         }
-        const { platformUserId, clientUserId, clientOrganizationId } = serviceCredentialsResponse.data;
+        const { platformUserId, platformOrganizationId, clientUserId, clientOrganizationId } = serviceCredentialsResponse.data;
 
         if (!userType || !secretTypeParam || !secretUtilityProvider) {
             const errorResponse: ErrorResponse = { success: false, error: 'Missing required query parameters: userType, secretTypeParam (in path), secretUtilityProvider.' };
@@ -195,9 +197,10 @@ export async function checkSecretExistsHandler(req: Request, res: Response, next
             res.status(400).json(errorResponse);
             return;
         }
-        if (!clientOrganizationId) {
-            console.error('Client organization ID could not be determined:', req.query);
-            const errorResponse: ErrorResponse = { success: false, error: 'Client organization ID could not be determined.' };
+        const organizationId = userType === UserType.Platform ? platformOrganizationId : clientOrganizationId;
+        if (!organizationId) {
+            console.error('Organization ID could not be determined:', req.query);
+            const errorResponse: ErrorResponse = { success: false, error: 'Organization ID could not be determined.' };
             res.status(400).json(errorResponse);
             return;
         }
@@ -206,7 +209,7 @@ export async function checkSecretExistsHandler(req: Request, res: Response, next
         const secretIdToCheck = generateSecretManagerId(
             userType,
             userId,
-            clientOrganizationId,
+            organizationId,
             secretUtilityProvider,
             secretTypeParam,
             secretUtilitySubProvider

@@ -62,7 +62,7 @@ export const validatePlatformApiKeySecret = async (
  */
 export const listPlatformApiKeys = async (
   platformUserId: PlatformUserId,
-  platformOrgId: string
+  platformOrganizationId: string
 ): Promise<ServiceResponse<ApiKey[]>> => {
   if (!platformUserId) {
     return { success: false, error: 'platformUserId is required for listApiKeys.' };
@@ -72,7 +72,7 @@ export const listPlatformApiKeys = async (
     'get',
     '/',
     platformUserId.platformUserId,
-    platformOrgId
+    platformOrganizationId
   );
 };
 
@@ -86,7 +86,7 @@ export const listPlatformApiKeys = async (
 export const getPlatformApiKeySecretById = async (
   input: GetApiKeyByIdRequest
 ): Promise<ServiceResponse<SecretValue>> => {
-  const { platformUserId, platformOrgId, keyId } = input;
+  const { platformUserId, platformOrganizationId, keyId } = input;
   if (!platformUserId) {
     return { success: false, error: 'platformUserId is required for getApiKeyById.' };
   }
@@ -98,7 +98,7 @@ export const getPlatformApiKeySecretById = async (
     'get',
     `/${keyId}`,
     platformUserId,
-    platformOrgId
+    platformOrganizationId
   );
 };
 
@@ -112,7 +112,7 @@ export const getPlatformApiKeySecretById = async (
 export const getOrCreatePlatformApiKeySecretByName = async (
   input: GetApiKeyByNameRequest
 ): Promise<ServiceResponse<SecretValue>> => {
-  const { platformUserId, platformOrgId, keyName } = input;
+  const { platformUserId, platformOrganizationId, keyName } = input;
 
   const queryParams = { name: keyName };
   return await makeWebAuthenticatedServiceRequest<SecretValue>(
@@ -120,7 +120,7 @@ export const getOrCreatePlatformApiKeySecretByName = async (
     'get',
     '/by-name',
     platformUserId,
-    platformOrgId,
+    platformOrganizationId,
     undefined, // No body
     queryParams
   );

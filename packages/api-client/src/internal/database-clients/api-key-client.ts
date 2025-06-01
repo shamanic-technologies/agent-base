@@ -29,7 +29,7 @@ import { Method } from 'axios';
 export const createApiKeyMetadata = async (
   data: CreateApiKeyRequest,
   platformUserId: string,
-  platformOrgId: string
+  platformOrganizationId: string
 ): Promise<ServiceResponse<ApiKey>> => {
   if (!platformUserId) {
     throw new Error('[api-client:createApiKeyMetadata] platformUserId is required for request header.');
@@ -43,7 +43,7 @@ export const createApiKeyMetadata = async (
     'POST',
     endpoint,
     platformUserId,
-    platformOrgId,
+    platformOrganizationId,
     data
   );
 };
@@ -58,7 +58,7 @@ export const createApiKeyMetadata = async (
  */
 export const listApiKeyMetadata = async (
   platformUserId: string,
-  platformOrgId: string
+  platformOrganizationId: string
 ): Promise<ServiceResponse<ApiKey[]>> => {
   if (!platformUserId) {
     throw new Error('[api-client:listApiKeyMetadata] platformUserId is required for request header.');
@@ -69,7 +69,7 @@ export const listApiKeyMetadata = async (
     'GET',
     endpoint,
     platformUserId,
-    platformOrgId
+    platformOrganizationId
     // No query params or body needed
   );
 };

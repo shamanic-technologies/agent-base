@@ -27,7 +27,7 @@ import { Method } from 'axios';
 export const createOrUpdateOAuthCredentials = async (
   data: CreateOrUpdateOAuthInput,
   platformUserId: string,
-  platformOrgId: string
+  platformOrganizationId: string
 ): Promise<ServiceResponse<OAuth>> => {
   if (!platformUserId) {
     throw new Error('[api-client:createOrUpdateOAuthCredentials] platformUserId is required for request header.');
@@ -42,7 +42,7 @@ export const createOrUpdateOAuthCredentials = async (
     'POST',
     endpoint,
     platformUserId,
-    platformOrgId,
+    platformOrganizationId,
     data
   );
 };
@@ -59,7 +59,7 @@ export const createOrUpdateOAuthCredentials = async (
 export const getOAuthCredentials = async (
   params: GetUserOAuthInput, // Using the existing input type directly for params
   platformUserId: string,
-  platformOrgId: string
+  platformOrganizationId: string
 ): Promise<ServiceResponse<OAuth>> => {
   if (!platformUserId) {
     throw new Error('[api-client:getOAuthCredentials] platformUserId is required for request header.');
@@ -73,7 +73,7 @@ export const getOAuthCredentials = async (
     'GET',
     endpoint,
     platformUserId,
-    platformOrgId,
+    platformOrganizationId,
     undefined, // No request body for GET
     params     // Pass params as query parameters
   );

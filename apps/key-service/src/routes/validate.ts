@@ -16,7 +16,7 @@ router.post('/', async (req, res): Promise<void> => {
   try {
     // Extract API key from the request headers
     const platformApiKey = req.headers['x-platform-api-key'];
-    const platformOrgId = req.headers['x-platform-org-id'] as string;
+    const platformOrganizationId = req.headers['x-platform-organization-id'] as string;
     // Validate the key structure/presence
     if (!platformApiKey || typeof platformApiKey !== 'string') {
       console.error('API key is required in the request body');
@@ -26,9 +26,9 @@ router.post('/', async (req, res): Promise<void> => {
       } as ErrorResponse);
       return;
     }
-    if (!platformOrgId) {
-      console.error('Authentication required: x-platform-org-id header missing');
-      res.status(401).json({ success: false, error: 'Authentication required (x-platform-org-id header missing)' });
+      if (!platformOrganizationId) {
+      console.error('Authentication required: x-platform-organization-id header missing');
+      res.status(401).json({ success: false, error: 'Authentication required (x-platform-organization-id header missing)' });
       return;
     }
     // Call dbService to validate the API key against the database

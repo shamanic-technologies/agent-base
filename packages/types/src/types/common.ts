@@ -74,6 +74,7 @@ export interface InternalCredentials {
   clientUserId: string;
   clientOrganizationId: string;
   platformUserId?: string;
+  platformOrganizationId?: string;
   agentId?: string;
 }
 

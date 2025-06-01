@@ -27,7 +27,7 @@ import { Method } from 'axios';
  */
 export const getCurrentPlatformUser = async (
   platformUserId: string,
-  platformOrgId: string
+  platformOrganizationId: string
 ): Promise<ServiceResponse<PlatformUser>> => {
 
     const endpoint = '/platform-users/me'; 
@@ -36,7 +36,7 @@ export const getCurrentPlatformUser = async (
     'GET',
     endpoint,
     platformUserId, // Pass the ID for the header
-    platformOrgId
+    platformOrganizationId
     // No params or data needed for this GET request
   );
 };

@@ -9,7 +9,7 @@ declare global {
   namespace Express {
     interface Request {
       platformUserId?: string;
-      platformOrgId?: string;
+      platformOrganizationId?: string;
     }
   }
 } 
