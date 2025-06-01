@@ -65,6 +65,7 @@ async function _makeServiceRequest<T>(
  * @param method - HTTP method.
  * @param endpoint - API endpoint path.
  * @param platformUserId - Required platform user ID for 'x-platform-user-id' header.
+ * @param platformOrgId - Required platform organization ID for 'x-platform-org-id' header.
  * @param data - Optional request body.
  * @param params - Optional URL query parameters.
  * @returns Promise<ServiceResponse<T>>.
@@ -75,17 +76,13 @@ export async function makeWebAuthenticatedServiceRequest<T>(
   method: Method,
   endpoint: string,
   platformUserId: string, // Required
+  platformOrgId: string, // Required
   data?: any,
   params?: any
 ): Promise<ServiceResponse<T>> {
   const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const fullUrl = `${serviceUrl}${formattedEndpoint}`;
-  const logContext = `[httpClient:WebAuth] User ${platformUserId}`; 
-
-  if (!platformUserId) {
-    console.error(`${logContext} platformUserId is strictly required for web authenticated request to ${fullUrl}.`);
-    return { success: false, error: 'Internal error: platformUserId missing for web authenticated service request' };
-  }
+  const logContext = `[httpClient:WebAuth] User ${platformUserId}, Org ${platformOrgId}`; 
 
   const config: AxiosRequestConfig = {
     method,
@@ -93,6 +90,7 @@ export async function makeWebAuthenticatedServiceRequest<T>(
     params,
     headers: {
       'x-platform-user-id': platformUserId,
+      'x-platform-org-id': platformOrgId,
     },
     data
   };

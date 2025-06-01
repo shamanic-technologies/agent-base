@@ -111,22 +111,22 @@ async function getPlatformUserByAuthUserId(authUserId: string): Promise<ServiceR
  * @param userData - User data including provider_user_id
  * @returns A response with the user data and whether it was created or updated
  */
-export async function getOrCreatePlatformUserByProviderUserId(userData: GetOrCreatePlatformUserInput): Promise<ServiceResponse<PlatformUser>> {
+export async function getOrCreatePlatformUserByAuthId(userData: GetOrCreatePlatformUserInput): Promise<ServiceResponse<PlatformUser>> {
   let client: PoolClient | null = null;
   
   try {
     client = await getClient();
     
-    if (!userData.authUserId) {
-      console.error('[DB Service/getOrCreatePlatformUserByProviderUserId] Missing required field: authUserId');
+    if (!userData.platformAuthUserId) {
+      console.error('[DB Service/getOrCreatePlatformUserByAuthId] Missing required field: platformAuthUserId');
       return {
         success: false,
-        error: 'Missing required field: authUserId'
+        error: 'Missing required field: platformAuthUserId'
       };
     }
     
     // First check if user exists
-    const getResponse: ServiceResponse<PlatformUser> = await getPlatformUserByAuthUserId(userData.authUserId);
+    const getResponse: ServiceResponse<PlatformUser> = await getPlatformUserByAuthUserId(userData.platformAuthUserId);
     
     if (getResponse.success && getResponse.data) {
       // User exists, update it
@@ -175,13 +175,13 @@ export async function getOrCreatePlatformUserByProviderUserId(userData: GetOrCre
         VALUES ($1, $2, $3, $4, $5, NOW(), NOW(), NOW())
         RETURNING *
       `;
-      
+
       // Generate a new UUID
       const userId = uuidv4();
       
       const createValues = [
         userId,
-        userData.authUserId,
+        userData.platformAuthUserId,
         userData.email || null,
         userData.displayName || null,
         userData.profileImage || null
@@ -195,7 +195,7 @@ export async function getOrCreatePlatformUserByProviderUserId(userData: GetOrCre
       };
     }
   } catch (error: any) {
-    console.error('Error in getOrCreatePlatformUserByProviderUserId:', error);
+    console.error('Error in getOrCreatePlatformUserByAuthId:', error);
     return { 
       success: false, 
       error: error.message || 'Failed to get or create user'

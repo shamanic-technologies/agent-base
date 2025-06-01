@@ -73,13 +73,14 @@ import { generateApiKey, getKeyPrefix, hashApiKey, isValidKeyFormat } from '../u
 /**
  * Get all API keys for a user
  */
-export async function getUserApiKeys(platformUserId: string): Promise<ServiceResponse<ApiKey[]>> {
+export async function getUserApiKeys(platformUserId: string, platformOrgId: string): Promise<ServiceResponse<ApiKey[]>> {
   try {
     const response = await makeWebAuthenticatedServiceRequest<ApiKey[]>(
       DATABASE_SERVICE_URL, 
       'get', 
       '/api-keys', 
-      platformUserId
+      platformUserId,
+      platformOrgId
     );
     
     if (!response.success) {

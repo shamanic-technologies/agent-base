@@ -74,7 +74,8 @@ export async function deductCreditByPlatformUserIdInternalService(
  * @returns A promise resolving to ServiceResponse<Stripe.CustomerBalanceTransaction[]>.
  */
 export const getPlatformUserTransations = async (
-  platformUserId: string
+  platformUserId: string,
+  platformOrgId: string
 ): Promise<ServiceResponse<Stripe.CustomerBalanceTransaction[]>> => {
 
   return await makeWebAuthenticatedServiceRequest<Stripe.CustomerBalanceTransaction[]>(
@@ -82,6 +83,7 @@ export const getPlatformUserTransations = async (
     'get',
     '/customer/transactions',
     platformUserId,
+    platformOrgId,
     undefined, // No body
     undefined // No query parameters
   );

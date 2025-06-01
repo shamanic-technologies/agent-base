@@ -28,7 +28,8 @@ import { Method } from 'axios';
  */
 export const createApiKeyMetadata = async (
   data: CreateApiKeyRequest,
-  platformUserId: string
+  platformUserId: string,
+  platformOrgId: string
 ): Promise<ServiceResponse<ApiKey>> => {
   if (!platformUserId) {
     throw new Error('[api-client:createApiKeyMetadata] platformUserId is required for request header.');
@@ -42,6 +43,7 @@ export const createApiKeyMetadata = async (
     'POST',
     endpoint,
     platformUserId,
+    platformOrgId,
     data
   );
 };
@@ -55,7 +57,8 @@ export const createApiKeyMetadata = async (
  * @returns A ServiceResponse containing an array of ApiKey objects or an error.
  */
 export const listApiKeyMetadata = async (
-  platformUserId: string
+  platformUserId: string,
+  platformOrgId: string
 ): Promise<ServiceResponse<ApiKey[]>> => {
   if (!platformUserId) {
     throw new Error('[api-client:listApiKeyMetadata] platformUserId is required for request header.');
@@ -65,7 +68,8 @@ export const listApiKeyMetadata = async (
     getDatabaseServiceUrl(),
     'GET',
     endpoint,
-    platformUserId
+    platformUserId,
+    platformOrgId
     // No query params or body needed
   );
 };
@@ -89,11 +93,13 @@ export const validateApiKey = async (
   // Pass an empty string or handle differently if platformUserId is truly not needed by makeServiceRequest
   // Assuming makeServiceRequest requires it, but it won't be used by this specific endpoint's backend logic.
   const placeholderUserId = ''; // Or adjust makeServiceRequest if possible
+  const placeholderOrgId = ''; // Or adjust makeServiceRequest if possible
   return makeWebAuthenticatedServiceRequest<ValidateApiKeyResponse>(
     getDatabaseServiceUrl(),
     'POST',
     endpoint,
     placeholderUserId, // Provide a placeholder or modify makeServiceRequest if necessary
+    placeholderOrgId, // Provide a placeholder or modify makeServiceRequest if necessary
     data
   );
 }; 

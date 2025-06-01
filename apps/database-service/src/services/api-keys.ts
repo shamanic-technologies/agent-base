@@ -24,7 +24,7 @@ const PLATFORM_USER_API_KEY_TABLE = 'platform_user_api_keys';
  * @param platformUserId - The user ID who owns the key
  * @returns A response with the created or updated API key metadata
  */
-export async function upsertApiKey(keyData: CreateApiKeyRequest, platformUserId: string):
+export async function upsertApiKey(keyData: CreateApiKeyRequest, platformUserId: string, platformOrgId: string):
 Promise<ServiceResponse<ApiKey>> {
   let client: PoolClient | null = null;
   
@@ -35,6 +35,7 @@ Promise<ServiceResponse<ApiKey>> {
     const apiKeyData: ApiKeyRecord = {
       key_id: keyData.keyId,
       platform_user_id: platformUserId,
+      platform_org_id: platformOrgId,
       name: keyData.name,
       key_prefix: keyData.keyPrefix,
       hashed_key: keyData.hashedKey,
@@ -43,14 +44,14 @@ Promise<ServiceResponse<ApiKey>> {
     };
 
     // Build insert query
-    const columns = ['key_id', 'platform_user_id', 'name', 'key_prefix', 'hashed_key', 'created_at'];
-    const values = [apiKeyData.key_id, apiKeyData.platform_user_id, apiKeyData.name, apiKeyData.key_prefix, apiKeyData.hashed_key, apiKeyData.created_at];
+    const columns = ['key_id', 'platform_user_id', 'platform_org_id', 'name', 'key_prefix', 'hashed_key', 'created_at'];
+    const values = [apiKeyData.key_id, apiKeyData.platform_user_id, apiKeyData.platform_org_id, apiKeyData.name, apiKeyData.key_prefix, apiKeyData.hashed_key, apiKeyData.created_at];
     const placeholders = columns.map((_, idx) => `$${idx + 1}`).join(', ');
 
     const query = `
       INSERT INTO "${PLATFORM_USER_API_KEY_TABLE}" (${columns.map(c => `"${c}"`).join(', ')})
       VALUES (${placeholders})
-      ON CONFLICT (platform_user_id, name) DO UPDATE SET
+      ON CONFLICT (platform_user_id, platform_org_id, name) DO UPDATE SET
         key_id = EXCLUDED.key_id,
         key_prefix = EXCLUDED.key_prefix,
         hashed_key = EXCLUDED.hashed_key

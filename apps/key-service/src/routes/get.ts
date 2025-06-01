@@ -32,6 +32,7 @@ router.get('/by-name', async (req, res): Promise<void> => {
   try {
     const keyName = req.query.name as string;
     const platformUserId = req.headers['x-platform-user-id'] as string;
+    const platformOrgId = req.headers['x-platform-org-id'] as string;
     let platformApiKey: string | null = null;
     let keyId: string | null = null;
 
@@ -40,6 +41,14 @@ router.get('/by-name', async (req, res): Promise<void> => {
       res.status(401).json({
         success: false,
         error: 'User authentication required: x-platform-user-id header missing'
+      });
+      return;
+    }
+    if (!platformOrgId) {
+      console.error('User authentication required: x-platform-org-id header missing');
+      res.status(401).json({
+        success: false,
+        error: 'User authentication required: x-platform-org-id header missing'
       });
       return;
     }
@@ -54,7 +63,7 @@ router.get('/by-name', async (req, res): Promise<void> => {
     }
 
     // Get all user keys and filter by name
-    const userKeys: ServiceResponse<ApiKey[]> = await getUserApiKeys(platformUserId);
+    const userKeys: ServiceResponse<ApiKey[]> = await getUserApiKeys(platformUserId, platformOrgId);
     
     if (!userKeys.success) {
       console.error('Error retrieving user keys:', userKeys.error);
@@ -73,7 +82,7 @@ router.get('/by-name', async (req, res): Promise<void> => {
         secretUtilityProvider: UtilityProviderEnum.AGENT_BASE,
         secretType: `api_key_${keyId}` as PlatformApiKeySecretType
       };
-      const secretValueResponse: ServiceResponse<SecretValue> = await getSecretWebClient(platformUserId, getSecretRequest);
+      const secretValueResponse: ServiceResponse<SecretValue> = await getSecretWebClient(platformUserId, platformOrgId, getSecretRequest);
       
       if (!secretValueResponse.success) {
         console.error('Error retrieving API key secret:', secretValueResponse.error);
@@ -104,7 +113,7 @@ router.get('/by-name', async (req, res): Promise<void> => {
       hashedKey: hashApiKey(platformApiKey),
     };
 
-    const createResponse : ServiceResponse<ApiKey> = await createApiKeyMetadata(keyMetadataPayload, platformUserId);
+    const createResponse : ServiceResponse<ApiKey> = await createApiKeyMetadata(keyMetadataPayload, platformUserId, platformOrgId);
 
     if (!createResponse.success) {
       console.error('Error creating API key:', createResponse.error);
@@ -119,7 +128,7 @@ router.get('/by-name', async (req, res): Promise<void> => {
       secretType: `api_key_${keyId}` as PlatformApiKeySecretType,
       secretValue: platformApiKey,
     };
-    const storeResponse : ServiceResponse<string> = await storeSecretWebClient(platformUserId, requestData);
+    const storeResponse : ServiceResponse<string> = await storeSecretWebClient(platformUserId, platformOrgId, requestData);
     if (!storeResponse.success) {
       console.error('Failed to store secret:', storeResponse.error);
       res.status(500).json(storeResponse);
@@ -165,6 +174,7 @@ router.get('/:keyId', async (req, res): Promise<void> => {
   try {
     const keyId = req.params.keyId;
     const platformUserId = req.headers['x-platform-user-id'] as string;
+    const platformOrgId = req.headers['x-platform-org-id'] as string;
 
     if (!platformUserId) {
       res.status(401).json({
@@ -173,7 +183,14 @@ router.get('/:keyId', async (req, res): Promise<void> => {
       });
       return;
     }
-
+    if (!platformOrgId) {
+      console.error('User authentication required: x-platform-org-id header missing');
+      res.status(401).json({
+        success: false,
+        error: 'User authentication required: x-platform-org-id header missing'
+      });
+      return;
+    }
     if (!keyId) {
       res.status(400).json({
         success: false,
@@ -188,7 +205,7 @@ router.get('/:keyId', async (req, res): Promise<void> => {
       secretUtilityProvider: UtilityProviderEnum.AGENT_BASE,
       secretType: `api_key_${keyId}` as PlatformApiKeySecretType
     };
-    const secretValueResponse: ServiceResponse<SecretValue> = await getSecretWebClient(platformUserId, getSecretRequest);
+    const secretValueResponse: ServiceResponse<SecretValue> = await getSecretWebClient(platformUserId, platformOrgId, getSecretRequest);
     
     if (!secretValueResponse.success) {
       res.status(404).json(secretValueResponse);

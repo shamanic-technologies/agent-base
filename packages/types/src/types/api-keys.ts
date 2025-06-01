@@ -11,6 +11,7 @@ import { BaseResponse } from './common.js';
 export interface ApiKeyRecord {
   key_id: string;
   platform_user_id: string;
+  platform_org_id: string;
   name: string;
   key_prefix: string;
   hashed_key: string;
@@ -24,6 +25,7 @@ export interface ApiKeyRecord {
 export interface ApiKey {
   keyId: string;
   platformUserId: string;
+  platformOrgId: string;
   name: string;
   keyPrefix: string;
   hashedKey: string;
@@ -34,11 +36,13 @@ export interface ApiKey {
 
 export interface GetApiKeyByNameRequest {
   platformUserId: string;
+  platformOrgId: string;
   keyName: string;
 }
 
 export interface GetApiKeyByIdRequest {
   platformUserId: string;
+  platformOrgId: string;
   keyId: string;
 }
 /**
@@ -82,6 +86,7 @@ export function mapAPIKeyFromDatabase(record: ApiKeyRecord): ApiKey {
   return {
     keyId: record.key_id,
     platformUserId: record.platform_user_id,
+    platformOrgId: record.platform_org_id,
     name: record.name,
     keyPrefix: record.key_prefix,
     hashedKey: record.hashed_key,
@@ -99,7 +104,8 @@ export function mapAPIKeyToDatabase(apiKey: ApiKey): Partial<ApiKeyRecord> {
   }
   const record: Partial<ApiKeyRecord> = {};
   if (apiKey.keyId !== undefined) record.key_id = apiKey.keyId;
-  if (apiKey.platformUserId !== undefined) record.platform_user_id = apiKey.platformUserId;
+  if (apiKey.platformUserId !== undefined) record.platform_user_id = apiKey.platformUserId; 
+  if (apiKey.platformOrgId !== undefined) record.platform_org_id = apiKey.platformOrgId;
   if (apiKey.name !== undefined) record.name = apiKey.name;
   if (apiKey.keyPrefix !== undefined) record.key_prefix = apiKey.keyPrefix;
   if (apiKey.hashedKey !== undefined) record.hashed_key = apiKey.hashedKey;

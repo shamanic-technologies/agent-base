@@ -40,42 +40,48 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
   }
 
   const platformAuthUserId = req.headers['x-platform-auth-user-id'] as string | undefined;
+  const platformAuthOrgId = req.headers['x-platform-auth-org-id'] as string | undefined;
   let platformUserId = req.headers['x-platform-user-id'] as string | undefined;
-
-  if (platformAuthUserId) {
-    try {
-      const validationResponse: ServiceResponse<PlatformUserId> = await validatePlatformUser(platformAuthUserId);
-
-      if (validationResponse.success && validationResponse.data) {
-        platformUserId = validationResponse.data.platformUserId;
-        // Set the validated platformUserId for downstream services
-        req.headers['x-platform-user-id'] = platformUserId; 
-      } else {
-        console.warn(`[Auth Middleware] Failed to validate platformUserId '${platformAuthUserId}': ${validationResponse.error}`);
-        // Send a 401 Unauthorized or 403 Forbidden, as the platform ID is invalid/not found
-        res.status(401).json({ success: false, error: validationResponse.error || "Invalid or unknown platform user ID." });
-        return; // Stop processing
-      }
-    } catch (error: any) {
-      console.error(`[Auth Middleware] Error during providerUserId validation for '${platformAuthUserId}':`, error);
-      res.status(500).json({ success: false, error: 'Internal server error during provider user ID validation.' });
-      return; // Stop processing
-    }
-  }
+  let platformOrgId = req.headers['x-platform-org-id'] as string | undefined;
 
   // If no platformUserId is present (either from header or after providerId validation) for a path that requires it.
-  if (!platformUserId) {
-    console.warn(`[Auth Middleware] Couldn't retrieve 'x-platform-user-id' header for protected path: ${req.path} from IP: ${req.ip}.`);
+  if (!platformAuthUserId) {
+    console.error(`[Auth Middleware] Couldn't retrieve 'x-platform-user-id' header for protected path: ${req.path} from IP: ${req.ip}.`);
     res.status(400).json({ success: false, error: "Couldn't retrieve user identification header 'x-platform-user-id'." });
     return; // Stop processing
   }
+  if (!platformAuthOrgId) {
+    console.error(`[Auth Middleware] Couldn't retrieve 'x-platform-auth-org-id' header for protected path: ${req.path} from IP: ${req.ip}.`);
+    res.status(400).json({ success: false, error: "Couldn't retrieve user identification header 'x-platform-auth-org-id'." });
+    return; // Stop processing
+  }
+
+  try {
+    const validationResponse: ServiceResponse<PlatformUserId> = await validatePlatformUser(platformAuthUserId);
+
+    if (validationResponse.success && validationResponse.data) {
+      platformUserId = validationResponse.data.platformUserId;
+      platformOrgId = 'personal'; // Temporary value until we have a proper orgId validation
+      // Set the validated platformUserId for downstream services
+      req.headers['x-platform-user-id'] = platformUserId; 
+      req.headers['x-platform-org-id'] = platformOrgId;
+    } else {
+      console.error(`[Auth Middleware] Failed to validate platformUserId '${platformAuthUserId}': ${validationResponse.error}`);
+      // Send a 401 Unauthorized or 403 Forbidden, as the platform ID is invalid/not found
+      res.status(401).json({ success: false, error: validationResponse.error || "Invalid or unknown platform user ID." });
+      return; // Stop processing
+    }
+  } catch (error: any) {
+    console.error(`[Auth Middleware] Error during providerUserId validation for '${platformAuthUserId}':`, error);
+    res.status(500).json({ success: false, error: 'Internal server error during provider user ID validation.' });
+    return; // Stop processing
+  }
+
   
   try {
-    // Attach a simplified platformUser object to the request.
-    // Downstream services will use the x-platform-user-id header directly,
-    // but having req.platformUser can be useful for logic within the gateway itself if ever needed.
-    // @ts-ignore - Dynamically adding property to Request
+
     req.platformUserId = platformUserId; 
+    req.platformOrgId = platformOrgId;
     
     // Ensure the x-platform-user-id header is available for downstream services.
     // It should already be there if we're reading it, or it was set after provider ID validation.

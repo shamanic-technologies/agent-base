@@ -107,7 +107,7 @@ export function mapClientUserToDatabase(user: ClientUser): Partial<ClientUserRec
  * Input for getting or creating a user
  */
 export interface GetOrCreatePlatformUserInput {
-  authUserId: string;
+  platformAuthUserId: string;
   email?: string;
   displayName?: string;
   profileImage?: string;

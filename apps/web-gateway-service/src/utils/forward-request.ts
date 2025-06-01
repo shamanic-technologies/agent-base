@@ -17,8 +17,6 @@ export async function forwardRequest(targetUrl: string, req: Request, res: Respo
     const targetPathWithQuery = req.url;
     const requestUrl = `${targetUrl}${targetPathWithQuery}`;
 
-    console.log(`[Web Gateway] Forwarding ${req.method} request from ${req.originalUrl} to ${requestUrl}`);
-
     // Prepare headers for Axios, ensuring all values are suitable (string, number, or boolean)
     // IncomingHttpHeaders can have string | string[] | undefined.
     const headersToForward: RawAxiosRequestHeaders = {};
@@ -72,12 +70,14 @@ export async function forwardRequest(targetUrl: string, req: Request, res: Respo
         if (axiosError.response) {
             res.status(axiosError.response.status).send(axiosError.response.data);
         } else if (axiosError.request) {
+            console.error(`[Web Gateway] No response from target service at ${new URL(targetUrl).hostname}`);
             res.status(502).json({
                 success: false,
                 error: `[Web Gateway] No response from target service at ${new URL(targetUrl).hostname}`,
                 details: axiosError.message,
             });
         } else {
+            console.error(`[Web Gateway] Internal server error while forwarding request`);
             res.status(500).json({
                 success: false,
                 error: '[Web Gateway] Internal server error while forwarding request',

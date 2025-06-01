@@ -15,14 +15,20 @@ const router = Router();
 router.get('/', async (req, res): Promise<void> => {
   try {
     const platformUserId = req.headers['x-platform-user-id'] as string;
+    const platformOrgId = req.headers['x-platform-org-id'] as string;
     
     if (!platformUserId) {
       console.error('Authentication required: x-platform-user-id header missing');
       res.status(401).json({ success: false, error: 'Authentication required (x-platform-user-id header missing)' });
       return;
     }
+    if (!platformOrgId) {
+      console.error('Authentication required: x-platform-org-id header missing');
+      res.status(401).json({ success: false, error: 'Authentication required (x-platform-org-id header missing)' });
+      return;
+    }
 
-    const keysResponse : ServiceResponse<ApiKey[]> = await dbService.getUserApiKeys(platformUserId);
+    const keysResponse : ServiceResponse<ApiKey[]> = await dbService.getUserApiKeys(platformUserId, platformOrgId);
     
     if (!keysResponse.success) {
       console.error('Error retrieving user keys:', keysResponse.error);

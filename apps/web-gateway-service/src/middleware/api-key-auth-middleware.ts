@@ -25,7 +25,7 @@ export const apiKeyAuthMiddleware = (req: Request, res: Response, next: NextFunc
   // For all other endpoints, require API key
   const webGatewayAPIKeyHeader = req.headers['x-web-gateway-api-key'] as string;
   if (webGatewayAPIKeyHeader !== WEB_GATEWAY_API_KEY) {
-    console.warn(`Unauthorized gateway access attempt using key: ${webGatewayAPIKeyHeader ? webGatewayAPIKeyHeader.substring(0, 5) + '...' : 'None'} from ${req.ip}`);
+    console.error(`Unauthorized gateway access attempt using key: ${webGatewayAPIKeyHeader ? webGatewayAPIKeyHeader.substring(0, 5) + '...' : 'None'} from ${req.ip}`);
     res.status(403).json({
       success: false,
       error: 'Unauthorized access to gateway'
@@ -34,4 +34,4 @@ export const apiKeyAuthMiddleware = (req: Request, res: Response, next: NextFunc
   }
   
   next();
-}; 
+};

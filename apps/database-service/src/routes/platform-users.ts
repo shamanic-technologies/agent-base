@@ -2,7 +2,7 @@
  * User routes
  */
 import { Router, Request, Response } from 'express';
-import { getPlatformUserById, getOrCreatePlatformUserByProviderUserId } from '../services/platform-users.js';
+import { getPlatformUserById, getOrCreatePlatformUserByAuthId } from '../services/platform-users.js';
 import { GetOrCreatePlatformUserInput } from '@agent-base/types';
 
 const router = Router();
@@ -47,23 +47,23 @@ router.get('/me', async (req: Request, res: Response): Promise<void> => {
  * If user with auth_user_id exists, updates and returns it
  * Otherwise creates a new user record
  */
-router.post('/get-or-create-by-auth-user-id', async (req: Request, res: Response): Promise<void> => {
+router.post('/get-or-create-by-platform-auth-user-id', async (req: Request, res: Response): Promise<void> => {
   try {
     const userData = req.body as GetOrCreatePlatformUserInput;
     
-    if (!userData || !userData.authUserId) {
-      console.error('Missing required field: authUserId');
+    if (!userData || !userData.platformAuthUserId) {
+      console.error('Missing required field: platformAuthUserId');
       res.status(400).json({
         success: false,
-        error: 'Missing required field: authUserId'
+        error: 'Missing required field: platformAuthUserId'
       });
       return;
     }
     
-    console.log(`Get or create user with auth_user_id: ${userData.authUserId}`);
+    console.log(`Get or create user with platform_auth_user_id: ${userData.platformAuthUserId}`);
     
     // Call the service function to get or create user
-    const getOrCreateResponse = await getOrCreatePlatformUserByProviderUserId(userData);
+    const getOrCreateResponse = await getOrCreatePlatformUserByAuthId(userData);
     
     if (!getOrCreateResponse.success) {
       console.error('Error in get-or-create user:', getOrCreateResponse.error);

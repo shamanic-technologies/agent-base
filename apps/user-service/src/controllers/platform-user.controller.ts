@@ -8,7 +8,7 @@ import { GetOrCreatePlatformUserInput, PlatformUser, ServiceResponse } from '@ag
 import { getOrCreatePlatformUserInDatabase } from '../utils/database'; // We will ensure this function exists and is correctly typed
 
 interface ValidateAuthUserInput {
-  authUserId: string;
+  platformAuthUserId: string;
   // Add other optional fields if needed in the future, like email, displayName
 }
 
@@ -27,13 +27,13 @@ export const validatePlatformAuthUserHandler: AsyncRequestHandler = async (req, 
     });
   }
 
-  const { authUserId } = req.body as ValidateAuthUserInput;
+  const { platformAuthUserId } = req.body as ValidateAuthUserInput;
 
-  if (!authUserId) {
-    console.log('[User Service] Missing authUserId in request body');
+  if (!platformAuthUserId) {
+    console.log('[User Service] Missing platformAuthUserId in request body');
     return res.status(400).json({
       success: false,
-      error: 'Missing required field: authUserId',
+      error: 'Missing required field: platformAuthUserId',
     });
   }
 
@@ -41,7 +41,7 @@ export const validatePlatformAuthUserHandler: AsyncRequestHandler = async (req, 
     // Prepare the input for the database utility function
     // We use clerkUserId as the providerUserId
     const getOrCreateInput: GetOrCreatePlatformUserInput = {
-      authUserId: authUserId,
+      platformAuthUserId,
       // We are not passing email, displayName, or profileImage from this endpoint initially
       // The database service's getOrCreatePlatformUserByProviderUserId can handle nulls for these
       email: null, 
@@ -53,7 +53,7 @@ export const validatePlatformAuthUserHandler: AsyncRequestHandler = async (req, 
     const dbResponse: ServiceResponse<PlatformUser> = await getOrCreatePlatformUserInDatabase(getOrCreateInput);
 
     if (!dbResponse.success || !dbResponse.data) {
-      console.error(`[User Service] Failed to get or create user for authUserId ${authUserId}: ${dbResponse.error}`);
+      console.error(`[User Service] Failed to get or create user for platformAuthUserId ${platformAuthUserId}: ${dbResponse.error}`);
       return res.status(500).json({
         success: false,
         error: dbResponse.error || 'Failed to process user validation',
@@ -69,7 +69,7 @@ export const validatePlatformAuthUserHandler: AsyncRequestHandler = async (req, 
     });
 
   } catch (error: any) {
-    console.error(`[User Service] Unexpected error validating platform user for authUserId ${authUserId}:`, error);
+    console.error(`[User Service] Unexpected error validating platform user for platformAuthUserId ${platformAuthUserId}:`, error);
     return res.status(500).json({
       success: false,
       error: 'Internal server error during user validation',

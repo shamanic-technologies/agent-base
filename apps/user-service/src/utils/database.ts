@@ -43,11 +43,11 @@ export async function getOrCreatePlatformUserInDatabase(inputData: GetOrCreatePl
  * @param platformUserId The platform user ID (UUID)
  * @returns Promise resolving to the user data or null if not found
  */
-export async function getPlatformUserFromDatabase(platformUserId: string): Promise<ServiceResponse<PlatformUser>> {
+export async function getPlatformUserFromDatabase(platformUserId: string, platformOrgId: string): Promise<ServiceResponse<PlatformUser>> {
 
   // Use the API client function
   // The client function handles passing the platformUserId for the header
-  const response = await getCurrentPlatformUser(platformUserId);
+  const response = await getCurrentPlatformUser(platformUserId, platformOrgId);
 
   if (!response.success) {
     console.error(`[User Service] Failed to get user ${platformUserId} via api-client: ${response.error}`);

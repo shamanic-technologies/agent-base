@@ -26,7 +26,8 @@ import { Method } from 'axios';
  * @returns A ServiceResponse containing the PlatformUser object or an error.
  */
 export const getCurrentPlatformUser = async (
-  platformUserId: string
+  platformUserId: string,
+  platformOrgId: string
 ): Promise<ServiceResponse<PlatformUser>> => {
 
     const endpoint = '/platform-users/me'; 
@@ -34,7 +35,8 @@ export const getCurrentPlatformUser = async (
     getDatabaseServiceUrl(), // Use dynamic getter
     'GET',
     endpoint,
-    platformUserId // Pass the ID for the header
+    platformUserId, // Pass the ID for the header
+    platformOrgId
     // No params or data needed for this GET request
   );
 };
@@ -46,7 +48,7 @@ export const getCurrentPlatformUser = async (
 export const getOrCreatePlatformUser = async (
   data: GetOrCreatePlatformUserInput,
 ): Promise<ServiceResponse<PlatformUser>> => {
-  const endpoint = '/platform-users/get-or-create-by-auth-user-id';
+  const endpoint = '/platform-users/get-or-create-by-platform-auth-user-id';
   
   return makeWebAnonymousServiceRequest<PlatformUser>(
     getDatabaseServiceUrl(), // Use dynamic getter

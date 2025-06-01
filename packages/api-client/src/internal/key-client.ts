@@ -61,7 +61,8 @@ export const validatePlatformApiKeySecret = async (
  * @returns A promise resolving to ServiceResponse<ApiKey[]>.
  */
 export const listPlatformApiKeys = async (
-  platformUserId: PlatformUserId
+  platformUserId: PlatformUserId,
+  platformOrgId: string
 ): Promise<ServiceResponse<ApiKey[]>> => {
   if (!platformUserId) {
     return { success: false, error: 'platformUserId is required for listApiKeys.' };
@@ -70,7 +71,8 @@ export const listPlatformApiKeys = async (
     getKeyServiceUrl(), // Use dynamic getter
     'get',
     '/',
-    platformUserId.platformUserId
+    platformUserId.platformUserId,
+    platformOrgId
   );
 };
 
@@ -84,7 +86,7 @@ export const listPlatformApiKeys = async (
 export const getPlatformApiKeySecretById = async (
   input: GetApiKeyByIdRequest
 ): Promise<ServiceResponse<SecretValue>> => {
-  const { platformUserId, keyId } = input;
+  const { platformUserId, platformOrgId, keyId } = input;
   if (!platformUserId) {
     return { success: false, error: 'platformUserId is required for getApiKeyById.' };
   }
@@ -95,7 +97,8 @@ export const getPlatformApiKeySecretById = async (
     getKeyServiceUrl(), // Use dynamic getter
     'get',
     `/${keyId}`,
-    platformUserId
+    platformUserId,
+    platformOrgId
   );
 };
 
@@ -109,7 +112,7 @@ export const getPlatformApiKeySecretById = async (
 export const getOrCreatePlatformApiKeySecretByName = async (
   input: GetApiKeyByNameRequest
 ): Promise<ServiceResponse<SecretValue>> => {
-  const { platformUserId, keyName } = input;
+  const { platformUserId, platformOrgId, keyName } = input;
 
   const queryParams = { name: keyName };
   return await makeWebAuthenticatedServiceRequest<SecretValue>(
@@ -117,6 +120,7 @@ export const getOrCreatePlatformApiKeySecretByName = async (
     'get',
     '/by-name',
     platformUserId,
+    platformOrgId,
     undefined, // No body
     queryParams
   );

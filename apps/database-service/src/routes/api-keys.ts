@@ -18,10 +18,15 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     const { keyId, name, keyPrefix, hashedKey } : CreateApiKeyRequest = req.body;
     // Get userId strictly from header
     const platformUserId = req.headers['x-platform-user-id'] as string;
+    const platformOrgId = req.headers['x-platform-org-id'] as string;
 
     // Validate required fields
     if (!platformUserId) {
       res.status(401).json({ success: false, error: 'Authentication required (x-user-id header missing)' });
+      return;
+    }
+    if (!platformOrgId) {
+      res.status(401).json({ success: false, error: 'Authentication required (x-platform-org-id header missing)' });
       return;
     }
     if (!keyId || !name || !keyPrefix || !hashedKey) {
@@ -36,7 +41,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     }
 
     // Call service to create API key
-    const createResponse = await upsertApiKey({ keyId, name, keyPrefix, hashedKey }, platformUserId);
+    const createResponse = await upsertApiKey({ keyId, name, keyPrefix, hashedKey }, platformUserId, platformOrgId);
 
     if (!createResponse.success) {
       if (createResponse.error?.includes('already exists')) {

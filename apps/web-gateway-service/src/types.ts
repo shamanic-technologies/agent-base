@@ -8,7 +8,8 @@ import { PlatformUser } from '@agent-base/types';
 declare global {
   namespace Express {
     interface Request {
-      platformUser?: PlatformUser;
+      platformUserId?: string;
+      platformOrgId?: string;
     }
   }
 } 
