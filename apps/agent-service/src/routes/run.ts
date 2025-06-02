@@ -47,6 +47,7 @@ import { buildSystemPrompt } from '../lib/promptBuilder.js';
 // Import error handler
 import { handleToolError } from '../lib/utils/errorHandlers.js';
 import { truncateHistory } from '../lib/historyTruncation.js'; // Added for history truncation
+import { ModelName } from '../types/index.js';
 
 const runRouter = Router(); // Use a specific router for this file
 
@@ -209,7 +210,7 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
 
       // --- Call AI Model ---
       const result = await streamText({
-        model: anthropic(agent.modelId),
+        model: anthropic(ModelName.CLAUDE_SONNET_4_20250514), //anthropic(agent.modelId),
         messages: allMessages as any[],
         system: systemPrompt, 
         tools: allStartupTools,

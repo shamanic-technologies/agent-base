@@ -22,7 +22,7 @@ export function createDefaultAgentPayload(clientUserId: string, clientOrganizati
         lastName: 'Sinnek',
         profilePicture: 'AS', 
         gender: 'man', // Ensure 'other' is valid in your @agent-base/types Gender definition
-        modelId: ModelName.CLAUDE_3_7_SONNET_20250219, // Ensure this is a valid model ID
+        modelId: ModelName.CLAUDE_SONNET_4_20250514, // Ensure this is a valid model ID
         memory: `{
             objective: 'to be completed',
             kpis: [
