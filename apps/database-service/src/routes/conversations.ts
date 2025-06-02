@@ -248,8 +248,8 @@ router.post('/update-conversation', (async (req: Request, res: Response, next: N
  */
 router.get('/get-all-user-conversations', (async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const clientUserId = req.query.clientUserId as string;
-    const clientOrganizationId = req.query.clientOrganizationId as string;
+    const clientUserId = req.headers['x-client-user-id'] as string;
+    const clientOrganizationId = req.headers['x-client-organization-id'] as string;
 
     if (!clientUserId) {
       console.error('[DB Route /conversations] clientUserId query parameter is required');

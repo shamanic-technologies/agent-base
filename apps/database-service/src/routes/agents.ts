@@ -180,8 +180,8 @@ router.post('/update-user-agent', async (req: Request, res: Response): Promise<v
  */
 router.get('/list-user-agents', async (req: Request, res: Response): Promise<void> => {
   try {
-    const clientUserId = req.query.clientUserId as string;
-    const clientOrganizationId = req.query.clientOrganizationId as string;
+    const clientUserId = req.headers['x-client-user-id'] as string;
+    const clientOrganizationId = req.headers['x-client-organization-id'] as string;
     if (!clientUserId) {
       console.error('[DB Service /list-user-agents] clientUserId is required in the request body');
       res.status(400).json({ success: false, error: 'clientUserId is required in the request body' });

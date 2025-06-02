@@ -23,47 +23,47 @@ const router: Router = express.Router();
  */
 router.post('/', async (req: Request, res: Response): Promise<void> => {
 
-  const platformUserId = req.headers['x-platform-user-id'] as string;
-  const clientAuthUserId = req.headers['x-client-auth-user-id'] as string | undefined;
-  const clientAuthOrganizationId = req.headers['x-client-auth-organization-id'] as string;
+  // const clientAuthUserId = req.headers['x-client-auth-user-id'] as string | undefined; // Not directly used for org upsert
+  const clientAuthOrganizationId = req.headers['x-client-auth-organization-id'] as string; // This is the unique ID for the org
+  const clientUserId = req.headers['x-client-user-id'] as string; // This is the unique ID for the user
 
-  if (!platformUserId) {
-    console.error('[POST /client-organizations] Missing required fields in body: platformUserId');
-    res.status(400).json({ 
-      error: 'Missing required fields in body: platformUserId' 
-    });
+  const { name, profileImage } = req.body; // Get name and profileImage from body
+
+  if (!clientAuthOrganizationId) {
+    console.error(`[POST /client-organizations] Missing required header: x-client-auth-organization-id`);
+    res.status(400).json({ error: 'Missing required header: x-client-auth-organization-id' });
     return;
   }
-  if (!clientAuthOrganizationId) {
-    console.error('[POST /client-organizations] Missing required fields in body: clientAuthOrganizationId');
-    res.status(400).json({ 
-      error: 'Missing required fields in body: clientAuthOrganizationId' 
-    });
+  if (!clientUserId) {
+    console.error(`[POST /client-organizations] Missing required header: x-client-user-id`);
+    res.status(400).json({ error: 'Missing required header: x-client-user-id' });
     return;
   }
 
   // Prepare input for the service function
-  const input: UpsertClientOrganizationInput = { platformUserId, authOrganizationId: clientAuthOrganizationId };
+  // The service now expects platformUserId, authOrganizationId (for client_auth_organization_id), name, and optionally profileImage
+  const input: UpsertClientOrganizationInput = { 
+    creatorClientUserId: clientUserId,
+    clientAuthOrganizationId, 
+    name,
+    profileImage 
+  };
 
   try {
-    // Call the service function to perform the upsert operation
     const upsertResponse: ServiceResponse<ClientOrganization> = await upsertClientOrganization(input);
 
-    // Handle the service response
     if (!upsertResponse.success) {
-      // Failure: Log the specific error from the service for debugging
       console.error(`[POST /client-organizations] Service error: ${upsertResponse.error}`);
-      // Return a generic 500 error to the client for security
-      res.status(500).json(upsertResponse);
+      // Determine appropriate status code based on error type if possible
+      const statusCode = upsertResponse.error?.includes('Missing required fields') ? 400 : 500;
+      res.status(statusCode).json(upsertResponse);
       return;
     }
-    // Success: return 200 OK with the organization data
+    // Success: return 200 OK (or 201 if a new resource was created, though upsert makes this ambiguous without more info)
     res.status(200).json(upsertResponse);
   } catch (error: any) {
-    // Catch unexpected errors during the process (e.g., network issues, uncaught exceptions in service)
     console.error('[POST /client-organizations] Unexpected error:', error);
-    res.status(500).json({ error: 'An unexpected server error occurred' });
-    return;
+    res.status(500).json({ success: false, error: 'An unexpected server error occurred' });
   }
 });
 

@@ -80,8 +80,7 @@ export const authMiddleware = () => {
           
           const clientUserResponse: ServiceResponse<ClientUser> = await upsertClientUserApiClient(
             clientAuthUserId, 
-            clientAuthOrganizationId,
-            platformUserId // Pass the correct string ID here
+            platformUserId
           );
 
           if (!clientUserResponse.success) {
@@ -112,9 +111,8 @@ export const authMiddleware = () => {
           console.log(`[Auth Middleware] Client Organization Cache MISS for ${platformUserId}:${clientAuthOrganizationId}. Validating/upserting...`);
           
           const clientOrganizationResponse: ServiceResponse<ClientOrganization> = await upsertClientOrganizationApiClient(
-            clientAuthUserId, 
+            clientUserId, 
             clientAuthOrganizationId,
-            platformUserId // Pass the correct string ID here
           );
 
           if (!clientOrganizationResponse.success) {
@@ -137,27 +135,29 @@ export const authMiddleware = () => {
       }
 
       // 4. Client+Organization Validation (Optional)
-      if (clientUserId && clientOrganizationId) {
-        let clientUserClientOrganizationValidation: boolean | undefined = apiCache.getClientUserClientOrganizationValidation(clientUserId, clientOrganizationId);
+      // TODO: Implement this
 
-        if (!clientUserClientOrganizationValidation) {
+      // if (clientUserId && clientOrganizationId) {
+      //   let clientUserClientOrganizationValidation: boolean | undefined = apiCache.getClientUserClientOrganizationValidation(clientUserId, clientOrganizationId);
 
-          // Check if the client user is associated with the client organization
-          const clientUserOrganizationResponse: ServiceResponse<boolean> = await validateClientUserClientOrganization(
-            platformApiKey,
-            platformUserId,
-            clientUserId,
-            clientOrganizationId
-          );
-          if (!clientUserOrganizationResponse.success) {
-            console.error(`[Auth Middleware] Failed to validate client user ${clientUserId} is associated with client organization ${clientOrganizationId}. Error: ${clientUserOrganizationResponse.error}`);
-            res.status(401).json(clientUserOrganizationResponse);
-            return;
-          }
-          apiCache.setClientUserClientOrganizationValidation(clientUserId, clientOrganizationId, true);
+      //   if (!clientUserClientOrganizationValidation) {
+
+      //     // Check if the client user is associated with the client organization
+      //     const clientUserOrganizationResponse: ServiceResponse<boolean> = await validateClientUserClientOrganization(
+      //       platformApiKey,
+      //       platformUserId,
+      //       clientUserId,
+      //       clientOrganizationId
+      //     );
+      //     if (!clientUserOrganizationResponse.success) {
+      //       console.error(`[Auth Middleware] Failed to validate client user ${clientUserId} is associated with client organization ${clientOrganizationId}. Error: ${clientUserOrganizationResponse.error}`);
+      //       res.status(401).json(clientUserOrganizationResponse);
+      //       return;
+      //     }
+      //     apiCache.setClientUserClientOrganizationValidation(clientUserId, clientOrganizationId, true);
         
-        }
-      }
+      //   }
+      // }
       // Proceed to next middleware/route handler
       next();
     } catch (error) {

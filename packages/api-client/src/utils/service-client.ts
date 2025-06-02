@@ -244,7 +244,7 @@ export async function makeInternalRequest<T>(
 ): Promise<ServiceResponse<T>> {
   const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const fullUrl = `${serviceUrl}${formattedEndpoint}`;
-  const logContext = `[httpClient:ApiAuth] PlatformUser ${platformUserId}, ClientUser ${clientUserId}, ClientOrganization ${clientOrganizationId}${agentId ? ', Agent ' + agentId : ''}`;
+  const logContext = `[makeInternalRequest] PlatformUser ${platformUserId}, ClientUser ${clientUserId}, ClientOrganization ${clientOrganizationId}${agentId ? ', Agent ' + agentId : ''}`;
 
   // Validate required parameters
   if (!platformUserId || !clientUserId || !clientOrganizationId || !platformApiKey) {
@@ -257,7 +257,7 @@ export async function makeInternalRequest<T>(
     console.error(`${logContext} Missing required parameters for API authenticated request to ${fullUrl}: ${missing}.`);
     return {
       success: false,
-      error: `Internal error: Missing required parameter(s) for API authenticated service request: ${missing}`
+      error: `[makeInternalRequest] Internal error: Missing required parameter(s) for API authenticated service request: ${missing}`
     };
   }
 
@@ -372,47 +372,64 @@ export async function makePlatformUserValidationRequest<T>(
  * @param serviceUrl - Base URL of the target service.
  * @param method - HTTP method.
  * @param endpoint - API endpoint path.
+ * @param clientAuthUserId - Required client user ID for 'x-client-user-id' header.
  * @param platformUserId - Required platform user ID for 'x-platform-user-id' header.
- * @param clientUserId - Required client user ID for 'x-client-user-id' header.
- * @param platformApiKey - Required platform API key for 'x-platform-api-key' header.
- * @param data - Optional request body.
- * @param params - Optional URL query parameters.
  * @returns Promise<ServiceResponse<T>>.
  * @template T - Expected data payload type.
  */
-export async function makeClientAuthValidationRequest<T>(
+export async function makeClientUserValidationRequest<T>(
   serviceUrl: string,
   method: Method,
   endpoint: string,
   clientAuthUserId: string, // Required
-  clientAuthOrganizationId: string, // Required
   platformUserId: string, // Required
 ): Promise<ServiceResponse<T>> {
   const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const fullUrl = `${serviceUrl}${formattedEndpoint}`;
-  const logContext = `[httpClient:ApiAuth] ClientAuth ${clientAuthUserId}, Organization ${clientAuthOrganizationId}`;
-
-  // Validate required parameters
-  if (!clientAuthUserId || !clientAuthOrganizationId || !platformUserId) {
-    const missing = [
-        !clientAuthUserId ? 'clientAuthUserId' : null,
-        !clientAuthOrganizationId ? 'clientAuthOrganizationId' : null,
-        !platformUserId ? 'platformUserId' : null
-    ].filter(Boolean).join(', ');
-    console.error(`${logContext} Missing required parameters for API authenticated request to ${fullUrl}: ${missing}.`);
-    return {
-      success: false,
-      error: `Internal error: Missing required parameter(s) for API authenticated service request: ${missing}`
-    };
-  }
+  const logContext = `[httpClient:ApiAuth] ClientAuth ${clientAuthUserId}, PlatformUser ${platformUserId}`;
 
   const config: AxiosRequestConfig = {
     method,
     url: fullUrl,
     headers: {
       'x-client-auth-user-id': clientAuthUserId,
-      'x-client-auth-organization-id': clientAuthOrganizationId,
       'x-platform-user-id': platformUserId,
+    },
+  };
+
+  return _makeServiceRequest<T>(fullUrl, config, logContext);
+}
+
+/**
+ * Makes an API Authenticated HTTP request (platformUserId, clientUserId, platformApiKey).
+ * Includes x-platform-user-id, x-client-user-id, and x-platform-api-key headers.
+ * All three auth identifiers are required.
+ * 
+ * @param serviceUrl - Base URL of the target service.
+ * @param method - HTTP method.
+ * @param endpoint - API endpoint path.
+ * @param clientUserId - Required client user ID for 'x-client-user-id' header.
+ * @param clientAuthOrganizationId - Required client auth organization ID for 'x-client-auth-organization-id' header.
+ * @returns Promise<ServiceResponse<T>>.
+ * @template T - Expected data payload type.
+ */
+export async function makeClientOrganizationValidationRequest<T>(
+  serviceUrl: string,
+  method: Method,
+  endpoint: string,
+  clientUserId: string, // Required
+  clientAuthOrganizationId: string, // Required
+): Promise<ServiceResponse<T>> {
+  const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const fullUrl = `${serviceUrl}${formattedEndpoint}`;
+  const logContext = `[httpClient:ApiAuth] ClientUser ${clientUserId}, Organization ${clientAuthOrganizationId}`;
+
+  const config: AxiosRequestConfig = {
+    method,
+    url: fullUrl,
+    headers: {
+      'x-client-user-id': clientUserId,
+      'x-client-auth-organization-id': clientAuthOrganizationId,
     },
   };
 

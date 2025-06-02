@@ -14,7 +14,7 @@ import {
     // Import only necessary types from @agent-base/types
     // Add specific record/input types here if they become available and are needed
 } from '@agent-base/types';
-import { makeClientAuthValidationRequest, makeInternalRequest } from '../../utils/service-client.js'; // Reverted import, added .js
+import { makeClientUserValidationRequest, makeClientOrganizationValidationRequest, makeInternalRequest } from '../../utils/service-client.js'; // Reverted import, added .js
 import { getDatabaseServiceUrl, getUserServiceUrl } from '../../utils/config.js'; // Added .js
 import { Method } from 'axios';
 
@@ -37,7 +37,6 @@ import { Method } from 'axios';
  */
 export const upsertClientUserApiClient = async (
   clientAuthUserId: string,
-  clientAuthOrganizationId: string,
   platformUserId: string
 ): Promise<ServiceResponse<ClientUser>> => {
 
@@ -46,17 +45,14 @@ export const upsertClientUserApiClient = async (
     method: 'POST' as Method,
     endpoint: '/client-users',
     clientAuthUserId: clientAuthUserId, // Required
-    clientAuthOrganizationId: clientAuthOrganizationId, // Required
     platformUserId: platformUserId, // Required
   }
-  return makeClientAuthValidationRequest<ClientUser>( // Reverted function call
+  return makeClientUserValidationRequest<ClientUser>( // Reverted function call
     input.serviceUrl,
     input.method as Method,
     input.endpoint,
     input.clientAuthUserId,
-    input.clientAuthOrganizationId,
     input.platformUserId // Required
-    // data and params are undefined for this GET request
   );
 };
 
@@ -71,27 +67,23 @@ export const upsertClientUserApiClient = async (
  * @returns {Promise<ServiceResponse<ClientOrganization>>} A promise resolving to a ServiceResponse containing the upserted ClientOrganization data or an error.
  */
 export const upsertClientOrganizationApiClient = async (
-  clientAuthUserId: string,
+  clientUserId: string,
   clientAuthOrganizationId: string,
-  platformUserId: string
 ): Promise<ServiceResponse<ClientOrganization>> => {
 
   const input = {
     serviceUrl: getDatabaseServiceUrl(),
     method: 'POST' as Method,
     endpoint: '/client-organizations',
-    clientAuthUserId: clientAuthUserId, // Required
+    clientUserId: clientUserId, // Required
     clientAuthOrganizationId: clientAuthOrganizationId, // Required
-    platformUserId: platformUserId, // Required
   }
-  return makeClientAuthValidationRequest<ClientOrganization>( // Reverted function call
+  return makeClientOrganizationValidationRequest<ClientOrganization>( // Reverted function call
     input.serviceUrl,
     input.method as Method,
     input.endpoint,
-    input.clientAuthUserId,
+    input.clientUserId,
     input.clientAuthOrganizationId,
-    input.platformUserId // Required
-    // data and params are undefined for this GET request
   );
 };
 

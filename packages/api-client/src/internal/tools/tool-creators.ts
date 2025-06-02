@@ -38,10 +38,10 @@ export function createListUtilitiesTool(
         description: 'Lists the IDs and descriptions of available functional utility tools that can be executed.',
         parameters: z.object({}), // No parameters needed for listing
         execute: async (args: {}): Promise<ServiceResponse<ListUtilities>> => { // Return type often expected to be JSON serializable by AI SDK
-            console.log('[tool-creators] Executing utility_list_utilities');
+            console.log('[createListUtilitiesTool] Executing utility_list_utilities');
             const listResponse: ServiceResponse<ListUtilities> = await listUtilitiesFromAgent(agentInternalCredentials, conversationId);
             if (!listResponse.success) {
-                console.error(`[tool-creators] Error executing tool via listUtilitiesFromAgent:`, listResponse);
+                console.error(`[createListUtilitiesTool] Error executing tool via listUtilitiesFromAgent:`, listResponse);
                 return listResponse;
             }
             return listResponse;
@@ -66,10 +66,9 @@ export function createGetUtilityInfoTool(
             toolId: z.string().describe('The unique ID of the functional utility tool to get information for.')
         }),
         execute: async (args: { toolId: string }): Promise<ServiceResponse<UtilityInfo>> => { // Return type often expected to be JSON serializable
-            console.log(`[tool-creators] Executing utility_get_utility_info for tool: ${args.toolId}`);
             const getResponse: ServiceResponse<UtilityInfo> = await getUtilityInfoFromAgent(agentInternalCredentials, conversationId, args.toolId);
             if (!getResponse.success) {
-                console.error(`[tool-creators] Error executing tool ${args.toolId} via getUtilityInfoFromAgent:`, getResponse);
+                console.error(`[createGetUtilityInfoTool] Error executing tool ${args.toolId} via getUtilityInfoFromAgent:`, getResponse);
                 return getResponse;
             }
             return getResponse;
@@ -95,14 +94,14 @@ export function createCallUtilityTool(
             params: z.any().describe('An object containing the parameters required by the specific functional utility tool being called.')
         }),
         execute: async (args: { toolId: string, params: any }): Promise<ServiceResponse<ExecuteToolResult>> => { // Argument key is params
-            console.log(`[tool-creators] Executing utility_call_utility for tool: ${args.toolId}`);
+            console.log(`[createCallUtilityTool] Executing utility_call_utility for tool: ${args.toolId}`);
             const payload: ExecuteToolPayload = {
                 params: args.params,
                 conversationId: conversationId 
             };
             const callResponse: ServiceResponse<ExecuteToolResult> = await callUtilityFromAgent(agentInternalCredentials, args.toolId, payload);
             if (!callResponse.success) {
-                console.error(`[tool-creators] Error executing tool ${args.toolId} via callUtilityFromAgent:`, callResponse);
+                console.error(`[createCallUtilityTool] Error executing tool ${args.toolId} via callUtilityFromAgent:`, callResponse);
                 return callResponse; 
             }
             return callResponse;
@@ -126,13 +125,13 @@ export async function createFunctionalToolObject(
     agentInternalCredentials: AgentInternalCredentials,
     conversationId: string
 ): Promise<{ id: string, tool: Tool }> { 
-    console.log(`[tool-creators] Fetching functional tool object info for: ${toolId}`);
+    console.log(`[createFunctionalToolObject] Fetching functional tool object info for: ${toolId}`);
     
     // 1. Fetch tool info (description, JSON schema)
     const infoResponse = await getUtilityInfoFromAgent(agentInternalCredentials, conversationId, toolId);
 
     if (!infoResponse.success || !infoResponse.data) {
-        console.error(`[tool-creators] Failed to get info for tool ${toolId}:`, infoResponse.error);
+        console.error(`[createFunctionalToolObject] Failed to get info for tool ${toolId}:`, infoResponse.error);
         throw new Error(`Could not fetch tool definition for '${toolId}'.`);
     }
 
@@ -142,7 +141,7 @@ export async function createFunctionalToolObject(
 
     // Validate if schema exists and is an object
     if (!fetchedJsonSchema || typeof fetchedJsonSchema !== 'object') {
-        console.warn(`[tool-creators] No valid parameters schema found for tool ${toolId}. Using empty schema.`);
+        console.warn(`[createFunctionalToolObject] No valid parameters schema found for tool ${toolId}. Using empty schema.`);
         // Potentially throw error or use a default empty schema depending on requirements
         // For now, let's proceed but the AI might not be able to use parameters
     }
@@ -164,7 +163,7 @@ export async function createFunctionalToolObject(
                 const callResponse: ServiceResponse<ExecuteToolResult> = await callUtilityFromAgent(agentInternalCredentials, toolId, payload);
 
                 if (!callResponse.success) {
-                    console.error(`🟢🕥[tool-creators] Error executing tool ${toolId} via callUtilityFromAgent:`, callResponse);
+                    console.error(`[createFunctionalToolObject] Error executing tool ${toolId} via callUtilityFromAgent:`, callResponse);
                     return callResponse; 
                 }
                 return callResponse;

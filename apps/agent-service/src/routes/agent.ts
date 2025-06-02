@@ -176,7 +176,6 @@ router.get('/get-or-create-user-agents', async (req: Request, res: Response, nex
     console.log(`${logPrefix} Calling listUserAgents service`);
     // Pass params object and auth details
     const listResult = await listUserAgents(
-      { clientUserId: clientUserId }, // Params object
       platformUserId,
       platformApiKey,
       clientUserId,

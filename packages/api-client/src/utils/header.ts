@@ -26,7 +26,7 @@ export const getAuthHeadersFromAgent = (req: RequestWithHeaders): ServiceRespons
   
     const missingHeaders: string[] = [];
     if (!platformUserId) missingHeaders.push('x-platform-user-id');
-    if (!platformOrganizationId) missingHeaders.push('x-platform-organization-id');
+    // if (!platformOrganizationId) missingHeaders.push('x-platform-organization-id');
     if (!clientUserId) missingHeaders.push('x-client-user-id');
     if (!clientOrganizationId) missingHeaders.push('x-client-organization-id');
     if (!platformApiKey) missingHeaders.push('x-platform-api-key');

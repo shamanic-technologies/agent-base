@@ -14,91 +14,102 @@ import {
 } from '@agent-base/types';
 import { mapClientOrganizationFromDatabase } from '@agent-base/types';
 import { CLIENT_ORGANIZATIONS_TABLE, CLIENT_USERS_TABLE } from '../types/database-constants.js';
+import { upsertClientUser } from './client-users.js'; // Import upsertClientUser
 
 /**
- * Creates or updates a client organization record based on platform_user_id and auth_organization_id.
- * If a organization with the given platform_user_id and auth_organization_id exists, it returns the existing record.
- * Otherwise, it creates a new record with the provided details.
+ * Creates or updates a client organization record.
+ * If an organization with the given authOrganizationId exists, it updates its name and profile image.
+ * Otherwise, it creates a new record.
+ * The platformUserId is used to identify the creator of the organization.
  * 
- * @param {UpsertClientOrganizationInput} input - The details of the client organization to upsert.
- * @returns {Promise<ServiceResponse<ClientOrganization>>} A response containing the data of the created or found client organization.
+ * @param {UpsertClientOrganizationInput} input - The details of the client organization.
+ *        Expected fields: platformUserId (for creator), authOrganizationId (unique ID of org), name, profileImage (optional).
+ * @returns {Promise<ServiceResponse<ClientOrganization>>} A response containing the data of the created or updated client organization.
  */
 export async function upsertClientOrganization(input: UpsertClientOrganizationInput): Promise<ServiceResponse<ClientOrganization>> {
   let client: PoolClient | null = null;
   
-  // Validate input
-  if (!input || !input.platformUserId || !input.authOrganizationId) {
-    console.error('Missing required fields: platformUserId and authOrganizationId');
+  // Validate input - Assuming UpsertClientOrganizationInput is updated in @agent-base/types
+  // to include name, and authOrganizationId is the unique key for the org.
+  // platformUserId is needed to link/create the creator client_user.
+  if (!input || !input.creatorClientUserId || !input.clientAuthOrganizationId) {
+    const missingFields = [];
+    if (!input.creatorClientUserId) missingFields.push('creatorClientUserId (for creator)');
+    if (!input.clientAuthOrganizationId) missingFields.push('clientAuthOrganizationId (for client_auth_organization_id)');
+    
+    console.error(`[Upsert Client Org] Missing required fields: ${missingFields.join(', ')}`);
     return {
       success: false,
-      error: 'Missing required fields: platformUserId and authOrganizationId'
+      error: `Missing required fields: ${missingFields.join(', ')}`
     };
   }
 
   try {
     client = await getClient();
-    
-    // Use INSERT ... ON CONFLICT to handle upsert logic based on the UNIQUE constraint
-    // on platform_client_user_id. If the platform_client_user_id already exists,
-    // DO NOTHING is specified, and the existing row is returned by the subsequent SELECT.
-    // Note: This approach assumes we don't need to update any fields if the user already exists.
-    // If updates were needed, DO UPDATE SET would be used.
-    const upsertQuery = `
-      INSERT INTO "${CLIENT_ORGANIZATIONS_TABLE}" (platform_user_id, auth_organization_id)
-      VALUES ($1, $2)
-      ON CONFLICT (platform_user_id, auth_organization_id) DO NOTHING;
+    await client.query('BEGIN'); // Start transaction
+
+    // Step 2: Upsert the organization using client_auth_organization_id as the conflict target
+    const upsertOrgQuery = `
+      INSERT INTO "${CLIENT_ORGANIZATIONS_TABLE}" (
+        name, 
+        profile_image, 
+        creator_client_user_id, 
+        client_auth_organization_id, 
+        created_at, 
+        updated_at
+      )
+      VALUES ($1, $2, $3, $4, NOW(), NOW())
+      ON CONFLICT (client_auth_organization_id) DO UPDATE SET
+        name = EXCLUDED.name,
+        profile_image = COALESCE(EXCLUDED.profile_image, "${CLIENT_ORGANIZATIONS_TABLE}".profile_image),
+        -- creator_client_user_id should generally not change on conflict if org already exists
+        updated_at = NOW()
+      RETURNING *;
     `;
     
-    // Log the parameters just before executing the query
-    console.log('[Upsert Client User] Executing upsert query with params:', {
-      param1: input.platformUserId,
-      param2: input.authOrganizationId
+    console.log('[Upsert Client Org] Executing upsert organization query with params:', {
+      name: input.name,
+      profileImage: input.profileImage, // Optional
+      creatorClientUserId: input.creatorClientUserId,
+      clientAuthOrganizationId: input.clientAuthOrganizationId,
     });
 
-    await client.query(upsertQuery, [input.platformUserId, input.authOrganizationId]);
+    const orgResult = await client.query(upsertOrgQuery, [
+      input.name || 'Personal',
+      input.profileImage, // Can be null if optional
+      input.creatorClientUserId,
+      input.clientAuthOrganizationId, // This maps to client_auth_organization_id
+    ]);
 
-    // Regardless of insert or conflict, fetch the record matching platform_client_user_id
-    const selectQuery = `
-      SELECT * FROM "${CLIENT_ORGANIZATIONS_TABLE}"
-      WHERE platform_user_id = $1 AND auth_organization_id = $2
-      LIMIT 1;
-    `;
-
-    const result = await client.query(selectQuery, [input.platformUserId, input.authOrganizationId]);
-
-    if (result.rowCount === 0 || !result.rows[0]) {
-      // This case should ideally not happen if the INSERT or the conflict path worked,
-      // but included for robustness.
-      console.error('Failed to find client user after upsert attempt for platformUserId:', input.platformUserId);
-      return {
-        success: false,
-        error: 'Failed to upsert client user record.'
-      };
+    if (orgResult.rowCount === 0 || !orgResult.rows[0]) {
+      await client.query('ROLLBACK');
+      console.error('[Upsert Client Org] Failed to upsert client organization record after user processing.');
+      return { success: false, error: 'Failed to save client organization record.' };
     }
+
+    await client.query('COMMIT'); // Commit transaction
     
-    // Map the database record using the updated helper function
-    const upsertedOrganization = mapClientOrganizationFromDatabase(result.rows[0]);
+    const upsertedOrganization = mapClientOrganizationFromDatabase(orgResult.rows[0]);
     
     return {
       success: true,
-      data: upsertedOrganization
+      data: upsertedOrganization,
     };
   } catch (error: any) {
-    console.error('Error upserting client user:', error);
-    // Handle potential unique constraint violation or other DB errors more gracefully if needed
-    // For now, just return the generic error message
-    if (error.message.includes('Invalid database row') || error.message.includes('missing required fields')) {
-       return { 
-        success: false, 
-        error: `Internal mapping error: ${error.message}`
-      };
+    if (client) {
+      try {
+        await client.query('ROLLBACK');
+      } catch (rbError) {
+        console.error('[Upsert Client Org] Error during ROLLBACK:', rbError);
+      }
     }
-    return { 
-      success: false, 
-      error: error.message || 'Failed to upsert client user'
+    console.error('[Upsert Client Org] Error during operation:', error);
+    // Check for specific known error codes if necessary, e.g., foreign key violation if creator_client_user_id is somehow invalid
+    return {
+      success: false,
+      error: error.message || 'Failed to upsert client organization due to an internal error.',
     };
   } finally {
-    // Ensure the client is always released
     if (client) {
       client.release();
     }

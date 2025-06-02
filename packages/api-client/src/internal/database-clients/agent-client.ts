@@ -90,7 +90,6 @@ export const updateUserAgent = async (
  * GET /agents/list-user-agents
  */
 export const listUserAgents = async (
-  params: ListUserAgentsParams, // Use defined interface
   platformUserId: string,
   platformApiKey: string,
   clientUserId: string,
@@ -106,7 +105,7 @@ export const listUserAgents = async (
     clientOrganizationId, // Pass clientOrganizationId for header
     platformApiKey, // Pass platformApiKey for header
     undefined,    // No request body for GET
-    params // Pass clientUserId as user_id query param
+    undefined // Pass clientUserId as user_id query param
   );
 };
 

@@ -76,6 +76,7 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
         console.error('[Agent Service /run] Missing required headers or body fields.');
         // Combine checks for brevity
         let errorDetail = !clientUserId ? 'Missing x-client-user-id' :
+                          !clientOrganizationId ? 'Missing x-organization-id':
                           !platformUserId ? 'Missing x-platform-user-id' :
                           !platformApiKey ? 'Missing x-platform-api-key' :
                                             'Missing message or conversationId';
