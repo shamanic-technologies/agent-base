@@ -59,7 +59,6 @@ COPY --from=builder_stage /app/deploy_temp .
 # IMPORTANT: For production, DATABASE_URL should be injected as an environment variable 
 # into the container, not from a .env file. Copying .env here for convenience in environments
 # where it might be used, but this is not a recommended production practice.
-COPY apps/database-service/.env .env
 
 # Expose the port the service listens on (ensure this matches your service, 8080 default for railway)
 EXPOSE 8080

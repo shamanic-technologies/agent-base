@@ -13,7 +13,7 @@
     "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist",
     "test": "jest",
     "migrate:create": "pnpm exec dotenv -e .env -- node-pg-migrate create",
-    "migrate:up": "pnpm exec dotenv -e .env -- node-pg-migrate up",
+    "migrate:up": "pnpm exec node-pg-migrate up",
     "migrate:down": "pnpm exec dotenv -e .env -- node-pg-migrate down",
     "db:seed": "ts-node src/seed.ts"
   },
