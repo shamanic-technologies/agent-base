@@ -65,4 +65,4 @@ EXPOSE 8080
 
 # Define the command to run migrations and then run the built service
 # This assumes migrate:up script correctly loads .env or DATABASE_URL is in the environment
-CMD sh -c "echo 'DATABASE_URL_IS: '$DATABASE_URL && echo '--- ls /app ---' && ls -la /app && echo '--- ls /app/migrations ---' && ls -la /app/migrations && echo '--- Running migrations ---' && pnpm migrate:up && echo '--- Migrations finished, starting app ---' && node dist/index.js" 
+CMD sh -c "pnpm migrate:up && node dist/index.js" 
