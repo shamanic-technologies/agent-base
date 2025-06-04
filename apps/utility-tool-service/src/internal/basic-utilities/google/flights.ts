@@ -7,7 +7,9 @@
 import axios from 'axios';
 import { 
   InternalUtilityTool,
-  ErrorResponse
+  ErrorResponse,
+  ServiceResponse,
+  ExecuteToolResult
 } from '@agent-base/types';  
 import { registry } from '../../../registry/registry.js';
 
@@ -49,9 +51,7 @@ interface FlightResult {
 }
 
 // Define success response structure
-interface GoogleFlightsSuccessResponse {
-  status: 'success';
-  data: {
+interface GoogleFlightsSuccessResponse_Local {
     origin: string;
     destination: string;
     departure_date?: string | null;
@@ -62,10 +62,9 @@ interface GoogleFlightsSuccessResponse {
     flights: FlightResult[];
     price_range?: string | null;
     message?: string; // Include message for no results case
-  }
 }
 
-type GoogleFlightsResponse = GoogleFlightsSuccessResponse | ErrorResponse;
+// type GoogleFlightsResponse = GoogleFlightsSuccessResponse | ErrorResponse; // Old type
 
 // --- End Local Type Definitions ---
 
@@ -137,7 +136,7 @@ const googleFlightsUtility: InternalUtilityTool = {
     required: ['origin', 'destination', 'departure_date']
   },
   
-  execute: async (clientUserId: string, clientOrganizationId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: GoogleFlightsRequest): Promise<GoogleFlightsResponse> => {
+  execute: async (clientUserId: string, clientOrganizationId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: GoogleFlightsRequest): Promise<ServiceResponse<ExecuteToolResult>> => {
     const logPrefix = '✈️ [GOOGLE_FLIGHTS]';
     try {
       // Use raw params
@@ -167,7 +166,11 @@ const googleFlightsUtility: InternalUtilityTool = {
       const apiKey = process.env.SERPAPI_API_KEY;
       if (!apiKey) {
         console.error(`${logPrefix} SERPAPI_API_KEY not set`);
-          return { success: false, error: "Service configuration error: SERPAPI_API_KEY is not set." } as ErrorResponse;
+          return {
+            success: false,
+            error: "Service configuration error: SERPAPI_API_KEY is not set.",
+            hint: 'Contact support, and ask them to set the SERPAPI_API_KEY environment variable.'
+          } as ErrorResponse;
       }
       
       let apiUrl = `https://serpapi.com/search.json?engine=google_flights&api_key=${apiKey}`;
@@ -195,7 +198,8 @@ const googleFlightsUtility: InternalUtilityTool = {
         return {
             success: false,
             error: `Google Flights search failed (HTTP ${response.status})`,
-            details: `SerpAPI error: ${errorText}`
+            details: `SerpAPI error: ${errorText}`,
+            hint: 'Contact support if the problem persists.'
         } as ErrorResponse;
       }
 
@@ -205,9 +209,7 @@ const googleFlightsUtility: InternalUtilityTool = {
       const flightResults = data.best_flights || data.other_flights || []; // Check both best and other flights
       
       if (flightResults.length === 0) {
-        const noResultsResponse: GoogleFlightsSuccessResponse = {
-            status: 'success',
-            data: {
+        const noResultsToolData: GoogleFlightsSuccessResponse_Local = {
                 origin,
                 destination,
                 departure_date: departure_date || null,
@@ -217,9 +219,8 @@ const googleFlightsUtility: InternalUtilityTool = {
                 results_count: 0,
                 flights: [],
                 message: "No flight results found for your query."
-            }
         };
-        return noResultsResponse;
+        return { success: true, data: noResultsToolData };
       }
 
       // Process the flights
@@ -257,9 +258,7 @@ const googleFlightsUtility: InternalUtilityTool = {
         };
       });
       
-      const successResponse: GoogleFlightsSuccessResponse = {
-        status: 'success',
-        data: {
+      const toolSpecificSuccessData_Found: GoogleFlightsSuccessResponse_Local = {
           origin,
           destination,
           departure_date: departure_date || null,
@@ -269,9 +268,8 @@ const googleFlightsUtility: InternalUtilityTool = {
           results_count: flights.length,
           flights,
           price_range: data.price_insights?.lowest_price ? `From ${data.price_insights.lowest_price}${data.search_parameters?.currency}` : null // Adjusted path
-        }
       };
-      return successResponse;
+      return { success: true, data: toolSpecificSuccessData_Found };
 
     } catch (error: any) {
       console.error(`${logPrefix} Error:`, error);
@@ -280,7 +278,8 @@ const googleFlightsUtility: InternalUtilityTool = {
       return {
         success: false,
         error: 'Failed to search for Google Flights',
-        details: error instanceof Error ? error.message : String(error)
+        details: error instanceof Error ? error.message : String(error),
+        hint: 'Contact support if the problem persists.'
       } as ErrorResponse;
     }
   }

@@ -10,6 +10,7 @@ import {
   InternalUtilityTool, 
   ErrorResponse,
   ServiceResponse,
+  ExecuteToolResult,
   UtilityProvider
 } from '@agent-base/types'; // Corrected path relative to api-utilities/google/
 import { registry } from '../../../registry/registry.js'; // Corrected path
@@ -28,18 +29,15 @@ export interface GoogleSearchResult {
   position: number;
 }
 
-export interface GoogleSearchSuccessResponse {
-  status: 'success';
-  data: { // Encapsulate results in data object
+export interface GoogleSearchSuccessResponse_Local {
     query: string;
     results_count: number;
     results: GoogleSearchResult[];
     message?: string;
-  }
 }
 
-export type GoogleSearchResponse = 
-  GoogleSearchSuccessResponse | 
+export type GoogleSearchResponse_Local = 
+  GoogleSearchSuccessResponse_Local | 
   ErrorResponse;
 
 // --- End Local Type Definitions ---
@@ -69,7 +67,7 @@ const googleSearchUtility: InternalUtilityTool = {
     required: ['query']
   },
   
-  execute: async (clientUserId: string, clientOrganizationId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: GoogleSearchRequest): Promise<GoogleSearchResponse> => {
+  execute: async (clientUserId: string, clientOrganizationId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: GoogleSearchRequest): Promise<ServiceResponse<ExecuteToolResult>> => {
     const logPrefix = '🔍 [GOOGLE_SEARCH]';
     try {
       // Use raw params
@@ -116,18 +114,15 @@ const googleSearchUtility: InternalUtilityTool = {
       // Parse the response data
       const data = await apiResponse.json();
       
-      let successResponse: GoogleSearchSuccessResponse;
+      let toolSpecificSuccessData: GoogleSearchSuccessResponse_Local;
 
       // Handle cases where no results are found
       if (!data.organic_results || data.organic_results.length === 0) {
-        successResponse = {
-          status: 'success',
-          data: {
+        toolSpecificSuccessData = {
             query,
             results_count: 0,
             results: [],
             message: "No search results found for your query."
-          }
         };
       } else {
         // Format the search results according to the defined type
@@ -141,16 +136,13 @@ const googleSearchUtility: InternalUtilityTool = {
           }));
 
         // Prepare the success response
-        successResponse = {
-          status: 'success',
-          data: {
+        toolSpecificSuccessData = {
             query,
             results_count: results.length,
             results
-          }
         };
       }
-      return successResponse;
+      return { success: true, data: toolSpecificSuccessData };
       
     } catch (error: any) { // Catch any other unexpected errors
       console.error(`${logPrefix} Unexpected error:`, error);
@@ -158,7 +150,8 @@ const googleSearchUtility: InternalUtilityTool = {
       return { 
         success: false, 
         error: "An unexpected error occurred during the Google search", 
-        details: error instanceof Error ? error.message : String(error)
+        details: error instanceof Error ? error.message : String(error),
+        hint: 'Contact support if the problem persists.'
       } as ErrorResponse;
     }
   }

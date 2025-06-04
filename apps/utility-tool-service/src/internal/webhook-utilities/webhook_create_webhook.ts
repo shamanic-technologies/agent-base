@@ -71,7 +71,7 @@ const webhookCreateWebhookUtility: InternalUtilityTool = {
                     success: false, 
                     error: "Invalid input",
                     details: "Missing one or more required parameters (name, webhookProviderId, subscribedEventId, conversationIdIdentificationMapping)",
-                    hint: "Read the utility description and examples carefully."
+                    hint: "Read the utility description and examples carefully. Then retry."
                 };
             }
 
@@ -101,7 +101,8 @@ const webhookCreateWebhookUtility: InternalUtilityTool = {
             return {
                 success: false,
                 error: 'Failed to execute webhook_create_webhook utility',
-                details: error instanceof Error ? error.message : String(error)
+                details: error instanceof Error ? error.message : String(error),
+                hint: 'Contact support if the problem persists.'
             };
         }
     }

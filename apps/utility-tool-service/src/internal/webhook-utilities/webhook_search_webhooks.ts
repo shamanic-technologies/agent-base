@@ -55,7 +55,8 @@ const webhookSearchWebhooksUtility: InternalUtilityTool = {
                 console.error(`${logPrefix} Invalid parameters. 'query' must be a string if provided.`);
                 return { 
                     success: false, 
-                    error: "Invalid input: 'query' must be a string if provided."
+                    error: "Invalid input: 'query' must be a string if provided.",
+                    hint: 'Review the utility description and examples carefully. Then retry.'
                 };
             }
 
@@ -90,7 +91,8 @@ const webhookSearchWebhooksUtility: InternalUtilityTool = {
             return {
                 success: false,
                 error: 'Failed to execute webhook_search_webhooks utility',
-                details: error instanceof Error ? error.message : String(error)
+                details: error instanceof Error ? error.message : String(error),
+                hint: 'Contact support if the problem persists.'
             };
         }
     }

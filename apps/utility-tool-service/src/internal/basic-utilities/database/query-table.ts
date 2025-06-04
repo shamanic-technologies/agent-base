@@ -6,7 +6,9 @@
  */
 import { 
   InternalUtilityTool, 
-  ErrorResponse
+  ErrorResponse,
+  ServiceResponse,
+  ExecuteToolResult
 } from '@agent-base/types';
 import { registry } from '../../../registry/registry.js';
 import {
@@ -63,14 +65,14 @@ interface QueryDeleteSuccessResponse {
 }
 
 // Union type for all possible success responses
-type QueryTableSuccessResponse = 
+type QueryTableSuccessResponse_Local = 
   | QuerySelectSuccessResponse 
   | QueryInsertSuccessResponse 
   | QueryUpdateSuccessResponse 
   | QueryDeleteSuccessResponse;
 
 // Type union for the utility's overall response
-type QueryTableResponse = QueryTableSuccessResponse | ErrorResponse;
+// type QueryTableResponse = QueryTableSuccessResponse | ErrorResponse; // Old type
 
 // --- End Local Definitions ---
 
@@ -115,7 +117,7 @@ const queryTableUtility: InternalUtilityTool = {
     required: ['table', 'query']
   },
   
-  execute: async (clientUserId: string, clientOrganizationId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: QueryTableRequest): Promise<QueryTableResponse> => {
+  execute: async (clientUserId: string, clientOrganizationId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: QueryTableRequest): Promise<ServiceResponse<ExecuteToolResult>> => {
     const logPrefix = '📊 [DB_QUERY_TABLE]';
     try {
       // Use raw params - validation primarily via Zod schema on the caller side
@@ -203,7 +205,7 @@ const queryTableUtility: InternalUtilityTool = {
         const queryResult = await queryResponse.json();
         const rows = queryResult.records || [];
         
-        const successResponse: QuerySelectSuccessResponse = {
+        const toolSpecificSuccessData: QuerySelectSuccessResponse = {
           status: "success",
           data: {
             message: "SELECT query executed successfully",
@@ -212,7 +214,7 @@ const queryTableUtility: InternalUtilityTool = {
             count: rows.length
           }
         };
-        return successResponse;
+        return { success: true, data: toolSpecificSuccessData };
 
       // --- Handle INSERT Query ---
       } else if (type === 'INSERT') {
@@ -242,16 +244,16 @@ const queryTableUtility: InternalUtilityTool = {
         
         const insertResult = await insertResponse.json();
         
-        const successResponse: QueryInsertSuccessResponse = {
+        const toolSpecificSuccessData_Insert: QueryInsertSuccessResponse = {
           status: "success",
           data: {
             message: "INSERT query executed successfully",
             query_type: "INSERT",
-            affected_rows: 1, // Assuming single record insert
+            affected_rows: 1, 
             inserted_id: insertResult.id
           }
         };
-        return successResponse;
+        return { success: true, data: toolSpecificSuccessData_Insert };
 
       // --- Handle UPDATE Query (Requires Record ID) ---
       } else if (type === 'UPDATE') {
@@ -285,15 +287,15 @@ const queryTableUtility: InternalUtilityTool = {
             return { success: false, error: 'Failed to execute UPDATE query', details: `Status ${updateResponse.status}: ${errorText}` } as ErrorResponse;
          }
 
-         const successResponse: QueryUpdateSuccessResponse = {
+         const toolSpecificSuccessData_Update: QueryUpdateSuccessResponse = {
            status: "success",
            data: {
              message: "UPDATE query executed successfully",
              query_type: "UPDATE",
-             affected_rows: 1 // Assuming single record update
+             affected_rows: 1 
            }
          };
-         return successResponse;
+         return { success: true, data: toolSpecificSuccessData_Update };
 
       // --- Handle DELETE Query (Requires Record ID) ---
       } else if (type === 'DELETE') {
@@ -322,15 +324,15 @@ const queryTableUtility: InternalUtilityTool = {
             return { success: false, error: 'Failed to execute DELETE query', details: `Status ${deleteResponse.status}: ${errorText}` } as ErrorResponse;
          }
 
-         const successResponse: QueryDeleteSuccessResponse = {
+         const toolSpecificSuccessData_Delete: QueryDeleteSuccessResponse = {
            status: "success",
            data: {
              message: "DELETE query executed successfully",
              query_type: "DELETE",
-             affected_rows: 1 // Assuming single record delete
+             affected_rows: 1 
            }
          };
-         return successResponse;
+         return { success: true, data: toolSpecificSuccessData_Delete };
 
       } else {
         // Should not happen if parser is exhaustive

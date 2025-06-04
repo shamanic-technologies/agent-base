@@ -115,9 +115,7 @@ export interface ExecuteToolPayload {
 /**
  * Response from executing an external tool.
  */
-export interface ExecuteToolResult {
-    result: any; // Define based on expected tool outputs
-}
+export type ExecuteToolResult = unknown;
 
 /**
  * Type definition for the structure expected within the data field 

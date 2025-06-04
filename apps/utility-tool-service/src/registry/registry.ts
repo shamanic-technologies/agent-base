@@ -6,7 +6,9 @@
 import { InternalUtilityTool, 
   InternalUtilityInfo,
   UtilitiesList,
-  UtilitiesListItem
+  UtilitiesListItem,
+  ServiceResponse,
+  ExecuteToolResult
 } from '@agent-base/types';
 
 /**
@@ -78,7 +80,7 @@ class InternalUtilityRegistry {
     conversationId: string,
     params: any,
     agentId?: string
-  ): Promise<any> {
+  ): Promise<ServiceResponse<ExecuteToolResult>> {
     const utility = this.getInternalUtility(utilityId);
     
     if (!utility) {
@@ -87,8 +89,9 @@ class InternalUtilityRegistry {
     }
     
     try {
-      console.log(`⚙️ Executing internal utility: ${utilityId}`);
-      return await utility.execute(clientUserId, clientOrganizationId, platformUserId, platformApiKey, conversationId, params, agentId);
+      const executeToolResult: ServiceResponse<ExecuteToolResult> = await utility.execute(clientUserId, clientOrganizationId, platformUserId, platformApiKey, conversationId, params, agentId);
+      console.debug(`⚙️ Internal utility execution result:`, executeToolResult);
+      return executeToolResult;
     } catch (error) {
       console.error(`❌ Error executing internal utility ${utilityId}:`, error);
       return {

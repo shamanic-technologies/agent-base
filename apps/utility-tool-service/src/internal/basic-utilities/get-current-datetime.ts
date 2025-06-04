@@ -83,8 +83,7 @@ const getCurrentDateTimeUtility: InternalUtilityTool = {
       // Return the formatted date and time
       return {
         // Return standard success structure if needed, otherwise keep as is
-        status: 'success', // Assuming a standard success response structure
-        data: {
+
           timestamp: now.getTime(),
           formatted: formattedDate,
           format_type: formatType,
@@ -95,7 +94,7 @@ const getCurrentDateTimeUtility: InternalUtilityTool = {
           minute: now.getMinutes(),
           second: now.getSeconds(),
           timezone_offset_minutes: now.getTimezoneOffset()
-        }
+        
       };
     } catch (error) {
       console.error("❌ [DATETIME] Error:", error);
@@ -106,7 +105,8 @@ const getCurrentDateTimeUtility: InternalUtilityTool = {
       const errorResponse: ErrorResponse = {
         success: false, 
         error: "Failed to get current date and time",
-        details: error instanceof Error ? error.message : String(error)
+        details: error instanceof Error ? error.message : String(error),
+        hint: 'Contact support if the problem persists.'
       };
       return errorResponse;
     }

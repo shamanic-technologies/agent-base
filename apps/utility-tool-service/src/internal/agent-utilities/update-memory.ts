@@ -104,6 +104,7 @@ const updateAgentMemoryUtility: InternalUtilityTool = {
         success: false,
         error: 'Failed to execute update agent memory utility due to an unexpected error.',
         details: error instanceof Error ? error.message : String(error),
+        hint: 'Contact support if the problem persists.'
       };
     }
   },

@@ -5,7 +5,9 @@
  */
 import { 
     InternalUtilityTool, 
-    ErrorResponse
+    ErrorResponse,
+    ServiceResponse,
+    ExecuteToolResult
 } from '@agent-base/types';
 import { registry } from '../../../registry/registry.js';
 import { 
@@ -30,7 +32,7 @@ const xataColumnTypes = [
 ] as const;
 
 // Define Success Response structure
-interface CreateTableSuccessResponse {
+interface CreateTableSuccessResponse_Local {
   status: 'success';
   data: {
     message: string;
@@ -44,7 +46,7 @@ interface CreateTableSuccessResponse {
   }
 }
 
-type CreateTableResponse = CreateTableSuccessResponse | ErrorResponse;
+// type CreateTableResponse = CreateTableSuccessResponse | ErrorResponse; // Old type
 
 // --- End Local Definitions ---
 
@@ -91,7 +93,7 @@ const createTableUtility: InternalUtilityTool = {
     required: ['name', 'description', 'schema'] // Added required fields
   },
   
-  execute: async (clientUserId: string, clientOrganizationId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: CreateTableRequest): Promise<CreateTableResponse> => {
+  execute: async (clientUserId: string, clientOrganizationId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: CreateTableRequest): Promise<ServiceResponse<ExecuteToolResult>> => {
     const logPrefix = '📊 [DB_CREATE_TABLE]';
     try {
       // Use raw params
@@ -151,20 +153,24 @@ const createTableUtility: InternalUtilityTool = {
       }
       
       // Return standard success response
-      const successResponse: CreateTableSuccessResponse = {
+      const toolSpecificSuccessData: CreateTableSuccessResponse_Local = {
         status: "success",
         data: {
           message: "Table created successfully (column addition results may vary)",
           table: {
-            id: tableResult.id || `table_${name}`, // Use actual ID if returned
+            id: tableResult.id || `table_${name}`, 
             name,
             description,
-            schema, // Return the requested schema
+            schema, 
             created_at: new Date().toISOString()
           }
         }
       };
-      return successResponse;
+      
+      return {
+        success: true,
+        data: toolSpecificSuccessData
+      };
 
     } catch (error: any) {
       console.error(`${logPrefix} Error creating table:`, error);

@@ -9,6 +9,7 @@ import {
   ErrorResponse,
   // JsonSchema, // Removed
   ServiceResponse,
+  ExecuteToolResult,
   UtilityProvider
 } from '@agent-base/types';
 import { registry } from '../../../registry/registry.js';
@@ -26,7 +27,7 @@ export interface GetTableRequest {
 }
 
 // Define Success Response structure
-interface GetTableSuccessResponse {
+interface GetTableSuccessResponse_Local {
   status: 'success';
   data: {
     message: string;
@@ -40,7 +41,7 @@ interface GetTableSuccessResponse {
   }
 }
 
-type GetTableResponse = GetTableSuccessResponse | ErrorResponse;
+// type GetTableResponse = GetTableSuccessResponse | ErrorResponse; // Old type
 
 // --- End Local Definitions ---
 
@@ -83,7 +84,7 @@ const getTableUtility: InternalUtilityTool = {
     required: ['table'] // Added required field
   },
   
-  execute: async (clientUserId: string, clientOrganizationId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: GetTableRequest): Promise<GetTableResponse> => {
+  execute: async (clientUserId: string, clientOrganizationId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: GetTableRequest): Promise<ServiceResponse<ExecuteToolResult>> => {
     const logPrefix = '📊 [DB_GET_TABLE]';
     try {
       // Use raw params - validation primarily via Zod schema on the caller side
@@ -186,14 +187,17 @@ const getTableUtility: InternalUtilityTool = {
       };
       
       // Return standard success response
-      const successResponse: GetTableSuccessResponse = {
+      const toolSpecificSuccessData: GetTableSuccessResponse_Local = {
         status: "success",
         data: {
           message: "Table information retrieved successfully",
           table: tableInfo
         }
       };
-      return successResponse;
+      return {
+        success: true,
+        data: toolSpecificSuccessData
+      };
 
     } catch (error: any) {
       console.error(`${logPrefix} Error getting table information:`, error);

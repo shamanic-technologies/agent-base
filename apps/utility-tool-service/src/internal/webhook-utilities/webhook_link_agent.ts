@@ -55,7 +55,8 @@ const webhookLinkAgentUtility: InternalUtilityTool = {
                 console.error(`${logPrefix} Invalid or missing required parameters (webhookId, agentIdToLink).`);
                 return { 
                     success: false, 
-                    error: "Invalid input: Missing required parameters (webhookId, agentIdToLink)."
+                    error: "Invalid input: Missing required parameters (webhookId, agentIdToLink).",
+                    hint: 'Review the utility description and examples carefully. Then retry.'
                 };
             }
 
@@ -67,9 +68,7 @@ const webhookLinkAgentUtility: InternalUtilityTool = {
                 platformApiKey,
                 agentId // Pass the calling agent's ID if needed by the client/endpoint
             };
-            
-            console.log(`${logPrefix} Attempting to link agent ${params.agentIdToLink} to webhook: ${params.webhookId}`);
-      
+                  
             // Call the client function from @agent-base/api-client
             const resultResponse = await linkAgentToWebhookInternalApiService(
                 params.webhookId,
@@ -80,9 +79,7 @@ const webhookLinkAgentUtility: InternalUtilityTool = {
             if (!resultResponse.success) {
                 console.error(`${logPrefix} Error linking agent to webhook:`, resultResponse.error);
             }
-            
-            console.log(`${logPrefix} Webhook store response received: success=${resultResponse.success}`);
-      
+                  
             return resultResponse;
 
         } catch (error: any) {
@@ -90,7 +87,8 @@ const webhookLinkAgentUtility: InternalUtilityTool = {
             return {
                 success: false,
                 error: 'Failed to execute webhook_link_agent utility',
-                details: error instanceof Error ? error.message : String(error)
+                details: error instanceof Error ? error.message : String(error),
+                hint: 'Contact support if the problem persists.'
             };
         }
     }

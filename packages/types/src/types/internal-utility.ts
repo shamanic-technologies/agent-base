@@ -1,5 +1,6 @@
 import { ServiceResponse } from "./common.js";
 import type { JSONSchema7 } from 'json-schema'; // Import JSONSchema7
+import { ExecuteToolResult } from "./utility.js";
 
 /**
    * Standard interface for all utility tools in the system
@@ -24,7 +25,7 @@ export interface InternalUtilityTool {
         conversationId: string,
         params: any,
         agentId?: string
-    ) => Promise<any>;
+    ) => Promise<ServiceResponse<ExecuteToolResult>>;
 }
 
 

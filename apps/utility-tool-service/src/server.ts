@@ -206,7 +206,7 @@ app.post('/call-tool/:id', async (req, res): Promise<void> => {
     if (internalUtility) {
         // Pass clientUserId as the 'userId' parameter for internal execution
         // Ensure platformUserId and platformApiKey are passed according to the updated interface
-        const result: ExecuteToolResult = await registry.executeInternalUtility(
+        const executeToolResult: ServiceResponse<ExecuteToolResult> = await registry.executeInternalUtility(
             id, 
             agentServiceCredentials.clientUserId, 
             agentServiceCredentials.clientOrganizationId,
@@ -216,12 +216,14 @@ app.post('/call-tool/:id', async (req, res): Promise<void> => {
             params, 
             agentServiceCredentials.agentId
         );
-        
-        const response: ServiceResponse<ExecuteToolResult> = {
-            success: true,
-            data: result 
-        };
-        res.status(200).json(response); 
+
+        if (!executeToolResult.success) {
+          console.error(`${logPrefix} Internal tool execution failed: ${executeToolResult.error}`);
+          res.status(502).json(executeToolResult);
+          return;
+        }
+        console.debug(`${logPrefix} Internal tool execution result:`, executeToolResult);
+        res.status(200).json(executeToolResult); 
         return;
     }
 

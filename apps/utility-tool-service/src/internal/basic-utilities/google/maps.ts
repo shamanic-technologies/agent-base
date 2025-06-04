@@ -9,6 +9,7 @@ import {
   InternalUtilityTool,
   ErrorResponse, // Import if needed
   ServiceResponse,
+  ExecuteToolResult,
   UtilityProvider
 } from '@agent-base/types'; // Corrected path relative to api-utilities/google/
 import { registry } from '../../../registry/registry.js'; // Corrected path
@@ -37,9 +38,7 @@ interface PlaceResult {
 }
 
 // Define success response structure
-interface GoogleMapsSuccessResponse {
-  status: 'success';
-  data: {
+interface GoogleMapsSuccessResponse_Local {
     query: string;
     location?: string | null;
     results_count: number;
@@ -47,10 +46,9 @@ interface GoogleMapsSuccessResponse {
     result?: PlaceResult; // For single place
     results?: PlaceResult[]; // For list of places
     message?: string; // For no results
-  }
 }
 
-type GoogleMapsResponse = GoogleMapsSuccessResponse | ErrorResponse;
+type GoogleMapsResponse = GoogleMapsSuccessResponse_Local | ErrorResponse;
 
 // --- End Local Type Definitions ---
 
@@ -84,7 +82,7 @@ const googleMapsUtility: InternalUtilityTool = {
     required: ['query']
   },
   
-  execute: async (clientUserId: string, clientOrganizationId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: GoogleMapsRequest): Promise<GoogleMapsResponse> => {
+  execute: async (clientUserId: string, clientOrganizationId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: GoogleMapsRequest): Promise<ServiceResponse<ExecuteToolResult>> => {
     const logPrefix = '🗺️ [GOOGLE_MAPS]';
     try {
       // Use raw params
@@ -104,7 +102,11 @@ const googleMapsUtility: InternalUtilityTool = {
       const apiKey = process.env.SERPAPI_API_KEY;
       if (!apiKey) {
         console.error(`${logPrefix} SERPAPI_API_KEY not set`);
-        return { success: false, error: "Service configuration error: SERPAPI_API_KEY is not set." } as ErrorResponse;
+        return {
+          success: false,
+          error: "Service configuration error: SERPAPI_API_KEY is not set.",
+          hint: 'Contact support, and ask them to set the SERPAPI_API_KEY environment variable.'
+        } as ErrorResponse;
       }
       
       let apiUrl = `https://serpapi.com/search.json?engine=google_maps&q=${encodeURIComponent(query)}&api_key=${apiKey}`;
@@ -124,21 +126,21 @@ const googleMapsUtility: InternalUtilityTool = {
         return { 
             success: false, 
             error: `Google Maps search failed (HTTP ${response.status})`, 
-            details: `SerpAPI error: ${errorText}` 
+            details: `SerpAPI error: ${errorText}`,
+            hint: 'Contact support if the problem persists.'
         } as ErrorResponse;
       }
 
       const data = await response.json();
       
-      let successResponse: GoogleMapsSuccessResponse;
+      let toolSpecificSuccessData: GoogleMapsSuccessResponse_Local;
 
       // Structure the response based on the type of results received
       if (data.place_results) {
         // Single place detail
         const place = data.place_results;
-        successResponse = {
-          status: 'success',
-          data: {
+        toolSpecificSuccessData = {
+
             query,
             location: location || null,
             results_count: 1,
@@ -156,7 +158,6 @@ const googleMapsUtility: InternalUtilityTool = {
               description: place.description || null,
               coordinates: place.gps_coordinates || null
             }
-          }
         };
       } else if (data.local_results && data.local_results.length > 0) {
         // Multiple places
@@ -174,30 +175,26 @@ const googleMapsUtility: InternalUtilityTool = {
           coordinates: place.gps_coordinates || null
         }));
         
-        successResponse = {
-          status: 'success',
-          data: {
+        toolSpecificSuccessData = {
+
             query,
             location: location || null,
             results_count: places.length,
             type: 'place_list',
             results: places
-          }
         };
       } else {
         // No results found
-        successResponse = {
-          status: 'success',
-          data: {
+        toolSpecificSuccessData = {
+
             query,
             location: location || null,
             results_count: 0,
             type: 'no_results',
             message: "No place results found for your query."
-          }
         };
       }
-      return successResponse;
+      return { success: true, data: toolSpecificSuccessData };
 
     } catch (error: any) {
       console.error(`${logPrefix} Error:`, error);
@@ -206,7 +203,8 @@ const googleMapsUtility: InternalUtilityTool = {
       return {
         success: false,
         error: 'Failed to search Google Maps',
-        details: error instanceof Error ? error.message : String(error)
+        details: error instanceof Error ? error.message : String(error),
+        hint: 'Contact support if the problem persists.'
       } as ErrorResponse;
     }
   }

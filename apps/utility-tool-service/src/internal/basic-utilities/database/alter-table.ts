@@ -6,7 +6,9 @@
 import { 
   InternalUtilityTool, 
   ErrorResponse,
-  UtilityProvider
+  UtilityProvider,
+  ServiceResponse,
+  ExecuteToolResult
 } from '@agent-base/types';
 import { registry } from '../../../registry/registry.js';
 import {
@@ -36,7 +38,7 @@ const xataColumnTypes = [
 ] as const;
 
 // Define Success Response structure
-interface AlterTableSuccessResponse {
+interface AlterTableSuccessResponse_Local {
   status: 'success';
   data: {
     message: string;
@@ -56,7 +58,7 @@ interface AlterTableSuccessResponse {
   }
 }
 
-type AlterTableResponse = AlterTableSuccessResponse | ErrorResponse;
+// type AlterTableResponse = AlterTableSuccessResponse | ErrorResponse; // Old type, will be replaced by ServiceResponse
 
 // --- End Local Definitions ---
 
@@ -103,7 +105,7 @@ const alterTableUtility: InternalUtilityTool = {
     required: ['table'],
   },
   
-  execute: async (clientUserId: string, clientOrganizationId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: AlterTableRequest): Promise<AlterTableResponse> => {
+  execute: async (clientUserId: string, clientOrganizationId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: AlterTableRequest): Promise<ServiceResponse<ExecuteToolResult>> => {
     const logPrefix = '📊 [DB_ALTER_TABLE]';
     try {
       // Use raw params
@@ -158,7 +160,7 @@ const alterTableUtility: InternalUtilityTool = {
       const workspaceUrl = `https://${workspace.slug}-${workspace.unique_id}.${region}.xata.sh`;
       const baseApiUrl = `${workspaceUrl}/db/${databaseName}:${branch}/tables/${table}`; // Base URL for table operations
       
-      const alterations: AlterTableSuccessResponse['data']['table']['alterations'] = [];
+      const alterations: AlterTableSuccessResponse_Local['data']['table']['alterations'] = [];
       const xataClient = getXataClient(); // Assuming this gets a pre-configured client or uses API key
       
       // Handle adding a column
@@ -247,7 +249,7 @@ const alterTableUtility: InternalUtilityTool = {
       }
       
       // Return successful response
-      const successResponse: AlterTableSuccessResponse = {
+      const toolSpecificSuccessData: AlterTableSuccessResponse_Local = {
         status: "success",
         data: {
           message: "Table alteration process completed.",
@@ -259,7 +261,11 @@ const alterTableUtility: InternalUtilityTool = {
           }
         }
       };
-      return successResponse;
+      
+      return {
+        success: true,
+        data: toolSpecificSuccessData
+      };
 
     } catch (error: any) {
       console.error(`${logPrefix} Error altering table:`, error);

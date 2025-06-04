@@ -8,6 +8,7 @@ import { OAuthProvider } from "./oauth.js";
 import { SuccessResponse, ErrorResponse } from "./common.js";
 import { UtilityProvider } from "./utility.js";
 import type { OpenAPIObject } from 'openapi3-ts/oas30';
+import { ExecuteToolResult } from "./utility.js";
 
 export enum ApiToolStatus {
     UNSET = 'unset',
@@ -83,10 +84,11 @@ export interface ApiToolExecution extends ApiToolExecutionData {
 /**
  * Represents any possible valid response from executing an external utility
  */
-export type ApiToolExecutionResponse =
-    SuccessResponse<SetupNeeded> |
-    ErrorResponse |
-    SuccessResponse<unknown>;
+// export type ApiToolExecutionResponse =
+//     SuccessResponse<SetupNeeded> |
+//     ErrorResponse |
+//     SuccessResponse<ExecuteToolResult>;
+export type ApiToolExecutionResponse = SetupNeeded | ExecuteToolResult;
 
 export interface ApiToolInfo extends InternalUtilityInfo {
     name: string;

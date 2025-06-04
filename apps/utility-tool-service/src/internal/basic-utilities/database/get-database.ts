@@ -8,6 +8,8 @@ import { z } from 'zod'; // Import Zod
 import { 
   InternalUtilityTool,
   ErrorResponse,
+  ServiceResponse,
+  ExecuteToolResult
 } from '@agent-base/types';
 import { registry } from '../../../registry/registry.js';
 // Removed BaseClient import as direct client usage is moved
@@ -64,17 +66,17 @@ interface UserDataResponse {
 /**
  * Success response structure for this utility
  */
-interface GetDatabaseSuccessResponse {
+interface GetDatabaseSuccessResponse_Local {
   status: 'success';
   data: {
     database_id: string;
     database_name: string;
-    tables: TableInfo[]; // Use TableInfo interface
+    tables: TableInfo[];
   }
 }
 
 // Type union for the utility's response
-type GetDatabaseResponse = GetDatabaseSuccessResponse | ErrorResponse;
+// type GetDatabaseResponse = GetDatabaseSuccessResponse | ErrorResponse; // Old type
 
 // --- End Local Definitions ---
 
@@ -202,7 +204,7 @@ async function createUserDatabase(userId: string): Promise<string | null> {
  * @returns Database information object matching GetDatabaseSuccessResponse['data'].
  * @throws Error if user ID is missing, or if DB creation/retrieval fails critically.
  */
-async function getUserDatabase(userId: string): Promise<GetDatabaseSuccessResponse['data']> {
+async function getUserDatabase(userId: string): Promise<GetDatabaseSuccessResponse_Local['data']> {
   const logPrefix = '[DB_GET_USER_DB]';
   try {
     if (!userId) {
@@ -246,17 +248,21 @@ const getDatabaseUtility: InternalUtilityTool = {
     properties: {}
   },
   
-  execute: async (clientUserId: string, clientOrganizationId: string, platformUserId: string, platformApiKey: string, conversationId: string): Promise<GetDatabaseResponse> => {
+  execute: async (clientUserId: string, clientOrganizationId: string, platformUserId: string, platformApiKey: string, conversationId: string): Promise<ServiceResponse<ExecuteToolResult>> => {
     const logPrefix = '📊 [DB_GET_DATABASE]';
     try {
       console.log(`${logPrefix} Getting database information for user ${clientUserId}`);
       const databaseInfo = await getUserDatabase(clientUserId);
       
-      const successResponse: GetDatabaseSuccessResponse = {
-        status: 'success',
+      const toolSpecificSuccessData: GetDatabaseSuccessResponse_Local = { 
+        status: 'success', 
         data: databaseInfo
       };
-      return successResponse;
+      
+      return { 
+        success: true,
+        data: toolSpecificSuccessData 
+      };
 
     } catch (error: any) {
       console.error(`${logPrefix} Error:`, error);

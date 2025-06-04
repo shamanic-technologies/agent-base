@@ -220,7 +220,8 @@ const createExternalToolUtility: InternalUtilityTool = {
         return { 
           success: false, 
           error: "Invalid input: 'tool_configuration' parameter is missing or invalid.",
-          details: "The 'tool_configuration' parameter must be a valid ApiTool object."
+          details: "The 'tool_configuration' parameter must be a valid ApiTool object.",
+          hint: 'Review the tool configuration and try again.'
         };
       }
 
@@ -259,7 +260,8 @@ const createExternalToolUtility: InternalUtilityTool = {
       return {
         success: false,
         error: 'Failed to execute create external tool utility',
-        details: error instanceof Error ? error.message : String(error)
+        details: error instanceof Error ? error.message : String(error),
+        hint: 'Contact support if the problem persists.'
       };
     }
   }

@@ -50,7 +50,8 @@ const webhookLinkUserUtility: InternalUtilityTool = {
                 console.error(`${logPrefix} Invalid or missing required parameter (webhookId).`);
                 return { 
                     success: false, 
-                    error: "Invalid input: Missing required parameter (webhookId)."
+                    error: "Invalid input: Missing required parameter (webhookId).",
+                    hint: 'Review the utility description and examples carefully. Then retry.'
                 };
             }
 
@@ -62,11 +63,9 @@ const webhookLinkUserUtility: InternalUtilityTool = {
                 platformApiKey,
                 agentId
             };
-            
-            console.log(`${logPrefix} Attempting to link user ${clientUserId} to webhook: ${params.webhookId}`);
-      
+                  
             // Call the client function from @agent-base/api-client
-            const resultResponse = await linkUserToWebhookInternalApiService(
+            const resultResponse: ServiceResponse<UserWebhook | SetupNeeded> = await linkUserToWebhookInternalApiService(
                 params.webhookId,
                 credentials
             );
@@ -75,8 +74,8 @@ const webhookLinkUserUtility: InternalUtilityTool = {
                 console.error(`${logPrefix} Error linking user to webhook:`, resultResponse.error);
             }
             
-            console.log(`${logPrefix} Webhook store response received: success=${resultResponse.success}`);
-      
+            console.debug(`${logPrefix} Webhook store response:`, resultResponse);
+
             return resultResponse;
 
         } catch (error: any) {
@@ -84,7 +83,8 @@ const webhookLinkUserUtility: InternalUtilityTool = {
             return {
                 success: false,
                 error: 'Failed to execute webhook_link_user utility',
-                details: error instanceof Error ? error.message : String(error)
+                details: error instanceof Error ? error.message : String(error),
+                hint: 'Contact support if the problem persists.'
             };
         }
     }

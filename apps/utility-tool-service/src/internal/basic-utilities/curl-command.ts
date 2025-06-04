@@ -7,6 +7,8 @@
 import {
   InternalUtilityTool,
   ErrorResponse,
+  ServiceResponse,
+  ExecuteToolResult
 } from '@agent-base/types';
 import { registry } from '../../registry/registry.js';
 import fetch, { RequestInit } from 'node-fetch'; 
@@ -69,7 +71,7 @@ const curlCommandUtility: InternalUtilityTool = {
     platformApiKey: string, 
     conversationId: string,
     params: unknown // Validate unknown params with Zod
-  ): Promise<CurlSuccessResponse | ErrorResponse> => {
+  ): Promise<ServiceResponse<ExecuteToolResult>> => {
     console.log(`[CURL Utility] Executing for conversation ${conversationId}, clientUser ${clientUserId}, platformUser ${platformUserId}`);
 
     // 1. Validate parameters with Zod
@@ -112,9 +114,12 @@ const curlCommandUtility: InternalUtilityTool = {
       
 
       return {
-        status_code: response.status,
-        headers: responseHeaders,
-        body: responseBody,
+        success: true,
+        data: {
+          status_code: response.status,
+          headers: responseHeaders,
+          body: responseBody,
+        }
       };
 
     } catch (error: any) {

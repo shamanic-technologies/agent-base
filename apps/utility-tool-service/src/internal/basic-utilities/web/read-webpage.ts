@@ -9,6 +9,7 @@ import {
   InternalUtilityTool, 
   ErrorResponse,
   ServiceResponse,
+  ExecuteToolResult,
   UtilityProvider
 } from '@agent-base/types';
 import { registry } from '../../../registry/registry.js';
@@ -23,21 +24,17 @@ export interface FireCrawlExtractContentRequest {
 }
 // Assuming success response is the complex object returned by FireCrawl
 // Define a more specific success response type
-interface ReadWebPageSuccessResponse {
-    status: 'success';
-    data: {
-        url: string;
-        title?: string | null;
-        favicon?: string | null;
-        markdown?: string | null;
-        language?: string | null;
-        word_count?: number;
-        detected_content_type?: string | null;
-        extracted_at: string;
-    };
-}
+interface ReadWebPageSuccessResponse_Local {
+    url: string;
+    title?: string | null;
+    favicon?: string | null;
+    markdown?: string | null;
+    language?: string | null;
+    word_count?: number;
+    detected_content_type?: string | null;
+    extracted_at: string;
+};
 
-type ReadWebPageResponse = ReadWebPageSuccessResponse | ErrorResponse;
 // --- End Local Definitions ---
 
 /**
@@ -79,7 +76,7 @@ const readWebPage: InternalUtilityTool = {
     required: ['url']
   },
   
-  execute: async (clientUserId: string, clientOrganizationId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: FireCrawlExtractContentRequest): Promise<ReadWebPageResponse> => {
+  execute: async (clientUserId: string, clientOrganizationId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: FireCrawlExtractContentRequest): Promise<ServiceResponse<ExecuteToolResult>> => {
     const logPrefix = '🔥 [FIRECRAWL]';
     try {
       // Defaults are now 0-indexed: fromLine=0, toLine=199 (inclusive)
@@ -122,7 +119,8 @@ const readWebPage: InternalUtilityTool = {
         return {
             success: false,
             error: `Webpage scrape failed (HTTP ${response.status})`,
-            details: errorText
+            details: errorText,
+            hint: 'Contact support if the problem persists.'
         } as ErrorResponse;
       }
 
@@ -133,7 +131,8 @@ const readWebPage: InternalUtilityTool = {
         return {
             success: false,
             error: 'Failed to extract content from webpage',
-            details: firecrawlData?.message || 'FireCrawl API did not return valid data.'
+            details: firecrawlData?.message || 'FireCrawl API did not return valid data.',
+            hint: 'Contact support if the problem persists.'
         } as ErrorResponse;
       }
 
@@ -170,20 +169,17 @@ const readWebPage: InternalUtilityTool = {
       }
 
       // Return the extraction results in standard format
-      const successResponse: ReadWebPageSuccessResponse = {
-        status: 'success',
-        data: {
-          url: url,
-          title: firecrawlData.data.metadata?.title || firecrawlData.data.title || null,
-          favicon: firecrawlData.data.metadata?.ogImage || firecrawlData.data.favicon || null, // Prefer ogImage if available
-          markdown: markdownContent, // Use potentially sliced markdown
-          language: firecrawlData.data.metadata?.language || null,
-          word_count: markdownContent?.split(/\s+/).filter(Boolean).length || 0, // Recalculate word count on potentially sliced markdown
-          detected_content_type: firecrawlData.data.metadata?.sourceURL?.includes('.pdf') ? 'application/pdf' : 'text/html', // Basic detection
-          extracted_at: new Date().toISOString()
-        }
+      const toolSpecificSuccessData: ReadWebPageSuccessResponse_Local = {
+        url: url,
+        title: firecrawlData.data.metadata?.title || firecrawlData.data.title || null,
+        favicon: firecrawlData.data.metadata?.ogImage || firecrawlData.data.favicon || null,
+        markdown: markdownContent,
+        language: firecrawlData.data.metadata?.language || null,
+        word_count: markdownContent?.split(/\s+/).filter(Boolean).length || 0,
+        detected_content_type: firecrawlData.data.metadata?.sourceURL?.includes('.pdf') ? 'application/pdf' : 'text/html',
+        extracted_at: new Date().toISOString()
       };
-      return successResponse;
+      return { success: true, data: toolSpecificSuccessData };
 
     } catch (error: any) {
       console.error(`${logPrefix} Error:`, error);
@@ -192,7 +188,8 @@ const readWebPage: InternalUtilityTool = {
       return {
         success: false,
         error: 'Failed to read webpage content',
-        details: error instanceof Error ? error.message : String(error)
+        details: error instanceof Error ? error.message : String(error),
+        hint: 'Contact support if the problem persists.'
       } as ErrorResponse;
     }
   }

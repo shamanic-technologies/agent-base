@@ -16,16 +16,12 @@ async function _makeServiceRequest<T>(
   try {
     const response = await axios.request<ServiceResponse<T>>(config);
 
-    // --- TEMPORARY DEBUG LOG ---
-    console.log(`${logContext} Raw response.data from ${fullUrl}:`, JSON.stringify(response.data));
-    // --- END TEMPORARY DEBUG LOG ---
-
     // Check if the response looks like a standard ServiceResponse
     if (typeof response.data === 'object' && response.data !== null && 'success' in response.data) {
        return response.data;
     } else {
        // If not standard, wrap it assuming success (may need adjustment based on actual service responses)
-       console.warn(`${logContext} Received non-standard success response from ${fullUrl}. Wrapping data.`);
+       console.error(`${logContext} Received non-standard success response from ${fullUrl}. Wrapping data.`);
        return { success: true, data: response.data as T };
     }
   } catch (error) {
