@@ -7,7 +7,7 @@ import {
   AgentBaseCredentials,
 } from '@agent-base/types';
 import { makeAgentBaseRequest } from '../utils/service-client.js';
-import { getApiGatewayServiceUrl } from '../utils/config.js'; // Import the centralized getter
+import { getAgentBaseApiUrl } from '../utils/config.js'; // Import the centralized getter
 
 /**
  * Calls a specific utility tool via the API Gateway using makeAPIServiceRequest.
@@ -25,7 +25,7 @@ export async function storeSecretExternalApiClient(
 
   // Use makeAPIServiceRequest, passing conversationId in data and agentId for header
   return await makeAgentBaseRequest<string>(
-      getApiGatewayServiceUrl(),
+      getAgentBaseApiUrl(),
       'post',
       'secret/api/secrets', // Endpoint for storing secrets
       agentBaseCredentials,
