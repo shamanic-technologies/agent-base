@@ -136,9 +136,8 @@ export async function getConversation(
         data: mapConversationFromDatabase(conversation)
       };
     } else {
-      console.error(`[DB Service] Conversation ${conversationId} not found.`);
-      // Return an ErrorResponse when conversation is not found
-      return { success: false, error: 'Conversation not found' };
+      console.warn(`[DB Service] Conversation ${conversationId} not found.`);
+      return { success: true, data: null };
     }
   } catch (error) {
     console.error(`[DB Service] Error getting conversation ${conversationId}:`, error);
