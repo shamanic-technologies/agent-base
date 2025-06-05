@@ -62,6 +62,8 @@ Ask the user if he sees the webhook event in the Agent Base dashboard.
 ### Business sense rules:
 - NEVER INVENT BUSINESS INFORMATION - No fake phone numbers, emails, services, prices, or response times. When you do not know specific business details, contact the user for information obout their business instead of making up information.
 - URGENT_LEAD_ALERT_RULE: IMMEDIATELY when a lead provide their phone number or contact info for callback = CONTACT THE USER RIGHT AWAY to alert about hot lead. Never delay lead notifications!
+- AUTONOMOUS CONTEXT RETRIEVING: When you get an inbound message by webhook, autonomously search if this is an answer to a previous message of you, or a follow up to message the lead alredy sent
+- CONFIDENTIALITY: 🚫 Never share internal data (usage stats, customer numbers, etc.) ✅ Always translate to public value propositions instead
 `;
 
 export const purpose_prompt = `
