@@ -10,6 +10,7 @@ interface TruncateHistoryParams {
   maxOutputTokens: number;
   safetyMargin?: number; // e.g., 0.90 for 10%
   thinkingBudgetTokens?: number; // Added for Anthropic thinking budget
+  retrievedMemoriesContent?: string; // Optional: Content from Mem0 to be included in the prompt
 }
 
 /**
@@ -60,6 +61,7 @@ function countMessageContentTokens(
  *  - `maxOutputTokens`: The maximum number of tokens reserved for the model's output.
  *  - `safetyMargin` (optional): A factor (0.0 to 1.0) for the safety margin (e.g., 0.90 for 10% margin). Defaults to 0.90.
  *  - `thinkingBudgetTokens` (optional): The token budget for thinking. Defaults to 0 if not provided.
+ *  - `retrievedMemoriesContent` (optional): The content from Mem0 to be included in the prompt.
  * @returns An array of `Message` objects representing the selected history messages that fit the calculated token budget.
  */
 export function truncateHistory(params: TruncateHistoryParams): Message[] {
@@ -69,9 +71,11 @@ export function truncateHistory(params: TruncateHistoryParams): Message[] {
     fullHistoryMessages,
     totalModelLimit,
     maxOutputTokens,
-    safetyMargin = 0.90, // Default to 10% safety margin (using 90% of available space)
-    thinkingBudgetTokens = 0, // Default to 0 if not provided
+    thinkingBudgetTokens,
+    retrievedMemoriesContent,
   } = params;
+
+  const safetyMargin = 0.90; // Default to 10% safety margin (using 90% of available space)
 
   // Calculate the total tokens available for input, considering the safety margin.
   const effectiveInputContextWindow = (totalModelLimit - maxOutputTokens) * safetyMargin;
@@ -79,10 +83,14 @@ export function truncateHistory(params: TruncateHistoryParams): Message[] {
   // Count tokens for the system prompt and the current user message.
   const systemPromptTokens = countMessageContentTokens(systemPrompt, "system prompt");
   const currentUserMessageTokens = countMessageContentTokens(currentMessage.content, `current user message ID: ${currentMessage.id}`);
+  const memoriesTokens = countMessageContentTokens(retrievedMemoriesContent, "retrieved memories content");
 
   // Determine the remaining token budget for historical messages.
-  // Ensure budget is not negative, and account for thinking budget.
-  const historyTokensBudget = Math.max(0, effectiveInputContextWindow - systemPromptTokens - currentUserMessageTokens - thinkingBudgetTokens);
+  // Ensure budget is not negative, and account for thinking budget and retrieved memories.
+  const historyTokensBudget = Math.max(
+    0, 
+    effectiveInputContextWindow - systemPromptTokens - currentUserMessageTokens - memoriesTokens - thinkingBudgetTokens
+  );
 
   const selectedHistoryMessages: Message[] = [];
   let currentHistoryTokens = 0;

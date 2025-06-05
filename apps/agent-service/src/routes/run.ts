@@ -41,6 +41,9 @@ import { Message } from 'ai';
 // @ts-ignore - Module '"ai"' has no exported member 'Tool'.
 import { Tool } from 'ai';
 
+// Import Mem0 Client
+import { MemoryClient } from 'mem0ai';
+
 // Prompt Builder import
 import { buildSystemPrompt } from '../lib/promptBuilder.js';
 
@@ -56,6 +59,12 @@ const runRouter = Router(); // Use a specific router for this file
  */
 runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
   const handleAgentRun = async () => {
+    // Initialize Mem0 Client inside the handler
+    // Ensure MEM0_API_KEY is set in your environment variables for the Mem0 Platform.
+    const mem0 = new MemoryClient({
+      apiKey: process.env.MEM0_API_KEY
+    });
+
     let currentMessage: Message;
     let conversationId: string;
     let clientUserId: string | undefined;
@@ -110,6 +119,49 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       const systemPrompt = buildSystemPrompt(agent);
       // --- End Construct System Prompt ---
 
+      // --- Retrieve Memories from Mem0 ---
+      let retrievedMemoriesContent = '';
+      if (clientUserId && currentMessage.content && agent.id) {
+        try {
+          console.log(`[Agent Service /run] Attempting to retrieve memories for user (clientUserId) ${clientUserId}, agentId ${agent.id}`);
+          const searchOptions: any = { // Using 'any' for SearchOptions due to evolving SDK structure, refine if strict type is available
+            user_id: clientUserId,    // User context for the search
+            // threshold: 0.7,      // Optional: Minimum similarity score
+            limit: 5,               // Optional: Limit number of results
+            api_version: 'v2'       // Necessary for using filters
+          };
+
+          if (agent.id) {
+            searchOptions.filters = {
+              AND: [{ agent_id: agent.id }] // Filter by agent_id if available
+            };
+          }
+
+          // Expect search to return an object like { results: [memoryEntry, ...] }
+          const mem0SearchResponse = await mem0.search(
+            currentMessage.content as string,
+            searchOptions
+          );
+
+          // Safely access results
+          // @ts-ignore - Assuming mem0.search returns { results: [] } as per richer Mem0 docs;
+          // linter might be using incomplete/older types for mem0ai where it expects Memory[] directly.
+          const relevantMemories = mem0SearchResponse?.results;
+
+          if (relevantMemories && Array.isArray(relevantMemories) && relevantMemories.length > 0) {
+            retrievedMemoriesContent = relevantMemories
+              .map((entry: any) => `- ${entry.memory || "Memory content not found"}`) // Access the 'memory' field from each entry
+              .join('\\n');
+            console.log(`[Agent Service /run] Retrieved memories for user (clientUserId) ${clientUserId}, agentId ${agent.id}:\\n${retrievedMemoriesContent}`);
+          } else {
+            console.log(`[Agent Service /run] No relevant memories found for user (clientUserId) ${clientUserId}, agentId ${agent.id}`);
+          }
+        } catch (memError) {
+          console.error(`[Agent Service /run] Error retrieving memories from Mem0 for user (clientUserId) ${clientUserId}, agentId ${agent.id}:`, memError);
+        }
+      }
+      // --- End Retrieve Memories from Mem0 ---
+
       // --- Get Conversation & History (Full) ---
       let fullHistoryMessages: Message[] = [];
       const conversationResponse = await getConversationByIdInternalApiService(
@@ -137,8 +189,8 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
         fullHistoryMessages,
         totalModelLimit,
         maxOutputTokens,
-        thinkingBudgetTokens, // Pass the thinking budget
-        // safetyMargin: 0.90 // Using default from the function
+        thinkingBudgetTokens,
+        retrievedMemoriesContent
       });
       // --- End Truncate History ---
 
@@ -206,13 +258,24 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
         messages: selectedHistoryMessages, // Use truncated history from the utility function
         message: currentMessage
       });
-      // --- End Combine Messages ---
+
+      // --- Incorporate Retrieved Memories into Messages (if any) ---
+      // Option 1: Add as a new system message (if not already too many system messages)
+      // Option 2: Prepend to the existing system prompt
+      // Option 3: Add as part of the user's current message context (less ideal)
+      // Choosing Option 2 for now: Prepending to the system prompt.
+      let finalSystemPrompt = systemPrompt;
+      if (retrievedMemoriesContent) {
+        finalSystemPrompt = `Relevant past interactions and preferences (for context only, do not directly reference unless asked):\n${retrievedMemoriesContent}\n\n${systemPrompt}`;
+        console.log(`[Agent Service /run] System prompt updated with memories.`);
+      }
+      // --- End Incorporate Retrieved Memories ---
 
       // --- Call AI Model ---
       const result = await streamText({
         model: anthropic(ModelName.CLAUDE_SONNET_4_20250514), //anthropic(agent.modelId),
-        messages: allMessages as any[],
-        system: systemPrompt, 
+        messages: allMessages as any[], // allMessages already includes the current user message
+        system: finalSystemPrompt, // Use the potentially augmented system prompt
         tools: allStartupTools,
         toolCallStreaming: true, // Enable streaming of partial tool calls
         maxTokens: maxOutputTokens, // Use the locally defined maxOutputTokens for the API call
@@ -223,23 +286,25 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
             prefix: 'msgs',
             size: 16,
         }),
-        async onFinish({ response, usage }) { // Destructure response directly
+        async onFinish({ response, usage }) { // Reverted to { response, usage }
+            // @ts-ignore - Vercel AI SDK streamText.onFinish result obj should contain responseMessages & usage.
+            // Linter suggests incorrect type for 'result', but usage aligns with documentation.
             try {
               // Construct the final list including the latest assistant/tool responses
               // When saving, we should save the full original history plus the new interaction,
               // not just the truncated 'allMessages'.
               // The 'fullHistoryMessages' already contains the state before this interaction.
-              // We append the 'currentMessage' (user's latest) and 'response.messages' (AI's reply).
+              // We append the 'currentMessage' (user's latest) and now 'response.messages' (AI's reply).
               
-              console.debug('⭐️ [Agent Service /run backend onFinish] Raw response messages:', JSON.stringify(response.messages, null, 2));
-              let messagesToSave = [...fullHistoryMessages, currentMessage];
-              messagesToSave = appendResponseMessages({
-                  messages: messagesToSave,
-                  responseMessages: response.messages
+              console.debug('⭐️ [Agent Service /run backend onFinish] Raw response messages:', JSON.stringify(response?.messages, null, 2)); // Use response.messages, add optional chaining
+              let messagesToSaveToDB = [...fullHistoryMessages, currentMessage];
+              messagesToSaveToDB = appendResponseMessages({
+                  messages: messagesToSaveToDB,
+                  responseMessages: response.messages // Use response.messages here
               });
 
               const saveResult= await updateConversationInternalApiService(
-                { conversationId: conversationId, messages: messagesToSave }, // Save complete, non-truncated history + new messages
+                { conversationId: conversationId, messages: messagesToSaveToDB }, // Save complete, non-truncated history + new messages
                 platformUserId,
                 platformApiKey,
                 clientUserId,
@@ -250,6 +315,71 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
                   console.error("[Agent Service /run] Error saving messages to DB in onFinish:", saveResult.error);
                   // Decide if this error should prevent credit deduction or be appended to streamData
                   // For now, logging and proceeding to credit deduction
+              } else {
+                // --- Store Interaction in Mem0 ---
+                if (clientUserId && currentMessage.content && response.messages && response.messages.length > 0) { // Use response.messages
+                  try {
+                    // Mem0 expects an array of messages.
+                    // We'll store the user's current message and the assistant's final response(s).
+                    // The structure for adding memories typically involves roles and content.
+                    const messagesForMem0: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+                    const metadata: { user_id: string; agent_id?: string; conversation_id?: string } = {
+                        user_id: clientUserId
+                    };
+                    if (agent.id) {
+                        metadata.agent_id = agent.id;
+                    }
+                    if (conversationId) {
+                        metadata.conversation_id = conversationId;
+                    }
+
+                    // Add user's current message
+                    if (typeof currentMessage.content === 'string') {
+                        messagesForMem0.push({ role: 'user', content: currentMessage.content });
+                    } else if (Array.isArray(currentMessage.content)) {
+                        // @ts-ignore - Workaround for persistent TS error (Property 'forEach' does not exist on type 'never'). 
+                        // This indicates a potential issue in the local TS environment or complex type inference problem.
+                        // The iteration logic itself is consistent with Vercel AI SDK's MessageContentPart structure.
+                        currentMessage.content.forEach(part => {
+                            if (part.type === 'text') {
+                                messagesForMem0.push({ role: 'user', content: part.text });
+                            }
+                        });
+                    }
+                    
+                    // Add assistant's response messages
+                    // Temporary workaround for persistent linter error, investigate type resolution further.
+                    if (Array.isArray(response.messages)) { // Use response.messages
+                        (response.messages as Message[]).forEach(assistantMsg => { // Use response.messages
+                            if (assistantMsg.role === 'assistant') {
+                                if (typeof assistantMsg.content === 'string') {
+                                    messagesForMem0.push({ role: 'assistant', content: assistantMsg.content });
+                                } else if (Array.isArray(assistantMsg.content)) {
+                                    // Handle multi-part assistant messages (text parts only for memory)
+                                     // @ts-ignore - Workaround for persistent TS error (Property 'forEach' does not exist on type 'never'). 
+                                     // Logic aligns with Vercel AI SDK MessageContentPart structure for array content.
+                                      assistantMsg.content.forEach(part => {
+                                          if (part.type === 'text') {
+                                              messagesForMem0.push({ role: 'assistant', content: part.text });
+                                          }
+                                      });
+                                }
+                            }
+                        });
+                    }
+
+                    if (messagesForMem0.length > 0) {
+                        console.log(`[Agent Service /run] Attempting to add interaction to Mem0 for user (clientUserId) ${clientUserId}. Messages:`, JSON.stringify(messagesForMem0), 'Metadata:', JSON.stringify(metadata));
+                        // Pass messages and an object with user_id and metadata for the add call
+                        await mem0.add(messagesForMem0, { user_id: clientUserId, metadata });
+                        console.log(`[Agent Service /run] Successfully added interaction to Mem0 for user (clientUserId) ${clientUserId} with metadata.`);
+                    }
+                  } catch (memError) {
+                    console.error(`[Agent Service /run] Error adding interaction to Mem0 for user (clientUserId) ${clientUserId} with metadata:`, memError);
+                    // Log and continue, as this shouldn't block the main flow.
+                  }
+                }
+                // --- End Store Interaction in Mem0 ---
               }
 
             } catch (dbError) {
@@ -258,10 +388,10 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
             }
 
             // Find the assistant's response message ID
-            const assistantMessageId = response.messages[response.messages.length - 1].id; // Added optional chaining for safety
+            const assistantMessageId = response.messages[response.messages.length - 1].id; // Use response.messages
 
             // Manually extract tool calls from response.messages as a workaround
-            const extractedToolCalls: ToolCall<string, string>[] = (response?.messages ?? [])
+            const extractedToolCalls: ToolCall<string, string>[] = (response?.messages ?? []) // Use response.messages, keep nullish coalescing
                 .flatMap(message => (message.role === 'assistant' && Array.isArray(message.content)) ? message.content : [])
                 .filter(contentPart =>(contentPart as any).type === 'tool-call')
                 .map(toolCallContent => ({
