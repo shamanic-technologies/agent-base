@@ -26,6 +26,9 @@ const router = Router();
  * GET /get-messages-from-conversation?conversationId=...
  */
 router.get('/get-messages-from-conversation', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    console.log(`[Agent Service /msg/get-from-conv] Received request. Original URL: ${req.originalUrl}`);
+    console.log(`[Agent Service /msg/get-from-conv] req.query.conversationId: '${req.query.conversationId}' (Type: ${typeof req.query.conversationId})`);
+
     const conversationId = req.query.conversationId as string;
     const clientUserId = req.clientUserId as string;
     const clientOrganizationId = req.clientOrganizationId as string;

@@ -15,10 +15,18 @@ import { AgentBaseCredentials, MinimalInternalCredentials, ServiceResponse} from
  */
 const axiosParamsSerializer = (params: any): string => {
   if (!params || Object.keys(params).length === 0) return '';
+  console.log('[axiosParamsSerializer] Received params:', JSON.stringify(params)); // Log all received params
   const searchParams = new URLSearchParams();
   for (const key in params) {
     if (Object.prototype.hasOwnProperty.call(params, key)) {
       const value = params[key];
+      // Log for the specific conversationId case
+      if (key === 'conversationId') {
+        console.log(`[axiosParamsSerializer] Processing key: '${key}', value: '${String(value)}'`);
+        const tempSearchParams = new URLSearchParams();
+        tempSearchParams.append(key, String(value));
+        console.log(`[axiosParamsSerializer] URLSearchParams output for ${key}=${String(value)}: ${tempSearchParams.toString()}`);
+      }
       if (Array.isArray(value)) {
         value.forEach((v) => searchParams.append(key, v));
       } else if (value !== undefined && value !== null) {
@@ -26,10 +34,9 @@ const axiosParamsSerializer = (params: any): string => {
       }
     }
   }
-  // URLSearchParams.toString() correctly encodes + as %2B, and space as +
-  // which is standard for application/x-www-form-urlencoded.
-  // If the receiving server decodes + as space (common), ensure source sends %2B for literal plus.
-  return searchParams.toString(); 
+  const finalSerializedString = searchParams.toString();
+  console.log('[axiosParamsSerializer] Final serialized string:', finalSerializedString);
+  return finalSerializedString; 
 };
 
 /**
