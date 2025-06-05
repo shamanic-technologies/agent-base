@@ -78,3 +78,16 @@ export function mapConversationToDatabase(conversation: Conversation): Partial<C
   return record;
 }
 
+/**
+ * Sanitizes a conversation ID to remove problematic URL characters and ensure consistency.
+ * - Converts to lowercase.
+ * - Allows alphanumeric characters (a-z, 0-9), hyphen (-), underscore (_), and colon (:).
+ * - Replaces all other characters with an underscore (_).
+ * @param id The conversation ID string to sanitize.
+ * @returns The sanitized conversation ID string.
+ */
+export function sanitizeConversationId(id: string): string {
+  if (typeof id !== 'string' || !id) return ''; // Handle null, undefined, or non-string input
+  return id.toLowerCase().replace(/[^a-z0-9\-_:]/g, '_');
+}
+

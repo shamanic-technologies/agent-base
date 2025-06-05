@@ -5,41 +5,6 @@ import axios, { AxiosRequestConfig, Method } from 'axios';
 import { AgentBaseCredentials, MinimalInternalCredentials, ServiceResponse} from '@agent-base/types';
 
 /**
- * Custom Axios params serializer to ensure proper encoding of special characters like '+'.
- * Uses URLSearchParams which encodes ' ' to '+' and '+' to '%2B'.
- * Note: When Express or other server frameworks parse query strings, they typically
- * convert '+' back to space. If you need a literal '+' on the server from a query param,
- * ensure it arrives as %2B.
- * @param params The parameters object to serialize.
- * @returns A string representation of the serialized parameters.
- */
-const axiosParamsSerializer = (params: any): string => {
-  if (!params || Object.keys(params).length === 0) return '';
-  console.log('[axiosParamsSerializer] Received params:', JSON.stringify(params)); // Log all received params
-  const searchParams = new URLSearchParams();
-  for (const key in params) {
-    if (Object.prototype.hasOwnProperty.call(params, key)) {
-      const value = params[key];
-      // Log for the specific conversationId case
-      if (key === 'conversationId') {
-        console.log(`[axiosParamsSerializer] Processing key: '${key}', value: '${String(value)}'`);
-        const tempSearchParams = new URLSearchParams();
-        tempSearchParams.append(key, String(value));
-        console.log(`[axiosParamsSerializer] URLSearchParams output for ${key}=${String(value)}: ${tempSearchParams.toString()}`);
-      }
-      if (Array.isArray(value)) {
-        value.forEach((v) => searchParams.append(key, v));
-      } else if (value !== undefined && value !== null) {
-        searchParams.append(key, String(value));
-      }
-    }
-  }
-  const finalSerializedString = searchParams.toString();
-  console.log('[axiosParamsSerializer] Final serialized string:', finalSerializedString);
-  return finalSerializedString; 
-};
-
-/**
  * Base logic for making service requests and handling responses/errors.
  * Internal helper function.
  */
@@ -49,10 +14,7 @@ async function _makeServiceRequest<T>(
   logContext: string // e.g., '[httpClient:WebAuth]', '[httpClient:ApiAuth]', '[httpClient:Anon]'
 ): Promise<ServiceResponse<T>> {
   try {
-    const response = await axios.request<ServiceResponse<T>>({
-      ...config, // contains url, method, headers, data, params (if any)
-      paramsSerializer: axiosParamsSerializer, // Use the new helper function
-    });
+    const response = await axios.request<ServiceResponse<T>>(config);
 
     // Check if the response looks like a standard ServiceResponse
     if (typeof response.data === 'object' && response.data !== null && 'success' in response.data) {
