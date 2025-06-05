@@ -137,7 +137,8 @@ export async function getConversation(
       };
     } else {
       console.error(`[DB Service] Conversation ${conversationId} not found.`);
-      return { success: true, data: null };
+      // Return an ErrorResponse when conversation is not found
+      return { success: false, error: 'Conversation not found' };
     }
   } catch (error) {
     console.error(`[DB Service] Error getting conversation ${conversationId}:`, error);

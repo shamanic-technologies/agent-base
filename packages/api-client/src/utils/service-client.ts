@@ -5,6 +5,34 @@ import axios, { AxiosRequestConfig, Method } from 'axios';
 import { AgentBaseCredentials, MinimalInternalCredentials, ServiceResponse} from '@agent-base/types';
 
 /**
+ * Custom Axios params serializer to ensure proper encoding of special characters like '+'.
+ * Uses URLSearchParams which encodes ' ' to '+' and '+' to '%2B'.
+ * Note: When Express or other server frameworks parse query strings, they typically
+ * convert '+' back to space. If you need a literal '+' on the server from a query param,
+ * ensure it arrives as %2B.
+ * @param params The parameters object to serialize.
+ * @returns A string representation of the serialized parameters.
+ */
+const axiosParamsSerializer = (params: any): string => {
+  if (!params || Object.keys(params).length === 0) return '';
+  const searchParams = new URLSearchParams();
+  for (const key in params) {
+    if (Object.prototype.hasOwnProperty.call(params, key)) {
+      const value = params[key];
+      if (Array.isArray(value)) {
+        value.forEach((v) => searchParams.append(key, v));
+      } else if (value !== undefined && value !== null) {
+        searchParams.append(key, String(value));
+      }
+    }
+  }
+  // URLSearchParams.toString() correctly encodes + as %2B, and space as +
+  // which is standard for application/x-www-form-urlencoded.
+  // If the receiving server decodes + as space (common), ensure source sends %2B for literal plus.
+  return searchParams.toString(); 
+};
+
+/**
  * Base logic for making service requests and handling responses/errors.
  * Internal helper function.
  */
@@ -14,7 +42,10 @@ async function _makeServiceRequest<T>(
   logContext: string // e.g., '[httpClient:WebAuth]', '[httpClient:ApiAuth]', '[httpClient:Anon]'
 ): Promise<ServiceResponse<T>> {
   try {
-    const response = await axios.request<ServiceResponse<T>>(config);
+    const response = await axios.request<ServiceResponse<T>>({
+      ...config, // contains url, method, headers, data, params (if any)
+      paramsSerializer: axiosParamsSerializer, // Use the new helper function
+    });
 
     // Check if the response looks like a standard ServiceResponse
     if (typeof response.data === 'object' && response.data !== null && 'success' in response.data) {
@@ -40,7 +71,8 @@ async function _makeServiceRequest<T>(
       return {
         success: false,
         error: specificError || `Service communication error (Status: ${status})`,
-        details: responseData?.details // Pass through the details array
+        details: responseData?.details, // Pass through the details array
+        statusCode: typeof status === 'number' ? status : undefined // Populate statusCode
       };
     } else {
       // Handle non-Axios errors (e.g., network issues before request sends)
