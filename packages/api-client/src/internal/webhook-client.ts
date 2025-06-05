@@ -9,10 +9,11 @@ import {
     SetupNeeded,
     CreateAgentUserWebhookRequest,
     ServiceResponse,
-    HumanInternalCredentials
+    HumanInternalCredentials,
+    WebhookEvent
 } from '@agent-base/types';
 import { makeInternalRequest } from '../utils/service-client.js';
-import { getApiGatewayServiceUrl } from '../utils/config.js';
+import { getAgentBaseApiUrl, getApiGatewayServiceUrl } from '../utils/config.js';
 
 // --- API Wrapper Functions ---
 
@@ -144,4 +145,35 @@ export async function getUserCreatedWebhooksInternalApiService(
         undefined,
         credentialsAgentId
     );
-} 
+}
+
+/**
+ * Fetches the N latest webhook events for the authenticated user/organization.
+ * @param humanInternalCredentials - Credentials for authentication.
+ * @param limit - Optional number of events to fetch. Defaults to a server-side value if not provided.
+ * @returns ServiceResponse containing an array of WebhookEvents or an error.
+ */
+export async function getLatestWebhookEvents(
+    humanInternalCredentials: HumanInternalCredentials,
+    limit?: number
+): Promise<ServiceResponse<WebhookEvent[]>> {
+    
+    let queryParams: Record<string, string> | undefined = undefined;
+    if (limit !== undefined) {
+        queryParams = { limit: limit.toString() };
+    }
+    const { platformUserId, clientUserId, clientOrganizationId, platformApiKey, agentId: credentialsAgentId } = humanInternalCredentials;
+
+    return makeInternalRequest<WebhookEvent[]>(
+        getApiGatewayServiceUrl(),
+        'GET',
+        '/webhook/events/latest', // The new endpoint path
+        platformUserId,
+        clientUserId,
+        clientOrganizationId,
+        platformApiKey,
+        undefined, // No request body for GET
+        queryParams, // Pass the limit as a query parameter
+        credentialsAgentId
+    );
+}

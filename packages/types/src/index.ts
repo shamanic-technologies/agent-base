@@ -14,8 +14,12 @@ export * from './types/agent.js';
 // Export conversation-related types
 export * from './types/conversation.js';
 
+// Export action-related types
+export * from './types/action.js';
+
 // Export user-related types
 export * from './types/user.js';
+
 
 // Export webhook-related types
 export * from './types/webhook.js';

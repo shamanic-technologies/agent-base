@@ -9,6 +9,7 @@ import conversationRoutes from './conversation.js';
 import runRoutes from './run.js';
 import messageRoutes from './message.js';
 import healthRoutes from './health.js';
+import actionsRoutes from './actions.js';
 
 // Configure all routes for the application
 export function configureRoutes(app: Express) {
@@ -16,6 +17,7 @@ export function configureRoutes(app: Express) {
   app.use('/conversation', conversationRoutes);
   app.use('/run', runRoutes);
   app.use('/message', messageRoutes);
+  app.use('/actions', actionsRoutes);
   app.use('/', agentRoutes);
 }
 
@@ -25,5 +27,6 @@ export default {
   conversationRoutes,
   runRoutes,
   messageRoutes,
-  healthRoutes
+  healthRoutes,
+  actionsRoutes
 }; 

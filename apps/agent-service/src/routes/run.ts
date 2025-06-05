@@ -160,6 +160,7 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
           'webhook_search_webhooks',
           'webhook_link_user',
           'webhook_link_agent',
+          'webhook_get_latest_events',
         // API Tools
           'create_api_tool',
         // Utility Tools
@@ -169,7 +170,8 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
           'utility_read_webpage',
           'utility_curl_command',
         // Agent Tools
-          'update_agent_memory'
+          'update_agent_memory',
+          'get_actions'
       ];
 
       // --- Fetch Functional Tools Concurrently ---

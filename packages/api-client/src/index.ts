@@ -12,6 +12,7 @@ export * from './internal/database-clients/api-key-client.js';
 export * from './internal/database-clients/oauth-client.js';
 // export * from './database-clients/webhook-client.js';
 export * from './internal/database-clients/client-user.js'; // Ensure this is present
+export * from './internal/database-clients/action-client.js'; // Export new action client
 export * from './internal/user-client.js';
 
 // Export functions from web OAuth service client files
@@ -35,6 +36,7 @@ export * from './internal/utility-tool-client.js';
 
 // Export agent service client functions
 export * from './internal/agent-clients/agent-client.js';
+export * from './internal/agent-clients/action-client.js';
 
 
 // Export shared utilities or functions if any
