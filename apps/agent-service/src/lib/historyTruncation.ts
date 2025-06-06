@@ -69,10 +69,10 @@ export function truncateHistory(params: TruncateHistoryParams): Message[] {
     fullHistoryMessages,
     totalModelLimit,
     maxOutputTokens,
-    safetyMargin = 0.90, // Default to 10% safety margin (using 90% of available space)
     thinkingBudgetTokens = 0, // Default to 0 if not provided
   } = params;
-
+  
+  const safetyMargin = 0.50;
   // Calculate the total tokens available for input, considering the safety margin.
   const effectiveInputContextWindow = (totalModelLimit - maxOutputTokens) * safetyMargin;
 
