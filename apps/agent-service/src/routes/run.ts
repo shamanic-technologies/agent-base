@@ -210,43 +210,24 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       });
       // --- End Combine Messages ---
 
-      // --- Call AI Model ---
-      const result = await streamText({
-        model: anthropic(ModelName.CLAUDE_SONNET_4_20250514), //anthropic(agent.modelId),
-        messages: allMessages as any[],
-        system: systemPrompt, 
-        tools: allStartupTools,
-        toolCallStreaming: true, // Enable streaming of partial tool calls
-        maxTokens: maxOutputTokens, // Use the locally defined maxOutputTokens for the API call
-        temperature: 0.1, // Moved to top-level
-        maxSteps: 25, 
-        providerOptions: { anthropic: { thinking: { type: 'enabled', budgetTokens: thinkingBudgetTokens } } }, // Use the constant here too
-        experimental_generateMessageId: createIdGenerator({
-            prefix: 'msgs',
-            size: 16,
-        }),
-        onError: (error) => {
-            console.error("[Agent Service /run] AI SDK streamText onError callback:", error);
-
-            // Use the centralized error handler to format the error
-            const formattedError = handleToolError(error);
-
-            // Send a structured error back through the stream
-            // The client-side logic should be prepared to handle an 'error' type message
-            streamData.append(JSON.stringify({
-                type: 'error',
-                data: formattedError // handleToolError returns a stringified JSON
-            }));
-            streamData.close(); // Close the stream immediately after an error
-        },
-        async onFinish({ response, usage }) { // Destructure response directly
+      // --- Call AI Model & Handle Pre-Stream Errors ---
+      try {
+        const result = await streamText({
+          model: anthropic(ModelName.CLAUDE_SONNET_4_20250514), //anthropic(agent.modelId),
+          messages: allMessages as any[],
+          system: systemPrompt,
+          tools: allStartupTools,
+          toolCallStreaming: true, // Enable streaming of partial tool calls
+          maxTokens: maxOutputTokens, // Use the locally defined maxOutputTokens for the API call
+          temperature: 0.1, // Moved to top-level
+          maxSteps: 25,
+          providerOptions: { anthropic: { thinking: { type: 'enabled', budgetTokens: thinkingBudgetTokens } } }, // Use the constant here too
+          experimental_generateMessageId: createIdGenerator({
+              prefix: 'msgs',
+              size: 16,
+          }),
+          async onFinish({ response, usage }) {
             try {
-              // Construct the final list including the latest assistant/tool responses
-              // When saving, we should save the full original history plus the new interaction,
-              // not just the truncated 'allMessages'.
-              // The 'fullHistoryMessages' already contains the state before this interaction.
-              // We append the 'currentMessage' (user's latest) and 'response.messages' (AI's reply).
-              
               console.debug('⭐️ [Agent Service /run backend onFinish] Raw response messages:', JSON.stringify(response.messages, null, 2));
               let messagesToSave = [...fullHistoryMessages, currentMessage];
               messagesToSave = appendResponseMessages({
@@ -255,7 +236,7 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
               });
 
               const saveResult= await updateConversationInternalApiService(
-                { conversationId: conversationId, messages: messagesToSave }, // Save complete, non-truncated history + new messages
+                { conversationId: conversationId, messages: messagesToSave },
                 platformUserId,
                 platformApiKey,
                 clientUserId,
@@ -264,36 +245,28 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
 
               if (!saveResult.success) {
                   console.error("[Agent Service /run] Error saving messages to DB in onFinish:", saveResult.error);
-                  // Decide if this error should prevent credit deduction or be appended to streamData
-                  // For now, logging and proceeding to credit deduction
               }
 
             } catch (dbError) {
               console.error("[Agent Service /run] Exception calling database service to save messages in onFinish:", dbError);
-              // Log and proceed
             }
 
-            // Find the assistant's response message ID
-            const assistantMessageId = response.messages[response.messages.length - 1].id; // Added optional chaining for safety
+            const assistantMessageId = response.messages[response.messages.length - 1].id;
 
-            // Manually extract tool calls from response.messages as a workaround
-            const extractedToolCalls: ToolCall<string, string>[] = (response?.messages ?? [])
+            const extractedToolCalls: ToolCall<string, any>[] = (response?.messages ?? [])
                 .flatMap(message => (message.role === 'assistant' && Array.isArray(message.content)) ? message.content : [])
                 .filter(contentPart =>(contentPart as any).type === 'tool-call')
                 .map(toolCallContent => ({
                     toolCallId: (toolCallContent as any).toolCallId,
                     toolName: (toolCallContent as any).toolName,
                     args: (toolCallContent as any).args,
-                })
-                )
-                ;
+                }));
 
             console.debug('⭐️ [Agent Service /run backend onFinish] Extracted tool calls:', JSON.stringify(extractedToolCalls, null, 2));
 
             try {
-              // Deduct credit from the customer's balance
               const deductCreditRequest: AgentBaseDeductCreditRequest = {
-                toolCalls: extractedToolCalls, // Use the manually extracted tool calls
+                toolCalls: extractedToolCalls,
                 inputTokens: usage.promptTokens,
                 outputTokens: usage.completionTokens
               };
@@ -308,23 +281,21 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
               console.log('🔵 [Agent Service /run backend onFinish] Deduct credit response:', JSON.stringify(deductCreditResponse));
 
               if (deductCreditResponse.success && deductCreditResponse.data) {
-                const { creditConsumption, newBalanceInUSDCents } : AgentBaseDeductCreditResponse = deductCreditResponse.data;
+                const { creditConsumption, newBalanceInUSDCents } = deductCreditResponse.data;
                 const creditData: AgentBaseCreditStreamPayloadData = {
-                    creditConsumption: creditConsumption, // Stringify CreditConsumption
+                    creditConsumption: creditConsumption,
                     newBalanceInUSDCents,
-                    assistantMessageId: assistantMessageId, // Use camelCase and ensure it can be undefined
+                    assistantMessageId: assistantMessageId,
                 };
                 const dataToAppend: AgentBaseCreditStreamPayload = {
                     type: 'credit_info',
                     success: true,
                     data: creditData
                 };
-                console.log('🔵 [Agent Service /run backend onFinish] Attempting to append credit_info to streamData. Data:', JSON.stringify(dataToAppend));
-                streamData.append(JSON.stringify(dataToAppend)); // Cast to any to bypass strict JSONValue check for now, StreamData should handle it.
-                console.log('🔵 [Agent Service /run backend onFinish] Successfully appended credit_info to streamData.');
+                streamData.append(JSON.stringify(dataToAppend));
               } else {
                 const creditData: AgentBaseCreditStreamPayloadData = {
-                  assistantMessageId: assistantMessageId, // Use camelCase and ensure it can be undefined
+                  assistantMessageId: assistantMessageId,
                 };
                 const dataToAppend: AgentBaseCreditStreamPayload = {
                     type: 'credit_info',
@@ -333,12 +304,11 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
                     details: deductCreditResponse.error,
                     data: creditData
                 };
-                console.error("[Agent Service /run backend onFinish] Error deducting credit (will append to stream as error):", deductCreditResponse.error);
-                streamData.append(JSON.stringify(dataToAppend)); // Cast to any for simplicity here too
+                streamData.append(JSON.stringify(dataToAppend));
               }
             } catch (deductCreditError) {
               const creditData: AgentBaseCreditStreamPayloadData = {
-                assistantMessageId: assistantMessageId, // Use camelCase and ensure it can be undefined
+                assistantMessageId: assistantMessageId,
               };
               const dataToAppend: AgentBaseCreditStreamPayload = {
                   type: 'credit_info',
@@ -347,41 +317,50 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
                   details: deductCreditError instanceof Error ? deductCreditError.message : String(deductCreditError),
                   data: creditData
               };
-              console.error("[Agent Service /run] Exception deducting credit in onFinish (will append to stream):", deductCreditError);
-              streamData.append(JSON.stringify(dataToAppend)); // Cast to any for simplicity here too
+              streamData.append(JSON.stringify(dataToAppend));
             } finally {
-                // This is crucial: always close streamData when onFinish is done with appending custom data.
                 streamData.close();
             }
-        },
-      });
-      // --- End Call AI Model ---
-      // consume the stream to ensure it runs to completion & triggers onFinish
-      // even when the client response is aborted:
-      result.consumeStream({
-        onError: (error) => {
-            console.error("[Agent Service /run] Error in consumeStream:", error);
-        }
-      }); // no await
-      // --- Pipe Stream --- 
-      await result.pipeDataStreamToResponse(res, {
-        data: streamData, // Pass the StreamData instance here
-        getErrorMessage: handleToolError
-      });
-      // --- End Pipe Stream ---
+          },
+        });
 
+        result.consumeStream().catch(err => {
+            console.warn(`[Agent Service /run] consumeStream caught a handled rejection. This is expected when an API error occurs and is handled by the main catch block. Error: ${err instanceof Error ? err.message : String(err)}`);
+        });
+        
+        await result.pipeDataStreamToResponse(res, { data: streamData });
+
+      } catch (error: any) {
+        if (error.name === 'AI_APICallError' && !res.headersSent) {
+            console.error(`[Agent Service /run] Caught pre-stream AI_APICallError: ${error.message}`);
+            let statusCode = 500;
+            let responseBody = { success: false, error: "An internal AI service error occurred." };
+
+            const errorType = error.data?.error?.type;
+            if (errorType === 'rate_limit_error') {
+                statusCode = 429;
+                responseBody = { success: false, error: "Rate limit exceeded. Please try again shortly." };
+            } else if (errorType === 'invalid_request_error' && error.message.includes('prompt is too long')) {
+                statusCode = 400;
+                responseBody = { success: false, error: "The conversation history is too long to process. Please start a new conversation." };
+            }
+            return res.status(statusCode).json(responseBody);
+        }
+        
+        console.error("[Agent Service /run] Unhandled error during agent run:", error);
+        if (!res.headersSent) {
+            res.status(500).json({ success: false, error: 'Internal Server Error' });
+        }
+      }
     } catch (error) {
-       console.error("[Agent Service /run] Unhandled error in handleAgentRun:", error);
-       // Ensure response isn't already sent before sending error
+       console.error("[Agent Service /run] Unhandled error in outer block:", error);
        if (!res.headersSent) {
            res.status(500).json({ success: false, error: 'Internal Server Error:' + error });
        }
-       // Don't call next(error) if response is already sent, log instead.
-       // next(error); // Avoid calling next if headers sent
     }
   };
 
-  handleAgentRun().catch(next); // Keep this to catch promise rejections from handleAgentRun itself
+  handleAgentRun().catch(next);
 });
 
 export default runRouter; 

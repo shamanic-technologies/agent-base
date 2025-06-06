@@ -78,6 +78,12 @@ export function handleToolError(error: any): string {
       if (error?.data?.error?.message) {
           detailPayload.originalMessage = error.data.error.message;
       }
+  } 
+  // Handle prompt too long errors
+  else if (error?.data?.error?.type === 'invalid_request_error' && error?.data?.error?.message?.includes('prompt is too long')) {
+      response.error = 'The conversation history is too long for the model to handle. Please try starting a new conversation.';
+      detailPayload.code = 'PROMPT_TOO_LONG';
+      detailPayload.originalMessage = error.data.error.message;
   }
   // Handle specific AI_NoSuchToolError
   else if (typeof error === 'object' && error !== null && 'toolName' in error && 'availableTools' in error && Array.isArray(error.availableTools)) {
