@@ -70,8 +70,17 @@ export function handleToolError(error: any): string {
 
   let detailPayload: Record<string, any> = {}; // Store structured details here
 
+  // AI SDK Rate Limiting and other API errors
+  // More robust check for the specific rate limit error structure from Anthropic
+  if (error?.data?.error?.type === 'rate_limit_error') {
+      response.error = 'The service is currently experiencing high demand and the rate limit has been exceeded. Please try again in a moment.';
+      detailPayload.code = 'RATE_LIMIT_ERROR';
+      if (error?.data?.error?.message) {
+          detailPayload.originalMessage = error.data.error.message;
+      }
+  }
   // Handle specific AI_NoSuchToolError
-  if (typeof error === 'object' && error !== null && 'toolName' in error && 'availableTools' in error && Array.isArray(error.availableTools)) {
+  else if (typeof error === 'object' && error !== null && 'toolName' in error && 'availableTools' in error && Array.isArray(error.availableTools)) {
     const toolName = error.toolName;
     const availableToolsString = error.availableTools.join(', ');
     response.error = `Model tried to call unavailable tool '${toolName}'.`;

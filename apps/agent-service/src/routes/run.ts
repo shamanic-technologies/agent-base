@@ -225,6 +225,20 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
             prefix: 'msgs',
             size: 16,
         }),
+        onError: (error) => {
+            console.error("[Agent Service /run] AI SDK streamText onError callback:", error);
+
+            // Use the centralized error handler to format the error
+            const formattedError = handleToolError(error);
+
+            // Send a structured error back through the stream
+            // The client-side logic should be prepared to handle an 'error' type message
+            streamData.append(JSON.stringify({
+                type: 'error',
+                data: formattedError // handleToolError returns a stringified JSON
+            }));
+            streamData.close(); // Close the stream immediately after an error
+        },
         async onFinish({ response, usage }) { // Destructure response directly
             try {
               // Construct the final list including the latest assistant/tool responses
@@ -344,7 +358,11 @@ runRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
       // --- End Call AI Model ---
       // consume the stream to ensure it runs to completion & triggers onFinish
       // even when the client response is aborted:
-      result.consumeStream(); // no await
+      result.consumeStream({
+        onError: (error) => {
+            console.error("[Agent Service /run] Error in consumeStream:", error);
+        }
+      }); // no await
       // --- Pipe Stream --- 
       await result.pipeDataStreamToResponse(res, {
         data: streamData, // Pass the StreamData instance here
