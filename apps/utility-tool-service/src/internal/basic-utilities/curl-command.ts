@@ -23,17 +23,10 @@ const CurlRequestParamsSchema = z.object({
   headers: z.record(z.string()).optional().describe("Key-value pairs for request headers."),
   body: z.string().optional().describe("Request body, typically for POST, PUT, PATCH."),
   timeout_ms: z.number().int().positive({ message: "Timeout must be a positive integer." }).optional().default(10000).describe("Request timeout in milliseconds."),
+  from_character: z.number().int().nonnegative().optional().default(0).describe("The starting character index from which to return the response body. Defaults to 0."),
 });
 
-// Infer the type from Zod schema
-type CurlRequestParams = z.infer<typeof CurlRequestParamsSchema>;
 
-// Define a more specific success response structure
-interface CurlSuccessResponse {
-  status_code: number;
-  headers: Record<string, string>;
-  body: string;
-}
 // --- End Local Definitions ---
 
 /**
@@ -59,7 +52,8 @@ const curlCommandUtility: InternalUtilityTool = {
         description: 'Optional. Key-value pairs for request headers.' 
       },
       body: { type: 'string', description: 'Optional. The request body (e.g., for POST, PUT).' },
-      timeout_ms: {type: 'integer', default: 10000, description: 'Optional. Request timeout in milliseconds.'}
+      timeout_ms: {type: 'integer', default: 10000, description: 'Optional. Request timeout in milliseconds.'},
+      from_character: {type: 'integer', default: 0, description: 'Optional. The starting character index to read the response from. The response is truncated to 4000 characters from this point.'}
     },
     required: ['url'], 
   },
@@ -86,7 +80,7 @@ const curlCommandUtility: InternalUtilityTool = {
     }
 
     // Parameters are now validated and typed
-    const { url, method, headers, body, timeout_ms } = validationResult.data;
+    const { url, method, headers, body, timeout_ms, from_character } = validationResult.data;
 
     // 2. Construct RequestInit for node-fetch and AbortController for timeout
     const controller = new AbortController();
@@ -106,6 +100,9 @@ const curlCommandUtility: InternalUtilityTool = {
       clearTimeout(timeoutId); // Clear the timeout if the request completes
 
       const responseBody = await response.text(); 
+      const fixedMaxLength = 4000;
+      const slicedBody = responseBody.substring(from_character, from_character + fixedMaxLength);
+
 
       const responseHeaders: Record<string, string> = {};
       response.headers.forEach((value, name) => {
@@ -118,7 +115,10 @@ const curlCommandUtility: InternalUtilityTool = {
         data: {
           status_code: response.status,
           headers: responseHeaders,
-          body: responseBody,
+          body: slicedBody,
+          original_body_length: responseBody.length,
+          from_character: from_character,
+          to_character: from_character + fixedMaxLength
         }
       };
 
