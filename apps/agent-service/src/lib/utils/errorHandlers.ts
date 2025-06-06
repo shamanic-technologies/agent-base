@@ -8,6 +8,7 @@
 import { UtilityError } from '../../types/index.js';
 import { ErrorResponse } from '@agent-base/types';
 import axios from 'axios';
+import { Request, Response, NextFunction } from 'express';
 
 /**
  * Handle errors from Axios API calls
@@ -174,4 +175,53 @@ export function handleValidationError(error: any, toolName: string): ErrorRespon
     error: `Validation error in tool '${toolName}': ${validationMessages}`, 
     details: JSON.stringify(detailsPayload) // Stringify details payload
   };
+}
+
+/**
+ * Express Error Handling Middleware for the Agent Service.
+ * This should be registered with the app or router AFTER all other routes.
+ * It catches errors passed via `next(error)` and sends a structured JSON response.
+ */
+export function agentServiceErrorHandler(err: any, req: Request, res: Response, next: NextFunction) {
+  // Log the full error for debugging purposes
+  console.error(`[Agent Service Error Handler] Caught Error: ${err.message}`, {
+    name: err.name,
+    type: err.data?.error?.type,
+    stack: err.stack,
+    path: req.path,
+    method: req.method,
+  });
+
+  // If headers have already been sent, delegate to the default Express error handler.
+  if (res.headersSent) {
+    return next(err);
+  }
+
+  // Handle specific AI_APICallError types
+  if (err.name === 'AI_APICallError') {
+    const errorType = err.data?.error?.type;
+
+    if (errorType === 'rate_limit_error') {
+      return res.status(429).json({
+        success: false,
+        error: "Rate limit exceeded. Please try again shortly.",
+        code: 'RATE_LIMIT_EXCEEDED'
+      });
+    }
+
+    if (errorType === 'invalid_request_error' && err.message.includes('prompt is too long')) {
+      return res.status(400).json({
+        success: false,
+        error: "The conversation history is too long to process. Please start a new conversation.",
+        code: 'PROMPT_TOO_LONG'
+      });
+    }
+  }
+
+  // For all other errors, send a generic 500 Internal Server Error
+  res.status(500).json({
+    success: false,
+    error: 'An internal server error occurred.',
+    code: 'INTERNAL_SERVER_ERROR'
+  });
 } 

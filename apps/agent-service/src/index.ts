@@ -17,6 +17,8 @@ import { fileURLToPath } from 'url'; // Import needed for __dirname in ES Module
 import { configureRoutes } from './routes/index.js';
 // Import specific user types
 import { ClientUser, PlatformUser } from '@agent-base/types'; 
+// Import the centralized error handler
+import { agentServiceErrorHandler } from './lib/utils/errorHandlers.js';
 
 // Load environment variables based on NODE_ENV
 const nodeEnv = process.env.NODE_ENV || 'development';
@@ -110,6 +112,12 @@ app.use((req, res, next) => {
 
 // Configure routes
 configureRoutes(app);
+
+// Register the centralized error handling middleware.
+// This MUST be registered after all other routes and middleware.
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  agentServiceErrorHandler(err, req, res, next);
+});
 
 // Start server
 app.listen(PORT, () => {
