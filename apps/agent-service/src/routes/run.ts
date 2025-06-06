@@ -237,7 +237,15 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
             },
         });
 
-        result.consumeStream();
+        // The stream needs to be consumed for the onFinish callback to execute.
+        // We also need to catch any errors from this background consumption
+        // to prevent an unhandled promise rejection from crashing the server.
+        result.consumeStream().catch(err => {
+          console.warn(`[Agent Service /run] Background stream consumption failed. This is expected if the main request fails. Error: ${err instanceof Error ? err.message : String(err)}`);
+        });
+
+        // Pipe the stream to the response. Any error thrown here will be caught
+        // by the main .catch(next) block.
         await result.pipeDataStreamToResponse(res, { data: streamData });
 
     })().catch(next);
