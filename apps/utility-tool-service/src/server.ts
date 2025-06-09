@@ -34,7 +34,7 @@ import {
     InternalUtilityTool,
     ExecuteToolResult,
     ApiToolInfo,
-    ApiToolExecutionResponse,
+    ApiToolExecutionResult,
     AgentInternalCredentials
 } from '@agent-base/types';
 
@@ -229,7 +229,7 @@ app.post('/call-tool/:id', async (req, res): Promise<void> => {
 
     // 2. Try external service (requires full auth headers, now using internal client)
 
-    const externalResponse: ServiceResponse<ApiToolExecutionResponse> = await executeApiToolInternal(
+    const externalResponse: ServiceResponse<ApiToolExecutionResult> = await executeApiToolInternal(
         agentServiceCredentials,
         id,
         req.body
