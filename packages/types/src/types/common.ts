@@ -11,7 +11,6 @@ export interface BaseResponse {
   success: boolean;
   error?: string;
   details?: string;
-  hint?: string; // Concrete next steps for the agent to take
   creditConsumption?: AgentBaseCreditConsumption;
 }
 
@@ -24,6 +23,7 @@ export interface BaseResponse {
     success: true;
     data: T;
     error?: never;
+    hint?: string; // Concrete next steps for the agent to take
   }
 
   export interface ErrorResponse extends BaseResponse {
@@ -31,6 +31,7 @@ export interface BaseResponse {
     data?: never;
     error: string;
     statusCode?: number; // Added optional statusCode for HTTP error reporting
+    hint?: string; // Concrete next steps for the agent to take
   }
 
   export type ServiceResponse<T> = SuccessResponse<T> | ErrorResponse;

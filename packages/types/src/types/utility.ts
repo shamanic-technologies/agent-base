@@ -61,6 +61,7 @@ export interface SetupNeeded {
     webhookUrlToInput?: string; // Webhook URL to input in the provider dashboard
     // For oauth to do
     oauthUrl?: string; // For OAuth flow initiation
+    hint?: string;
 }
 
 // /**

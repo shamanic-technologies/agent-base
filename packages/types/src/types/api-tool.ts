@@ -40,7 +40,7 @@ export interface ApiTool extends ApiToolData {
 
 // Creating an api tool
 export type CreateApiToolRequest = ApiToolData;
-export type CreateApiToolResponse = ApiTool;
+export type CreateApiToolResult = ApiTool;
 
 // Executing an Api Tool
 export type ApiToolExecutionResponse = SetupNeeded | ExecuteToolResult;
