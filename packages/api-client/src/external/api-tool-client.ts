@@ -4,7 +4,7 @@
 import {
     ServiceResponse,
     ApiTool,
-    ApiToolExecutionResponse,
+    ApiToolExecutionResult,
     ExecuteToolPayload,
     ApiToolInfo,
     SearchApiToolResult,
@@ -119,7 +119,7 @@ export async function executeApiTool(
     apiToolApiKey: string,
     id: string,
     executeToolPayload: ExecuteToolPayload
-): Promise<ServiceResponse<ApiToolExecutionResponse>> {
+): Promise<ServiceResponse<ApiToolExecutionResult>> {
     const customHeaders : Record<string, string> = {
         'x-platform-user-id': externalCredentials.platformUserId,
         'x-client-user-id': externalCredentials.clientUserId,
@@ -130,7 +130,7 @@ export async function executeApiTool(
     if (externalCredentials.agentId) {
         customHeaders['x-agent-id'] = externalCredentials.agentId;
     }
-    return makeExternalApiServiceRequest<ApiToolExecutionResponse>(
+    return makeExternalApiServiceRequest<ApiToolExecutionResult>(
         getApiToolApiUrl(),
         'POST',
         '/'+id+'/execute',

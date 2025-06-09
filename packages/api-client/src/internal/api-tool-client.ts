@@ -16,7 +16,7 @@ import {
     ApiToolInfo,       // Basic info for listing tools
     ApiTool,           // Detailed tool information, including schema
     ExecuteToolPayload,  // Payload for executing a tool (likely from @agent-base/types)
-    ApiToolExecutionResponse, // Response from executing a tool
+    ApiToolExecutionResult, // Response from executing a tool
     ApiToolExecution  // Record of a tool execution (renamed from ApiToolExecutionRecord)
 } from '@agent-base/types';
 import { makeInternalRequest } from '../utils/service-client.js';
@@ -186,17 +186,17 @@ export async function createApiToolInternal(
  * @param {InternalServiceCredentials} credentials - Credentials.
  * @param {string} toolId - The ID of the tool to execute.
  * @param {ExecuteToolPayload} payload - The input data for the tool execution.
- * @returns {Promise<ServiceResponse<ApiToolExecutionResponse>>} Service response containing the execution result or an error.
+ * @returns {Promise<ServiceResponse<ApiToolExecutionResult>>} Service response containing the execution result or an error.
  */
 export async function executeApiToolInternal(
   humanInternalCredentials: HumanInternalCredentials,
   toolId: string,
   payload: ExecuteToolPayload // Assuming ExecuteToolPayload is suitable here
-): Promise<ServiceResponse<ApiToolExecutionResponse>> {
+): Promise<ServiceResponse<ApiToolExecutionResult>> {
   const { platformUserId, clientUserId, clientOrganizationId, platformApiKey, agentId } = humanInternalCredentials;
   const endpoint = `${API_TOOL_ROUTE_PREFIX}/${toolId}/execute`;
 
-  return makeInternalRequest<ApiToolExecutionResponse>(
+  return makeInternalRequest<ApiToolExecutionResult>(
     getApiGatewayServiceUrl(),
     'POST' as Method,
     endpoint,
