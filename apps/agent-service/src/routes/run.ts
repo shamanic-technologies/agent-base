@@ -111,14 +111,16 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
 
         // --- Truncate History ---
         const totalModelLimit = 200000;
-        const maxOutputTokens = 4096;
-        const thinkingBudgetTokens = 12000;
+        const maxSteps = 10;
+        const inputTokensBudget = 15000;
+        const maxOutputTokens = 40000;
+        const thinkingBudgetTokens = 10000;
 
         const selectedHistoryMessages = truncateHistory({
             systemPrompt,
             currentMessage,
             fullHistoryMessages,
-            totalModelLimit,
+            inputTokensBudget,
             maxOutputTokens,
             thinkingBudgetTokens,
         });
@@ -169,7 +171,7 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
             toolCallStreaming: true,
             maxTokens: maxOutputTokens,
             temperature: 0.1,
-            maxSteps: 25, 
+            maxSteps, 
             providerOptions: { anthropic: { thinking: { type: 'enabled', budgetTokens: thinkingBudgetTokens } } },
             experimental_generateMessageId: createIdGenerator({ prefix: 'msgs', size: 16 }),
             async onFinish({ response, usage }) {
