@@ -2,39 +2,29 @@
  * Common base types for the agent system.
  */
 
-import { AgentBaseCreditConsumption } from "./credit.js";
-
-/**
- * Generic success/error response structure.
- */
-export interface BaseResponse {
-  success: boolean;
-  error?: string;
-  details?: string;
-  creditConsumption?: AgentBaseCreditConsumption;
-}
 
 /**
  * Generic service response with typed data payload
  * Used for internal service-to-service communication
  */
+export interface SuccessResponse<T> {
+  success: true;
+  data: T;
+  hint?: string; // Concrete next steps for the agent to take
+}
 
-  export interface SuccessResponse<T> extends BaseResponse {
-    success: true;
-    data: T;
-    error?: never;
-    hint?: string; // Concrete next steps for the agent to take
-  }
+export interface ErrorResult {
+  error: string;
+  details?: string;
+  errorCode?: string;
+  hint?: string; // Concrete next steps for the agent to take
+}
 
-  export interface ErrorResponse extends BaseResponse {
-    success: false;
-    data?: never;
-    error: string;
-    statusCode?: number; // Added optional statusCode for HTTP error reporting
-    hint?: string; // Concrete next steps for the agent to take
-  }
+export interface ErrorResponse extends ErrorResult {
+  success: false;
+}
 
-  export type ServiceResponse<T> = SuccessResponse<T> | ErrorResponse;
+export type ServiceResponse<T> = SuccessResponse<T> | ErrorResponse;
 
 /**
  * Type definition for the health check endpoint response.
