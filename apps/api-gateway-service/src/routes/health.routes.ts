@@ -18,7 +18,6 @@ export const configureHealthRoutes = (
     agent: string;
     utilityTool: string;
     key: string;
-    logging: string; // Logging service URL is optional
     secret: string; // Secret service URL is optional
   }
 ) => {
@@ -38,7 +37,6 @@ export const configureHealthRoutes = (
         agentService: serviceUrls.agent ? 'configured' : 'not configured',
         utilityToolService: serviceUrls.utilityTool ? 'configured' : 'not configured',
         keyService: serviceUrls.key ? 'configured' : 'not configured',
-        loggingService: serviceUrls.logging ? 'configured' : 'not configured',
         secretService: serviceUrls.secret ? 'configured' : 'not configured',
       }
     });

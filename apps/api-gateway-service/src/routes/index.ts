@@ -27,7 +27,6 @@ export const configureRoutes = (
     agent: string;
     utilityTool: string;
     key: string;
-    logging: string;
     secret: string;
     webhookTool: string;
     apiTool: string;
