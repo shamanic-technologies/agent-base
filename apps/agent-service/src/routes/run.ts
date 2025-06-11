@@ -193,7 +193,9 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
                     console.error("[Agent Service /run] Exception saving messages in onFinish:", dbError);
                 }
 
-                const assistantMessageId = response.messages[response.messages.length - 1].id;
+                const lastMessage = response.messages?.[response.messages.length - 1];
+                const assistantMessageId = lastMessage?.id ?? null; // In case there is no last message
+
                 const extractedToolCalls: ToolCall<string, any>[] = (response?.messages ?? [])
                     .flatMap(message => (message.role === 'assistant' && Array.isArray(message.content)) ? message.content : [])
                     .filter(contentPart => (contentPart as any).type === 'tool-call')

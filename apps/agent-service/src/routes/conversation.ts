@@ -256,7 +256,6 @@ router.get('/get-all-user-conversations', async (req: Request, res: Response, ne
     }
 
     try {
-        console.log(`${logPrefix} Calling getAllUserConversationsFromDbService.`);
         // Call the API client function. 
         // The clientUserId for auth is the same as the one we're fetching data for.
         const response = await getAllUserConversationsFromDbService(
@@ -268,7 +267,6 @@ router.get('/get-all-user-conversations', async (req: Request, res: Response, ne
         );
 
         if (response.success) {
-            console.log(`${logPrefix} Successfully retrieved ${response.data?.length ?? 0} conversations.`);
             res.status(200).json(response);
         } else {
             console.error(`${logPrefix} Failed to retrieve conversations: ${response.error}`);

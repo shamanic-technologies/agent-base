@@ -125,7 +125,6 @@ export async function createFunctionalToolObject(
     agentInternalCredentials: AgentInternalCredentials,
     conversationId: string
 ): Promise<{ id: string, tool: Tool }> { 
-    console.log(`[createFunctionalToolObject] Fetching functional tool object info for: ${toolId}`);
     
     // 1. Fetch tool info (description, JSON schema)
     const infoResponse = await getUtilityInfoFromAgent(agentInternalCredentials, conversationId, toolId);

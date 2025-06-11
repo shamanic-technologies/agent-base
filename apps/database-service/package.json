@@ -15,6 +15,7 @@
     "migrate:create": "pnpm exec dotenv -e .env -- node-pg-migrate create",
     "migrate:up": "pnpm exec node-pg-migrate up",
     "migrate:down": "pnpm exec dotenv -e .env -- node-pg-migrate down",
+    "db:clear": "dotenv -- sh -c 'psql \"$DATABASE_URL\" -c \"TRUNCATE TABLE platform_users, client_users, client_organizations, agents, client_user_agents, conversations, client_user_oauth, platform_user_api_keys, client_user_client_organization CASCADE;\"'",
     "db:seed": "ts-node src/seed.ts"
   },
   "dependencies": {
