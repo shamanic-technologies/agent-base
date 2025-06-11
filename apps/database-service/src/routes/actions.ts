@@ -61,9 +61,10 @@ router.get('/', async (req: Request, res: Response, next: NextFunction): Promise
         );
 
         if (!response.success) {
-            const statusCode = response.error?.toLowerCase().includes('required') ? 400 : 500;
-            console.error(`[API /actions] Service error for clientUserId ${clientUserIdFromHeader}:`,response.error);
-            res.status(statusCode).json(response);
+            const errorResponse = response as ErrorResponse;
+            const statusCode = errorResponse.error.toLowerCase().includes('required') ? 400 : 500;
+            console.error(`[API /actions] Service error for clientUserId ${clientUserIdFromHeader}:`, errorResponse.error);
+            res.status(statusCode).json(errorResponse);
             return;
         }
 

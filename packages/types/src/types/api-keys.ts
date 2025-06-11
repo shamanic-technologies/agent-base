@@ -1,9 +1,7 @@
 /**
  * Shared types for API Key data
  */
-import { AgentRecord } from './agent.js';
-import { Agent } from './agent.js';
-import { BaseResponse } from './common.js';
+
 
 /**
  * Represents the metadata for an API key stored in the database
@@ -71,7 +69,7 @@ export interface GetApiKeyRequest {
   keyId: string;
 }
 
-export interface ValidateApiKeyResponse extends BaseResponse {
+export interface ValidateApiKeyResult {
   userId: string;
   keyId: string;
 }

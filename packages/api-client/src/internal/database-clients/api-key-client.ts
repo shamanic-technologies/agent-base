@@ -6,7 +6,7 @@ import {
   ApiKey, // Use camelCase type for client consistency
   CreateApiKeyRequest,
   ValidateApiKeyRequest,
-  ValidateApiKeyResponse, // Response type for validation endpoint
+  ValidateApiKeyResult, // Response type for validation endpoint
   ApiKeyRecord
 } from '@agent-base/types';
 import { makeWebAuthenticatedServiceRequest } from '../../utils/service-client.js';
@@ -81,11 +81,11 @@ export const listApiKeyMetadata = async (
  * Corresponds to: POST /api-keys/validate
  * 
  * @param data - Input data containing hashedKey and keyPrefix.
- * @returns A ServiceResponse containing ValidateApiKeyResponse (with keyId and userId/platformUserId) or an error.
+ * @returns A ServiceResponse containing ValidateApiKeyResult (with keyId and userId/platformUserId) or an error.
  */
 export const validateApiKey = async (
   data: ValidateApiKeyRequest
-): Promise<ServiceResponse<ValidateApiKeyResponse>> => {
+): Promise<ServiceResponse<ValidateApiKeyResult>> => {
   if (!data || !data.hashedKey || !data.keyPrefix) {
     throw new Error('[api-client:validateApiKey] Input data must include hashedKey and keyPrefix.');
   }
@@ -94,7 +94,7 @@ export const validateApiKey = async (
   // Assuming makeServiceRequest requires it, but it won't be used by this specific endpoint's backend logic.
   const placeholderUserId = ''; // Or adjust makeServiceRequest if possible
   const placeholderOrgId = ''; // Or adjust makeServiceRequest if possible
-  return makeWebAuthenticatedServiceRequest<ValidateApiKeyResponse>(
+  return makeWebAuthenticatedServiceRequest<ValidateApiKeyResult>(
     getDatabaseServiceUrl(),
     'POST',
     endpoint,

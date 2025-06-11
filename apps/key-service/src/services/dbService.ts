@@ -5,7 +5,6 @@
 import { DATABASE_SERVICE_URL } from '../config.js';
 import { 
   CreateApiKeyRequest,
-  ValidateApiKeyResponse,
   ErrorResponse,
   ServiceResponse,
   ApiKey,

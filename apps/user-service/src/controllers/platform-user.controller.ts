@@ -44,15 +44,15 @@ export const validatePlatformAuthUserHandler: AsyncRequestHandler = async (req, 
       platformAuthUserId,
       // We are not passing email, displayName, or profileImage from this endpoint initially
       // The database service's getOrCreatePlatformUserByProviderUserId can handle nulls for these
-      email: null, 
-      displayName: null,
-      profileImage: null,
+      email: undefined, 
+      displayName: undefined,
+      profileImage: undefined,
     };
 
     // Call the utility function that interacts with the API client for the database service
     const dbResponse: ServiceResponse<PlatformUser> = await getOrCreatePlatformUserInDatabase(getOrCreateInput);
 
-    if (!dbResponse.success || !dbResponse.data) {
+    if (!dbResponse.success) {
       console.error(`[User Service] Failed to get or create user for platformAuthUserId ${platformAuthUserId}: ${dbResponse.error}`);
       return res.status(500).json({
         success: false,

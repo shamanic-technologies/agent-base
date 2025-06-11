@@ -31,35 +31,30 @@ export const creditValidationMiddleware = async (req: Request, res: Response, ne
     console.log(`Validating credit via SDK for request to: ${req.originalUrl}, amount: ${amountToValidateInUSDCents} cents`);
 
     const serviceResponse = await validateCreditInternalService(
-      req.platformUserId,
-      req.platformApiKey,
-      req.clientUserId,
-      req.clientOrganizationId,
+      req.platformUserId!,
+      req.platformApiKey!,
+      req.clientUserId!,
+      req.clientOrganizationId!,
       validateCreditPayload
     );
 
-    if (serviceResponse.success && serviceResponse.data?.hasEnoughCredit) {
-      console.log('Credit validation successful via SDK. Proceeding with request.');
-      next();
-    } else {
-      console.warn('Insufficient credits or validation failed via SDK.', serviceResponse.error, serviceResponse.details);
-      const statusCode = serviceResponse.data?.hasEnoughCredit === false ? 402 : (serviceResponse.error?.includes("status 404") ? 404 : 503);
-      let errorMessage = 'Insufficient credits or credit validation failed.';
-      if (!serviceResponse.success) {
-        errorMessage = serviceResponse.error || 'Credit validation service encountered an issue.';
-      }
+    if (!serviceResponse.success) {
+      console.error('Validation failed via SDK.', serviceResponse.error, serviceResponse.details);
+      const statusCode = serviceResponse.error?.includes("status 404") ? 404 : 503;
 
-      res.status(statusCode).json({
-        success: false,
-        error: errorMessage,
-        details: {
-          hasEnoughCredit: serviceResponse.data?.hasEnoughCredit,
-          remainingCreditInUSDCents: serviceResponse.data?.remainingCreditInUSDCents,
-          originalError: serviceResponse.details || serviceResponse.error
-        }
-      });
+      res.status(statusCode).json(serviceResponse);
       return;
+
+    } else {
+      if (serviceResponse.data?.hasEnoughCredit) {
+        next();
+      } else {
+        console.warn('Insufficient credits or validation failed via SDK.', serviceResponse.data?.hasEnoughCredit, serviceResponse.data?.remainingCreditInUSDCents);
+        res.status(402).json(serviceResponse);
+        return;
+      }
     }
+
   } catch (error) {
     console.error('Unexpected error in creditValidationMiddleware:', error);
     res.status(500).json({ success: false, error: 'Internal server error during credit validation' });

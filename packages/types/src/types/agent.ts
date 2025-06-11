@@ -1,7 +1,6 @@
 /**
  * Types related to Agents.
  */
-import { BaseResponse } from './common.js';
 
 // --- Enums and Core Records ---
 

@@ -9,6 +9,7 @@ import {
   ToolCall as AppToolCall, // Renaming to avoid conflict with Vercel's
   ToolResult as AppToolResult, // Renaming to avoid conflict with Vercel's
   Conversation,
+  ErrorResponse,
 } from '@agent-base/types';
 import { Message as VercelMessage, ToolCallPart, ToolResultPart } from 'ai'; // Assuming Message from 'ai' is CoreMessage or compatible
 import { getConversationsByClientUserId } from './conversations.js';
@@ -45,10 +46,11 @@ export async function getActionsForClientUser(
     );
 
     if (!conversationsResponse.success) {
+      const errorResponse = conversationsResponse as ErrorResponse;
       console.error('[ActionsService] Failed to retrieve conversations for the user.');
       return {
         success: false,
-        error: conversationsResponse.error || 'Failed to retrieve conversations for the user.',
+        error: errorResponse.error || 'Failed to retrieve conversations for the user.',
         hint: 'This error should not happen. Please contact support if you see this error.'
       };
     }

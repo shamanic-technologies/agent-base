@@ -55,7 +55,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     if (!upsertResponse.success) {
       console.error(`[POST /client-organizations] Service error: ${upsertResponse.error}`);
       // Determine appropriate status code based on error type if possible
-      const statusCode = upsertResponse.error?.includes('Missing required fields') ? 400 : 500;
+      const statusCode = upsertResponse.error.includes('Missing required fields') ? 400 : 500;
       res.status(statusCode).json(upsertResponse);
       return;
     }

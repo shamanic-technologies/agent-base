@@ -92,7 +92,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction): Promise
             // Log the error specific to agent-service context if needed
             // Determine appropriate status code. If database-service provided one (e.g. via error message analysis),
             // we could use that. For now, if it's a known client error pattern (like 'required'), use 400.
-            const statusCode = serviceResponse.error?.toLowerCase().includes('required') ? 400 : 500;
+            const statusCode = serviceResponse.error.toLowerCase().includes('required') ? 400 : 500;
             res.status(statusCode).json(serviceResponse);
             return;
         }

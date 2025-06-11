@@ -8,7 +8,6 @@ import { getClient } from '../db.js';
 import {
   AgentRecord,
   ListClientUserAgentsInput,
-  BaseResponse,
   CreateAgentInput,
   ServiceResponse,
   mapAgentFromDatabase,
@@ -16,7 +15,8 @@ import {
   UpdateAgentInput,
   ConversationId,
   Agent,
-  LinkAgentToClientUserInput
+  LinkAgentToClientUserInput,
+  ErrorResponse,
 } from '@agent-base/types';
 
 const AGENTS_TABLE = 'agents';
@@ -159,7 +159,7 @@ export async function updateAgent(input: UpdateAgentInput): Promise<ServiceRespo
  * @param input - An object containing client_user_id, client_organization_id, and agent_id.
  * @returns A BaseResponse indicating success or failure.
  */
-export async function linkAgentToClientUser(input: LinkAgentToClientUserInput): Promise<BaseResponse> {
+export async function linkAgentToClientUser(input: LinkAgentToClientUserInput): Promise<ServiceResponse<null>> {
   let client: PoolClient | null = null;
   try {
     client = await getClient();
@@ -172,7 +172,7 @@ export async function linkAgentToClientUser(input: LinkAgentToClientUserInput): 
     await client.query(query, values);
 
     // Even if no new row was created (due to ON CONFLICT DO NOTHING), still consider it a success
-    return { success: true };
+    return { success: true, data: null };
   } catch (error: any) {
     console.error('Error linking agent to user:', error);
     return { success: false, error: error.message || 'Failed to link agent to user' };

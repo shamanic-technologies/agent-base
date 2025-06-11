@@ -59,7 +59,7 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
   try {
     const validationResponse: ServiceResponse<PlatformUserId> = await validatePlatformUser(platformAuthUserId);
 
-    if (validationResponse.success && validationResponse.data) {
+    if (validationResponse.success) {
       platformUserId = validationResponse.data.platformUserId;
       platformOrganizationId = 'A45FFF8F-4A84-4818-AC38-28617D509581'; // Temporary value until we have a proper orgId validation
       // Set the validated platformUserId for downstream services

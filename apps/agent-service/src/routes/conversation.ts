@@ -12,8 +12,7 @@ import {
     CreateConversationInput,
     Conversation,
     ServiceResponse,
-    ConversationId,
-    BaseResponse
+    ConversationId
 } from '@agent-base/types';
 // Import the new service function
 import { 
@@ -211,7 +210,7 @@ router.post('/get-or-create-conversation', async (req: Request, res: Response, n
             return;
         }
         // 2. If get failed (assumed not found), try to create it
-        const createResponse = await createConversationInternalApiService(
+        const createResponse: ServiceResponse<ConversationId> = await createConversationInternalApiService(
             req.body, // Contains agentId, channelId, conversationId
             clientUserId,
             clientOrganizationId,
@@ -273,7 +272,7 @@ router.get('/get-all-user-conversations', async (req: Request, res: Response, ne
             // Determine status code based on error if possible, otherwise default to 500
             // For now, just forwarding the error and assuming the client function handled status appropriately if it was a direct HTTP error.
             // If the error is from the DB service, it might be a generic 500 from its perspective.
-            res.status(500).json({ success: false, error: response.error || 'Failed to retrieve all user conversations' });
+            res.status(500).json(response);
         }
     } catch (error) {
         console.error(`${logPrefix} Unexpected error:`, error);

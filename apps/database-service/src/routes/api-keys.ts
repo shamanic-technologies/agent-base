@@ -44,7 +44,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     const createResponse = await upsertApiKey({ keyId, name, keyPrefix, hashedKey }, platformUserId, platformOrganizationId);
 
     if (!createResponse.success) {
-      if (createResponse.error?.includes('already exists')) {
+      if (createResponse.error.includes('already exists')) {
         res.status(409).json(createResponse);
       } else {
         res.status(500).json(createResponse);
@@ -121,7 +121,7 @@ router.post('/validate', async (req: Request, res: Response): Promise<void> => {
     const validateResponse: ServiceResponse<ApiKey> = await validateApiKey({ hashedKey, keyPrefix });
 
     if (!validateResponse.success) {
-      if (validateResponse.error?.includes('Invalid API key')) {
+      if (validateResponse.error.includes('Invalid API key')) {
         console.error(`[DB Service /validate] Invalid API key: ${hashedKey} with prefix: ${keyPrefix}`);
         res.status(404).json(validateResponse);
       } else {

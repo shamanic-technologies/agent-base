@@ -10,9 +10,8 @@ import {
   PlatformUserRecord,
   PlatformUser,
   GetOrCreatePlatformUserInput,
-  BaseResponse,
+  mapPlatformUserFromDatabase,
   ServiceResponse,
-  mapPlatformUserFromDatabase
 } from '@agent-base/types';
 import { PLATFORM_USERS_TABLE } from '../types/database-constants.js';
 

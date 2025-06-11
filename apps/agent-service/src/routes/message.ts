@@ -51,16 +51,13 @@ router.get('/get-messages-from-conversation', async (req: Request, res: Response
             clientUserId,
             clientOrganizationId
         );
-
-        if (conversationResponse.success && conversationResponse.data) {
-            // Access messages directly from conversationResponse.data (assuming it's ConversationRecord)
-            const messages: Message[] = conversationResponse.data.messages || []; 
-            res.status(200).json({ success: true, data: messages });
-        } else {
+        if (!conversationResponse.success) {
             console.error(`${logPrefix} Failed to get conversation from service:`, conversationResponse.error);
             const statusCode = conversationResponse.error?.toLowerCase().includes('not found') ? 404 : 500;
             res.status(statusCode).json({ success: false, error: conversationResponse.error || 'Failed to retrieve conversation' });
-        }
+            return;
+        } 
+        res.status(200).json(conversationResponse);
 
     } catch (error) {
         console.error(`${logPrefix} Unexpected error:`, error);
@@ -99,22 +96,23 @@ router.get('/get-messages-from-agent', async (req: Request, res: Response, next:
             platformApiKey
         );
 
-        if (conversationsResponse.success && conversationsResponse.data) {
-            let allMessages: Message[] = [];
-            // Iterate directly over conversationsResponse.data which is ConversationRecord[]
-            conversationsResponse.data.forEach(conv => { 
-                if (conv.messages && Array.isArray(conv.messages)) {
-                    allMessages = allMessages.concat(conv.messages);
-                }
-            });
-            // Sort messages by creation date ascending (optional, but good practice)
-            allMessages.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-            
-            res.status(200).json({ success: true, data: allMessages });
-        } else {
+        if (!conversationsResponse.success) {
             console.error(`${logPrefix} Failed to get conversations from service:`, conversationsResponse.error);
-            res.status(500).json({ success: false, error: conversationsResponse.error || 'Failed to retrieve conversations' });
+            res.status(500).json(conversationsResponse);
+            return;
         }
+
+        let allMessages: Message[] = [];
+        // Iterate directly over conversationsResponse.data which is ConversationRecord[]
+        conversationsResponse.data.forEach(conv => { 
+            if (conv.messages && Array.isArray(conv.messages)) {
+                allMessages = allMessages.concat(conv.messages);
+            }
+        });
+        // Sort messages by creation date ascending (optional, but good practice)
+        allMessages.sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
+        
+        res.status(200).json({ success: true, data: allMessages });
 
     } catch (error) {
         console.error(`${logPrefix} Unexpected error:`, error);

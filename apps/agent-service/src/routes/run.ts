@@ -85,7 +85,7 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
             platformUserId,
             platformApiKey
         );
-        if (!agentResponse.success || !agentResponse.data) {
+        if (!agentResponse.success) {
             console.error(`[Agent Service /run] Failed to get agent for conversation ${conversationId}:`, agentResponse.error);
             return res.status(500).json({ success: false, error: `Failed to load agent configuration: ${agentResponse.error}` });
         }
@@ -103,8 +103,8 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
             clientUserId,
             clientOrganizationId
         );
-        if (conversationResponse.success && conversationResponse.data?.messages) {
-            fullHistoryMessages = conversationResponse.data.messages;
+        if (conversationResponse.success) {
+            fullHistoryMessages = conversationResponse.data.messages || [];
         } else {
             console.warn(`[Agent Service /run] Conversation ${conversationId} not found or no messages present. Starting with empty history. Error: ${conversationResponse.error}`);
         }
@@ -219,18 +219,20 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
                         deductCreditRequest
                     );
 
-                    if (deductCreditResponse.success && deductCreditResponse.data) {
-                        const { creditConsumption, newBalanceInUSDCents } = deductCreditResponse.data;
-                        const creditData: AgentBaseCreditStreamPayloadData = {
-                            creditConsumption,
-                            newBalanceInUSDCents,
-                            assistantMessageId,
-                        };
-                        streamData.append(JSON.stringify({ type: 'credit_info', success: true, data: creditData }));
-                    } else {
+                    if (!deductCreditResponse.success) {
+                        console.error(`[Agent Service /run] Failed to deduct credit:`, deductCreditResponse.error);
                         const creditData: AgentBaseCreditStreamPayloadData = { assistantMessageId };
                         streamData.append(JSON.stringify({ type: 'credit_info', success: false, error: 'Failed to deduct credit', details: deductCreditResponse.error, data: creditData }));
+                        return;
                     }
+
+                    const { creditConsumption, newBalanceInUSDCents } = deductCreditResponse.data;
+                    const creditData: AgentBaseCreditStreamPayloadData = {
+                        creditConsumption,
+                        newBalanceInUSDCents,
+                        assistantMessageId,
+                    };
+                    streamData.append(JSON.stringify({ type: 'credit_info', success: true, data: creditData }));
                 } catch (deductCreditError) {
                     const creditData: AgentBaseCreditStreamPayloadData = { assistantMessageId };
                     const details = deductCreditError instanceof Error ? deductCreditError.message : String(deductCreditError);

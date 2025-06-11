@@ -127,10 +127,10 @@ export async function createFunctionalToolObject(
 ): Promise<{ id: string, tool: Tool }> { 
     
     // 1. Fetch tool info (description, JSON schema)
-    const infoResponse = await getUtilityInfoFromAgent(agentInternalCredentials, conversationId, toolId);
+    const infoResponse: ServiceResponse<UtilityInfo> = await getUtilityInfoFromAgent(agentInternalCredentials, conversationId, toolId);
 
     if (!infoResponse.success || !infoResponse.data) {
-        console.error(`[createFunctionalToolObject] Failed to get info for tool ${toolId}:`, infoResponse.error);
+        console.error(`[createFunctionalToolObject] Failed to get info for tool ${toolId}:`, infoResponse);
         throw new Error(`Could not fetch tool definition for '${toolId}'.`);
     }
 

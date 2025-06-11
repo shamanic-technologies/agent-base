@@ -229,6 +229,7 @@ const createExternalToolUtility: InternalUtilityTool = {
       if (!clientUserId) return { success: false, error: 'Internal Error: clientUserId is required.' };
       if (!platformUserId) return { success: false, error: 'Internal Error: platformUserId is required.' };
       if (!platformApiKey) return { success: false, error: 'Internal Error: platformApiKey is required.' };
+      if (!agentId) return { success: false, error: 'Internal Error: agentId is required.' };
             
       // Restore AgentServiceCredentials creation
       const agentInternalCredentials : AgentInternalCredentials = {

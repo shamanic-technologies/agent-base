@@ -16,7 +16,6 @@ import {
   UpdateClientUserAgentInput,
   ServiceResponse,
   Agent,
-  BaseResponse, // <-- Add import for the renamed response type
 } from '@agent-base/types';
 
 const router = express.Router();
@@ -53,7 +52,7 @@ router.post('/create-user-agent', async (req: Request, res: Response): Promise<v
     // --- Step 1: Create Agent ---
     const createResponse : ServiceResponse<Agent> = await createAgent(agentData);
     
-    if (!createResponse.success || !createResponse.data) {
+    if (!createResponse.success) {
       console.error('[DB Service /create-user-agent] Agent creation failed:', createResponse.error);
       // Use CreateUserAgentResponse type for consistency if needed, though error shape is generic
       res.status(400).json({ success: false, error: `Agent creation failed: ${createResponse.error || 'Unknown error'}` } as ErrorResponse);
@@ -65,7 +64,7 @@ router.post('/create-user-agent', async (req: Request, res: Response): Promise<v
 
     // --- Step 2: Link Agent to User ---
     const linkInput = { clientUserId, clientOrganizationId, agentId: newAgentId };
-    const linkResponse : BaseResponse = await linkAgentToClientUser(linkInput);
+    const linkResponse : ServiceResponse<any> = await linkAgentToClientUser(linkInput);
 
     if (!linkResponse.success) {
       console.error(`[DB Service /create-user-agent] Failed to link agent ${newAgentId} to user ${clientUserId}:`, linkResponse.error);

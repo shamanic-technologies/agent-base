@@ -76,13 +76,13 @@ const updateAgentMemoryUtility: InternalUtilityTool = {
       const agentUpdateData: UpdateClientUserAgentInput = {
         clientUserId: clientUserId,
         clientOrganizationId: clientOrganizationId,
-        agentId: agentId,
+        agentId: agentId!,
         agentMemory: memory
       };
 
       // Call the SDK function with the validated parameters
       const resultResponse: ServiceResponse<Agent> = await updateAgentInternalService(
-        agentId,
+        agentId!,
         agentUpdateData,
         platformUserId,
         platformApiKey,

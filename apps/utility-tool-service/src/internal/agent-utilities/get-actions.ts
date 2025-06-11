@@ -79,13 +79,12 @@ const getActionsUtility: InternalUtilityTool = {
         limitNum // Pass the parsed limit
       );
 
-      if (!resultResponse.success) {
+      if (resultResponse.success) {
+        return resultResponse; 
+      } else {
         console.error(`${logPrefix} Failed to retrieve user actions via API client:`, resultResponse.error, resultResponse.details);
         return resultResponse;
       }
-
-      return resultResponse; 
-
     } catch (error: any) {
       console.error(`${logPrefix} Unexpected error executing utility for clientUserId ${clientUserId}:`, error);
       return {

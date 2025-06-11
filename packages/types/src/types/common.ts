@@ -16,7 +16,7 @@ export interface SuccessResponse<T> {
 export interface ErrorResult {
   error: string;
   details?: string;
-  errorCode?: string;
+  statusCode?: number;
   hint?: string; // Concrete next steps for the agent to take
 }
 

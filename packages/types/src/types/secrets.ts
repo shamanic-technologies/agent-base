@@ -1,7 +1,6 @@
 /**
  * Shared types for secrets management
  */
-import { BaseResponse } from './common.js';
 import { UserType } from './user.js';
 import { UtilityProvider, UtilitySecretType, UtilityActionConfirmation } from './utility.js';
 

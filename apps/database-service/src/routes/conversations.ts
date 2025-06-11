@@ -10,7 +10,6 @@ import {
     CreateConversationInput,
     ConversationRecord,
     AgentId,
-    BaseResponse,
     UpdateConversationInput,
     ErrorResponse,
     SuccessResponse,
@@ -218,7 +217,7 @@ router.post('/update-conversation', (async (req: Request, res: Response, next: N
     }
     if (!messages || !Array.isArray(messages)) {
       console.error('[DB Route /conversations] messages is required and must be an array');
-      return res.status(400).json({ success: false, error: 'messages is required and must be an array' } as BaseResponse);
+      return res.status(400).json({ success: false, error: 'messages is required and must be an array' } as ErrorResponse);
     }
     // --- End Validation ---
 
@@ -227,7 +226,7 @@ router.post('/update-conversation', (async (req: Request, res: Response, next: N
     if (!updateResponse.success) {
       // Service function returns success:false if conversation not found or DB error
       // Determine status code based on error message (heuristic)
-      const statusCode = updateResponse.error?.toLowerCase().includes('not found') ? 404 : 500;
+      const statusCode = updateResponse.error.toLowerCase().includes('not found') ? 404 : 500;
       console.error(`[DB Route /conversations] Service error updating messages for ${conversationId}:`, updateResponse.error);
       return res.status(statusCode).json(updateResponse);
     }

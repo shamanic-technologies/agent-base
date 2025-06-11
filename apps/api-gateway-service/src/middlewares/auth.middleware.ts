@@ -51,16 +51,16 @@ export const authMiddleware = () => {
         console.debug('⚠️⚠️⚠️validationResponse in authMiddleware:', JSON.stringify(validationResponse, null, 2));
         console.debug('⚠️⚠️⚠️ Is it a PlatformUserId or APIKey?');
         // Check for validation success first
-        if (!validationResponse.success ) {
+        if (validationResponse.success) {
+          // Extract the platform user ID
+          platformUserId = validationResponse.data.platformUserId;
+          // Cache the successful result
+          apiCache.setPlatformUserId(platformApiKey, platformUserId);
+        } else {
           console.log(`[Auth Middleware] Key validation failed: ${validationResponse.error}`);
           res.status(401).json(validationResponse); // Return the original error response
           return;
         }
-        // Extract the platform user ID
-        platformUserId = validationResponse.data.platformUserId;
-        // Cache the successful result
-        apiCache.setPlatformUserId(platformApiKey, platformUserId);
-
       }
       
       // Assign platformUserId to request and headers
@@ -83,17 +83,16 @@ export const authMiddleware = () => {
             platformUserId
           );
 
-          if (!clientUserResponse.success) {
+          if (clientUserResponse.success) {
+            // Extract the internal client user ID (UUID)
+            clientUserId = clientUserResponse.data.id;
+            // Cache the successful result
+            apiCache.setClientUserId(platformUserId, clientAuthUserId, clientUserId);
+          } else {
             console.error(`[Auth Middleware] Failed to validate/upsert client user ID ${clientAuthUserId} for platform user ${platformUserId}. Error: ${clientUserResponse.error}`);
             res.status(401).json(clientUserResponse);
             return;
           }
-
-          // Extract the internal client user ID (UUID)
-          clientUserId = clientUserResponse.data.id;
-          // Cache the successful result
-          apiCache.setClientUserId(platformUserId, clientAuthUserId, clientUserId);
-        
         }
 
         // Assign clientUserId to request and headers
@@ -109,23 +108,31 @@ export const authMiddleware = () => {
 
         if (!clientOrganizationId) {
           console.log(`[Auth Middleware] Client Organization Cache MISS for ${platformUserId}:${clientAuthOrganizationId}. Validating/upserting...`);
+
+          if (!clientUserId) {
+            // This case should ideally not be reached if clientAuthOrganizationId is present
+            // as it implies a client user context is also expected.
+            // Handling it defensively.
+            console.error(`[Auth Middleware] Cannot upsert organization without a clientUserId.`);
+            res.status(400).json({ success: false, error: "Cannot process organization without a user context." });
+            return;
+          }
           
           const clientOrganizationResponse: ServiceResponse<ClientOrganization> = await upsertClientOrganizationApiClient(
             clientUserId, 
             clientAuthOrganizationId,
           );
 
-          if (!clientOrganizationResponse.success) {
+          if (clientOrganizationResponse.success) {
+            // Extract the internal client user ID (UUID)
+            clientOrganizationId = clientOrganizationResponse.data.id;
+            // Cache the successful result
+            apiCache.setClientOrganizationId(platformUserId, clientAuthOrganizationId, clientOrganizationId);
+          } else {
             console.error(`[Auth Middleware] Failed to validate/upsert client organization ID ${clientAuthOrganizationId} for platform user ${platformUserId}. Error: ${clientOrganizationResponse.error}`);
             res.status(401).json(clientOrganizationResponse);
             return;
           }
-
-          // Extract the internal client user ID (UUID)
-          clientOrganizationId = clientOrganizationResponse.data.id;
-          // Cache the successful result
-          apiCache.setClientOrganizationId(platformUserId, clientAuthOrganizationId, clientOrganizationId);
-        
         }
 
         // Assign clientUserId to request and headers

@@ -142,11 +142,11 @@ const getTableUtility: InternalUtilityTool = {
       }
       
       const tableData = await getTableResponse.json();
-      const schema = {};
+      const schema: { [key: string]: string } = {};
       
       // Convert Xata schema to our simplified format
       if (tableData.columns) {
-        tableData.columns.forEach(column => {
+        tableData.columns.forEach((column: { name: string, type: string }) => {
           schema[column.name] = column.type;
         });
       }

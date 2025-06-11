@@ -85,7 +85,7 @@ router.post('/create-user-agent', async (req: Request, res: Response, next: Next
       clientOrganizationId
     );
 
-    if (result.success && result.data) {
+    if (result.success) {
       // Send 201 Created on success
       res.status(201).json(result); 
     } else {
@@ -132,7 +132,7 @@ router.post('/update-user-agent', async (req: Request, res: Response, next: Next
       clientOrganizationId
     );
 
-    if (updateResponse.success && updateResponse.data) {
+    if (updateResponse.success) {
       // Send 200 OK on success
       res.status(200).json(updateResponse); 
     } else {
@@ -203,7 +203,7 @@ router.get('/get-or-create-user-agents', async (req: Request, res: Response, nex
       clientOrganizationId
     );
 
-    if (createResult.success && createResult.data) {
+    if (createResult.success) {
       // Format the response as ListUserAgentsResponse
       res.status(201).json({
         success: true,
@@ -256,14 +256,14 @@ router.get('/get-user-agent', async (req: Request, res: Response, next: NextFunc
       clientOrganizationId
     );
 
-    if (result.success && result.data) {
+    if (result.success) {
       // Send 200 OK with the agent data
       res.status(200).json(result); 
     } else {
       // Handle service failure (e.g., agent not found, DB error)
       console.error(`[Agent Service /get-user-agent] Service call failed: ${result.error}`);
       // Use a 404 if agent not found, 500 otherwise - needs more specific error handling from API client ideally
-      const statusCode = result.error?.toLowerCase().includes('not found') ? 404 : 500;
+      const statusCode = result.error.toLowerCase().includes('not found') ? 404 : 500;
       res.status(statusCode).json({ success: false, error: result.error || 'Failed to get agent via database service' });
     }
 
