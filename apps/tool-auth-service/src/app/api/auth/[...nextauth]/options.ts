@@ -1,13 +1,18 @@
-import GoogleProvider from "next-auth/providers/google";
+import { getProviders } from "@/lib/providers";
+import { createOrUpdateCredentials } from "@/lib/database";
+import {
+  CreateOrUpdateOAuthInput,
+  OAuthProvider,
+  JWTPayload,
+} from "@agent-base/types";
 import type { NextAuthOptions } from "next-auth";
 import type { JWT } from "next-auth/jwt";
-import { createOrUpdateCredentials } from "@/lib/database";
-import { CreateOrUpdateOAuthInput, OAuthProvider, JWTPayload } from "@agent-base/types";
 
 // Extend the Session type for the client
 declare module "next-auth" {
   interface Session {
     userId: string; // Expose internal ID as userId to the client
+    organizationId: string; // Expose organizationId to the client
     error?: string; // Keep: Useful for client-side error handling (e.g., force re-auth)
     // Remove accessToken and scopes for minimalism and security
   }
@@ -18,6 +23,7 @@ declare module "next-auth/jwt" {
   interface JWT {
     // Core user info (from initial login via auth-service)
     id: string; // This is the internal DB UUID
+    organizationId: string;
     // name?: string; // Removed for minimalism
     // email?: string; // Removed for minimalism
     // picture?: string; // Removed for minimalism
@@ -52,18 +58,37 @@ async function storeCredentials(input: CreateOrUpdateOAuthInput): Promise<any> {
  */
 async function refreshAccessToken(token: JWT): Promise<JWT> {
   try {
-    console.log("[Tool Auth Service] Attempting refresh for provider:", token.oauthProvider);
-    const tokenEndpoint = "https://oauth2.googleapis.com/token"; // Assuming Google for now
-    if (!token.refreshToken) {
-      throw new Error("No refresh token");
+    if (!token.oauthProvider || !token.refreshToken) {
+      throw new Error("Missing provider or refresh token");
     }
 
-    const response = await fetch(tokenEndpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    let tokenUrl = "";
+    let clientId = "";
+    let clientSecret = "";
+
+    if (token.oauthProvider === "google") {
+      tokenUrl = "https://oauth2.googleapis.com/token";
+      clientId = process.env.GOOGLE_CLIENT_ID!;
+      clientSecret = process.env.GOOGLE_CLIENT_SECRET!;
+    } else if (token.oauthProvider === "github") {
+      tokenUrl = "https://github.com/login/oauth/access_token";
+      clientId = process.env.GITHUB_CLIENT_ID!;
+      clientSecret = process.env.GITHUB_CLIENT_SECRET!;
+    } else {
+      throw new Error(`Unsupported provider for token refresh: ${token.oauthProvider}`);
+    }
+
+    console.log(
+      `[Tool Auth Service] Attempting refresh for provider:`,
+      token.oauthProvider
+    );
+
+    const response = await fetch(tokenUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
-        client_id: process.env.GOOGLE_CLIENT_ID!,
-        client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+        client_id: clientId,
+        client_secret: clientSecret,
         grant_type: "refresh_token",
         refresh_token: token.refreshToken,
       }),
@@ -79,6 +104,7 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
       if (token.id && token.oauthProvider && token.scopes) {
          await storeCredentials({
            userId: token.id, // Use the correct internal ID from token.id
+           organizationId: token.organizationId,
            oauthProvider: token.oauthProvider,
            scopes: token.scopes, 
            accessToken: refreshedTokens.access_token,
@@ -110,34 +136,20 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
 
 // Auth options configuration
 export const authOptions: NextAuthOptions = {
-  providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-      authorization: {
-        params: {
-          prompt: "consent",
-          access_type: "offline", // Important to get refresh token
-          response_type: "code",
-          // scope is handled dynamically in signin page if needed
-        },
-      },
-    }),
-    // Add other providers here if needed
-  ],
+  providers: getProviders(),
   session: {
     strategy: "jwt",
     // maxAge: 30 * 24 * 60 * 60, // Optional: default is 30 days
   },
   callbacks: {
-    async jwt({ token, account, user, trigger, session }) {
+    async jwt({ token, account, user }) {
       // The 'token' arg is the JWT object from the cookie (if exists)
       // The 'account' & 'user' args are only present after a successful OAuth flow
       
       // 1. Handle OAuth sign-in/linking
       if (account && user) {
         const scopes = account.scope?.split(' ') || [];
-        const internalUserId = token.id; // *** Read internal ID from token.id ***
+        const internalUserId = token.id as string; // *** Read internal ID from token.id ***
 
         if (!internalUserId) {
           console.error("[Tool Auth Service] JWT Error: No internal user id found in token during OAuth callback. Cannot link credentials.");
@@ -145,15 +157,18 @@ export const authOptions: NextAuthOptions = {
           // Still populate other fields for potential session use
           token.accessToken = account.access_token;
           token.refreshToken = account.refresh_token;
-          token.accessTokenExpires = account.expires_at ? account.expires_at * 1000 : 0;
+          token.accessTokenExpires = account.expires_at ? account.expires_at * 1000 : undefined;
           token.oauthProvider = account.provider as OAuthProvider;
           return token;
         }
         
-        console.log(`[Tool Auth Service] JWT: Linking provider '${account.provider}' for user '${internalUserId}'.`);
+        console.log(
+          `[Tool Auth Service] JWT: Linking provider '${account.provider}' for user '${internalUserId}'.`
+        );
 
         const credentialData: CreateOrUpdateOAuthInput = {
           userId: internalUserId, // *** Use internalUserId (from token.id) ***
+          organizationId: token.organizationId as string,
           oauthProvider: account.provider as OAuthProvider,
           scopes: scopes,
           accessToken: account.access_token!,
@@ -189,32 +204,33 @@ export const authOptions: NextAuthOptions = {
       }
 
       // 2. Handle token refresh if needed (on session access)
-      if (token.accessTokenExpires && Date.now() >= token.accessTokenExpires) {
-        if (token.refreshToken && token.oauthProvider) { // Need provider info for refresh endpoint logic
-          console.log("[Tool Auth Service] JWT: Access token expired, attempting refresh.");
-          return refreshAccessToken(token); // Use token.id internally
-        } else {
-          console.warn("[Tool Auth Service] JWT: Access token expired, but no refresh token or provider info available.");
-          token.error = "RefreshTokenMissing"; 
-          delete token.accessToken;
-          return token;
-        }
-      }
+      // if (token.accessTokenExpires && Date.now() >= token.accessTokenExpires) {
+      //   if (token.refreshToken && token.oauthProvider) { // Need provider info for refresh endpoint logic
+      //     console.log("[Tool Auth Service] JWT: Access token expired, attempting refresh.");
+      //     return refreshAccessToken(token); // Use token.id internally
+      //   } else {
+      //     console.warn("[Tool Auth Service] JWT: Access token expired, but no refresh token or provider info available.");
+      //     token.error = "RefreshTokenMissing"; 
+      //     delete token.accessToken;
+      //     return token;
+      //   }
+      // }
 
       // 3. Return current token (initial load or valid existing token)
       return token;
     },
     async session({ session, token }) {
       // Map internal token structure to client session structure
-      session.userId = token.id; // Map internal token.id to session.userId
-      session.error = token.error;
+      session.userId = token.id as string; // Map internal token.id to session.userId
+      session.organizationId = token.organizationId as string;
+      session.error = token.error as string | undefined;
       // Removed session.accessToken and session.scopes for minimalism
       return session;
     },
   },
   pages: {
     signIn: "/auth/signin",
-    error: "/auth/error", // Error code passed in query string as ?error=
+    error: "/auth/error",
     signOut: "/auth/signout",
   },
   debug: process.env.NODE_ENV === "development",

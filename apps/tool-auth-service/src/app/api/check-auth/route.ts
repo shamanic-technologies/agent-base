@@ -30,18 +30,18 @@ interface CheckAuthNeededData {
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
-    const { userId, oauthProvider, requiredScopes }: GetUserOAuthInput = await req.json();
+    const { userId, organizationId, oauthProvider, requiredScopes }: GetUserOAuthInput = await req.json();
 
     // Basic validation (kept concise)
-    if (!userId || !oauthProvider || !requiredScopes || !Array.isArray(requiredScopes) || requiredScopes.length === 0) {
+    if (!userId || !organizationId || !oauthProvider || !requiredScopes || !Array.isArray(requiredScopes) || requiredScopes.length === 0) {
       return NextResponse.json({ 
         success: false,
-        error: "Missing or invalid parameters (userId, oauthProvider, requiredScopes)" 
+        error: "Missing or invalid parameters (userId, organizationId, oauthProvider, requiredScopes)" 
       }, { status: 400 });
     }
 
     // Check if we already have valid credentials with required scopes for this user
-    const authResult = await checkUserAuth({ userId, oauthProvider, requiredScopes });
+    const authResult = await checkUserAuth({ userId, organizationId, oauthProvider, requiredScopes });
 
     // 1. Check for explicit failure from checkUserAuth (e.g., database service error)
     if (!authResult.success) {
@@ -95,16 +95,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
  * Checks if a user has valid credentials with the required scopes
  */
 async function checkUserAuth(input: GetUserOAuthInput): Promise<ServiceResponse<CheckUserOAuth>> {
-  const { userId, oauthProvider, requiredScopes } = input;
+  const { userId, organizationId, oauthProvider, requiredScopes } = input;
   try {
-    console.log(`Checking auth for user ${userId} with provider ${oauthProvider} and scopes: ${requiredScopes.join(', ')}`);
+    console.log(`Checking auth for user ${userId} in org ${organizationId} with provider ${oauthProvider} and scopes: ${requiredScopes.join(', ')}`);
 
     // Get credentials from database service
-    const result = await getCredentials({
-      userId: userId,
-      oauthProvider: oauthProvider as OAuthProvider,
-      requiredScopes: requiredScopes
-    });
+    const result = await getCredentials(input);
     console.log('Database service call result:', JSON.stringify(result, null, 2));
 
     // Explicitly check for failure from the service call
