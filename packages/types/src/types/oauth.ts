@@ -97,6 +97,18 @@ export interface CheckUserOAuth {
   authUrl?: string;
 } 
 
+export interface CheckAuthSuccessData {
+  hasAuth: true;
+  oauthCredentials: OAuth[];
+}
+
+export interface CheckAuthNeededData {
+  hasAuth: false;
+  authUrl: string;
+}
+
+export type CheckAuthData = CheckAuthSuccessData | CheckAuthNeededData;
+
 /**
  * Maps a snake_case database record to camelCase credentials object
  */
