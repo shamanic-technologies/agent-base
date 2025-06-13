@@ -10,6 +10,7 @@ import {
   ServiceResponse,
   UtilityInputSecret,
   AgentInternalCredentials,
+  CreateApiToolRequest,
 } from '@agent-base/types';
 // Import the correct function from api-client
 import { createApiToolInternal } from '@agent-base/api-client';
@@ -22,8 +23,9 @@ import { registry } from '../../registry/registry.js';
 const createExternalToolUtility: InternalUtilityTool = {
   // Corrected ID to match agent-service expectations
   id: 'create_api_tool',
-  description: `Create a new external tool, that you can execute on the go, from an OpenAPI Specification Fragment.
-  Authentication and setup will be prompted automatically to the user after you build the tool, once you call it.
+  description: `Create a new external tool from an OpenAPI Specification Fragment with single auth method.
+  Supported authentication methods include API Key, HTTP Basic/Bearer, and OAuth2.
+  For API Key and HTTP auth, setup will be prompted in the chat via input fields for credentials. For OAuth2, the user will prompted in the chat via a Connect button opening an OAuth2 consent screen.
   Once the tool is created, call get_utility_info on it to retrieve the parameters to call the tool.`,
   schema: {
     type: 'object',
@@ -40,10 +42,6 @@ const createExternalToolUtility: InternalUtilityTool = {
             description: {
               type: 'string',
               description: 'REQUIRED. A detailed description of what the tool does.'
-            },
-            id: { 
-              type: 'string', 
-              description: 'REQUIRED. Unique identifier for the new tool (e.g., \'stripe_create_charge\'). Use snake_case. This will also be used as the operationId in the OpenAPI spec if not otherwise specified.'
             },
             utilityProvider: {
               type: 'string', 
@@ -94,7 +92,7 @@ const createExternalToolUtility: InternalUtilityTool = {
                     schemas: { type: 'object', description: "Reusable schemas for request bodies, responses, etc." },
                     securitySchemes: { 
                       type: 'object', 
-                      description: "Reusable security scheme definitions (e.g., API key, HTTP basic/bearer). The 'securityOption' field must refer to a key defined here." 
+                      description: "Reusable security scheme definitions (e.g., API key, HTTP basic/bearer, oauth2). The 'securityOption' field must refer to a key defined here." 
                     }
                   }
                 }
@@ -110,7 +108,7 @@ const createExternalToolUtility: InternalUtilityTool = {
             },
             securitySecrets: {
               type: 'object',
-              description: "REQUIRED. An object mapping predefined secret placeholders (like 'x-secret-name', 'x-secret-username', 'x-secret-password') to the specific UtilitySecretType names that hold the actual credential values. These UtilitySecretType names are references to secrets stored in the secret service. The required placeholders depend on the chosen 'securityOption' and its type (e.g., 'x-secret-name' for apiKey or bearerToken, 'x-secret-username' and 'x-secret-password' for http basic).",
+              description: "An object mapping predefined secret placeholders (like 'x-secret-name') to the specific secret names. This field is REQUIRED for 'apiKey' and 'http' authentication, but must be omitted or empty for 'oauth2'.",
               properties: {
                 "x-secret-name": { 
                   type: "string", 
@@ -133,12 +131,11 @@ const createExternalToolUtility: InternalUtilityTool = {
               // Example: { "x-secret-username": "my_service_username_secret", "x-secret-password": "my_service_password_secret" }
             }
           },
-          required: ['name', 'description', 'id', 'utilityProvider', 'openapiSpecification', 'securityOption', 'securitySecrets'],
+          required: ['name', 'description', 'utilityProvider', 'openapiSpecification', 'securityOption'],
           examples: [
             {
               name: "Stripe Get Balance",
               description: "Retrieves the current account balance in Stripe.",
-              id: "stripe_get_balance",
               utilityProvider: "stripe",
               openapiSpecification: {
                 openapi: "3.0.0",
@@ -193,6 +190,62 @@ const createExternalToolUtility: InternalUtilityTool = {
               securitySecrets: {
                 "x-secret-username": "api_secret_key"
               }
+            },
+            {
+              name: "Google Calendar List Events",
+              description: "Lists events on the user's primary calendar.",
+              utilityProvider: "google",
+              openapiSpecification: {
+                openapi: "3.0.0",
+                info: {
+                  title: "Google Calendar API",
+                  version: "v3",
+                  description: "Fetches events from a Google Calendar."
+                },
+                servers: [
+                  {
+                    "url": "https://www.googleapis.com/calendar/v3"
+                  }
+                ],
+                paths: {
+                  "/calendars/primary/events": {
+                    get: {
+                      summary: "List primary calendar events",
+                      operationId: "listPrimaryCalendarEvents",
+                      responses: {
+                        "200": {
+                          description: "Successful event list retrieval"
+                        }
+                      },
+                      security: [
+                        {
+                          "google_oauth": [
+                            "https://www.googleapis.com/auth/calendar.readonly"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                },
+                components: {
+                  securitySchemes: {
+                    google_oauth: {
+                      type: "oauth2",
+                      flows: {
+                        authorizationCode: {
+                          authorizationUrl: "https://accounts.google.com/o/oauth2/v2/auth",
+                          tokenUrl: "https://oauth2.googleapis.com/token",
+                          scopes: {
+                            "https://www.googleapis.com/auth/calendar.readonly": "Read access to calendars."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              securityOption: "google_oauth",
+              securitySecrets: {}
             }
           ]
       }
@@ -206,7 +259,7 @@ const createExternalToolUtility: InternalUtilityTool = {
     platformUserId: string,
     platformApiKey: string,
     conversationId: string,
-    params: { tool_configuration: ApiTool },
+    params: { tool_configuration: CreateApiToolRequest },
     agentId?: string
   // Adjust return type to ServiceResponse<ApiTool>
   ): Promise<ServiceResponse<ApiTool>> => {
