@@ -60,3 +60,5 @@ export * from './internal-to-external/agent-clients/run-client.js';
 export * from './internal-to-external/webhook-tool-client.js';
 export * from './internal-to-external/api-tool-client.js';
 export * from './internal-to-external/secret-client.js';
+
+export * from './external-to-internal/tool-auth-client.js';
