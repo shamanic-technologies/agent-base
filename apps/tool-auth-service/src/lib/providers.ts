@@ -1,7 +1,7 @@
 import GoogleProvider from "next-auth/providers/google";
 import GithubProvider from "next-auth/providers/github";
 
-export const getProviders = () => {
+export const getProviders = (scopes?: string, state?: string) => {
   const providers = [];
 
   if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
@@ -14,6 +14,8 @@ export const getProviders = () => {
             prompt: "consent",
             access_type: "offline",
             response_type: "code",
+            scope: scopes,
+            state: state,
           },
         },
       })

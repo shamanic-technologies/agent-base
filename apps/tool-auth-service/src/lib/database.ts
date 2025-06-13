@@ -48,12 +48,19 @@ export async function getCredentials(
     console.error('DATABASE_SERVICE_URL is not defined.');
     return { success: false, error: 'Database service URL not configured.' };
   }
+
+  // Create a new params object to avoid mutating the original input
+  const params = {
+    ...input,
+    requiredScopes: input.requiredScopes.join(','),
+  };
+
   // Use makeWebAnonymousServiceRequest for GET request, sending input as query parameters
   return makeWebAnonymousServiceRequest<OAuth[]>(
     DB_SERVICE_URL,
     'GET',
-    '/credentials',
+    '/oauth',
     undefined, // No request body (data)
-    input // Send input as query parameters (params)
+    params // Send modified params with comma-separated scopes
   );
 }

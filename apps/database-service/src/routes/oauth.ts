@@ -54,7 +54,15 @@ router.get('/', (async (req, res) => {
     const userId = input.userId as string;
     const organizationId = input.organizationId as string;
     const oauthProvider = input.oauthProvider as OAuthProvider;
-    const requiredScopes = input.requiredScopes as string[];
+    // Handle both array and comma-separated string for requiredScopes
+    const scopesQueryParam = input.requiredScopes;
+    let requiredScopes: string[] = [];
+    if (typeof scopesQueryParam === 'string') {
+        requiredScopes = scopesQueryParam.split(',');
+    } else if (Array.isArray(scopesQueryParam)) {
+        // This handles cases where query-string parsers might produce an array
+        requiredScopes = scopesQueryParam as string[];
+    }
 
     const getCredentialsInput: GetUserOAuthInput = {
       userId,

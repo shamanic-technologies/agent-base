@@ -133,7 +133,7 @@ export async function getCredentials(
     }
 
     // Create placeholders for the IN clause (e.g., $3, $4, $5)
-    const placeholders = input.requiredScopes.map((_, index) => `$${index + 3}`).join(', ');
+    const placeholders = input.requiredScopes.map((_, index) => `$${index + 4}`).join(', ');
     
     // Query for credentials matching the user, provider, and any of the required scopes
     const result = await client.query(

@@ -66,9 +66,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json(responseData);
     } else {
       // User is not authenticated or lacks scopes, return needs-auth response
-      const callbackUrl = encodeURIComponent(`${process.env.BASE_URL}/auth/callback?userId=${userId}`);
+      // Encode userId and organizationId into the state parameter
+      const state = Buffer.from(JSON.stringify({ userId, organizationId })).toString('base64');
+      const callbackUrl = encodeURIComponent(`${process.env.BASE_URL}/auth/callback`);
       const scopeString = encodeURIComponent(requiredScopes.join(' '));
-      const authUrl = `${process.env.BASE_URL}/auth/signin?callbackUrl=${callbackUrl}&scopes=${scopeString}`;
+      const authUrl = `${process.env.BASE_URL}/api/auth/signin?callbackUrl=${callbackUrl}&scopes=${scopeString}&state=${state}`;
       
       const responseData: ServiceResponse<CheckAuthNeededData> = {
         success: true, // The check operation succeeded, but the user needs auth
