@@ -35,6 +35,7 @@ const SECRET_SERVICE_URL = process.env.SECRET_SERVICE_URL;
 // Rename variable and environment key
 const WEBHOOK_TOOL_API_URL = process.env.WEBHOOK_TOOL_API_URL; 
 const API_TOOL_API_URL = process.env.API_TOOL_API_URL; // Add API Tool Service URL
+const TOOL_AUTH_SERVICE_URL = process.env.TOOL_AUTH_SERVICE_URL;
 
 const requiredEnvVars = {
   PORT,
@@ -44,6 +45,7 @@ const requiredEnvVars = {
   SECRET_SERVICE_URL,
   WEBHOOK_TOOL_API_URL,
   API_TOOL_API_URL,
+  TOOL_AUTH_SERVICE_URL,
 };
 
 for (const [key, value] of Object.entries(requiredEnvVars)) {
@@ -76,6 +78,7 @@ configureRoutes(
     key: KEY_SERVICE_URL!,
     webhookTool: WEBHOOK_TOOL_API_URL!, // Pass renamed variable
     apiTool: API_TOOL_API_URL!, // Add API Tool URL to the configuration
+    toolAuth: TOOL_AUTH_SERVICE_URL!,
     // payment: PAYMENT_SERVICE_URL
   },
   authMiddleware(),
@@ -99,5 +102,6 @@ const server = app.listen(PORT, () => {
   console.log(`🔗 SECRET_SERVICE_URL: ${SECRET_SERVICE_URL || 'not set'}`);
   console.log(`🔗 WEBHOOK_TOOL_API_URL: ${WEBHOOK_TOOL_API_URL || 'not set'}`); 
   console.log(`🔗 API_TOOL_API_URL: ${API_TOOL_API_URL || 'not set'}`); // Log API Tool Service URL
+  console.log(`🔗 TOOL_AUTH_SERVICE_URL: ${TOOL_AUTH_SERVICE_URL || 'not set'}`);
   // console.log(`🔗 PAYMENT_SERVICE_URL: ${PAYMENT_SERVICE_URL || 'not set'}`); // Log Payment Service URL
 });
