@@ -3,11 +3,11 @@
  */
 import { 
     ServiceResponse, 
-    AgentBaseCredentials,
+    AgentInternalCredentials,
     GetUserOAuthInput,
     CheckUserOAuthResult
 } from '@agent-base/types';
-import { makeAgentBaseRequest } from '../utils/service-client.js'; // Added .js
+import { makeInternalRequest } from '../utils/service-client.js'; // Added .js
 import { getAgentBaseApiUrl } from '../utils/config.js'; // Added .js
 
 const TOOL_AUTH_SERVICE_ROUTE_PREFIX = '/tool-auth'; // Assuming API Gateway prefixes agent routes with /agent
@@ -18,20 +18,23 @@ const TOOL_AUTH_SERVICE_ROUTE_PREFIX = '/tool-auth'; // Assuming API Gateway pre
  * Corresponds to POST /tool-auth/api/check-auth in API Gateway
  * 
  * @param body - The input data for checking auth status (userId, organizationId, oauthProvider, requiredScopes).
- * @param agentBaseCredentials - Credentials containing the platform API key.
+ * @param agentInternalCredentials - Credentials containing the platform API key.
  * @returns A promise resolving to the ServiceResponse containing the auth status.
  */
 export const checkAuthExternalApiService = async (
     body: GetUserOAuthInput,
-    agentBaseCredentials: AgentBaseCredentials
+    agentInternalCredentials: AgentInternalCredentials
 ): Promise<ServiceResponse<CheckUserOAuthResult>> => {
     const AGENT_BASE_API_URL = getAgentBaseApiUrl();
     const endpoint = `${TOOL_AUTH_SERVICE_ROUTE_PREFIX}/api/check-auth`;    
-    return makeAgentBaseRequest<CheckUserOAuthResult>( 
+    return makeInternalRequest<CheckUserOAuthResult>( 
         AGENT_BASE_API_URL,
         'POST',
         endpoint,
-        agentBaseCredentials,
+        agentInternalCredentials.platformUserId,
+        agentInternalCredentials.clientUserId,
+        agentInternalCredentials.clientOrganizationId,
+        agentInternalCredentials.platformApiKey,
         body, // Pass body here
         undefined // No query params for POST
     );
