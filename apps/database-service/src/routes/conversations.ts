@@ -36,6 +36,7 @@ router.post('/create-conversation', (async (req: Request, res: Response) => {
 
     // Basic validation (already handled in service, but good practice here too)
     if (!conversationId || !agentId || !channelId) {
+      console.error(`[DB Route /conversations] Missing required fields: conversationId, agentId, channelId`);
       res.status(400).json({
         success: false,
         error: 'Missing required fields: conversationId, agentId, channelId'

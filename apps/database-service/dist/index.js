@@ -70,7 +70,6 @@ async function startServer() {
     app.use(express.urlencoded({ limit: '50mb', extended: true }));
     // Simple request logger
     app.use((req, res, next) => {
-        console.log(`[DB Service] ${req.method} ${req.path}`);
         next();
     });
     // Configure routes

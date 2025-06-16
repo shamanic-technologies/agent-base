@@ -11,10 +11,8 @@ import {
    OAuth,
    MinimalInternalCredentials,
    GetUserOAuthInput,
-   CheckUserOAuthValidResult,
    CheckUserOAuthInvalidResult
 } from '@agent-base/types';
-// @ts-ignore api-client will be recognized soon
 import { getInternalAuthHeaders, getCredentials } from '@agent-base/api-client';
 
 /**
@@ -26,25 +24,25 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // We get all credentials from headers now, not from the body.
     const internalCredsResult = getInternalAuthHeaders(req as any);
     if (!internalCredsResult.success) {
+      console.error(`Failed to get internal credentials: ${internalCredsResult.error}`);
       return NextResponse.json(internalCredsResult, { status: 401 });
     }
     const minimalInternalCredentials = internalCredsResult.data as MinimalInternalCredentials;
 
-    const { oauthProvider, requiredScopes }: { oauthProvider: OAuthProvider, requiredScopes: string[] } = await req.json();
+    let { oauthProvider, requiredScopes }: { oauthProvider: OAuthProvider, requiredScopes: string[] } = await req.json();
+    if (oauthProvider === 'gmail' as any) {
+      oauthProvider = OAuthProvider.GOOGLE;
+    }
+    console.debug('🟠 [Tool Auth Service/check-auth] oauthProvider', oauthProvider, null, 2);
+    console.debug('🟠 [Tool Auth Service/check-auth] requiredScopes', requiredScopes, null, 2);
+    console.debug('🟠 [Tool Auth Service/check-auth] minimalInternalCredentials', minimalInternalCredentials, null, 2);
 
-    const getUserOAuthInput: GetUserOAuthInput = {
-      clientUserId: minimalInternalCredentials.clientUserId,
-      clientOrganizationId: minimalInternalCredentials.clientOrganizationId,
-      oauthProvider,
-      requiredScopes
-    };
-    
     // Pass the full credentials to checkUserAuth
-    const checkUserAuthResponse: ServiceResponse<CheckUserOAuthResult> = await checkUserAuth(getUserOAuthInput, minimalInternalCredentials);
+    const checkUserAuthResponse: ServiceResponse<CheckUserOAuthResult> = await checkUserAuth(oauthProvider, requiredScopes, minimalInternalCredentials);
 
     // 1. Check for explicit failure from checkUserAuth (e.g., database service error)
     if (!checkUserAuthResponse.success) {
-      console.error(`checkUserAuth failed for user ${getUserOAuthInput.clientUserId}: ${checkUserAuthResponse.error}`);
+      console.error(`checkUserAuth failed for user ${minimalInternalCredentials.clientUserId}: ${checkUserAuthResponse.error}`);
       // Return a server error status, indicating the check itself failed
       return NextResponse.json({ 
         success: false, 
@@ -93,22 +91,28 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
  * Checks if a user has valid credentials with the required scopes
  */
 async function checkUserAuth(
-  input: GetUserOAuthInput,
+  oauthProvider: OAuthProvider,
+  requiredScopes: string[],
   minimalInternalCredentials: MinimalInternalCredentials
 ): Promise<ServiceResponse<CheckUserOAuthResult>> {
 
   const {
     clientUserId,
     clientOrganizationId,
-    oauthProvider,
-    requiredScopes
-  } = input;
+  } = minimalInternalCredentials;
   
   try {
     console.log(`Checking auth for user ${clientUserId} in org ${clientOrganizationId} with provider ${oauthProvider} and scopes: ${requiredScopes.join(', ')}`);
 
+    const getUserOAuthInput: GetUserOAuthInput = {
+      clientUserId,
+      clientOrganizationId,
+      oauthProvider,
+      requiredScopes
+    };
+    console.debug('🟠 [Tool Auth Service/check-auth/checkUserAuth] getUserOAuthInput', getUserOAuthInput, null, 2);
     // Get credentials from database service
-    const getCredentialsResponse: ServiceResponse<OAuth[]> = await getCredentials(input, minimalInternalCredentials);
+    const getCredentialsResponse: ServiceResponse<OAuth[]> = await getCredentials(getUserOAuthInput, minimalInternalCredentials);
     console.log('Database service call result:', JSON.stringify(getCredentialsResponse, null, 2));
 
     // Explicitly check for failure from the service call

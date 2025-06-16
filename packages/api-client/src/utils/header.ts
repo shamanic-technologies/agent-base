@@ -8,25 +8,37 @@ import {
   InternalCredentials
 } from "@agent-base/types";
 
-// Define a minimal interface for the request object
+// Define a minimal interface for the request object that works for both Express and Next.js
 interface RequestWithHeaders {
-  headers: IncomingHttpHeaders;
+  headers: IncomingHttpHeaders | Headers;
+}
+
+// Helper to normalize getting a header from either Express or Next.js
+const getHeader = (headers: IncomingHttpHeaders | Headers, key: string): string | undefined => {
+    if (headers instanceof Headers) {
+        return headers.get(key) || undefined;
+    }
+    // For IncomingHttpHeaders, which is what Express uses.
+    const value = headers[key];
+    if (Array.isArray(value)) {
+      return value[0]; // Return the first header value if it's an array
+    }
+    return value || undefined; // Return the value or undefined
 }
 
 // Helper to extract auth headers
 export const getAgentInternalAuthHeaders = (req: RequestWithHeaders): ServiceResponse<AgentInternalCredentials> => {
     
-    // Access headers using bracket notation, allowed by IncomingHttpHeaders
-    const platformUserId = req.headers['x-platform-user-id'] as string | undefined;
-    const platformOrganizationId = req.headers['x-platform-organization-id'] as string | undefined;
-    const clientUserId = req.headers['x-client-user-id'] as string | undefined;
-    const clientOrganizationId = req.headers['x-client-organization-id'] as string | undefined;    
-    const platformApiKey = req.headers['x-platform-api-key'] as string | undefined;
-    const agentId = req.headers['x-agent-id'] as string | undefined; // Agent ID if provided
+    // Access headers using the new helper
+    const platformUserId = getHeader(req.headers, 'x-platform-user-id');
+    const platformOrganizationId = getHeader(req.headers, 'x-platform-organization-id');
+    const clientUserId = getHeader(req.headers, 'x-client-user-id');
+    const clientOrganizationId = getHeader(req.headers, 'x-client-organization-id');
+    const platformApiKey = getHeader(req.headers, 'x-platform-api-key');
+    const agentId = getHeader(req.headers, 'x-agent-id');
   
     const missingHeaders: string[] = [];
     if (!platformUserId) missingHeaders.push('x-platform-user-id');
-    // if (!platformOrganizationId) missingHeaders.push('x-platform-organization-id');
     if (!clientUserId) missingHeaders.push('x-client-user-id');
     if (!clientOrganizationId) missingHeaders.push('x-client-organization-id');
     if (!platformApiKey) missingHeaders.push('x-platform-api-key');
@@ -54,21 +66,18 @@ export const getAgentInternalAuthHeaders = (req: RequestWithHeaders): ServiceRes
 // Helper to extract auth headers
 export const getInternalAuthHeaders = (req: RequestWithHeaders): ServiceResponse<InternalCredentials> => {
     
-    // Access headers using bracket notation, allowed by IncomingHttpHeaders
-    const platformUserId = req.headers['x-platform-user-id'] as string | undefined;
-    const platformOrganizationId = req.headers['x-platform-organization-id'] as string | undefined;
-    const clientUserId = req.headers['x-client-user-id'] as string;
-    const clientOrganizationId = req.headers['x-client-organization-id'] as string;
-    const platformApiKey = req.headers['x-platform-api-key'] as string;
-    const agentId = req.headers['x-agent-id'] as string | undefined; // Agent ID if provided
+    // Access headers using the new helper
+    const platformUserId = getHeader(req.headers, 'x-platform-user-id');
+    const platformOrganizationId = getHeader(req.headers, 'x-platform-organization-id');
+    const clientUserId = getHeader(req.headers, 'x-client-user-id');
+    const clientOrganizationId = getHeader(req.headers, 'x-client-organization-id');
+    const platformApiKey = getHeader(req.headers, 'x-platform-api-key');
+    const agentId = getHeader(req.headers, 'x-agent-id');
   
     const missingHeaders: string[] = [];
-    if (!platformUserId) missingHeaders.push('x-platform-user-id');
-    if (!platformOrganizationId) missingHeaders.push('x-platform-organization-id');
     if (!clientUserId) missingHeaders.push('x-client-user-id');
     if (!clientOrganizationId) missingHeaders.push('x-client-organization-id');
     if (!platformApiKey) missingHeaders.push('x-platform-api-key');
-    if (!agentId) missingHeaders.push('x-agent-id');
 
     if (missingHeaders.length > 0) {
       return {
@@ -80,12 +89,12 @@ export const getInternalAuthHeaders = (req: RequestWithHeaders): ServiceResponse
     return { 
       success: true,
       data: {
-          platformUserId,
-          platformOrganizationId,
-          clientUserId,
-          clientOrganizationId,
-          platformApiKey,
-          agentId
+          platformUserId: platformUserId as string,
+          platformOrganizationId: platformOrganizationId as string,
+          clientUserId: clientUserId as string,
+          clientOrganizationId: clientOrganizationId as string,
+          platformApiKey: platformApiKey as string,
+          agentId: agentId as string
       }
     };
   };  

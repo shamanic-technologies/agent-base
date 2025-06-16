@@ -48,12 +48,6 @@ export async function upsertClientUser(input: UpsertClientUserInput): Promise<Se
       ON CONFLICT (platform_user_id, auth_user_id) DO NOTHING;
     `;
     
-    // Log the parameters just before executing the query
-    console.log('[Upsert Client User] Executing upsert query with params:', {
-      param1: input.platformUserId,
-      param2: input.authUserId
-    });
-
     await client.query(upsertQuery, [input.platformUserId, input.authUserId]);
 
     // Regardless of insert or conflict, fetch the record matching platform_client_user_id

@@ -79,7 +79,6 @@ async function startServer() {
 
   // Simple request logger
   app.use((req, res, next) => {
-    console.log(`[DB Service] ${req.method} ${req.path}`);
     next();
   });
 

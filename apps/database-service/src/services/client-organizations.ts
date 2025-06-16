@@ -66,13 +66,7 @@ export async function upsertClientOrganization(input: UpsertClientOrganizationIn
         updated_at = NOW()
       RETURNING *;
     `;
-    
-    console.log('[Upsert Client Org] Executing upsert organization query with params:', {
-      name: input.name,
-      profileImage: input.profileImage, // Optional
-      creatorClientUserId: input.creatorClientUserId,
-      clientAuthOrganizationId: input.clientAuthOrganizationId,
-    });
+
 
     const orgResult = await client.query(upsertOrgQuery, [
       input.name || 'Personal',

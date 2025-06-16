@@ -127,12 +127,15 @@ export async function getCredentials(
   try {
     client = await getClient();
     const { clientUserId, clientOrganizationId } = internalCredentials;
+    console.debug('🟠 [DB Service/getCredentials] input', input, null, 2);
+    console.debug('🟠 [DB Service/getCredentials] internalCredentials', internalCredentials, null, 2);
     // Validate input
-    if (!input.clientUserId || !input.clientOrganizationId || !input.oauthProvider || !Array.isArray(input.requiredScopes) || input.requiredScopes.length === 0) {
-        console.error('[DB Service/getCredentials] Invalid input: Missing userId, organizationId, oauthProvider, or requiredScopes.');
+    if (!clientUserId || !clientOrganizationId || !input.oauthProvider || !Array.isArray(input.requiredScopes) || input.requiredScopes.length === 0) {
+        console.error('[DB Service/getCredentials] Invalid input: Missing clientUserId, clientOrganizationId, oauthProvider, or requiredScopes.');
         return {
             success: false,
-            error: 'Invalid input: Missing userId, organizationId, oauthProvider, or requiredScopes.',
+            error: 'Invalid input: Missing clientUserId, clientOrganizationId, oauthProvider, or requiredScopes.',
+            hint: 'This error should not happen. Contact support.'
         };
     }
 

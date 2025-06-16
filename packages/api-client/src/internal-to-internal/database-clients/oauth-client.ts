@@ -1,67 +1,64 @@
 /**
- * Typed API client functions for interacting with the Database Service OAuth Endpoints.
+ * Database Service Client
+ * 
+ * Handles all interactions with the database service
  */
-import { 
-  ServiceResponse,
-  OAuth, // Use camelCase type for client consistency
+import {
+  OAuth, 
   CreateOrUpdateOAuthInput,
+  ServiceResponse,
   GetUserOAuthInput,
-  MinimalInternalCredentials,
+  InternalCredentials,
+  HumanInternalCredentials,
+  MinimalInternalCredentials
 } from '@agent-base/types';
-import { makeMinimalInternalRequest, makeWebAuthenticatedServiceRequest } from '../../utils/service-client.js';
-import { getDatabaseServiceUrl } from '../../utils/config.js'; // Import the centralized getter
-import { Method } from 'axios';
-
-// ==============================================================================
-// OAuth Client Functions
-// ==============================================================================
+// Import the shared HTTP client utility
+// import { makeServiceRequest } from '@agent-base/types'; // Old import
+import { getDatabaseServiceUrl, makeMinimalInternalRequest } from '@agent-base/api-client'; // New import
+  
+// Re-export the types for convenience
+export type { OAuth, CreateOrUpdateOAuthInput, ServiceResponse, GetUserOAuthInput };
 
 /**
- * Creates or updates OAuth credentials for a user.
- * 
- * Corresponds to: POST /oauth/
- * 
- * @param data - Input data containing userId, provider, tokens, expiry, scopes.
- * @param platformUserId - The platform user ID making the request (for headers).
- * @returns A ServiceResponse containing the created/updated OAuth object or an error.
+ * Create or update user credentials using the shared HTTP client utility.
  */
-export const createOrUpdateOAuthCredentials = async (
-  data: CreateOrUpdateOAuthInput,
+export async function createOrUpdateCredentials(
+  input: CreateOrUpdateOAuthInput,
   minimalInternalCredentials: MinimalInternalCredentials
-): Promise<ServiceResponse<OAuth>> => {
+): Promise<ServiceResponse<void>> {
 
-  const endpoint = '/oauth/';
-  return makeMinimalInternalRequest<OAuth>(
+  // The correct endpoint is POST /oauth
+  return makeMinimalInternalRequest<void>(
     getDatabaseServiceUrl(),
     'POST',
-    endpoint,
+    '/oauth', // Corrected path
     minimalInternalCredentials,
-    data,
-    undefined
+    input,
+    undefined,
   );
-};
+}
+
 
 /**
- * Gets OAuth credentials for a specific user and provider.
- * 
- * Corresponds to: GET /oauth/
- * 
- * @param params - Query parameters containing userId, oauthProvider, requiredScopes.
- * @param platformUserId - The platform user ID making the request (for headers).
- * @returns A ServiceResponse containing the OAuth object or an error.
+ * Get user credentials by user ID using the shared HTTP client utility.
  */
-export const getOAuthCredentials = async (
-  params: GetUserOAuthInput, // Using the existing input type directly for params
+export async function getCredentials(
+  input: GetUserOAuthInput,
   minimalInternalCredentials: MinimalInternalCredentials
-): Promise<ServiceResponse<OAuth>> => {
+): Promise<ServiceResponse<OAuth[]>> {
+  // Convert requiredScopes array to comma-separated string necesary for GET requests
+  const params = {
+    ...input,
+    requiredScopes: input.requiredScopes.join(','),
+  };
 
-  const endpoint = '/oauth/';
-  return makeMinimalInternalRequest<OAuth>(
+  // Use makeWebAnonymousServiceRequest for GET request, sending input as query parameters
+  return makeMinimalInternalRequest<OAuth[]>(
     getDatabaseServiceUrl(),
     'GET',
-    endpoint,
+    '/oauth',
     minimalInternalCredentials,
-    undefined, // No request body for GET
-    params     // Pass params as query parameters
+    undefined, // No request body (data)
+    params // query parameters
   );
-}; 
+}

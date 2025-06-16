@@ -50,7 +50,14 @@ declare module "next-auth/jwt" {
  */
 async function storeCredentials(input: CreateOrUpdateOAuthInput, token: JWT): Promise<any> { 
   console.log("[Tool Auth Service] Storing credentials:", input);
-  const createOrUpdateCredentialsResponse: ServiceResponse<void> = await createOrUpdateCredentials(input, token);
+  
+  const minimalInternalCredentials: MinimalInternalCredentials = {
+    clientUserId: token.clientUserId,
+    clientOrganizationId: token.clientOrganizationId,
+    platformApiKey: token.platformApiKey,
+  };
+
+  const createOrUpdateCredentialsResponse: ServiceResponse<void> = await createOrUpdateCredentials(input, minimalInternalCredentials);
   if (!createOrUpdateCredentialsResponse.success) {
     throw new Error(createOrUpdateCredentialsResponse.error || 'Failed to store credentials in DB');
   }
@@ -165,20 +172,20 @@ export const authOptions = (req: NextRequest): NextAuthOptions => {
     callbacks: {
       async jwt({ token, account }) {
         if (account) {
-          const cookieStore = await cookies();
-          const dynamicParamsCookie = cookieStore.get('next-auth.dynamic-params')?.value;
+          // Use the 'cookie' variable captured from the outer scope.
+          const dynamicParamsCookie = cookie;
           
           if (dynamicParamsCookie) {
             try {
               const params = JSON.parse(dynamicParamsCookie);
-              const decodedState = JSON.parse(Buffer.from(params.state, 'base64').toString('utf-8'));
+              const decodedState : MinimalInternalCredentials = JSON.parse(Buffer.from(params.state, 'base64').toString('utf-8')) as MinimalInternalCredentials;
               
               // Populate the token with all required credentials
-              token.clientUserId = decodedState.userId;
-              token.clientOrganizationId = decodedState.organizationId;
-              token.platformApiKey = process.env.PLATFORM_API_KEY!;
+              token.clientUserId = decodedState.clientUserId;
+              token.clientOrganizationId = decodedState.clientOrganizationId;
+              token.platformApiKey = decodedState.platformApiKey;
               
-              cookieStore.delete('next-auth.dynamic-params');
+              // Note: We cannot easily delete the cookie here, but it has a short max-age.
             } catch (e) {
               console.error("Failed to process dynamic params cookie", e);
               token.error = "StateParseFailed";

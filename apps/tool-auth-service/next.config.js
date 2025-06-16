@@ -1,7 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    serverComponentsExternalPackages: ['axios', '@opentelemetry/api'],
+  },
   reactStrictMode: true,
-  transpilePackages: ["@helloworld/database-service"],
+  transpilePackages: ["@helloworld/database-service", "@agent-base/api-client"],
   webpack: (config) => {
     // Handle native dependencies
     config.resolve.fallback = {
