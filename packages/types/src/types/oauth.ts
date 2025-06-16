@@ -21,8 +21,8 @@ export enum OAuthProvider {
  * Raw database record with snake_case fields
  */
 export interface OAuthRecord {
-  user_id: string;
-  organization_id: string;
+  client_user_id: string;
+  client_organization_id: string;
   oauth_provider: OAuthProvider;
   access_token: string;
   refresh_token: string;
@@ -33,15 +33,15 @@ export interface OAuthRecord {
 }
 
 export interface OAuth {
-  userId: string;
-  organizationId: string;
+  clientUserId: string;
+  clientOrganizationId: string;
   oauthProvider: OAuthProvider;
   accessToken: string;
   refreshToken: string;
   expiresAt: Date;
   scope: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 // User profile type
@@ -53,17 +53,15 @@ export interface ProviderUser {
   provider: OAuthProvider;
 }
 
-export interface JWTPayload {
-  userId: string;
-  organizationId: string;
-}
+// export interface JWTPayload {
+//   clientUserId: string;
+//   clientOrganizationId: string;
+// }
 
 /**
 * Input for creating new credentials
 */
 export interface CreateOrUpdateOAuthInput {
-  userId: string;
-  organizationId: string;
   oauthProvider: OAuthProvider;
   accessToken: string;
   refreshToken: string;
@@ -72,8 +70,6 @@ export interface CreateOrUpdateOAuthInput {
 }
 
 export interface CreateOrUpdateOAuthInputItem {
-  userId: string;
-  organizationId: string;
   oauthProvider: OAuthProvider;
   accessToken: string;
   refreshToken: string;
@@ -84,38 +80,36 @@ export interface CreateOrUpdateOAuthInputItem {
 * Input for getting user credentials
 */
 export interface GetUserOAuthInput {
-  userId: string;
-  organizationId: string;
+  clientUserId: string;
+  clientOrganizationId: string;
   oauthProvider: OAuthProvider;
   requiredScopes: string[];
 }
 
 
-export interface CheckUserOAuth {
+export interface CheckUserOAuthResult {
   valid: boolean;
   oauthCredentials?: OAuth[];
   authUrl?: string;
 } 
 
-export interface CheckAuthSuccessData {
-  hasAuth: true;
+export interface CheckUserOAuthValidResult extends CheckUserOAuthResult {
+  valid: true;
   oauthCredentials: OAuth[];
 }
 
-export interface CheckAuthNeededData {
-  hasAuth: false;
+export interface CheckUserOAuthInvalidResult extends CheckUserOAuthResult {
+  valid: false;
   authUrl: string;
 }
-
-export type CheckAuthData = CheckAuthSuccessData | CheckAuthNeededData;
 
 /**
  * Maps a snake_case database record to camelCase credentials object
  */
 export function mapOAuthFromDatabase(record: OAuthRecord): OAuth {
   return {
-    userId: record.user_id,
-    organizationId: record.organization_id,
+    clientUserId: record.client_user_id,
+    clientOrganizationId: record.client_organization_id,
     oauthProvider: record.oauth_provider,
     scope: record.scope,
     accessToken: record.access_token,
@@ -131,12 +125,12 @@ export function mapOAuthFromDatabase(record: OAuthRecord): OAuth {
 export function mapOAuthToDatabase(credentials: OAuth): Partial<OAuthRecord> {
   const mapped: Partial<OAuthRecord> = {};
   
-  if ('userId' in credentials && credentials.userId !== undefined) {
-    mapped.user_id = credentials.userId;
+  if ('userId' in credentials && credentials.clientUserId !== undefined) {
+    mapped.client_user_id = credentials.clientUserId;
   }
 
-  if ('organizationId' in credentials && credentials.organizationId !== undefined) {
-    mapped.organization_id = credentials.organizationId;
+  if ('organizationId' in credentials && credentials.clientOrganizationId !== undefined) {
+    mapped.client_organization_id = credentials.clientOrganizationId;
   }
   
   if ('oauthProvider' in credentials && credentials.oauthProvider !== undefined) {

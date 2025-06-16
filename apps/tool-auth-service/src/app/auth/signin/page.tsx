@@ -51,9 +51,6 @@ function SignInContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [toolName, setToolName] = useState<string | null>(null);
 
-  // Get callback URL from params
-  const callbackUrl = searchParams.get('callbackUrl') || '/auth/callback';
-
   useEffect(() => {
     // Set tool name if present in URL
     const toolParam = searchParams.get('toolName');
@@ -65,8 +62,8 @@ function SignInContent() {
   // Start auth flow with Google
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
-    // All dynamic configuration is now handled on the server side via the cookie.
-    await signIn('google', { callbackUrl });
+    // Scopes and other params are now handled server-side in the auth.ts config
+    await signIn('google');
   };
 
   return (

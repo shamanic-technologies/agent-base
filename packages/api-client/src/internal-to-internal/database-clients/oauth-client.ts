@@ -6,8 +6,9 @@ import {
   OAuth, // Use camelCase type for client consistency
   CreateOrUpdateOAuthInput,
   GetUserOAuthInput,
+  MinimalInternalCredentials,
 } from '@agent-base/types';
-import { makeWebAuthenticatedServiceRequest } from '../../utils/service-client.js';
+import { makeMinimalInternalRequest, makeWebAuthenticatedServiceRequest } from '../../utils/service-client.js';
 import { getDatabaseServiceUrl } from '../../utils/config.js'; // Import the centralized getter
 import { Method } from 'axios';
 
@@ -26,24 +27,17 @@ import { Method } from 'axios';
  */
 export const createOrUpdateOAuthCredentials = async (
   data: CreateOrUpdateOAuthInput,
-  platformUserId: string,
-  platformOrganizationId: string
+  minimalInternalCredentials: MinimalInternalCredentials
 ): Promise<ServiceResponse<OAuth>> => {
-  if (!platformUserId) {
-    throw new Error('[api-client:createOrUpdateOAuthCredentials] platformUserId is required for request header.');
-  }
-  // Add more specific validation based on CreateOrUpdateOAuthInput fields
-  if (!data || !data.userId || !data.oauthProvider || !data.accessToken || !data.refreshToken || !data.expiresAt || !data.scopes) {
-    throw new Error('[api-client:createOrUpdateOAuthCredentials] Input data is missing required fields.');
-  }
+
   const endpoint = '/oauth/';
-  return makeWebAuthenticatedServiceRequest<OAuth>(
+  return makeMinimalInternalRequest<OAuth>(
     getDatabaseServiceUrl(),
     'POST',
     endpoint,
-    platformUserId,
-    platformOrganizationId,
-    data
+    minimalInternalCredentials,
+    data,
+    undefined
   );
 };
 
@@ -58,22 +52,15 @@ export const createOrUpdateOAuthCredentials = async (
  */
 export const getOAuthCredentials = async (
   params: GetUserOAuthInput, // Using the existing input type directly for params
-  platformUserId: string,
-  platformOrganizationId: string
+  minimalInternalCredentials: MinimalInternalCredentials
 ): Promise<ServiceResponse<OAuth>> => {
-  if (!platformUserId) {
-    throw new Error('[api-client:getOAuthCredentials] platformUserId is required for request header.');
-  }
-  if (!params || !params.userId || !params.oauthProvider || !params.requiredScopes) {
-    throw new Error('[api-client:getOAuthCredentials] Query parameters must include userId, oauthProvider, and requiredScopes.');
-  }
+
   const endpoint = '/oauth/';
-  return makeWebAuthenticatedServiceRequest<OAuth>(
+  return makeMinimalInternalRequest<OAuth>(
     getDatabaseServiceUrl(),
     'GET',
     endpoint,
-    platformUserId,
-    platformOrganizationId,
+    minimalInternalCredentials,
     undefined, // No request body for GET
     params     // Pass params as query parameters
   );

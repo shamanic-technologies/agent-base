@@ -17,7 +17,7 @@ import { registry } from './registry/registry.js';
 
 // Import client for EXTERNAL tools from the API client package
 import {
-    getAuthHeadersFromAgent,
+    getAgentInternalAuthHeaders,
     listApiToolsInternal,
     getApiToolInfoInternal,
     executeApiToolInternal
@@ -93,7 +93,7 @@ app.get('/health', (req, res) => {
 // List ALL available utilities (Internal + External)
 app.get('/get-list', async (req, res): Promise<void> => {
   const logPrefix = '[GET /get-list]';
-  const authHeaders = getAuthHeadersFromAgent(req);
+  const authHeaders = getAgentInternalAuthHeaders(req);
   if (!authHeaders.success) {
     console.log(`${logPrefix} Auth headers:`, authHeaders);
     res.status(401).json(authHeaders);
@@ -136,7 +136,7 @@ app.get('/get-list', async (req, res): Promise<void> => {
 app.get('/get-details/:id', async (req, res): Promise<void> => {
   const { id } = req.params;
   const logPrefix = `[GET /get-details/${id}]`;
-  const authHeaders = getAuthHeadersFromAgent(req);
+  const authHeaders = getAgentInternalAuthHeaders(req);
   if (!authHeaders.success) {
     console.log(`${logPrefix} Auth headers:`, authHeaders);
     res.status(401).json(authHeaders);
@@ -192,7 +192,7 @@ app.post('/call-tool/:id', async (req, res): Promise<void> => {
     res.status(400).json(errorResponse);
     return;
   }
-  const authHeaders = getAuthHeadersFromAgent(req);
+  const authHeaders = getAgentInternalAuthHeaders(req);
   if (!authHeaders.success) {
     console.log(`${logPrefix} Auth headers:`, authHeaders);
     res.status(401).json(authHeaders);

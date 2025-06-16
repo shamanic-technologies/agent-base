@@ -11,7 +11,8 @@ import {
   CreateOrUpdateOAuthInput,
   mapOAuthFromDatabase,
   GetUserOAuthInput,
-  OAuthRecord
+  OAuthRecord,
+  InternalCredentials
 } from '@agent-base/types';
 import { CLIENT_USER_OAUTH_TABLE } from '../types/database-constants.js';
 /**
@@ -22,10 +23,12 @@ import { CLIENT_USER_OAUTH_TABLE } from '../types/database-constants.js';
  * @returns A DatabaseResponse indicating success or failure.
  */
 export async function createOrUpdateOAuth(
-  input: CreateOrUpdateOAuthInput
+  input: CreateOrUpdateOAuthInput,
+  internalCredentials: InternalCredentials
 ): Promise<ServiceResponse<string>> {
     let client: PoolClient | null = null;
-    const { userId: clientUserId, organizationId: clientOrganizationId, oauthProvider, accessToken, refreshToken, expiresAt, scopes } = input;
+    const { oauthProvider, accessToken, refreshToken, expiresAt, scopes } = input;
+    const { clientUserId, clientOrganizationId } = internalCredentials;
     try {
         client = await getClient();
         // --- Start Fix ---
@@ -117,14 +120,15 @@ export async function createOrUpdateOAuth(
  * @returns A ServiceResponse containing an array of matching OAuth credentials or an error.
  */
 export async function getCredentials(
-  input: GetUserOAuthInput
+  input: GetUserOAuthInput,
+  internalCredentials: InternalCredentials
 ): Promise<ServiceResponse<OAuth[]>> {
   let client: PoolClient | null = null;
   try {
     client = await getClient();
-    
+    const { clientUserId, clientOrganizationId } = internalCredentials;
     // Validate input
-    if (!input.userId || !input.organizationId || !input.oauthProvider || !Array.isArray(input.requiredScopes) || input.requiredScopes.length === 0) {
+    if (!input.clientUserId || !input.clientOrganizationId || !input.oauthProvider || !Array.isArray(input.requiredScopes) || input.requiredScopes.length === 0) {
         console.error('[DB Service/getCredentials] Invalid input: Missing userId, organizationId, oauthProvider, or requiredScopes.');
         return {
             success: false,
@@ -141,7 +145,7 @@ export async function getCredentials(
       `SELECT * FROM "${CLIENT_USER_OAUTH_TABLE}" 
        WHERE client_user_id = $1 AND client_organization_id = $2 AND oauth_provider = $3 AND scope IN (${placeholders}) 
        ORDER BY updated_at DESC`, // Optional: order by update time
-      [input.userId, input.organizationId, input.oauthProvider, ...input.requiredScopes]
+        [clientUserId, clientOrganizationId, input.oauthProvider, ...input.requiredScopes]
     );
 
     // If no rows are found, return success with empty data (consistent with check-auth logic)

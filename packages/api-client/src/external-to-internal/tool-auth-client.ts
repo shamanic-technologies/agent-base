@@ -5,7 +5,7 @@ import {
     ServiceResponse, 
     AgentBaseCredentials,
     GetUserOAuthInput,
-    CheckAuthData
+    CheckUserOAuthResult
 } from '@agent-base/types';
 import { makeAgentBaseRequest } from '../utils/service-client.js'; // Added .js
 import { getAgentBaseApiUrl } from '../utils/config.js'; // Added .js
@@ -24,10 +24,10 @@ const TOOL_AUTH_SERVICE_ROUTE_PREFIX = '/tool-auth'; // Assuming API Gateway pre
 export const checkAuthExternalApiService = async (
     body: GetUserOAuthInput,
     agentBaseCredentials: AgentBaseCredentials
-): Promise<ServiceResponse<CheckAuthData>> => {
+): Promise<ServiceResponse<CheckUserOAuthResult>> => {
     const AGENT_BASE_API_URL = getAgentBaseApiUrl();
     const endpoint = `${TOOL_AUTH_SERVICE_ROUTE_PREFIX}/api/check-auth`;    
-    return makeAgentBaseRequest<CheckAuthData>( 
+    return makeAgentBaseRequest<CheckUserOAuthResult>( 
         AGENT_BASE_API_URL,
         'POST',
         endpoint,
