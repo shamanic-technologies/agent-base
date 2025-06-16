@@ -26,6 +26,8 @@ import './internal/basic-utilities/curl-command.js';
 // Import internal utility for managing external tools
 import './internal/api-utilities/create-api-tool.js';
 import './internal/api-utilities/rename-api-tool.js';
+import './internal/api-utilities/delete-api-tool.js';
+import './internal/api-utilities/update-api-tool.js';
 
 import './internal/agent-utilities/update-memory.js';
 import './internal/agent-utilities/get-actions.js';

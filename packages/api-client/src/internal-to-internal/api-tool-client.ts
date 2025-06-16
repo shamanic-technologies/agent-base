@@ -242,3 +242,67 @@ export async function renameApiToolInternal(
     agentId
   );
 }
+
+/**
+ * Deletes a specific API tool by its ID.
+ * Corresponds to: DELETE /api/v1/:id (in api-tool-backend)
+ * Exposed via API Gateway at: DELETE {API_GATEWAY_URL}{API_TOOL_ROUTE_PREFIX}/:id
+ * Authentication: API Gateway handles service key + agentAuthMiddleware in api-tool-backend.
+ *
+ * @param {HumanInternalCredentials} humanInternalCredentials - Credentials.
+ * @param {string} toolId - The ID of the tool to delete.
+ * @returns {Promise<ServiceResponse<void>>} Service response indicating success or an error.
+ */
+export async function deleteApiToolInternal(
+  humanInternalCredentials: HumanInternalCredentials,
+  toolId: string
+): Promise<ServiceResponse<void>> {
+  const { platformUserId, clientUserId, clientOrganizationId, platformApiKey, agentId } = humanInternalCredentials;
+  const endpoint = `${API_TOOL_ROUTE_PREFIX}/${toolId}`;
+
+  return makeInternalRequest<void>(
+    getApiGatewayServiceUrl(),
+    'DELETE' as Method,
+    endpoint,
+    platformUserId,
+    clientUserId,
+    clientOrganizationId,
+    platformApiKey,
+    undefined, // No request body
+    undefined, // No query params
+    agentId
+  );
+}
+
+/**
+ * Updates a specific API tool by its ID.
+ * Corresponds to: PUT /api/v1/:id (in api-tool-backend)
+ * Exposed via API Gateway at: PUT {API_GATEWAY_URL}{API_TOOL_ROUTE_PREFIX}/:id
+ * Authentication: API Gateway handles service key + agentAuthMiddleware in api-tool-backend.
+ *
+ * @param {HumanInternalCredentials} humanInternalCredentials - Credentials.
+ * @param {string} toolId - The ID of the tool to update.
+ * @param {Partial<ApiTool>} payload - The data to update the tool with.
+ * @returns {Promise<ServiceResponse<ApiTool>>} Service response containing the updated tool or an error.
+ */
+export async function updateApiToolInternal(
+  humanInternalCredentials: HumanInternalCredentials,
+  toolId: string,
+  payload: Partial<ApiTool>
+): Promise<ServiceResponse<ApiTool>> {
+  const { platformUserId, clientUserId, clientOrganizationId, platformApiKey, agentId } = humanInternalCredentials;
+  const endpoint = `${API_TOOL_ROUTE_PREFIX}/${toolId}`;
+
+  return makeInternalRequest<ApiTool>(
+    getApiGatewayServiceUrl(),
+    'PUT' as Method,
+    endpoint,
+    platformUserId,
+    clientUserId,
+    clientOrganizationId,
+    platformApiKey,
+    payload,   // Request body
+    undefined, // No query params
+    agentId
+  );
+}
