@@ -50,7 +50,6 @@ router.get('/', (async (req, res) => {
     const requiredScopesRaw = req.query.requiredScopes as string | undefined;
 
     const internalCredentialsResponse = await getInternalAuthHeaders(req);
-    console.debug('🟠 [DB Route /oauth] internalCredentialsResponse', internalCredentialsResponse, null, 2);
 
     if (!internalCredentialsResponse.success) {
       console.error('[DB Route /oauth] Error in get credentials route:', internalCredentialsResponse.error);

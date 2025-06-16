@@ -66,7 +66,6 @@ const curlCommandUtility: InternalUtilityTool = {
     conversationId: string,
     params: unknown // Validate unknown params with Zod
   ): Promise<ServiceResponse<ExecuteToolResult>> => {
-    console.log(`[CURL Utility] Executing for conversation ${conversationId}, clientUser ${clientUserId}, platformUser ${platformUserId}`);
 
     // 1. Validate parameters with Zod
     const validationResult = CurlRequestParamsSchema.safeParse(params);
