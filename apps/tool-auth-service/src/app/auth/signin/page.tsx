@@ -11,6 +11,17 @@ import { useSearchParams } from 'next/navigation';
 // Fix the TypeScript error by explicitly importing types from next-auth
 import type { SignInOptions } from 'next-auth/react';
 
+// Helper function to read a cookie from the browser
+function getCookie(name: string): string | null {
+  if (typeof document === 'undefined') {
+    return null;
+  }
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+  return null;
+}
+
 // Loading fallback for Suspense
 function SignInLoading() {
   return (
@@ -40,12 +51,7 @@ function SignInContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [toolName, setToolName] = useState<string | null>(null);
 
-  // Parse required scopes from URL and add base scopes
-  const requestedScopes = searchParams.get('scopes') || '';
-  const baseScopes = 'openid email profile';
-  const scopes = requestedScopes ? `${baseScopes} ${requestedScopes}` : baseScopes;
-  console.log('scopes', scopes);
-  
+  // Get callback URL from params
   const callbackUrl = searchParams.get('callbackUrl') || '/auth/callback';
 
   useEffect(() => {
@@ -59,15 +65,8 @@ function SignInContent() {
   // Start auth flow with Google
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
-    try {
-      await signIn('google', 
-        { callbackUrl }, 
-        { scope: scopes }
-      );
-    } catch (error) {
-      console.error('Error signing in with Google:', error);
-      setIsLoading(false);
-    }
+    // All dynamic configuration is now handled on the server side via the cookie.
+    await signIn('google', { callbackUrl });
   };
 
   return (

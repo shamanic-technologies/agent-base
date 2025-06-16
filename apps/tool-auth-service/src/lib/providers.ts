@@ -1,9 +1,13 @@
 import GoogleProvider from "next-auth/providers/google";
 import GithubProvider from "next-auth/providers/github";
 
-export const getProviders = (scopes?: string, state?: string) => {
+export const getProviders = (scopes?: string) => {
   const providers = [];
 
+  const baseScopes = 'openid email profile';
+  const finalScope = scopes ? `${baseScopes} ${scopes}` : baseScopes;
+
+  console.debug('getProviders', process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET);
   if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     providers.push(
       GoogleProvider({
@@ -14,8 +18,7 @@ export const getProviders = (scopes?: string, state?: string) => {
             prompt: "consent",
             access_type: "offline",
             response_type: "code",
-            scope: scopes,
-            state: state,
+            scope: finalScope,
           },
         },
       })

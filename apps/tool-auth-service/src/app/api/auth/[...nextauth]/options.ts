@@ -8,6 +8,8 @@ import {
 import type { NextAuthOptions } from "next-auth";
 import type { JWT } from "next-auth/jwt";
 import type { NextApiRequest, NextApiResponse } from "next";
+import { cookies } from "next/headers";
+import { NextRequest, NextResponse } from 'next/server';
 
 // Extend the Session type for the client
 declare module "next-auth" {
@@ -135,124 +137,91 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
   }
 }
 
-// Auth options configuration
-export const authOptions = (req: NextApiRequest, res: NextApiResponse): NextAuthOptions => {
-  const scopes = req.query.scopes as string | undefined;
-  const state = req.query.state as string | undefined;
+// Auth options configuration is now a function that returns NextAuthOptions
+export const authOptions = (req: NextRequest): NextAuthOptions => {
+  // Read params from the cookie, if available
+  const cookie = req.cookies.get('next-auth.dynamic-params')?.value;
+  let scopes: string | undefined;
   
+  if (cookie) {
+    try {
+      const params = JSON.parse(cookie);
+      scopes = params.scopes;
+    } catch {
+      console.error("Failed to parse auth params cookie");
+    }
+  }
+
   return {
-    providers: getProviders(scopes, state),
+    providers: getProviders(scopes),
     session: {
       strategy: "jwt",
-      // maxAge: 30 * 24 * 60 * 60, // Optional: default is 30 days
     },
     callbacks: {
-      async jwt({ token, account, user, profile, isNewUser }) {
-        // The 'token' arg is the JWT object from the cookie (if exists)
-        // The 'account' & 'user' args are only present after a successful OAuth flow
-        
-        // Handle state to pass userId and organizationId
-        if (account && profile) {
-          // @ts-ignore
-          if (profile.state) {
+      async jwt({ token, account }) {
+        if (account) {
+          const cookieStore = await cookies();
+          const dynamicParamsCookie = cookieStore.get('next-auth.dynamic-params')?.value;
+          
+          if (dynamicParamsCookie) {
             try {
-              // @ts-ignore
-              const decodedState = JSON.parse(Buffer.from(profile.state, 'base64').toString('utf-8'));
+              const params = JSON.parse(dynamicParamsCookie);
+              const decodedState = JSON.parse(Buffer.from(params.state, 'base64').toString('utf-8'));
               token.id = decodedState.userId;
               token.organizationId = decodedState.organizationId;
+              
+              cookieStore.delete('next-auth.dynamic-params');
             } catch (e) {
-              console.error("Failed to parse state", e);
+              console.error("Failed to process dynamic params cookie", e);
+              token.error = "StateParseFailed";
+              return token;
             }
           }
-        }
 
-        // 1. Handle OAuth sign-in/linking
-        if (account && user) {
-          const scopes = account.scope?.split(' ') || [];
-          const internalUserId = token.id as string; // *** Read internal ID from token.id ***
+          const internalUserId = token.id as string;
 
           if (!internalUserId) {
-            console.error("[Tool Auth Service] JWT Error: No internal user id found in token during OAuth callback. Cannot link credentials.");
+            console.error("[Tool Auth Service] JWT Error: No internal user id found. Cannot link credentials.");
             token.error = "InternalUserIdMissingInJWT";
-            // Still populate other fields for potential session use
-            token.accessToken = account.access_token;
-            token.refreshToken = account.refresh_token;
-            token.accessTokenExpires = account.expires_at ? account.expires_at * 1000 : undefined;
-            token.oauthProvider = account.provider as OAuthProvider;
             return token;
           }
-          
-          console.log(
-            `[Tool Auth Service] JWT: Linking provider '${account.provider}' for user '${internalUserId}'.`
-          );
 
           const credentialData: CreateOrUpdateOAuthInput = {
-            userId: internalUserId, // *** Use internalUserId (from token.id) ***
+            userId: internalUserId,
             organizationId: token.organizationId as string,
             oauthProvider: account.provider as OAuthProvider,
-            scopes: scopes,
+            scopes: account.scope?.split(' ') || [],
             accessToken: account.access_token!,
-            refreshToken: account.refresh_token!,
+            refreshToken: account.refresh_token || '',
             expiresAt: account.expires_at ? account.expires_at * 1000 : 0,
           };
 
           try {
-            if (credentialData.accessToken && credentialData.refreshToken) {
-              await storeCredentials(credentialData);
-              console.log(`[Tool Auth Service] JWT: Stored credentials successfully for user ${internalUserId}.`);
-              // Update token with latest details
-              token.accessToken = credentialData.accessToken;
-              token.refreshToken = credentialData.refreshToken;
-              token.accessTokenExpires = credentialData.expiresAt;
-              token.scopes = scopes;
-              token.oauthProvider = credentialData.oauthProvider;
-              delete token.error; 
-            } else {
-               console.warn("[Tool Auth Service] JWT: Missing tokens from provider. Credentials not stored.");
-            }
-          } catch (error) {
-            console.error(`[Tool Auth Service] JWT: Failed store credentials for user ${internalUserId}:`, error);
-            token.error = "CredentialStorageFailed";
-            // Keep potentially stale OAuth info but mark error
+            await storeCredentials(credentialData);
             token.accessToken = credentialData.accessToken;
             token.refreshToken = credentialData.refreshToken;
             token.accessTokenExpires = credentialData.expiresAt;
-            token.scopes = scopes;
+            token.scopes = credentialData.scopes;
             token.oauthProvider = credentialData.oauthProvider;
+            delete token.error;
+          } catch (error) {
+            console.error(`[Tool Auth Service] JWT: Failed store credentials for user ${internalUserId}:`, error);
+            token.error = "CredentialStorageFailed";
           }
-          return token;
         }
-
-        // 2. Handle token refresh if needed (on session access)
-        // if (token.accessTokenExpires && Date.now() >= token.accessTokenExpires) {
-        //   if (token.refreshToken && token.oauthProvider) { // Need provider info for refresh endpoint logic
-        //     console.log("[Tool Auth Service] JWT: Access token expired, attempting refresh.");
-        //     return refreshAccessToken(token); // Use token.id internally
-        //   } else {
-        //     console.warn("[Tool Auth Service] JWT: Access token expired, but no refresh token or provider info available.");
-        //     token.error = "RefreshTokenMissing"; 
-        //     delete token.accessToken;
-        //     return token;
-        //   }
-        // }
-
-        // 3. Return current token (initial load or valid existing token)
         return token;
       },
       async session({ session, token }) {
-        // Map internal token structure to client session structure
-        session.userId = token.id as string; // Map internal token.id to session.userId
+        session.userId = token.id as string;
         session.organizationId = token.organizationId as string;
         session.error = token.error as string | undefined;
-        // Removed session.accessToken and session.scopes for minimalism
         return session;
       },
     },
     pages: {
       signIn: "/auth/signin",
       error: "/auth/error",
-      signOut: "/auth/signout",
     },
     debug: process.env.NODE_ENV === "development",
-  }; 
-} 
+  };
+}; 

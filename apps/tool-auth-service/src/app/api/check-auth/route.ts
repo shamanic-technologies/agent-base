@@ -69,8 +69,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       // Encode userId and organizationId into the state parameter
       const state = Buffer.from(JSON.stringify({ userId, organizationId })).toString('base64');
       const callbackUrl = encodeURIComponent(`${process.env.BASE_URL}/auth/callback`);
-      const scopeString = encodeURIComponent(requiredScopes.join(' '));
-      const authUrl = `${process.env.BASE_URL}/api/auth/signin?callbackUrl=${callbackUrl}&scopes=${scopeString}&state=${state}`;
+      // The scopes should NOT be manually encoded. The URL constructor handles it.
+      const scopeString = requiredScopes.join(' ');
+      const authUrl = `${process.env.BASE_URL}/api/auth/start?callbackUrl=${callbackUrl}&scopes=${scopeString}&state=${state}`;
       
       const responseData: ServiceResponse<CheckAuthNeededData> = {
         success: true, // The check operation succeeded, but the user needs auth

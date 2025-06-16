@@ -6,10 +6,11 @@
  */
 import NextAuth from "next-auth";
 import { authOptions } from "./options";
-import { NextApiRequest, NextApiResponse } from "next";
+import type { NextRequest } from "next/server";
 
-async function handler(req: NextApiRequest, res: NextApiResponse) {
-    return NextAuth(req, res, authOptions(req, res));
-}
+const handler = (req: NextRequest, ctx: { params: { nextauth: string[] } }) => {
+  // Pass the request to our authOptions function to get the dynamic configuration
+  return NextAuth(req, ctx, authOptions(req));
+};
 
 export { handler as GET, handler as POST }; 
