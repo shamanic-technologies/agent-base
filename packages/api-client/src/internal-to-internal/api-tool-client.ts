@@ -209,3 +209,36 @@ export async function executeApiToolInternal(
     agentId
   );
 }
+
+/**
+ * Renames a specific API tool by its ID.
+ * Corresponds to: PATCH /api/v1/:id (in api-tool-backend)
+ * Exposed via API Gateway at: PATCH {API_GATEWAY_URL}{API_TOOL_ROUTE_PREFIX}/:id
+ * Authentication: API Gateway handles service key + agentAuthMiddleware in api-tool-backend.
+ *
+ * @param {HumanInternalCredentials} humanInternalCredentials - Credentials.
+ * @param {string} toolId - The ID of the tool to rename.
+ * @param {{ name: string }} payload - The new name for the tool.
+ * @returns {Promise<ServiceResponse<ApiTool>>} Service response containing the updated tool or an error.
+ */
+export async function renameApiToolInternal(
+  humanInternalCredentials: HumanInternalCredentials,
+  toolId: string,
+  payload: { name: string }
+): Promise<ServiceResponse<ApiTool>> {
+  const { platformUserId, clientUserId, clientOrganizationId, platformApiKey, agentId } = humanInternalCredentials;
+  const endpoint = `${API_TOOL_ROUTE_PREFIX}/${toolId}`;
+
+  return makeInternalRequest<ApiTool>(
+    getApiGatewayServiceUrl(),
+    'PATCH' as Method,
+    endpoint,
+    platformUserId,
+    clientUserId,
+    clientOrganizationId,
+    platformApiKey,
+    payload,   // Request body
+    undefined, // No query params
+    agentId
+  );
+}
