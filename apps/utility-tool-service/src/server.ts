@@ -228,7 +228,8 @@ app.post('/call-tool/:id', async (req, res): Promise<void> => {
     }
 
     // 2. Try external service (requires full auth headers, now using internal client)
-
+    console.debug(`🟠 ${logPrefix} Executing external tool:`, req.body);
+    console.debug(`🟠 ${logPrefix} Agent service credentials:`, agentServiceCredentials);
     const externalResponse: ServiceResponse<ApiToolExecutionResult> = await executeApiToolInternal(
         agentServiceCredentials,
         id,
