@@ -38,6 +38,9 @@ import './internal/webhook-utilities/webhook_search_webhooks.js';
 import './internal/webhook-utilities/webhook_link_user.js';
 import './internal/webhook-utilities/webhook_link_agent.js';
 import './internal/webhook-utilities/webhook_get_latest_events.js';
+import './internal/webhook-utilities/webhook_rename_webhook.js';
+import './internal/webhook-utilities/webhook_delete_webhook.js';
+import './internal/webhook-utilities/webhook_update_webhook.js';
 
 // Re-export everything from the registry
 export * from './registry/registry.js';

@@ -177,3 +177,82 @@ export async function getLatestWebhookEvents(
         credentialsAgentId
     );
 }
+
+/**
+ * Renames a webhook definition via the API Gateway.
+ * @param webhookId - ID of the webhook to rename.
+ * @param newName - The new name for the webhook.
+ * @param credentials - Platform authentication credentials.
+ * @returns ServiceResponse containing the updated Webhook or an error.
+ */
+export async function renameWebhookInternalApiService(
+    webhookId: string,
+    newName: string,
+    credentials: HumanInternalCredentials
+): Promise<ServiceResponse<Webhook>> {
+    const { platformUserId, clientUserId, clientOrganizationId, platformApiKey, agentId: credentialsAgentId } = credentials;
+    return makeInternalRequest<Webhook>(
+        getApiGatewayServiceUrl(),
+        'PATCH' as Method,
+        `/webhook/${webhookId}/rename`,
+        platformUserId,
+        clientUserId,
+        clientOrganizationId,
+        platformApiKey,
+        { name: newName },
+        undefined,
+        credentialsAgentId
+    );
+}
+
+/**
+ * Deletes a webhook definition via the API Gateway.
+ * @param webhookId - ID of the webhook to delete.
+ * @param credentials - Platform authentication credentials.
+ * @returns ServiceResponse indicating success or an error.
+ */
+export async function deleteWebhookInternalApiService(
+    webhookId: string,
+    credentials: HumanInternalCredentials
+): Promise<ServiceResponse<void>> {
+    const { platformUserId, clientUserId, clientOrganizationId, platformApiKey, agentId: credentialsAgentId } = credentials;
+    return makeInternalRequest<void>(
+        getApiGatewayServiceUrl(),
+        'DELETE' as Method,
+        `/webhook/${webhookId}`,
+        platformUserId,
+        clientUserId,
+        clientOrganizationId,
+        platformApiKey,
+        undefined,
+        undefined,
+        credentialsAgentId
+    );
+}
+
+/**
+ * Updates a webhook definition via the API Gateway.
+ * @param webhookId - ID of the webhook to update.
+ * @param updates - The data to update.
+ * @param credentials - Platform authentication credentials.
+ * @returns ServiceResponse containing the updated Webhook or an error.
+ */
+export async function updateWebhookInternalApiService(
+    webhookId: string,
+    updates: Partial<WebhookData>,
+    credentials: HumanInternalCredentials
+): Promise<ServiceResponse<Webhook>> {
+    const { platformUserId, clientUserId, clientOrganizationId, platformApiKey, agentId: credentialsAgentId } = credentials;
+    return makeInternalRequest<Webhook>(
+        getApiGatewayServiceUrl(),
+        'PUT' as Method,
+        `/webhook/${webhookId}`,
+        platformUserId,
+        clientUserId,
+        clientOrganizationId,
+        platformApiKey,
+        updates,
+        undefined,
+        credentialsAgentId
+    );
+}
