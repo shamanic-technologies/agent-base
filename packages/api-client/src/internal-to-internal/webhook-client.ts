@@ -135,13 +135,13 @@ export async function getUserCreatedWebhooksInternalApiService(
     }
     return makeInternalRequest<Webhook[]>(
         getApiGatewayServiceUrl(),
-        'POST' as Method,
+        'GET' as Method,
         '/webhook/get-user-created-webhooks',
         platformUserId,
         clientUserId,
         clientOrganizationId,
         platformApiKey,
-        {},
+        undefined,
         undefined,
         credentialsAgentId
     );
