@@ -6,12 +6,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 // @ts-ignore - Message not directly exported from 'ai' in this context
 import { Message } from 'ai'; // Changed import to Message from 'ai'
-import {
-    // Import necessary types
-    // GetConversationResponse, // Needed for getConversationById
-    // GetConversationsResponse, // Needed for getOrCreateConversationsFromAgent
-    // ConversationRecord // Keep for type safety
-} from '@agent-base/types';
+import { Conversation, ServiceResponse } from '@agent-base/types';
 // Import the database service functions
 import { 
     getConversationByIdInternalApiService,
@@ -44,7 +39,7 @@ router.get('/get-messages-from-conversation', async (req: Request, res: Response
     const logPrefix = `[Agent Service /msg/get-from-conv] User ${clientUserId}, Conv ${conversationId}:`;
 
     try {
-        const conversationResponse = await getConversationByIdInternalApiService(
+        const conversationResponse: ServiceResponse<Conversation> = await getConversationByIdInternalApiService(
             { conversationId },
             platformUserId,
             platformApiKey,
