@@ -20,7 +20,8 @@ import {
 import {
     listUtilitiesFromAgent,
     getUtilityInfoFromAgent,
-    callUtilityFromAgent
+    callUtilityFromAgent,
+    listClientSideUtilitiesFromAgent
 } from '../utility-tool-client.js'; // Adjust path if needed
 
 /**
@@ -117,13 +118,15 @@ export function createCallUtilityTool(
  * @param toolId - The ID of the functional tool.
  * @param agentServiceCredentials - Credentials required for API calls.
  * @param conversationId - The current conversation context.
+ * @param clientSideToolIds - List of client-side tool IDs
  * @returns A Promise resolving to { id: string, tool: Tool }.
  * @throws Throws an error if the tool info cannot be fetched.
  */
 export async function createFunctionalToolObject(
     toolId: string,
     agentInternalCredentials: AgentInternalCredentials,
-    conversationId: string
+    conversationId: string,
+    clientSideToolIds: string[]
 ): Promise<{ id: string, tool: Tool }> { 
     
     // 1. Fetch tool info (description, JSON schema)
@@ -141,32 +144,31 @@ export async function createFunctionalToolObject(
     // Validate if schema exists and is an object
     if (!fetchedJsonSchema || typeof fetchedJsonSchema !== 'object') {
         console.warn(`[createFunctionalToolObject] No valid parameters schema found for tool ${toolId}. Using empty schema.`);
-        // Potentially throw error or use a default empty schema depending on requirements
-        // For now, let's proceed but the AI might not be able to use parameters
     }
 
+    const isClientSide = clientSideToolIds.includes(toolId);
+
     // 2. Create the Tool object using the fetched JSON schema
-    // Wrap the fetched schema with the jsonSchema helper for compatibility
     return {
         id: toolId,
         tool: {
             description: description,
-            // Use the jsonSchema helper with the fetched schema object
             parameters: jsonSchema(fetchedJsonSchema || {}), // Provide empty object if schema is missing/invalid
-            execute: async (args: any): Promise<ServiceResponse<ExecuteToolResult>> => { 
-                
-                const payload: ExecuteToolPayload = {
-                    params: args,
-                    conversationId: conversationId 
-                };
-                const callResponse: ServiceResponse<ExecuteToolResult> = await callUtilityFromAgent(agentInternalCredentials, toolId, payload);
+            ...(!isClientSide && {
+                execute: async (args: any): Promise<ServiceResponse<ExecuteToolResult>> => { 
+                    const payload: ExecuteToolPayload = {
+                        params: args,
+                        conversationId: conversationId 
+                    };
+                    const callResponse: ServiceResponse<ExecuteToolResult> = await callUtilityFromAgent(agentInternalCredentials, toolId, payload);
 
-                if (!callResponse.success) {
-                    console.error(`[createFunctionalToolObject] Error executing tool ${toolId} via callUtilityFromAgent:`, callResponse);
-                    return callResponse; 
+                    if (!callResponse.success) {
+                        console.error(`[createFunctionalToolObject] Error executing tool ${toolId} via callUtilityFromAgent:`, callResponse);
+                        return callResponse; 
+                    }
+                    return callResponse;
                 }
-                return callResponse;
-            }
+            })
         }
     };
 } 

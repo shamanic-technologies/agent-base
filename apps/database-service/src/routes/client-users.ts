@@ -5,7 +5,8 @@
  */
 import express, { Request, Response, Router } from 'express';
 import {
-  upsertClientUser
+  upsertClientUser,
+  getOrganizationsForClientUser
 } from '../services/client-users.js';
 import {
   UpsertClientUserInput, // Input type for validation
@@ -66,6 +67,36 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     console.error('[POST /client-users] Unexpected error:', error);
     res.status(500).json({ error: 'An unexpected server error occurred' });
     return;
+  }
+});
+
+/**
+ * GET /client-users/:clientUserId/organizations
+ *
+ * Endpoint to retrieve all organizations for a given client user.
+ */
+router.get('/:clientUserId/organizations', async (req: Request, res: Response): Promise<void> => {
+  const { clientUserId } = req.params;
+
+  if (!clientUserId) {
+    console.error('[GET /client-users/:clientUserId/organizations] Missing required fields in body: clientUserId');
+    res.status(400).json({ error: 'clientUserId parameter is required' });
+    return;
+  }
+
+  try {
+    const response = await getOrganizationsForClientUser(clientUserId);
+
+    if (!response.success) {
+      console.error(`[GET /client-users/:clientUserId/organizations] Service error: ${response.error}`);
+      res.status(500).json(response);
+      return;
+    }
+
+    res.status(200).json(response);
+  } catch (error: any) {
+    console.error(`[GET /client-users/:clientUserId/organizations] Unexpected error:`, error);
+    res.status(500).json({ error: 'An unexpected server error occurred' });
   }
 });
 

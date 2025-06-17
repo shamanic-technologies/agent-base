@@ -176,6 +176,11 @@ export interface ClientOrganizationData {
   profileImage?: string;
 }
 
+export interface UpdateClientOrganizationInput {
+  name?: string;
+  profileImage?: string;
+}
+
 export interface ClientOrganization extends ClientOrganizationData {
   id: string;
   createdAt?: Date;

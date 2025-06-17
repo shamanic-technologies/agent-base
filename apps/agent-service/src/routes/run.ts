@@ -11,7 +11,8 @@ import {
     AgentBaseDeductCreditRequest,
     AgentBaseDeductCreditResponse,
     AgentBaseCreditStreamPayloadData,
-    AgentBaseCreditStreamPayload
+    AgentBaseCreditStreamPayload,
+    InternalUtilityInfo
 } from '@agent-base/types';
 // AI SDK imports
 import { anthropic } from '@ai-sdk/anthropic';
@@ -27,7 +28,8 @@ import {
     createGetUtilityInfoTool,
     createCallUtilityTool,
     createFunctionalToolObject,
-    deductCreditByPlatformUserIdInternalService
+    deductCreditByPlatformUserIdInternalService,
+    listClientSideUtilitiesFromAgent
 } from '@agent-base/api-client';
 
 // @ts-ignore - createIdGenerator may not be directly exported
@@ -59,18 +61,18 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
         const streamData = new StreamData(); // Instantiate StreamData
 
         // --- Extraction & Validation ---
-        const { message: currentMessage, conversationId } = req.body;
+        const { messages, conversationId } = req.body;
         const clientUserId = req.clientUserId;
         const clientOrganizationId = req.clientOrganizationId;
         const platformUserId = req.platformUserId;
         const platformApiKey = req.headers['x-platform-api-key'] as string;
 
-        if (!clientUserId || !clientOrganizationId || !platformUserId || !platformApiKey || !currentMessage || !conversationId) {
+        if (!clientUserId || !clientOrganizationId || !platformUserId || !platformApiKey || !messages || !conversationId) {
             let errorDetail = !clientUserId ? 'Missing x-client-user-id' :
                                 !clientOrganizationId ? 'Missing x-organization-id':
                                 !platformUserId ? 'Missing x-platform-user-id' :
                                 !platformApiKey ? 'Missing x-platform-api-key' :
-                                                'Missing message or conversationId';
+                                                'Missing messages array or conversationId';
             return res.status(400).json({
                 success: false,
                 error: `Bad Request: ${errorDetail}`
@@ -94,32 +96,31 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
         // --- Construct System Prompt ---
         const systemPrompt = buildSystemPrompt(agent);
 
-        // --- Get Conversation & History (Full) ---
-        let fullHistoryMessages: Message[] = [];
-        const conversationResponse = await getConversationByIdInternalApiService(
+        // The history now comes directly from the request body, no need to fetch.
+        // We only fetch the full history later for saving.
+        const fullHistoryFromDBResponse = await getConversationByIdInternalApiService(
             { conversationId },
             platformUserId,
             platformApiKey,
             clientUserId,
             clientOrganizationId
         );
-        if (conversationResponse.success) {
-            fullHistoryMessages = conversationResponse.data.messages || [];
-        } else {
-            console.warn(`[Agent Service /run] Conversation ${conversationId} not found or no messages present. Starting with empty history. Error: ${conversationResponse.error}`);
-        }
+        const fullHistoryFromDB = fullHistoryFromDBResponse.success ? fullHistoryFromDBResponse.data.messages || [] : [];
 
-        // --- Truncate History ---
-        const totalModelLimit = 200000;
+        // --- Truncation and token budget constants ---
         const maxSteps = 10;
         const inputTokensBudget = 15000;
         const maxOutputTokens = 40000;
         const thinkingBudgetTokens = 10000;
 
-        const selectedHistoryMessages = truncateHistory({
+        const currentMessage = messages[messages.length - 1];
+
+        // --- Truncation is still a good idea for very long conversations ---
+        const truncatedMessages = truncateHistory({
             systemPrompt,
-            currentMessage,
-            fullHistoryMessages,
+            currentMessage, // Pass the last message from the client
+            // The history is the messages from the client, not the DB
+            fullHistoryMessages: messages.slice(0, -1), // Pass all but the last message
             inputTokensBudget,
             maxOutputTokens,
             thinkingBudgetTokens,
@@ -139,11 +140,15 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
             'webhook_create_webhook', 'webhook_search_webhooks', 'webhook_link_user', 'webhook_link_agent', 'webhook_get_latest_events',
             'create_api_tool',
             'utility_google_search', 'utility_google_maps', 'utility_get_current_datetime', 'utility_read_webpage', 'utility_curl_command',
-            'update_agent_memory', 'get_actions'
+            'update_agent_memory', 'get_actions',
+            'get_active_organization'
         ];
 
+        const clientSideToolsResponse = await listClientSideUtilitiesFromAgent(agentServiceCredentials);
+        const clientSideToolIds = clientSideToolsResponse.success ? clientSideToolsResponse.data.map((t: InternalUtilityInfo) => t.id) : [];
+
         const fetchedFunctionalTools = await Promise.all(
-            startupToolIds.map(id => createFunctionalToolObject(id, agentServiceCredentials, conversationId))
+            startupToolIds.map(id => createFunctionalToolObject(id, agentServiceCredentials, conversationId, clientSideToolIds))
         );
         
         const allStartupTools: Record<string, Tool> = {
@@ -156,16 +161,10 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
             allStartupTools[item.id] = item.tool;
         });
 
-        // --- Combine Messages ---
-        const allMessages: Message[] = appendClientMessage({
-            messages: selectedHistoryMessages,
-            message: currentMessage
-        });
-
         // --- Call AI Model ---
         const result = await streamText({
             model: anthropic(ModelName.CLAUDE_SONNET_4_20250514),
-            messages: allMessages as any[],
+            messages: truncatedMessages as any[],
             system: systemPrompt, 
             tools: allStartupTools,
             toolCallStreaming: true,
@@ -176,14 +175,9 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
             experimental_generateMessageId: createIdGenerator({ prefix: 'msgs', size: 16 }),
             async onFinish({ response, usage }) {
                 try {
-                    let messagesToSave = [...fullHistoryMessages, currentMessage];
-                    messagesToSave = appendResponseMessages({
-                        messages: messagesToSave,
-                        responseMessages: response.messages
-                    });
-
+                    // Save the final, complete conversation history to the database
                     await updateConversationInternalApiService(
-                        { conversationId: conversationId, messages: messagesToSave },
+                        { conversationId: conversationId, messages: response.messages },
                         platformUserId,
                         platformApiKey,
                         clientUserId,

@@ -11,6 +11,8 @@ import {
     ClientOrganization,
     GetOrCreatePlatformUserInput,
     GetOrCreateClientUserInput,
+    HumanInternalCredentials,
+    UpdateClientOrganizationInput,
     // Import only necessary types from @agent-base/types
     // Add specific record/input types here if they become available and are needed
 } from '@agent-base/types';
@@ -84,6 +86,79 @@ export const upsertClientOrganizationApiClient = async (
     input.endpoint,
     input.clientUserId,
     input.clientAuthOrganizationId,
+  );
+};
+
+/**
+ * Fetches all organizations for a given client user.
+ * @param {HumanInternalCredentials} credentials - The internal credentials.
+ * @returns {Promise<ServiceResponse<ClientOrganization[]>>} A promise resolving to a ServiceResponse containing the list of organizations or an error.
+ */
+export const getOrganizationsForClientUserApiClient = async (
+  credentials: HumanInternalCredentials
+): Promise<ServiceResponse<ClientOrganization[]>> => {
+  const { platformUserId, clientUserId, clientOrganizationId, platformApiKey } = credentials;
+  const endpoint = `/client-users/${clientUserId}/organizations`;
+
+  return makeInternalRequest<ClientOrganization[]>(
+    getDatabaseServiceUrl(),
+    'GET',
+    endpoint,
+    platformUserId,
+    clientUserId,
+    clientOrganizationId,
+    platformApiKey
+  );
+};
+
+/**
+ * Updates an organization.
+ * @param {string} organizationId - The ID of the organization to update.
+ * @param {UpdateClientOrganizationInput} updates - The fields to update.
+ * @param {HumanInternalCredentials} credentials - The internal credentials.
+ * @returns {Promise<ServiceResponse<ClientOrganization>>} The updated organization data.
+ */
+export const updateOrganizationApiClient = async (
+  organizationId: string,
+  updates: UpdateClientOrganizationInput,
+  credentials: HumanInternalCredentials
+): Promise<ServiceResponse<ClientOrganization>> => {
+  const { platformUserId, clientUserId, clientOrganizationId, platformApiKey } = credentials;
+  const endpoint = `/client-organizations/${organizationId}`;
+
+  return makeInternalRequest<ClientOrganization>(
+    getDatabaseServiceUrl(),
+    'PUT',
+    endpoint,
+    platformUserId,
+    clientUserId,
+    clientOrganizationId,
+    platformApiKey,
+    updates
+  );
+};
+
+/**
+ * Deletes an organization.
+ * @param {string} organizationId - The ID of the organization to delete.
+ * @param {HumanInternalCredentials} credentials - The internal credentials.
+ * @returns {Promise<ServiceResponse<boolean>>} Success status.
+ */
+export const deleteOrganizationApiClient = async (
+  organizationId: string,
+  credentials: HumanInternalCredentials
+): Promise<ServiceResponse<boolean>> => {
+  const { platformUserId, clientUserId, clientOrganizationId, platformApiKey } = credentials;
+  const endpoint = `/client-organizations/${organizationId}`;
+
+  return makeInternalRequest<boolean>(
+    getDatabaseServiceUrl(),
+    'DELETE',
+    endpoint,
+    platformUserId,
+    clientUserId,
+    clientOrganizationId,
+    platformApiKey
   );
 };
 

@@ -32,6 +32,12 @@ import './internal/api-utilities/update-api-tool.js';
 import './internal/agent-utilities/update-memory.js';
 import './internal/agent-utilities/get-actions.js';
 
+// User utilities
+import './internal/user-utilities/get-organizations.js';
+import './internal/user-utilities/update-organization.js';
+import './internal/user-utilities/delete-organization.js';
+import './internal/user-utilities/get-active-organization.js';
+
 // Import internal webhook utilities
 import './internal/webhook-utilities/webhook_create_webhook.js';
 import './internal/webhook-utilities/webhook_search_webhooks.js';

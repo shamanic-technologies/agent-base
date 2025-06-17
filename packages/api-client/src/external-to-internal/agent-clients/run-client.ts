@@ -40,18 +40,18 @@ export const triggerAgentRunClientUserApiService = async (
  * Corresponds to POST /agent/run in API Gateway, expecting a stream response.
  * 
  * @param conversationId - The ID of the conversation.
- * @param message - The message object to send to the agent.
+ * @param messages - The array of message objects to send to the agent.
  * @param platformUserApiServiceCredentials - Credentials containing platformClientUserId and platformApiKey.
  * @returns A promise resolving to the raw Response object for streaming.
  */
 export const triggerAgentRunPlatformUserApiServiceStream = async (
     conversationId: string,
-    message: Message,
+    messages: Message[],
     agentBaseCredentials: AgentBaseCredentials
 ): Promise<Response> => {
     const AGENT_BASE_API_URL = getAgentBaseApiUrl();
     const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/run`;
-    const body = { conversationId, message };
+    const body = { conversationId, messages };
 
     try {
         const response = await fetch(`${AGENT_BASE_API_URL}${endpoint}`, {

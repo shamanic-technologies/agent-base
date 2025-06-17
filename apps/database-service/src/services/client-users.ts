@@ -12,7 +12,11 @@ import {
   ServiceResponse,
 } from '@agent-base/types';
 import { mapClientUserFromDatabase } from '@agent-base/types';
-import { CLIENT_USERS_TABLE } from '../types/database-constants.js';
+import {
+  CLIENT_USERS_TABLE,
+  CLIENT_USER_CLIENT_ORGANIZATION_TABLE,
+  CLIENT_ORGANIZATIONS_TABLE,
+} from '../types/database-constants.js';
 
 /**
  * Creates or updates a client user record based on platform_user_id and auth_user_id.
@@ -92,6 +96,50 @@ export async function upsertClientUser(input: UpsertClientUserInput): Promise<Se
     };
   } finally {
     // Ensure the client is always released
+    if (client) {
+      client.release();
+    }
+  }
+}
+
+/**
+ * Retrieves all organizations associated with a given client user ID.
+ *
+ * @param {string} clientUserId - The ID of the client user.
+ * @returns {Promise<ServiceResponse<any[]>>} A response containing the list of organizations.
+ */
+export async function getOrganizationsForClientUser(clientUserId: string): Promise<ServiceResponse<any[]>> {
+  let client: PoolClient | null = null;
+
+  if (!clientUserId) {
+    console.error('Missing required fields: clientUserId');
+    return {
+      success: false,
+      error: 'clientUserId is required',
+    };
+  }
+
+  try {
+    client = await getClient();
+    const query = `
+      SELECT o.*
+      FROM "${CLIENT_ORGANIZATIONS_TABLE}" o
+      JOIN "${CLIENT_USER_CLIENT_ORGANIZATION_TABLE}" uo ON o.id = uo.client_organization_id
+      WHERE uo.client_user_id = $1
+    `;
+    const result = await client.query(query, [clientUserId]);
+
+    return {
+      success: true,
+      data: result.rows, // Assuming rows are already in the desired format. Add mapping if needed.
+    };
+  } catch (error: any) {
+    console.error(`Error fetching organizations for client user ${clientUserId}:`, error);
+    return {
+      success: false,
+      error: 'Failed to fetch organizations for client user',
+    };
+  } finally {
     if (client) {
       client.release();
     }

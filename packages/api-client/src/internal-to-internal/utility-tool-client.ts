@@ -10,7 +10,8 @@ import {
     ExecuteToolResult,
     ListUtilities,
     ExecuteToolPayload,
-    AgentInternalCredentials
+    AgentInternalCredentials,
+    InternalUtilityInfo
 } from '@agent-base/types';
 import { makeInternalRequest } from '../utils/service-client.js'; // Import the shared helper
 import { getApiGatewayServiceUrl } from '../utils/config.js';
@@ -106,4 +107,30 @@ export async function listUtilitiesFromAgent(
         agentId    // Pass agentId for the header
     );
 
+}
+
+/**
+ * Fetches the list of client-side only utilities.
+ *
+ * @param agentInternalCredentials - API client configuration (URL, credentials).
+ * @returns The ServiceResponse from the API Gateway.
+ */
+export async function listClientSideUtilitiesFromAgent(
+    agentInternalCredentials: AgentInternalCredentials
+): Promise<ServiceResponse<InternalUtilityInfo[]>> {
+    const { clientUserId, platformUserId, clientOrganizationId, platformApiKey, agentId } = agentInternalCredentials;
+    const endpoint = 'utility-tool/client-side-tools';
+
+    return await makeInternalRequest<InternalUtilityInfo[]>(
+        getApiGatewayServiceUrl(),
+        'get',
+        endpoint,
+        platformUserId,
+        clientUserId,
+        clientOrganizationId,
+        platformApiKey,
+        undefined,
+        undefined,
+        agentId
+    );
 }

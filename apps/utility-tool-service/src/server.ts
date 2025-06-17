@@ -88,6 +88,19 @@ app.get('/health', (req, res) => {
   });
 });
 
+app.get('/client-side-tools', (req, res) => {
+  try {
+    const clientSideTools = registry.listClientSideUtilities();
+    const response: ServiceResponse<InternalUtilityInfo[]> = {
+      success: true,
+      data: clientSideTools,
+    };
+    res.status(200).json(response);
+  } catch (error) {
+    handleServiceError(res, error, '[GET /client-side-tools]');
+  }
+});
+
 // --- Unified Tool Endpoints --- 
 
 // List ALL available utilities (Internal + External)

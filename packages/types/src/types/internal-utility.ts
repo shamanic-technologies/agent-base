@@ -17,7 +17,7 @@ export interface InternalUtilityTool {
      * @param agentId ID of the agent making the request
      * @returns Result of the utility execution
      */
-    execute: (
+    execute?: (
         clientUserId: string,
         clientOrganizationId: string,
         platformUserId: string,

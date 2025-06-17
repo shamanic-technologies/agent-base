@@ -10,6 +10,8 @@ import cookieParser from 'cookie-parser';
 // import passport from './utils/passport'; // No longer needed
 import { config, logConfig } from './config/env';
 import authUserRoutes from './routes/auth-user.routes';
+import clientOrganizationRoutes from './routes/client-organization.routes';
+import { authMiddleware } from './middleware/authMiddleware';
 
 // Initialize Express app
 const app = express();
@@ -29,9 +31,13 @@ app.use(express.json() as express.RequestHandler);
 
 // Session and Passport initialization are removed as they are no longer used.
 
+// All routes after this will be protected by the auth middleware
+app.use(authMiddleware);
+
 // Register user routes
 // All user-related routes will be prefixed with /users (or whatever you prefer)
 app.use('/auth-user', authUserRoutes);
+app.use('/organizations', clientOrganizationRoutes);
 
 // Health check endpoint (optional, but good practice)
 app.get('/health', (req, res) => {

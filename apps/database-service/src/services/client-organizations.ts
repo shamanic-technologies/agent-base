@@ -13,7 +13,11 @@ import {
   mapClientUserFromDatabase,
 } from '@agent-base/types';
 import { mapClientOrganizationFromDatabase } from '@agent-base/types';
-import { CLIENT_ORGANIZATIONS_TABLE, CLIENT_USERS_TABLE } from '../types/database-constants.js';
+import { 
+  CLIENT_ORGANIZATIONS_TABLE, 
+  CLIENT_USERS_TABLE,
+  CLIENT_USER_CLIENT_ORGANIZATION_TABLE 
+} from '../types/database-constants.js';
 import { upsertClientUser } from './client-users.js'; // Import upsertClientUser
 
 /**
@@ -81,6 +85,16 @@ export async function upsertClientOrganization(input: UpsertClientOrganizationIn
       return { success: false, error: 'Failed to save client organization record.' };
     }
 
+    const organizationId = orgResult.rows[0].id;
+
+    // Step 3: Link the creator user to the organization in the junction table
+    const linkUserToOrgQuery = `
+      INSERT INTO "${CLIENT_USER_CLIENT_ORGANIZATION_TABLE}" (client_user_id, client_organization_id)
+      VALUES ($1, $2)
+      ON CONFLICT (client_user_id, client_organization_id) DO NOTHING;
+    `;
+    await client.query(linkUserToOrgQuery, [input.creatorClientUserId, organizationId]);
+
     await client.query('COMMIT'); // Commit transaction
     
     const upsertedOrganization = mapClientOrganizationFromDatabase(orgResult.rows[0]);
@@ -107,5 +121,85 @@ export async function upsertClientOrganization(input: UpsertClientOrganizationIn
     if (client) {
       client.release();
     }
+  }
+}
+
+export interface UpdateClientOrganizationInput {
+  name?: string;
+  profileImage?: string;
+}
+
+/**
+ * Updates an organization's details.
+ * Only the user who created the organization can update it.
+ *
+ * @param {string} organizationId - The ID of the organization to update.
+ * @param {string} clientUserId - The ID of the user attempting the update.
+ * @param {UpdateClientOrganizationInput} updates - The fields to update.
+ * @returns {Promise<ServiceResponse<ClientOrganization>>} The updated organization data.
+ */
+export async function updateClientOrganization(
+  organizationId: string,
+  clientUserId: string,
+  updates: UpdateClientOrganizationInput
+): Promise<ServiceResponse<ClientOrganization>> {
+  let client: PoolClient | null = null;
+  try {
+    client = await getClient();
+    const query = `
+      UPDATE "${CLIENT_ORGANIZATIONS_TABLE}"
+      SET
+        name = COALESCE($1, name),
+        profile_image = COALESCE($2, profile_image),
+        updated_at = NOW()
+      WHERE id = $3 AND creator_client_user_id = $4
+      RETURNING *;
+    `;
+    const result = await client.query(query, [updates.name, updates.profileImage, organizationId, clientUserId]);
+
+    if (result.rowCount === 0) {
+      return { success: false, error: 'Organization not found or user is not the creator.' };
+    }
+
+    return { success: true, data: mapClientOrganizationFromDatabase(result.rows[0]) };
+  } catch (error: any) {
+    console.error(`Error updating organization ${organizationId}:`, error);
+    return { success: false, error: 'Failed to update organization.' };
+  } finally {
+    if (client) client.release();
+  }
+}
+
+/**
+ * Deletes an organization.
+ * Only the user who created the organization can delete it.
+ *
+ * @param {string} organizationId - The ID of the organization to delete.
+ * @param {string} clientUserId - The ID of the user attempting the deletion.
+ * @returns {Promise<ServiceResponse<boolean>>} Success status.
+ */
+export async function deleteClientOrganization(
+  organizationId: string,
+  clientUserId: string
+): Promise<ServiceResponse<boolean>> {
+  let client: PoolClient | null = null;
+  try {
+    client = await getClient();
+    const query = `
+      DELETE FROM "${CLIENT_ORGANIZATIONS_TABLE}"
+      WHERE id = $1 AND creator_client_user_id = $2;
+    `;
+    const result = await client.query(query, [organizationId, clientUserId]);
+
+    if (result.rowCount === 0) {
+      return { success: false, error: 'Organization not found or user is not the creator.' };
+    }
+
+    return { success: true, data: true };
+  } catch (error: any) {
+    console.error(`Error deleting organization ${organizationId}:`, error);
+    return { success: false, error: 'Failed to delete organization.' };
+  } finally {
+    if (client) client.release();
   }
 } 

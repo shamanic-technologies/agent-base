@@ -63,6 +63,20 @@ class InternalUtilityRegistry {
   }
   
   /**
+   * List all available CLIENT-SIDE utilities with their metadata
+   * @returns Array of utility information objects
+   */
+  listClientSideUtilities(): InternalUtilityInfo[] {
+    return this.getAllInternalUtilities()
+      .filter(utility => !utility.execute)
+      .map(utility => ({
+        id: utility.id,
+        description: utility.description,
+        schema: utility.schema,
+      }));
+  }
+  
+  /**
    * Execute an INTERNAL utility with the given parameters
    * @param utilityId The ID of the utility to execute
    * @param userId The ID of the user making the request
@@ -88,6 +102,16 @@ class InternalUtilityRegistry {
       throw new Error(`Internal utility with ID '${utilityId}' not found in registry.`);
     }
     
+    if (!utility.execute) {
+      const errorMsg = `Utility '${utilityId}' is not executable on the server-side.`;
+      console.error(`[Registry] ${errorMsg}`);
+      return {
+        success: false,
+        error: 'Tool not executable on server.',
+        details: errorMsg,
+      };
+    }
+
     try {
       const executeToolResult: ServiceResponse<ExecuteToolResult> = await utility.execute(clientUserId, clientOrganizationId, platformUserId, platformApiKey, conversationId, params, agentId);
       console.debug(`⚙️ Internal utility execution result:`, executeToolResult);

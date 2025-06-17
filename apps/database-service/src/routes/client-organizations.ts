@@ -9,7 +9,11 @@ import {
   ClientOrganization,              // Expected user data type
   ServiceResponse          // Standard service response wrapper
 } from '@agent-base/types';
-import { upsertClientOrganization } from '../services/client-organizations.js';
+import { 
+  upsertClientOrganization,
+  updateClientOrganization,
+  deleteClientOrganization,
+} from '../services/client-organizations.js';
 
 // Create a new Express router
 const router: Router = express.Router();
@@ -63,6 +67,43 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     res.status(200).json(upsertResponse);
   } catch (error: any) {
     console.error('[POST /client-organizations] Unexpected error:', error);
+    res.status(500).json({ success: false, error: 'An unexpected server error occurred' });
+  }
+});
+
+router.put('/:organizationId', async (req: Request, res: Response): Promise<void> => {
+  const { organizationId } = req.params;
+  const clientUserId = req.headers['x-client-user-id'] as string;
+  const updates = req.body;
+
+  if (!clientUserId) {
+    console.error(`[PUT /client-organizations/:organizationId] Missing required header: x-client-user-id`);
+    res.status(400).json({ error: 'Missing required header: x-client-user-id' });
+    return;
+  }
+
+  try {
+    const response = await updateClientOrganization(organizationId, clientUserId, updates);
+    res.status(response.success ? 200 : 404).json(response);
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'An unexpected server error occurred' });
+  }
+});
+
+router.delete('/:organizationId', async (req: Request, res: Response): Promise<void> => {
+  const { organizationId } = req.params;
+  const clientUserId = req.headers['x-client-user-id'] as string;
+
+  if (!clientUserId) {
+    console.error(`[DELETE /client-organizations/:organizationId] Missing required header: x-client-user-id`);
+    res.status(400).json({ error: 'Missing required header: x-client-user-id' });
+    return;
+  }
+
+  try {
+    const response = await deleteClientOrganization(organizationId, clientUserId);
+    res.status(response.success ? 200 : 404).json(response);
+  } catch (error) {
     res.status(500).json({ success: false, error: 'An unexpected server error occurred' });
   }
 });

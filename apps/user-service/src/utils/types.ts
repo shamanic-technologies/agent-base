@@ -4,6 +4,7 @@
  * Type definitions used across the auth service
  */
 import { Request, Response, NextFunction } from 'express';
+import { AuthenticatedRequest } from '../middleware/authMiddleware';
 
 // Extend Express Request type to include Passport user
 // declare global {
@@ -21,7 +22,7 @@ import { Request, Response, NextFunction } from 'express';
  * This allows Express routes to use async/await
  */
 export type AsyncRequestHandler = (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response,
   next?: NextFunction
 ) => Promise<any>; 

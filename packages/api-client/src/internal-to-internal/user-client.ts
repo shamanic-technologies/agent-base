@@ -5,6 +5,8 @@
 import {
   ServiceResponse,
   PlatformUserId,
+  HumanInternalCredentials,
+  ClientOrganization,
 } from '@agent-base/types';
 
 // Import the shared request helpers
@@ -84,5 +86,28 @@ export const validateClientUserClientOrganization = async (
     undefined,
     undefined,
     // data and params are undefined for this GET request
+  );
+};
+
+/**
+ * Fetches all organizations for a given user from the user-service.
+ * GET /auth-user/organizations
+ *
+ * @param {HumanInternalCredentials} credentials - The internal credentials for the user.
+ * @returns {Promise<ServiceResponse<ClientOrganization[]>>} A promise resolving to a ServiceResponse containing the list of organizations.
+ */
+export const getOrganizationsForUser = async (
+  credentials: HumanInternalCredentials,
+): Promise<ServiceResponse<ClientOrganization[]>> => {
+  const { platformApiKey, platformUserId, clientUserId, clientOrganizationId } = credentials;
+
+  return makeInternalRequest<ClientOrganization[]>(
+    getUserServiceUrl(),
+    'GET' as Method,
+    '/auth-user/organizations',
+    platformUserId,
+    clientUserId,
+    clientOrganizationId,
+    platformApiKey,
   );
 };
