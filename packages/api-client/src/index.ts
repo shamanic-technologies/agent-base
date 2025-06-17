@@ -29,15 +29,16 @@ export * from './internal-to-internal/webhook-client.js';
 export * from './internal-to-internal/payment-client.js';
 export * from './internal-to-internal/tools/tool-creators.js';
 
-export * from './internal-to-external/agent-clients/agent-client.js';
-export * from './internal-to-external/agent-clients/conversation-client.js';
-export * from './internal-to-external/agent-clients/message-client.js';
-export * from './internal-to-external/agent-clients/run-client.js';
+export * from './external-to-internal/agent-clients/agent-client.js';
+export * from './external-to-internal/agent-clients/conversation-client.js';
+export * from './external-to-internal/agent-clients/message-client.js';
+export * from './external-to-internal/agent-clients/run-client.js';
+export * from './external-to-internal/tool-auth-client.js';
+export * from './external-to-internal/api-tool-client.js';
+
 export * from './internal-to-external/webhook-tool-client.js';
 export * from './internal-to-external/api-tool-client.js';
 export * from './internal-to-external/secret-client.js';
 export * from './internal-to-external/api-tool-client.js';
-export * from './internal-to-external/agent-clients/agent-client.js';
+export * from './external-to-internal/agent-clients/agent-client.js';
 
-export * from './external-to-internal/tool-auth-client.js';
-export * from './external-to-internal/api-tool-client.js';

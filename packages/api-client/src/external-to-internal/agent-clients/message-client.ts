@@ -4,6 +4,7 @@
 import { 
     ServiceResponse, 
     AgentBaseCredentials,
+    Conversation,
 } from '@agent-base/types';
 import { makeAgentBaseRequest } from '../../utils/service-client.js'; // Added .js
 import { getAgentBaseApiUrl } from '../../utils/config.js'; // Added .js
@@ -22,13 +23,13 @@ const AGENT_SERVICE_ROUTE_PREFIX = '/agent'; // Assuming API Gateway prefixes ag
 export const getMessagesFromConversationExternalApiService = async (
     params: { conversationId: string }, 
     agentBaseCredentials: AgentBaseCredentials
-): Promise<ServiceResponse<Message[]>> => {
+): Promise<ServiceResponse<Conversation>> => {
     const AGENT_BASE_API_URL = getAgentBaseApiUrl();
     const { conversationId } = params;
     const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/message/get-messages-from-conversation`;
     const queryParams = { conversationId }; 
 
-    return makeAgentBaseRequest<Message[]>( 
+    return makeAgentBaseRequest<Conversation>( 
         AGENT_BASE_API_URL,
         'GET',
         endpoint,
