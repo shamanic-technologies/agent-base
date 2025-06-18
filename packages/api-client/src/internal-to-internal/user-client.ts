@@ -7,6 +7,7 @@ import {
   PlatformUserId,
   HumanInternalCredentials,
   ClientOrganization,
+  UpdateClientOrganizationInput,
 } from '@agent-base/types';
 
 // Import the shared request helpers
@@ -111,3 +112,4 @@ export const getOrganizationsForUser = async (
     platformApiKey,
   );
 };
+

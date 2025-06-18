@@ -9,7 +9,7 @@ import {
   ClientOrganization,
   UpdateClientOrganizationInput,
 } from '@agent-base/types';
-import { updateOrganizationApiClient } from '@agent-base/api-client';
+import { updateOrganization, updateOrganizationApiClient } from '@agent-base/api-client';
 import { registry } from '../../registry/registry.js';
 
 const updateOrganizationUtility: InternalUtilityTool = {
@@ -34,24 +34,7 @@ const updateOrganizationUtility: InternalUtilityTool = {
     required: ['organization_id'],
   },
 
-  execute: async (
-    clientUserId: string,
-    clientOrganizationId: string,
-    platformUserId: string,
-    platformApiKey: string,
-    conversationId: string,
-    params: { organization_id: string; name?: string; profile_image?: string; }
-  ): Promise<ServiceResponse<ClientOrganization>> => {
-    const { organization_id, name, profile_image } = params;
-    const updates: UpdateClientOrganizationInput = { name, profileImage: profile_image };
-
-    return updateOrganizationApiClient(organization_id, updates, {
-      clientUserId,
-      clientOrganizationId,
-      platformUserId,
-      platformApiKey,
-    });
-  },
+  // No 'execute' function is provided, signaling this is a client-side tool.
 };
 
 registry.register(updateOrganizationUtility); 

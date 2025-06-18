@@ -7,7 +7,7 @@ import {
   InternalUtilityTool,
   ServiceResponse,
 } from '@agent-base/types';
-import { deleteOrganizationApiClient } from '@agent-base/api-client';
+import { deleteOrganization } from '@agent-base/api-client';
 import { registry } from '../../registry/registry.js';
 
 const deleteOrganizationUtility: InternalUtilityTool = {
@@ -24,23 +24,7 @@ const deleteOrganizationUtility: InternalUtilityTool = {
     required: ['organization_id'],
   },
 
-  execute: async (
-    clientUserId: string,
-    clientOrganizationId: string,
-    platformUserId: string,
-    platformApiKey: string,
-    conversationId: string,
-    params: { organization_id: string; }
-  ): Promise<ServiceResponse<boolean>> => {
-    const { organization_id } = params;
-
-    return deleteOrganizationApiClient(organization_id, {
-      clientUserId,
-      clientOrganizationId,
-      platformUserId,
-      platformApiKey,
-    });
-  },
+  // No 'execute' function is provided, signaling this is a client-side tool.
 };
 
 registry.register(deleteOrganizationUtility); 
