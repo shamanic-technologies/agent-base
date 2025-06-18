@@ -139,16 +139,27 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
 
         // --- Dynamically Load and Prepare Tools ---
         const startupToolIds = [
-            'webhook_create_webhook', 'webhook_search_webhooks', 'webhook_link_user', 'webhook_link_agent', 'webhook_get_latest_events',
+            // Server-side tools
+            'webhook_create_webhook',
+            'webhook_search_webhooks',
+            'webhook_link_user',
+            'webhook_link_agent',
+            'webhook_get_latest_events',
             'create_api_tool',
-            'utility_google_search', 'utility_google_maps', 'utility_get_current_datetime', 'utility_read_webpage', 'utility_curl_command',
-            'update_agent_memory', 'get_actions',
-            'get_active_organization'
+            'utility_google_search',
+            'utility_google_maps',
+            'utility_get_current_datetime',
+            'utility_read_webpage',
+            'utility_curl_command',
+            // client-side tools
+            'get_active_organization',
+            'update_organization',
+            'delete_organization'
         ];
 
         const clientSideToolsResponse = await listClientSideUtilitiesFromAgent(agentServiceCredentials);
         const clientSideToolIds = clientSideToolsResponse.success ? clientSideToolsResponse.data.map((t: InternalUtilityInfo) => t.id) : [];
-
+        console.debug(`[Agent Service /run] clientSideToolIds:`, clientSideToolIds, null, 2);
         const fetchedFunctionalTools = await Promise.all(
             startupToolIds.map(id => createFunctionalToolObject(id, agentServiceCredentials, conversationId, clientSideToolIds))
         );

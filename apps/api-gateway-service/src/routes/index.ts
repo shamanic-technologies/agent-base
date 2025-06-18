@@ -13,6 +13,7 @@ import { configureSecretRoutes } from './secret.routes.js';
 import { configureWebhookRoutes } from './webhook.routes.js';
 import { configureApiToolRoutes } from './api-tool.routes.js';
 import { configureToolAuthRoutes } from './tool-auth.routes.js';
+import { configureUserRoutes } from './user.routes.js';
 
 /**
  * Configure all routes for the API Gateway
@@ -32,6 +33,7 @@ export const configureRoutes = (
     webhookTool: string;
     apiTool: string;
     toolAuth: string;
+    user: string;
     // payment: string;
   },
   authMiddleware: express.RequestHandler,
@@ -79,5 +81,10 @@ export const configureRoutes = (
   const toolAuthRouter = express.Router();
   configureToolAuthRoutes(toolAuthRouter, serviceUrls.toolAuth, authMiddleware);
   app.use('/tool-auth', toolAuthRouter);
+
+  // User service routes
+  const userRouter = express.Router();
+  configureUserRoutes(userRouter, serviceUrls.user, authMiddleware);
+  app.use('/user', userRouter);
 
 }; 

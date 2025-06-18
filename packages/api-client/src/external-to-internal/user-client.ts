@@ -2,6 +2,8 @@ import { getAgentBaseApiUrl } from "../utils/config.js";
 import { makeAgentBaseRequest } from "../utils/service-client.js";
 import { AgentBaseCredentials, ServiceResponse, ClientOrganization, UpdateClientOrganizationInput } from "@agent-base/types";
 
+const USER_SERVICE_ROUTE_PREFIX = '/user';
+
 /**
  * Updates an organization.
  * @param {string} organizationId - The ID of the organization to update.
@@ -14,7 +16,7 @@ export const updateOrganization = async (
     updates: UpdateClientOrganizationInput,
     credentials: AgentBaseCredentials
   ): Promise<ServiceResponse<ClientOrganization>> => {
-    const endpoint = `/organizations/${organizationId}`;
+    const endpoint = `${USER_SERVICE_ROUTE_PREFIX}/organizations/${organizationId}`;
   
     return makeAgentBaseRequest<ClientOrganization>(
       getAgentBaseApiUrl(),
@@ -36,7 +38,7 @@ export const updateOrganization = async (
     organizationId: string,
     credentials: AgentBaseCredentials
   ): Promise<ServiceResponse<boolean>> => {
-    const endpoint = `/organizations/${organizationId}`;
+    const endpoint = `${USER_SERVICE_ROUTE_PREFIX}/organizations/${organizationId}`;
   
     return makeAgentBaseRequest<boolean>(
       getAgentBaseApiUrl(),

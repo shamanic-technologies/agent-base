@@ -109,6 +109,7 @@ class InternalUtilityRegistry {
         success: false,
         error: 'Tool not executable on server.',
         details: errorMsg,
+        hint: 'Call this tool directly with its id, bypassing utility_call_utility.'
       };
     }
 
