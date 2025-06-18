@@ -126,6 +126,8 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
             thinkingBudgetTokens,
         });
 
+        const messagesForApi = [...truncatedMessages, currentMessage];
+
         // --- Prepare Credentials for API Client ---
         const agentServiceCredentials: AgentInternalCredentials = {
             clientUserId: clientUserId,
@@ -164,7 +166,7 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
         // --- Call AI Model ---
         const result = await streamText({
             model: anthropic(ModelName.CLAUDE_SONNET_4_20250514),
-            messages: truncatedMessages as any[],
+            messages: messagesForApi as any[],
             system: systemPrompt, 
             tools: allStartupTools,
             toolCallStreaming: true,

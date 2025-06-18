@@ -136,7 +136,8 @@ export async function updateAgent(input: UpdateAgentInput): Promise<ServiceRespo
     if (result.rows.length === 0) {
       return {
         success: false,
-        error: 'Agent not found'
+        error: 'Agent not found',
+        hint: 'The agent you are trying to update does not exist. Retry with a correct agent id.'
       };
     }
 

@@ -130,7 +130,8 @@ router.post('/update-user-agent', async (req: Request, res: Response): Promise<v
         console.warn(`[DB Service /update-user-agent] Ownership check failed for agent ${agentId}, user ${clientUserId}. Agent not found or not linked.`);
         res.status(403).json({ 
             success: false, 
-            error: 'Forbidden: User does not own this agent or agent not found.'
+            error: 'Forbidden: User does not own this agent or agent not found.',
+            hint: 'The agent you are trying to update does not exist. Retry with a correct agent id.'
         } as ErrorResponse);
          return;
     }
