@@ -6,7 +6,8 @@
 import { AsyncRequestHandler } from '../utils/types';
 import { 
   updateOrganizationApiClient,
-  deleteOrganizationApiClient
+  deleteOrganizationApiClient,
+  getClientOrganizationByAuthIdApiClient,
 } from '@agent-base/api-client';
 import { UpdateClientOrganizationInput } from '@agent-base/types';
 
@@ -52,6 +53,33 @@ export const deleteClientOrganizationHandler: AsyncRequestHandler = async (req, 
     return res.json(dbResponse);
   } catch (error: any) {
     console.error(`[User Service] Unexpected error deleting organization ${organizationId}:`, error);
+    return res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+    });
+  }
+};
+
+/**
+ * Gets an organization by its Clerk Auth ID.
+ */
+export const getClientOrganizationByAuthIdHandler: AsyncRequestHandler = async (req, res) => {
+  const { clientAuthOrganizationId } = req.params;
+
+  try {
+    const dbResponse = await getClientOrganizationByAuthIdApiClient(
+      clientAuthOrganizationId,
+      req.humanInternalCredentials
+    );
+
+    if (!dbResponse.success) {
+      console.error(`[User Service] Failed to get organization by auth ID ${clientAuthOrganizationId}: ${dbResponse.error}`);
+      return res.status(dbResponse.statusCode || 500).json(dbResponse);
+    }
+
+    return res.json(dbResponse);
+  } catch (error: any) {
+    console.error(`[User Service] Unexpected error getting organization by auth ID ${clientAuthOrganizationId}:`, error);
     return res.status(500).json({
       success: false,
       error: 'Internal server error',

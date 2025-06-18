@@ -19,6 +19,7 @@ import {
   CLIENT_USER_CLIENT_ORGANIZATION_TABLE 
 } from '../types/database-constants.js';
 import { upsertClientUser } from './client-users.js'; // Import upsertClientUser
+import { validate as uuidValidate } from 'uuid';
 
 /**
  * Creates or updates a client organization record.
@@ -143,6 +144,9 @@ export async function updateClientOrganization(
   clientUserId: string,
   updates: UpdateClientOrganizationInput
 ): Promise<ServiceResponse<ClientOrganization>> {
+  if (!uuidValidate(organizationId)) {
+    return { success: false, error: 'Invalid organization ID format. Must be a valid UUID.' };
+  }
   let client: PoolClient | null = null;
   try {
     client = await getClient();
@@ -182,6 +186,9 @@ export async function deleteClientOrganization(
   organizationId: string,
   clientUserId: string
 ): Promise<ServiceResponse<boolean>> {
+  if (!uuidValidate(organizationId)) {
+    return { success: false, error: 'Invalid organization ID format. Must be a valid UUID.' };
+  }
   let client: PoolClient | null = null;
   try {
     client = await getClient();
@@ -199,6 +206,38 @@ export async function deleteClientOrganization(
   } catch (error: any) {
     console.error(`Error deleting organization ${organizationId}:`, error);
     return { success: false, error: 'Failed to delete organization.' };
+  } finally {
+    if (client) client.release();
+  }
+}
+
+/**
+ * Retrieves a client organization by its clientAuthOrganizationId.
+ *
+ * @param {string} clientAuthOrganizationId - The Clerk organization ID.
+ * @returns {Promise<ServiceResponse<ClientOrganization>>} The organization data.
+ */
+export async function getClientOrganizationByAuthId(
+  clientAuthOrganizationId: string
+): Promise<ServiceResponse<ClientOrganization>> {
+  let client: PoolClient | null = null;
+  try {
+    client = await getClient();
+    const query = `
+      SELECT * FROM "${CLIENT_ORGANIZATIONS_TABLE}"
+      WHERE client_auth_organization_id = $1
+      LIMIT 1;
+    `;
+    const result = await client.query(query, [clientAuthOrganizationId]);
+
+    if (result.rowCount === 0) {
+      return { success: false, error: 'Organization not found.' };
+    }
+
+    return { success: true, data: mapClientOrganizationFromDatabase(result.rows[0]) };
+  } catch (error: any) {
+    console.error(`Error fetching organization by auth ID ${clientAuthOrganizationId}:`, error);
+    return { success: false, error: 'Failed to fetch organization.' };
   } finally {
     if (client) client.release();
   }

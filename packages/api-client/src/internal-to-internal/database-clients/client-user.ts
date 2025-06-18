@@ -161,3 +161,29 @@ export const deleteOrganizationApiClient = async (
   );
 };
 
+/**
+ * Fetches a client organization by its auth ID from the database service.
+ * @param {string} clientAuthOrganizationId - The Clerk organization ID.
+ * @param {HumanInternalCredentials} credentials - The internal credentials.
+ * @returns {Promise<ServiceResponse<ClientOrganization>>} The organization data.
+ */
+export const getClientOrganizationByAuthIdApiClient = async (
+  clientAuthOrganizationId: string,
+  credentials: HumanInternalCredentials
+): Promise<ServiceResponse<ClientOrganization>> => {
+  const { platformUserId, clientUserId, clientOrganizationId, platformApiKey } = credentials;
+  const endpoint = `/client-organizations/auth/${clientAuthOrganizationId}`;
+
+  return makeInternalRequest<ClientOrganization>(
+    getDatabaseServiceUrl(),
+    'GET',
+    endpoint,
+    platformUserId,
+    clientUserId,
+    // Note: clientOrganizationId in credentials might be different from the one being fetched
+    // We use the one from the credentials for the auth header.
+    clientOrganizationId, 
+    platformApiKey
+  );
+};
+

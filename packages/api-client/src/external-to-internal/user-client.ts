@@ -50,4 +50,26 @@ export const updateOrganization = async (
     );
   };
 
+/**
+ * Fetches an organization by its Clerk Auth ID.
+ * @param {string} organizationId - The Clerk organization ID.
+ * @param {AgentBaseCredentials} credentials - The credentials.
+ * @returns {Promise<ServiceResponse<ClientOrganization>>} The organization data.
+ */
+export const getOrganizationByAuthId = async (
+  organizationId: string,
+  credentials: AgentBaseCredentials
+): Promise<ServiceResponse<ClientOrganization>> => {
+  const endpoint = `${USER_SERVICE_ROUTE_PREFIX}/organizations/auth/${organizationId}`;
+
+  return makeAgentBaseRequest<ClientOrganization>(
+    getAgentBaseApiUrl(),
+    'GET',
+    endpoint,
+    credentials,
+    undefined,
+    undefined
+  );
+};
+
   

@@ -13,6 +13,7 @@ import {
   upsertClientOrganization,
   updateClientOrganization,
   deleteClientOrganization,
+  getClientOrganizationByAuthId,
 } from '../services/client-organizations.js';
 
 // Create a new Express router
@@ -104,6 +105,18 @@ router.delete('/:organizationId', async (req: Request, res: Response): Promise<v
     const response = await deleteClientOrganization(organizationId, clientUserId);
     res.status(response.success ? 200 : 404).json(response);
   } catch (error) {
+    res.status(500).json({ success: false, error: 'An unexpected server error occurred' });
+  }
+});
+
+router.get('/auth/:clientAuthOrganizationId', async (req: Request, res: Response): Promise<void> => {
+  const { clientAuthOrganizationId } = req.params;
+
+  try {
+    const response = await getClientOrganizationByAuthId(clientAuthOrganizationId);
+    res.status(response.success ? 200 : 404).json(response);
+  } catch (error) {
+    console.error(`[GET /client-organizations/auth/:clientAuthOrganizationId] Unexpected error:`, error);
     res.status(500).json({ success: false, error: 'An unexpected server error occurred' });
   }
 });
