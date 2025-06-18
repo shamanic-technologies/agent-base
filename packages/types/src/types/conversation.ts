@@ -2,7 +2,6 @@
  * Types related to Conversations.
  */
 // Use Message from 'ai' instead of UIMessage
-// @ts-ignore - Message not directly exported from 'ai' in this context
 import { Message } from 'ai';
 // --- Conversation Records and Inputs ---
 

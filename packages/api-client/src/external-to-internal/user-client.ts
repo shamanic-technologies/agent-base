@@ -52,15 +52,37 @@ export const updateOrganization = async (
 
 /**
  * Fetches an organization by its Clerk Auth ID.
- * @param {string} organizationId - The Clerk organization ID.
+ * @param {string} clientAuthOrganizationId - The Clerk organization ID.
  * @param {AgentBaseCredentials} credentials - The credentials.
  * @returns {Promise<ServiceResponse<ClientOrganization>>} The organization data.
  */
 export const getOrganizationByAuthId = async (
-  organizationId: string,
+  clientAuthOrganizationId: string,
   credentials: AgentBaseCredentials
 ): Promise<ServiceResponse<ClientOrganization>> => {
-  const endpoint = `${USER_SERVICE_ROUTE_PREFIX}/organizations/auth/${organizationId}`;
+  const endpoint = `${USER_SERVICE_ROUTE_PREFIX}/organizations/auth/${clientAuthOrganizationId}`;
+
+  return makeAgentBaseRequest<ClientOrganization>(
+    getAgentBaseApiUrl(),
+    'GET',
+    endpoint,
+    credentials,
+    undefined,
+    undefined
+  );
+};
+
+/**
+ * Fetches an organization by its client organization ID.
+ * @param {string} clientOrganizationId - The client organization ID.
+ * @param {AgentBaseCredentials} credentials - The credentials.
+ * @returns {Promise<ServiceResponse<ClientOrganization>>} The organization data.
+ */
+export const getClientOrganizationByIdApiClient = async (
+  clientOrganizationId: string,
+  credentials: AgentBaseCredentials
+): Promise<ServiceResponse<ClientOrganization>> => {
+  const endpoint = `${USER_SERVICE_ROUTE_PREFIX}/organizations/client/${clientOrganizationId}`;
 
   return makeAgentBaseRequest<ClientOrganization>(
     getAgentBaseApiUrl(),

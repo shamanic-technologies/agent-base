@@ -6,7 +6,9 @@
 import { format } from 'date-fns';
 import {
   InternalUtilityTool,
-  ErrorResponse
+  ErrorResponse,
+  ServiceResponse,
+  ExecuteToolResult
 } from '@agent-base/types';
 import { registry } from '../../registry/registry.js';
 
@@ -34,18 +36,12 @@ const getCurrentDateTimeUtility: InternalUtilityTool = {
     }
   },
   
-  execute: async (clientUserId: string, clientOrganizationId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: DateTimeRequest): Promise<any> => {
+  execute: async (clientUserId: string, clientOrganizationId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: DateTimeRequest): Promise<ServiceResponse<ExecuteToolResult>> => {
     try {
-      // Remove Zod validation within execute, use raw params
-      // Validation might be handled centrally based on the provided zod schema
-      const { format = 'ISO' } = params || {}; // Revert to using raw params
-      
-      console.log(`⏰ [DATETIME] Getting current date/time with format: ${format}`);
-      
-      // Get current date and time
+      const { format = 'ISO' } = params || {};
+            
       const now = new Date();
       
-      // Format the date based on the specified format
       let formattedDate;
       let formatType = 'ISO';
       
@@ -68,40 +64,36 @@ const getCurrentDateTimeUtility: InternalUtilityTool = {
         formattedDate = Math.floor(now.getTime() / 1000).toString();
         formatType = 'Unix Timestamp';
       } else {
-        // Custom formatting
         try {
           formattedDate = formatDate(now, format);
           formatType = 'Custom';
         } catch (error) {
           console.error("Error with custom date format:", error);
-          // Fallback to ISO format on custom format error
           formattedDate = now.toISOString(); 
           formatType = 'ISO (fallback)';
         }
       }
       
-      // Return the formatted date and time
-      return {
-        // Return standard success structure if needed, otherwise keep as is
-
-          timestamp: now.getTime(),
-          formatted: formattedDate,
-          format_type: formatType,
-          year: now.getFullYear(),
-          month: now.getMonth() + 1, // Month is 0-indexed in JS
-          day: now.getDate(),
-          hour: now.getHours(),
-          minute: now.getMinutes(),
-          second: now.getSeconds(),
-          timezone_offset_minutes: now.getTimezoneOffset()
-        
+      const resultData = {
+        timestamp: now.getTime(),
+        formatted: formattedDate,
+        format_type: formatType,
+        year: now.getFullYear(),
+        month: now.getMonth() + 1,
+        day: now.getDate(),
+        hour: now.getHours(),
+        minute: now.getMinutes(),
+        second: now.getSeconds(),
+        timezone_offset_minutes: now.getTimezoneOffset()
       };
-    } catch (error) {
+      
+      return {
+        success: true,
+        data: resultData
+      };
+
+    } catch (error: any) {
       console.error("❌ [DATETIME] Error:", error);
-
-      // Remove Zod validation error handling here
-
-      // Handle other errors - return standard UtilityErrorResponse
       const errorResponse: ErrorResponse = {
         success: false, 
         error: "Failed to get current date and time",

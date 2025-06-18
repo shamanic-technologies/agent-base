@@ -116,18 +116,23 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
         const currentMessage = messages[messages.length - 1];
 
         // --- Truncation is still a good idea for very long conversations ---
-        const truncatedMessages = truncateHistory({
-            systemPrompt,
-            currentMessage, // Pass the last message from the client
-            // The history is the messages from the client, not the DB
-            fullHistoryMessages: messages.slice(0, -1), // Pass all but the last message
-            inputTokensBudget,
-            maxOutputTokens,
-            thinkingBudgetTokens,
-        });
+        // const truncatedMessages = truncateHistory({
+        //     systemPrompt,
+        //     currentMessage, // Pass the last message from the client
+        //     // The history is the messages from the client, not the DB
+        //     fullHistoryMessages: messages.slice(0, -1), // Pass all but the last message
+        //     inputTokensBudget,
+        //     maxOutputTokens,
+        //     thinkingBudgetTokens,
+        // });
 
-        const messagesForApi = [...truncatedMessages, currentMessage];
-
+        const messagesForApi = messages; // [...truncatedMessages, currentMessage];
+        // --- Combine Messages ---
+        // const allMessages: Message[] = appendClientMessage({
+        //     messages: selectedHistoryMessages,
+        //     message: currentMessage
+        // });
+        // console.debug('🤍 [Agent Service /run] messagesForApi', messagesForApi, null, 2);
         // --- Prepare Credentials for API Client ---
         const agentServiceCredentials: AgentInternalCredentials = {
             clientUserId: clientUserId,
@@ -159,7 +164,6 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
 
         const clientSideToolsResponse = await listClientSideUtilitiesFromAgent(agentServiceCredentials);
         const clientSideToolIds = clientSideToolsResponse.success ? clientSideToolsResponse.data.map((t: InternalUtilityInfo) => t.id) : [];
-        console.debug(`[Agent Service /run] clientSideToolIds:`, clientSideToolIds, null, 2);
         const fetchedFunctionalTools = await Promise.all(
             startupToolIds.map(id => createFunctionalToolObject(id, agentServiceCredentials, conversationId, clientSideToolIds))
         );
@@ -188,9 +192,14 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
             experimental_generateMessageId: createIdGenerator({ prefix: 'msgs', size: 16 }),
             async onFinish({ response, usage }) {
                 try {
+
+                    const messagesToSave: Message[] = appendResponseMessages({
+                        messages,
+                        responseMessages: response.messages
+                    });
                     // Save the final, complete conversation history to the database
                     await updateConversationInternalApiService(
-                        { conversationId: conversationId, messages: response.messages },
+                        { conversationId, messages: messagesToSave },
                         platformUserId,
                         platformApiKey,
                         clientUserId,

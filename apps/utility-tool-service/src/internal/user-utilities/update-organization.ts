@@ -5,11 +5,7 @@
  */
 import {
   InternalUtilityTool,
-  ServiceResponse,
-  ClientOrganization,
-  UpdateClientOrganizationInput,
 } from '@agent-base/types';
-import { updateOrganization, updateOrganizationApiClient } from '@agent-base/api-client';
 import { registry } from '../../registry/registry.js';
 
 const updateOrganizationUtility: InternalUtilityTool = {
@@ -18,7 +14,7 @@ const updateOrganizationUtility: InternalUtilityTool = {
   schema: {
     type: 'object',
     properties: {
-      organization_id: {
+      client_organization_id: {
         type: 'string',
         description: 'The ID of the organization to update.',
       },
@@ -31,10 +27,10 @@ const updateOrganizationUtility: InternalUtilityTool = {
         description: 'The new profile image URL for the organization.',
       },
     },
-    required: ['organization_id'],
+    required: ['client_organization_id'],
   },
 
   // No 'execute' function is provided, signaling this is a client-side tool.
 };
 
-registry.register(updateOrganizationUtility); 
+registry.register(updateOrganizationUtility);

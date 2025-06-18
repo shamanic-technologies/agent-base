@@ -16,12 +16,12 @@ const deleteOrganizationUtility: InternalUtilityTool = {
   schema: {
     type: 'object',
     properties: {
-      organization_id: {
+      client_organization_id: {
         type: 'string',
         description: 'The ID of the organization to delete.',
       },
     },
-    required: ['organization_id'],
+    required: ['client_organization_id'],
   },
 
   // No 'execute' function is provided, signaling this is a client-side tool.
