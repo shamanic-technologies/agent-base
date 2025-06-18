@@ -1,5 +1,5 @@
-import { getAgentBaseApiUrl } from "@/utils/config.js";
-import { makeAgentBaseRequest } from "@/utils/service-client.js";
+import { getAgentBaseApiUrl } from "../utils/config.js";
+import { makeAgentBaseRequest } from "../utils/service-client.js";
 import { AgentBaseCredentials, ServiceResponse, ClientOrganization, UpdateClientOrganizationInput } from "@agent-base/types";
 
 /**
