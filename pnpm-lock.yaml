@@ -797,6 +797,9 @@ importers:
       '@kit/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
+      '@types/cookie':
+        specifier: ^0.6.0
+        version: 0.6.0
       eslint:
         specifier: ^9.26.0
         version: 9.28.0(jiti@2.4.2)
