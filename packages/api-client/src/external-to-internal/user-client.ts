@@ -78,7 +78,7 @@ export const getOrganizationByAuthId = async (
  * @param {AgentBaseCredentials} credentials - The credentials.
  * @returns {Promise<ServiceResponse<ClientOrganization>>} The organization data.
  */
-export const getClientOrganizationByIdApiClient = async (
+export const getClientOrganizationById = async (
   clientOrganizationId: string,
   credentials: AgentBaseCredentials
 ): Promise<ServiceResponse<ClientOrganization>> => {

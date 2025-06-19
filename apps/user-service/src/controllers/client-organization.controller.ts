@@ -96,7 +96,6 @@ export const getClientOrganizationByIdHandler: AsyncRequestHandler = async (req,
 
   try {
     const dbResponse = await getClientOrganizationByIdApiClient(
-      clientOrganizationId,
       req.humanInternalCredentials
     );
 

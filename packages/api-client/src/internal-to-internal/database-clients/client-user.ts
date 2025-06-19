@@ -16,7 +16,7 @@ import {
     // Import only necessary types from @agent-base/types
     // Add specific record/input types here if they become available and are needed
 } from '@agent-base/types';
-import { makeClientUserValidationRequest, makeClientOrganizationValidationRequest, makeInternalRequest } from '../../utils/service-client.js'; // Reverted import, added .js
+import { makeClientUserValidationRequest, makeClientOrganizationValidationRequest, makeInternalRequest, makeAgentBaseRequest } from '../../utils/service-client.js'; // Reverted import, added .js
 import { getDatabaseServiceUrl, getUserServiceUrl } from '../../utils/config.js'; // Added .js
 import { Method } from 'axios';
 
@@ -114,15 +114,15 @@ export const getOrganizationsForClientUserApiClient = async (
  * Updates an organization.
  * @param {string} organizationId - The ID of the organization to update.
  * @param {UpdateClientOrganizationInput} updates - The fields to update.
- * @param {HumanInternalCredentials} credentials - The internal credentials.
+ * @param {HumanInternalCredentials} humanInternalCredentials - The internal credentials.
  * @returns {Promise<ServiceResponse<ClientOrganization>>} The updated organization data.
  */
 export const updateOrganizationApiClient = async (
   organizationId: string,
   updates: UpdateClientOrganizationInput,
-  credentials: HumanInternalCredentials
+  humanInternalCredentials: HumanInternalCredentials
 ): Promise<ServiceResponse<ClientOrganization>> => {
-  const { platformUserId, clientUserId, clientOrganizationId, platformApiKey } = credentials;
+  const { platformUserId, clientUserId, clientOrganizationId, platformApiKey } = humanInternalCredentials;
   const endpoint = `/client-organizations/${organizationId}`;
 
   return makeInternalRequest<ClientOrganization>(
@@ -180,8 +180,29 @@ export const getClientOrganizationByAuthIdApiClient = async (
     endpoint,
     platformUserId,
     clientUserId,
-    // Note: clientOrganizationId in credentials might be different from the one being fetched
-    // We use the one from the credentials for the auth header.
+    clientOrganizationId, 
+    platformApiKey
+  );
+};
+
+/**
+ * Fetches an organization by its client organization ID.
+ * @param {string} clientOrganizationId - The client organization ID.
+ * @param {HumanInternalCredentials} humanInternalCredentials - The credentials.
+ * @returns {Promise<ServiceResponse<ClientOrganization>>} The organization data.
+ */
+export const getClientOrganizationByIdApiClient = async (
+  humanInternalCredentials: HumanInternalCredentials
+): Promise<ServiceResponse<ClientOrganization>> => {
+  const { platformUserId, clientUserId, clientOrganizationId, platformApiKey } = humanInternalCredentials;
+  const endpoint = `/client-organizations/client/${clientOrganizationId}`;
+
+  return makeInternalRequest<ClientOrganization>(
+    getDatabaseServiceUrl(),
+    'GET',
+    endpoint,
+    platformUserId,
+    clientUserId,
     clientOrganizationId, 
     platformApiKey
   );
