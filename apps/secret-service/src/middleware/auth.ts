@@ -37,18 +37,18 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction):
   const agentId = req.headers[HEADER_AGENT_ID] as string | undefined;
 
   // Basic validation from getInternalAuthHeaders
-  if (!platformApiKey) {
-    const missingHeaders = [];
-    if (!platformApiKey) missingHeaders.push(HEADER_PLATFORM_API_KEY);
+//   if (!platformApiKey) {
+//     const missingHeaders = [];
+//     if (!platformApiKey) missingHeaders.push(HEADER_PLATFORM_API_KEY);
 
-    const errorResponse: ErrorResponse = {
-      success: false,
-      error: 'Unauthorized',
-      details: `Missing required headers: ${missingHeaders.join(', ')}`,
-    };
-    res.status(401).json(errorResponse);
-    return;
-  }
+//     const errorResponse: ErrorResponse = {
+//       success: false,
+//       error: 'Unauthorized',
+//       details: `Missing required headers: ${missingHeaders.join(', ')}`,
+//     };
+//     res.status(401).json(errorResponse);
+//     return;
+//   }
 
   // Attach credentials to the request object
   (req as AuthenticatedRequest).platformApiKey = platformApiKey;
