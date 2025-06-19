@@ -9,6 +9,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import path from 'path';
 import routes from './routes/index.js'; // Import the main router (explicitly index.js)
+import { authMiddleware } from './middleware/auth.js';
 import { ErrorResponse } from '@agent-base/types'; // Import shared error type
 import { initializeGsmClient } from './lib/gsmClient.js'; // Corrected import
 
@@ -41,7 +42,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // --- Routes --- //
 
 // Mount the main router
-app.use('/api', routes);
+app.use('/api', authMiddleware, routes);
 
 // Basic health check endpoint
 app.get('/health', (req: Request, res: Response) => {

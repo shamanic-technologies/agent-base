@@ -31,12 +31,7 @@ export const createApiKeyMetadata = async (
   platformUserId: string,
   platformOrganizationId: string
 ): Promise<ServiceResponse<ApiKey>> => {
-  if (!platformUserId) {
-    throw new Error('[api-client:createApiKeyMetadata] platformUserId is required for request header.');
-  }
-  if (!data || !data.keyId || !data.name || !data.keyPrefix || !data.hashedKey) {
-    throw new Error('[api-client:createApiKeyMetadata] Input data must include keyId, name, keyPrefix, and hashedKey.');
-  }
+
   const endpoint = '/api-keys/';
   return makeWebAuthenticatedServiceRequest<ApiKey>(
     getDatabaseServiceUrl(),

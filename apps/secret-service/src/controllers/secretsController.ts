@@ -26,7 +26,7 @@ import {
     HumanInternalCredentials,
     InternalCredentials
 } from '@agent-base/types';
-import { getInternalAuthHeaders } from '@agent-base/api-client';
+import { AuthenticatedRequest } from '../middleware/auth.js';
 
 /**
  * Handles POST /api/secrets
@@ -35,14 +35,7 @@ import { getInternalAuthHeaders } from '@agent-base/api-client';
 export async function storeSecretHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
         const storeRequest: StoreSecretRequest = req.body;
-        const serviceCredentialsResponse: ServiceResponse<InternalCredentials> = await getInternalAuthHeaders(req);
-
-        if (!serviceCredentialsResponse.success) {
-            console.error('Error getting service credentials or data missing:', serviceCredentialsResponse.error);
-            res.status(401).json({ success: false, error: 'Authentication failed or user data missing.' });
-            return;
-        }
-        const { platformUserId, platformOrganizationId, clientUserId, clientOrganizationId } = serviceCredentialsResponse.data;
+        const { platformUserId, platformOrganizationId, clientUserId, clientOrganizationId } = (req as AuthenticatedRequest);
         const { userType, secretType, secretUtilityProvider, secretUtilitySubProvider, secretValue } = storeRequest;
         
         if (!userType || !secretType || secretValue === undefined || secretValue === null || !secretUtilityProvider) {
@@ -105,14 +98,7 @@ export async function getSecretHandler(req: Request, res: Response, next: NextFu
         const secretUtilityProvider: UtilityProvider = req.query.secretUtilityProvider as UtilityProvider;
         const secretUtilitySubProvider: string | undefined = req.query.secretUtilitySubProvider as string | undefined;
         
-        const serviceCredentialsResponse: ServiceResponse<InternalCredentials> = await getInternalAuthHeaders(req);
-
-        if (!serviceCredentialsResponse.success) {
-            console.error('Error getting service credentials or data missing:', serviceCredentialsResponse.error);
-            res.status(401).json({ success: false, error: 'Authentication failed or user data missing.' });
-            return;
-        }
-        const { platformUserId, platformOrganizationId, clientUserId, clientOrganizationId } = serviceCredentialsResponse.data;
+        const { platformUserId, platformOrganizationId, clientUserId, clientOrganizationId } = (req as AuthenticatedRequest);
 
         if (!userType || !secretTypeParam || !secretUtilityProvider) {
             const errorResponse: ErrorResponse = { success: false, error: 'Missing required query parameters: userType, secretTypeParam (in path), secretUtilityProvider.' };
@@ -176,14 +162,7 @@ export async function checkSecretExistsHandler(req: Request, res: Response, next
         const secretUtilityProvider: UtilityProvider = req.query.secretUtilityProvider as UtilityProvider;
         const secretUtilitySubProvider: string | undefined = req.query.secretUtilitySubProvider as string | undefined;
 
-        const serviceCredentialsResponse: ServiceResponse<InternalCredentials> = await getInternalAuthHeaders(req);
-
-        if (!serviceCredentialsResponse.success) {
-            console.error('Error getting service credentials or data missing:', serviceCredentialsResponse.error);
-            res.status(401).json({ success: false, error: 'Authentication failed or user data missing.' });
-            return;
-        }
-        const { platformUserId, platformOrganizationId, clientUserId, clientOrganizationId } = serviceCredentialsResponse.data;
+        const { platformUserId, platformOrganizationId, clientUserId, clientOrganizationId } = (req as AuthenticatedRequest);
 
         if (!userType || !secretTypeParam || !secretUtilityProvider) {
             const errorResponse: ErrorResponse = { success: false, error: 'Missing required query parameters: userType, secretTypeParam (in path), secretUtilityProvider.' };
