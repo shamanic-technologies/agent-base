@@ -9,7 +9,7 @@ import { ErrorResponse } from '@agent-base/types';
 
 // Define a custom request type that includes the credentials
 export interface AuthenticatedRequest extends Request {
-    platformApiKey: string;
+    platformApiKey: string | undefined;
     platformUserId: string | undefined;
     platformOrganizationId: string | undefined;
     clientUserId: string | undefined;
@@ -29,7 +29,7 @@ const HEADER_AGENT_ID = 'x-agent-id'; // Optional
  * Express middleware to extract and validate InternalCredentials.
  */
 export const authMiddleware = (req: Request, res: Response, next: NextFunction): void => {
-  const platformApiKey = req.headers[HEADER_PLATFORM_API_KEY] as string;
+  const platformApiKey = req.headers[HEADER_PLATFORM_API_KEY] as string | undefined;
   const platformUserId = req.headers[HEADER_PLATFORM_USER_ID] as string | undefined;
   const platformOrganizationId = req.headers[HEADER_PLATFORM_ORGANIZATION_ID] as string | undefined;
   const clientUserId = req.headers[HEADER_CLIENT_USER_ID] as string | undefined;
