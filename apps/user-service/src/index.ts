@@ -32,18 +32,16 @@ app.use(express.json() as express.RequestHandler);
 
 // Public routes (no authentication required)
 app.use('/health', healthRoutes);
-
-// Session and Passport initialization are removed as they are no longer used.
+app.use('/auth-user', authUserRoutes);
 
 // All routes after this will be protected by the auth middleware
 app.use(authMiddleware);
 
 // Register user routes
 // All user-related routes will be prefixed with /users (or whatever you prefer)
-app.use('/auth-user', authUserRoutes);
 app.use('/organizations', clientOrganizationRoutes);
 
 // Start the server
 app.listen(PORT, () => {
   console.log(`🚀 User Service running on port ${PORT}`);
-}); 
+});

@@ -68,7 +68,7 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
     } else {
       console.error(`[Auth Middleware] Failed to validate platformUserId '${platformAuthUserId}': ${validationResponse.error}`);
       // Send a 401 Unauthorized or 403 Forbidden, as the platform ID is invalid/not found
-      res.status(401).json({ success: false, error: validationResponse.error || "Invalid or unknown platform user ID." });
+      res.status(401).json(validationResponse);
       return; // Stop processing
     }
   } catch (error: any) {

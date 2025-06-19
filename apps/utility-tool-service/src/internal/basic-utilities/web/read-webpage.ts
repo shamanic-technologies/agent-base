@@ -88,17 +88,13 @@ const readWebPage: InternalUtilityTool = {
       if (!url.match(/^https?:\/\/.+/)) {
         return { success: false, error: "Invalid URL format. URL must start with http:// or https://" } as ErrorResponse;
       }
-      
-      console.log(`${logPrefix} Extracting content from: "${url}" (onlyMainContent: ${onlyMainContent}, fromLine: ${fromLine}, toLine: ${toLine})`);
-      
+            
       const apiKey = process.env.FIRECRAWL_API_KEY;
       if (!apiKey) {
         console.error(`${logPrefix} FIRECRAWL_API_KEY not set`);
         return { success: false, error: "Service configuration error: FIRECRAWL_API_KEY is not set." } as ErrorResponse;
       }
-      
-      console.log('Firecrawl apiKey length:', apiKey.length); // Log length instead of key
-      
+            
       const response = await fetch("https://api.firecrawl.dev/v1/scrape", {
         method: "POST",
         headers: {
@@ -157,11 +153,9 @@ const readWebPage: InternalUtilityTool = {
         
         if (startIdx < endExclusiveIdx) {
           markdownContent = lines.slice(startIdx, endExclusiveIdx).join('\n');
-          console.log(`${logPrefix} Markdown sliced. Params: fromLine=${params?.fromLine}(used ${fromLine}), toLine=${params?.toLine}(used ${toLine}). Effective 0-indexed slice: [${startIdx}-${endExclusiveIdx-1}]. Orig: ${totalLines}, New: ${markdownContent.split('\n').length}`);
         } else {
           // This case covers when the range is invalid (e.g., start >= end after clamping) or content was empty.
           markdownContent = ""; 
-          console.log(`${logPrefix} Range results in empty selection or original content was empty. Params: fromLine=${params?.fromLine}(used ${fromLine}), toLine=${params?.toLine}(used ${toLine}). Effective 0-indexed slice: [${startIdx}-${endExclusiveIdx-1}]. Orig: ${totalLines}`);
         }
       } else {
         // markdownContent was initially null or empty, remains empty string.

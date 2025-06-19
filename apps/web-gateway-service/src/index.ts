@@ -47,10 +47,6 @@ const PORT = process.env.PORT;
 // Service URLs with non-null assertion to handle TypeScript
 const KEY_SERVICE_URL = process.env.KEY_SERVICE_URL!;
 const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL!;
-// const LOGGING_SERVICE_URL = process.env.LOGGING_SERVICE_URL!;
-// const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL!;
-// API key for gateway access
-// const WEB_GATEWAY_API_KEY = process.env.WEB_GATEWAY_API_KEY!; // Removed as it's handled in middleware
 
 // Middleware
 app.use(cors({
