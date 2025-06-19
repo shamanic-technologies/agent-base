@@ -268,7 +268,10 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
 
         // Pipe the stream to the response. Any error thrown here will be caught
         // by the main .catch(next) block.
-        await result.pipeDataStreamToResponse(res, { data: streamData });
+        await result.pipeDataStreamToResponse(res, { 
+            data: streamData,
+            sendReasoning: true,
+        });
 
     })().catch(next);
 });
