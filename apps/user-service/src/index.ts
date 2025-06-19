@@ -11,6 +11,7 @@ import cookieParser from 'cookie-parser';
 import { config, logConfig } from './config/env';
 import authUserRoutes from './routes/auth-user.routes';
 import clientOrganizationRoutes from './routes/client-organization.routes';
+import healthRoutes from './routes/health.routes';
 import { authMiddleware } from './middleware/authMiddleware';
 
 // Initialize Express app
@@ -29,6 +30,9 @@ app.use(cors({
 app.use(cookieParser() as express.RequestHandler);
 app.use(express.json() as express.RequestHandler);
 
+// Public routes (no authentication required)
+app.use('/health', healthRoutes);
+
 // Session and Passport initialization are removed as they are no longer used.
 
 // All routes after this will be protected by the auth middleware
@@ -38,11 +42,6 @@ app.use(authMiddleware);
 // All user-related routes will be prefixed with /users (or whatever you prefer)
 app.use('/auth-user', authUserRoutes);
 app.use('/organizations', clientOrganizationRoutes);
-
-// Health check endpoint (optional, but good practice)
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'UP', service: 'User Service' });
-});
 
 // Start the server
 app.listen(PORT, () => {
