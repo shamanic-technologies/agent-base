@@ -91,10 +91,14 @@ export async function logApiToolExecution(tool: ApiTool, params: any, result: an
   if (!dbUrl) {
     throw new Error('NEON_DATABASE_URL is not set in the environment variables.');
   }
-  const toolId = tool.openapiSpecification.info.title + '_' + tool.openapiSpecification.info.version;
-  const tableName = `tool_${toolId}`;
+
+  const title = tool.openapiSpecification.info.title.toLowerCase().replace(/\s/g, '_');
+  const version = tool.openapiSpecification.info.version.toLowerCase().replace(/\s/g, '_');
+  const tableName = `tool_${title}_${version}`;
+  
   if (!isValidIdentifier(tableName)) {
-    throw new Error(`Invalid tool ID for table name: ${tool.id}`);
+    // Fallback for safety, though the above construction should be safe
+    throw new Error(`Invalid constructed table name: ${tableName}`);
   }
   
   // Extract schema from OpenAPI spec
