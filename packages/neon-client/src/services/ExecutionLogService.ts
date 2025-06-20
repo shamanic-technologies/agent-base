@@ -91,8 +91,8 @@ export async function logApiToolExecution(tool: ApiTool, params: any, result: an
   if (!dbUrl) {
     throw new Error('NEON_DATABASE_URL is not set in the environment variables.');
   }
-
-  const tableName = `tool_${tool.id}`;
+  const toolId = tool.openapiSpecification.info.title + '_' + tool.openapiSpecification.info.version;
+  const tableName = `tool_${toolId}`;
   if (!isValidIdentifier(tableName)) {
     throw new Error(`Invalid tool ID for table name: ${tool.id}`);
   }
