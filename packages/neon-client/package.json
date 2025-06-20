@@ -1,6 +1,6 @@
 {
   "name": "@agent-base/neon-client",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A client for interacting with Neon databases, including utility functions for project and table management.",
   "publishConfig": {
     "access": "public"
