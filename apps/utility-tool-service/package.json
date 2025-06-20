@@ -5,7 +5,7 @@
   "type": "module",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "nodemon --exec tsx src/server.ts",
+    "dev": "nodemon --exec \"tsx -r dotenv/config src/server.ts\"",
     "dev:no-watch": "tsx src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
@@ -15,8 +15,9 @@
   },
   "dependencies": {
     "@agent-base/api-client": "workspace:*",
+    "@agent-base/neon-client": "workspace:*",
     "@agent-base/types": "workspace:*",
-    "@agent-base/xata-client": "workspace:*",
+    "@neondatabase/serverless": "^1.0.1",
     "@xata.io/client": "^0.30.1",
     "axios": "^1.9.0",
     "cors": "^2.8.5",
@@ -25,6 +26,7 @@
     "express": "^5.1.0",
     "lucide-react": "^0.510.0",
     "node-fetch": "^3.3.2",
+    "postgres": "^3.4.4",
     "stripe": "^18.1.0",
     "uuid": "^11.1.0",
     "zod": "^3.24.4"

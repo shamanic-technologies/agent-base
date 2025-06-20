@@ -1,5 +1,5 @@
 {
-  "name": "@agent-base/xata-client",
+  "name": "@agent-base/neon-client",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -13,15 +13,16 @@
   },
   "dependencies": {
     "@xata.io/client": "^0.30.1",
+    "dotenv": "^16.5.0",
     "node-fetch": "^3.3.2",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
     "@kit/eslint-config": "workspace:*",
     "@kit/tsconfig": "workspace:*",
-    "@types/node": "^20.11.24",
+    "@types/node": "^22.15.29",
     "@types/uuid": "^9.0.8",
     "eslint": "^8.57.0",
     "typescript": "^5.3.3"
   }
-} 
+}

@@ -16,7 +16,7 @@
   "include": ["src/**/*.ts", "src/**/*.js"],
   "exclude": ["node_modules", "dist"],
   "references": [
-    { "path": "../../packages/xata-client" },
+    { "path": "../../packages/neon-client" },
     { "path": "../../packages/types" }
   ]
 } 

@@ -1,11 +1,13 @@
-console.log('🔵 [UTILITY SERVICE] Script starting...');
-
 /**
  * Utility Tool Service API Server
  * 
  * Express server that provides RESTful API access to utility tools
  */
-import dotenv from 'dotenv';
+import 'dotenv/config';
+
+console.log('🔵 [UTILITY SERVICE] Script starting...');
+console.debug(`[UTILITY SERVICE] Initial NEON_API_KEY: ${process.env.NEON_API_KEY ? 'Set' : 'Not Set'}`);
+
 import path from 'path';
 import fs from 'fs';
 import express, { Request, Response, NextFunction } from 'express';
@@ -41,22 +43,6 @@ import {
 // --- Ensure internal utilities are registered (if needed by side-effect imports)
 import './index.js';
 
-// Load environment variables based on NODE_ENV
-const nodeEnv = process.env.NODE_ENV || 'development';
-
-// Only load from .env file in development
-if (nodeEnv === 'development') {
-  const envFile = path.resolve(process.cwd(), '.env');
-  if (fs.existsSync(envFile)) {
-    console.log('🔧 Loading development environment from .env');
-    dotenv.config({ path: envFile });
-  } else {
-    console.log(`Environment file ${envFile} not found, using default environment variables.`);
-  }
-} else {
-  console.log('🚀 Production environment detected, using configured environment variables.');
-}
-
 // Initialize Express
 const app: express.Express = express();
 const PORT = process.env.PORT || 3050;
@@ -84,7 +70,6 @@ app.get('/health', (req, res) => {
   console.log(`📡 [UTILITY SERVICE] Health check request received from ${req.ip}. Responding OK.`);
   res.status(200).json({
     status: 'healthy',
-    environment: nodeEnv,
   });
 });
 
@@ -267,7 +252,6 @@ console.log(`🟡 [UTILITY SERVICE] Attempting to listen on port: ${PORT}`);
 // Start the server
 app.listen(PORT, () => {
   console.log(`✅ [UTILITY SERVICE] Successfully listening on port ${PORT}`);
-  console.log(`🌐 [UTILITY SERVICE] Environment: ${nodeEnv}`);
   console.log(`📦 [UTILITY SERVICE] Available internal utilities: ${registry.getInternalUtilityIds().join(', ')}`);
 });
 
