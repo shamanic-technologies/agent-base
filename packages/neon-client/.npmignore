@@ -1,0 +1,7 @@
+# Ignore development files
+src/
+tsconfig.json
+.DS_Store
+
+# Ignore node_modules
+node_modules 
