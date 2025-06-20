@@ -10,7 +10,7 @@ import { InternalUtilityTool,
   ServiceResponse,
   ExecuteToolResult
 } from '@agent-base/types';
-import { logExecution } from '@agent-base/neon-client';
+import { logInternalToolExecution } from '@agent-base/neon-client';
 
 /**
  * Registry class for managing utility tools
@@ -121,7 +121,7 @@ class InternalUtilityRegistry {
       // Log the execution without blocking the response
       if (executeToolResult.success) {
         try {
-          await logExecution(utility, params, executeToolResult.data);
+          await logInternalToolExecution(utility, params, executeToolResult.data);
           console.debug(`[Registry] Successfully logged execution for ${utilityId}`);
         } catch (logError) {
           console.error(`[Registry] FAILED to log execution for ${utilityId}:`, logError);

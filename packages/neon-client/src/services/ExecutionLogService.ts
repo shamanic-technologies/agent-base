@@ -1,5 +1,5 @@
 import { Pool } from '@neondatabase/serverless';
-import { InternalUtilityTool } from '@agent-base/types';
+import { InternalUtilityTool, ApiTool } from '@agent-base/types';
 
 // A mapping from JSON schema types to PostgreSQL types.
 const typeMapping: Record<string, string> = {
@@ -50,7 +50,7 @@ async function createLogTable(pool: Pool, tableName: string, schema: any): Promi
   await pool.query(finalQuery);
 }
 
-export async function logExecution(tool: InternalUtilityTool, params: any, result: any): Promise<void> {
+export async function logInternalToolExecution(tool: InternalUtilityTool, params: any, result: any): Promise<void> {
   const dbUrl = process.env.NEON_DATABASE_URL;
   if (!dbUrl) {
     throw new Error('NEON_DATABASE_URL is not set in the environment variables.');
@@ -70,6 +70,77 @@ export async function logExecution(tool: InternalUtilityTool, params: any, resul
     }
 
     const paramKeys = tool.schema.properties ? Object.keys(tool.schema.properties) : [];
+    const columns = ['execution_result', ...paramKeys].filter(isValidIdentifier);
+    const values = [JSON.stringify(result), ...paramKeys.map(key => params[key])];
+    const valuePlaceholders = values.map((_, i) => `$${i + 1}`).join(', ');
+
+    const insertQuery = `INSERT INTO "${tableName}" (${columns.map(c => `"${c}"`).join(', ')}) VALUES (${valuePlaceholders})`;
+
+    await pool.query({
+      text: insertQuery,
+      values: values
+    });
+
+  } finally {
+    await pool.end();
+  }
+}
+
+export async function logApiToolExecution(tool: ApiTool, params: any, result: any): Promise<void> {
+  const dbUrl = process.env.NEON_DATABASE_URL;
+  if (!dbUrl) {
+    throw new Error('NEON_DATABASE_URL is not set in the environment variables.');
+  }
+
+  const tableName = `tool_${tool.id}`;
+  if (!isValidIdentifier(tableName)) {
+    throw new Error(`Invalid tool ID for table name: ${tool.id}`);
+  }
+  
+  // Extract schema from OpenAPI spec
+  const path = Object.keys(tool.openapiSpecification.paths)[0];
+  if (!path) {
+    console.error(`[ExecutionLogService] No path found in OpenAPI spec for tool ${tool.id}`);
+    return;
+  }
+  const pathItem = tool.openapiSpecification.paths[path];
+  if (!pathItem) {
+    console.error(`[ExecutionLogService] Could not find path item for tool ${tool.id}`);
+    return;
+  }
+
+  const method = Object.keys(pathItem)[0] as 'get' | 'put' | 'post' | 'delete' | 'options' | 'head' | 'patch' | 'trace';
+  if (!method) {
+      console.error(`[ExecutionLogService] Could not determine method to log execution for ${tool.id}`);
+      return;
+  }
+  
+  const operation = pathItem[method];
+  if (!operation) {
+    console.error(`[ExecutionLogService] Could not find operation for path ${path} and method ${method}`);
+    return;
+  }
+
+  const schema = operation.parameters || {};
+
+  const pool = new Pool({ connectionString: dbUrl });
+
+  try {
+    const exists = await tableExists(pool, tableName);
+    if (!exists) {
+      // Create a simplified schema for logging purposes.
+      const logSchema: { properties: Record<string, { type: string }> } = { properties: {} };
+      if(Array.isArray(schema)) {
+        schema.forEach(p => {
+          if ('name' in p && 'schema' in p && p.schema && 'type' in p.schema) {
+            logSchema.properties[p.name] = { type: p.schema.type as string };
+          }
+        });
+      }
+      await createLogTable(pool, tableName, logSchema);
+    }
+
+    const paramKeys = Array.isArray(schema) ? schema.map(p => 'name' in p ? p.name : '').filter(name => name) : [];
     const columns = ['execution_result', ...paramKeys].filter(isValidIdentifier);
     const values = [JSON.stringify(result), ...paramKeys.map(key => params[key])];
     const valuePlaceholders = values.map((_, i) => `$${i + 1}`).join(', ');
