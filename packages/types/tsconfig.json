@@ -1,15 +1,22 @@
 {
+  "extends": "../../tooling/typescript/base.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "declaration": true,
-    "declarationMap": true,
+    "rootDir": "./src",
     "noEmit": false,
-    "target": "ES2020",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "esModuleInterop": true,
     "strict": true,
-    "skipLibCheck": true
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "lib": ["ESNext"],
+    "target": "ES2022",
+    "composite": true
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 } 

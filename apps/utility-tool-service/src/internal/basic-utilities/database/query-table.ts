@@ -1,8 +1,8 @@
 /**
  * Query Table Utility
  * 
- * Executes SQL-like queries on database tables and returns results.
- * Supports basic SELECT, INSERT, UPDATE, and DELETE operations.
+ * Executes queries on database tables and returns results.
+ * This version uses the Xata SDK and does not parse SQL.
  */
 import { 
   InternalUtilityTool, 
@@ -11,77 +11,23 @@ import {
   ExecuteToolResult
 } from '@agent-base/types';
 import { registry } from '../../../registry/registry.js';
-import {
-  findXataWorkspace,
-  // getXataClient // Not used here, direct fetch calls are made
-} from '../../clients/xata-client.js';
-import { parseSQL } from './sql-parser.js'; // Import with .js extension (correct for NodeNext/ESM)
+import { getOrCreateClientForUser } from '@agent-base/xata-client';
 
 // --- Local Type Definitions ---
-// Keep request simple, validation via Zod
 export interface QueryTableRequest {
   table: string;
-  query: string;
-  params?: Record<string, any>;
+  operation: 'select' | 'insert' | 'update' | 'delete';
+  payload: Record<string, any>;
 }
-
-// Define Success Response structures for different query types
-interface QuerySelectSuccessResponse {
-  status: 'success';
-  data: {
-    message: string;
-    query_type: 'SELECT';
-    rows: Record<string, any>[];
-    count: number;
-  }
-}
-
-interface QueryInsertSuccessResponse {
-  status: 'success';
-  data: {
-    message: string;
-    query_type: 'INSERT';
-    affected_rows: number;
-    inserted_id?: string; // Xata returns the ID of the inserted record
-  }
-}
-
-interface QueryUpdateSuccessResponse {
-  status: 'success';
-  data: {
-    message: string;
-    query_type: 'UPDATE';
-    affected_rows: number; // Might be 0 or 1 for single record update
-  }
-}
-
-interface QueryDeleteSuccessResponse {
-  status: 'success';
-  data: {
-    message: string;
-    query_type: 'DELETE';
-    affected_rows: number; // Might be 0 or 1 for single record delete
-  }
-}
-
-// Union type for all possible success responses
-type QueryTableSuccessResponse_Local = 
-  | QuerySelectSuccessResponse 
-  | QueryInsertSuccessResponse 
-  | QueryUpdateSuccessResponse 
-  | QueryDeleteSuccessResponse;
-
-// Type union for the utility's overall response
-// type QueryTableResponse = QueryTableSuccessResponse | ErrorResponse; // Old type
 
 // --- End Local Definitions ---
 
 /**
- * Implementation of the Query Table utility
+ * Implementation of the Query Table utility using the Xata SDK
  */
 const queryTableUtility: InternalUtilityTool = {
   id: 'utility_query_table',
-  description: 'Execute SQL-like queries (SELECT, INSERT, UPDATE, DELETE) on a specific database table and return results.',
+  description: 'Perform operations (select, insert, update, delete) on a database table.',
   schema: {
     type: 'object',
     properties: {
@@ -91,259 +37,89 @@ const queryTableUtility: InternalUtilityTool = {
         minLength: 1,
         examples: ['users', 'orders']
       },
-      query: { 
+      operation: {
         type: 'string',
-        description: 'The SQL-like query (SELECT, INSERT, UPDATE, DELETE). Use :param syntax for parameters.',
-        minLength: 1,
-        examples: [
-          'SELECT id, name WHERE email = :email',
-          'INSERT INTO products (name, price) VALUES (:name, :price)',
-          'UPDATE users SET name = :newName WHERE id = :userId',
-          'DELETE FROM logs WHERE timestamp < :cutoff'
-        ]
+        enum: ['select', 'insert', 'update', 'delete'],
+        description: 'The database operation to perform.',
+        examples: ['select', 'insert']
       },
-      params: { 
+      payload: {
         type: 'object',
-        description: 'Optional key-value pairs for parameters used in the query (e.g., { email: \'test@example.com\' }).',
-        additionalProperties: true,
-        examples: [{
-          "email": "jane.doe@example.com",
-          "category": "electronics",
-          "userId": "user_123",
-          "newName": "Jane Smith"
-        }]
+        description: 'The data or query for the operation. Structure depends on the operation.',
+        examples: [
+          {
+            "filter": { "email": "test@example.com" },
+            "columns": ["name", "email"],
+            "page": { "size": 10 }
+          },
+          { "name": "New Product", "price": 99.99 },
+          { "id": "rec_123", "data": { "price": 109.99 } },
+          { "id": "rec_456" }
+        ]
       }
     },
-    required: ['table', 'query']
+    required: ['table', 'operation', 'payload']
   },
   
   execute: async (clientUserId: string, clientOrganizationId: string, platformUserId: string, platformApiKey: string, conversationId: string, params: QueryTableRequest): Promise<ServiceResponse<ExecuteToolResult>> => {
     const logPrefix = '📊 [DB_QUERY_TABLE]';
     try {
-      // Use raw params - validation primarily via Zod schema on the caller side
-      const { table, query, params: queryParams = {} } = params || {};
+      const { table, operation, payload } = params || {};
       
-      // Basic validation
-      if (!table || typeof table !== 'string') {
-        return { success: false, error: "Table name is required and must be a string" } as ErrorResponse;
+      if (!table || !operation || !payload) {
+        return { success: false, error: "Missing required parameters: table, operation, and payload." };
       }
       
-      if (!query || typeof query !== 'string') {
-        return { success: false, error: "Query is required and must be a string" } as ErrorResponse;
-      }
+      console.log(`${logPrefix} Executing operation "${operation}" on table "${table}"`);
       
-      console.log(`${logPrefix} Executing query on table "${table}": ${query}`);
-      if (queryParams) {
-        console.log(`${logPrefix} With parameters:`, queryParams);
-      }
+      const { client: xata } = await getOrCreateClientForUser(clientUserId, clientOrganizationId);
+      const tableClient = xata.db[table];
       
-      // Get workspace
-      const workspaceSlug = process.env.XATA_WORKSPACE_SLUG;
-      if (!workspaceSlug) {
-        return { success: false, error: 'Service configuration error: XATA_WORKSPACE_SLUG not set' } as ErrorResponse;
-      }
-      
-      // Find the workspace
-      const workspace = await findXataWorkspace(workspaceSlug);
-      if (!workspace) {
-        return { success: false, error: `Configuration error: Workspace '${workspaceSlug}' not found` } as ErrorResponse;
-      }
-      
-      // Use the database name from environment variables
-      const databaseName = process.env.XATA_DATABASE;
-      if (!databaseName) {
-        return { success: false, error: 'Service configuration error: XATA_DATABASE not set' } as ErrorResponse;
-      }
-      
-      // Configure Xata API access
-      const region = 'us-east-1'; // TODO: Make configurable?
-      const branch = 'main'; // TODO: Make configurable?
-      const workspaceUrl = `https://${workspace.slug}-${workspace.unique_id}.${region}.xata.sh`;
-      const authHeader = `Bearer ${process.env.XATA_API_KEY}`;
-      
-      // Using a hypothetical robust parser
-      const parsedQuery = parseSQL(query, queryParams); 
-      
-      // Check parse result
-      if (!parsedQuery.success) {
-         return { success: false, error: 'Failed to parse SQL query', details: parsedQuery.error } as ErrorResponse;
+      if (!tableClient) {
+        throw new Error(`Table '${table}' not found in the database.`);
       }
 
-      const { type, columns, values, filters, recordId } = parsedQuery; 
-      
-      // --- Handle SELECT Query --- 
-      if (type === 'SELECT') {
-        console.log(`${logPrefix} Executing SELECT with filters:`, filters);
-        // Execute the query using Xata API
-        const xataPayload: Record<string, any> = {};
-        if (filters && Object.keys(filters).length > 0) {
-          xataPayload.filter = filters;
-        }
-        if (columns && columns.length > 0 && !columns.includes('*')) {
-          xataPayload.columns = columns;
-        }
-        // TODO: Add support for LIMIT, OFFSET, SORT from parsed query
-        
-        const queryResponse = await fetch(
-          `${workspaceUrl}/db/${databaseName}:${branch}/tables/${table}/query`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': authHeader
-            },
-            body: JSON.stringify(xataPayload)
+      let result: any;
+
+      switch (operation) {
+        case 'select':
+          // Payload for select can contain filter, columns, page, etc.
+          const page = await tableClient.filter(payload.filter || {}).select(payload.columns).getPaginated(payload.page);
+          result = page.records;
+          break;
+
+        case 'insert':
+          // Payload for insert is the record data
+          result = await tableClient.create(payload);
+          break;
+
+        case 'update':
+          // Payload for update requires an ID and the data to update
+          if (!payload.id) {
+            return { success: false, error: "Update operation requires an 'id' in the payload." };
           }
-        );
-        
-        if (!queryResponse.ok) {
-          const errorText = await queryResponse.text();
-          console.error(`${logPrefix} API Error (SELECT): ${queryResponse.status}`, errorText);
-          return { success: false, error: 'Failed to execute SELECT query', details: `Status ${queryResponse.status}: ${errorText}` } as ErrorResponse;
-        }
-        
-        const queryResult = await queryResponse.json();
-        const rows = queryResult.records || [];
-        
-        const toolSpecificSuccessData: QuerySelectSuccessResponse = {
-          status: "success",
-          data: {
-            message: "SELECT query executed successfully",
-            query_type: "SELECT",
-            rows: rows,
-            count: rows.length
+          result = await tableClient.update(payload.id, payload.data);
+          break;
+
+        case 'delete':
+          // Payload for delete requires an ID
+          if (!payload.id) {
+            return { success: false, error: "Delete operation requires an 'id' in the payload." };
           }
-        };
-        return { success: true, data: toolSpecificSuccessData };
+          result = await tableClient.delete(payload.id);
+          break;
 
-      // --- Handle INSERT Query ---
-      } else if (type === 'INSERT') {
-        if (!values || Object.keys(values).length === 0) {
-           return { success: false, error: 'No values provided or parsed for INSERT query.' } as ErrorResponse;
-        }
-        console.log(`${logPrefix} Executing INSERT with values:`, values);
-        
-        // Execute the insert using Xata API
-        const insertResponse = await fetch(
-          `${workspaceUrl}/db/${databaseName}:${branch}/tables/${table}/data`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': authHeader
-            },
-            body: JSON.stringify(values)
-          }
-        );
-        
-        if (!insertResponse.ok) {
-          const errorText = await insertResponse.text();
-          console.error(`${logPrefix} API Error (INSERT): ${insertResponse.status}`, errorText);
-          return { success: false, error: 'Failed to execute INSERT query', details: `Status ${insertResponse.status}: ${errorText}` } as ErrorResponse;
-        }
-        
-        const insertResult = await insertResponse.json();
-        
-        const toolSpecificSuccessData_Insert: QueryInsertSuccessResponse = {
-          status: "success",
-          data: {
-            message: "INSERT query executed successfully",
-            query_type: "INSERT",
-            affected_rows: 1, 
-            inserted_id: insertResult.id
-          }
-        };
-        return { success: true, data: toolSpecificSuccessData_Insert };
-
-      // --- Handle UPDATE Query (Requires Record ID) ---
-      } else if (type === 'UPDATE') {
-         if (!recordId) {
-            return { success: false, error: 'UPDATE query requires a record ID in the WHERE clause (e.g., WHERE id = :id)' } as ErrorResponse;
-         }
-         if (!values || Object.keys(values).length === 0) {
-            return { success: false, error: 'No values provided for UPDATE query.' } as ErrorResponse;
-         }
-         console.log(`${logPrefix} Executing UPDATE for record '${recordId}' with values:`, values);
-
-         const updateResponse = await fetch(
-           `${workspaceUrl}/db/${databaseName}:${branch}/tables/${table}/data/${recordId}`,
-           {
-             method: 'PATCH', // Use PATCH for partial updates
-             headers: {
-               'Content-Type': 'application/json',
-               'Authorization': authHeader
-             },
-             body: JSON.stringify(values)
-           }
-         );
-
-         if (!updateResponse.ok) {
-            const errorText = await updateResponse.text();
-            console.error(`${logPrefix} API Error (UPDATE): ${updateResponse.status}`, errorText);
-            // Handle 404 specifically
-            if (updateResponse.status === 404) {
-               return { success: false, error: `Record with ID '${recordId}' not found for UPDATE.` } as ErrorResponse;
-            }
-            return { success: false, error: 'Failed to execute UPDATE query', details: `Status ${updateResponse.status}: ${errorText}` } as ErrorResponse;
-         }
-
-         const toolSpecificSuccessData_Update: QueryUpdateSuccessResponse = {
-           status: "success",
-           data: {
-             message: "UPDATE query executed successfully",
-             query_type: "UPDATE",
-             affected_rows: 1 
-           }
-         };
-         return { success: true, data: toolSpecificSuccessData_Update };
-
-      // --- Handle DELETE Query (Requires Record ID) ---
-      } else if (type === 'DELETE') {
-         if (!recordId) {
-            return { success: false, error: 'DELETE query requires a record ID in the WHERE clause (e.g., WHERE id = :id)' } as ErrorResponse;
-         }
-         console.log(`${logPrefix} Executing DELETE for record '${recordId}'`);
-
-         const deleteResponse = await fetch(
-           `${workspaceUrl}/db/${databaseName}:${branch}/tables/${table}/data/${recordId}`,
-           {
-             method: 'DELETE',
-             headers: {
-               'Authorization': authHeader
-             }
-           }
-         );
-
-         if (!deleteResponse.ok) {
-            const errorText = await deleteResponse.text();
-            console.error(`${logPrefix} API Error (DELETE): ${deleteResponse.status}`, errorText);
-             // Handle 404 specifically
-            if (deleteResponse.status === 404) {
-               return { success: false, error: `Record with ID '${recordId}' not found for DELETE.` } as ErrorResponse;
-            }
-            return { success: false, error: 'Failed to execute DELETE query', details: `Status ${deleteResponse.status}: ${errorText}` } as ErrorResponse;
-         }
-
-         const toolSpecificSuccessData_Delete: QueryDeleteSuccessResponse = {
-           status: "success",
-           data: {
-             message: "DELETE query executed successfully",
-             query_type: "DELETE",
-             affected_rows: 1 
-           }
-         };
-         return { success: true, data: toolSpecificSuccessData_Delete };
-
-      } else {
-        // Should not happen if parser is exhaustive
-        return { success: false, error: 'Unsupported or unparsed query type.', details: `Parsed type: ${type}` } as ErrorResponse;
+        default:
+          return { success: false, error: `Unsupported operation: ${operation}` };
       }
+
+      return { success: true, data: result };
 
     } catch (error: any) {
       console.error(`${logPrefix} Error executing query:`, error);
       const errorResponse: ErrorResponse = {
         success: false,
-        error: "Failed to execute query",
+        error: "Failed to execute database operation",
         details: error.message || String(error)
       };
       return errorResponse;

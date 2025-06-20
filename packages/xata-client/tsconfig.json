@@ -1,22 +1,22 @@
 {
   "extends": "../../tooling/typescript/base.json",
   "compilerOptions": {
-    "outDir": "dist",
+    "outDir": "./dist",
+    "rootDir": "./src",
     "noEmit": false,
-    "strict": true,
-    "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
+    "strict": true,
     "esModuleInterop": true,
-    "resolveJsonModule": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "lib": ["ESNext"],
+    "target": "ES2022",
     "composite": true
   },
-  "include": ["src/**/*.ts", "src/**/*.js"],
-  "exclude": ["node_modules", "dist"],
-  "references": [
-    { "path": "../../packages/xata-client" },
-    { "path": "../../packages/types" }
-  ]
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
 } 
