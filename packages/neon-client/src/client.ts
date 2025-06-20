@@ -1,6 +1,12 @@
 import fetch from 'node-fetch';
 import { createHash } from 'crypto';
 import type { NeonProject, ConnectionURI } from './types.js';
+import { neon, neonConfig, Pool } from '@neondatabase/serverless';
+import postgres from 'postgres';
+import ws from 'ws';
+
+// Configure WebSocket for the Neon driver
+neonConfig.webSocketConstructor = ws;
 
 const NEON_API_BASE = 'https://console.neon.tech/api/v2';
 const projectCache = new Map<string, NeonProject>();
@@ -154,4 +160,116 @@ export async function getOrCreateDbConnection(clientUserId: string, clientOrgani
 
     const connectionString = await getConnectionString(project.id);
     return connectionString;
+}
+
+const supportedTypes: Record<string, string> = {
+  'string': 'VARCHAR(255)',
+  'text': 'TEXT',
+  'email': 'VARCHAR(255)',
+  'int': 'INTEGER',
+  'float': 'REAL',
+  'bool': 'BOOLEAN',
+  'datetime': 'TIMESTAMP WITH TIME ZONE'
+};
+
+const isValidIdentifier = (name: string) => /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name);
+
+/**
+ * Creates a new table in the database.
+ * @param tableName The name of the table to create.
+ * @param schema The schema of the table.
+ */
+export async function createTable(tableName: string, schema: Record<string, string>): Promise<void> {
+  const dbUrl = process.env.NEON_DATABASE_URL;
+  if (!dbUrl) {
+    throw new Error('NEON_DATABASE_URL is not set in the environment variables.');
+  }
+
+  if (!isValidIdentifier(tableName)) {
+    throw new Error(`Invalid table name: ${tableName}`);
+  }
+
+  const pool = new Pool({ connectionString: dbUrl });
+  
+  try {
+    const columnDefinitions = Object.entries(schema).map(([name, type]) => {
+      if (!isValidIdentifier(name)) {
+        throw new Error(`Invalid column name: ${name}`);
+      }
+      const pgType = supportedTypes[type.toLowerCase()];
+      if (!pgType) {
+        throw new Error(`Unsupported column type: ${type}`);
+      }
+      return `"${name}" ${pgType}`;
+    });
+
+    const finalQuery = `CREATE TABLE "${tableName}" (${columnDefinitions.join(', ')})`;
+    
+    await pool.query(finalQuery);
+  } finally {
+    await pool.end();
+  }
+}
+
+/**
+ * Gets a table's schema and data.
+ * @param tableName The name of the table to retrieve.
+ * @param limit The maximum number of rows to return.
+ * @returns The table schema and data.
+ */
+export async function getTable(tableName: string, limit: number = 10): Promise<{ columns: { name: string; type: string; }[], rows: Record<string, any>[] }> {
+  const dbUrl = process.env.NEON_DATABASE_URL;
+  if (!dbUrl) {
+    throw new Error('NEON_DATABASE_URL is not set in the environment variables.');
+  }
+
+  if (!isValidIdentifier(tableName)) {
+    throw new Error(`Invalid table name: ${tableName}`);
+  }
+
+  const pool = new Pool({ connectionString: dbUrl });
+
+  try {
+    const columnsResult = await pool.query({
+      text: `
+        SELECT column_name, data_type 
+        FROM information_schema.columns
+        WHERE table_name = $1;
+      `,
+      values: [tableName]
+    });
+
+    const rowsResult = await pool.query({
+      text: `SELECT * FROM "${tableName}" LIMIT $1;`,
+      values: [limit]
+    });
+
+    return {
+      columns: columnsResult.rows.map(c => ({ name: c.column_name, type: c.data_type })),
+      rows: rowsResult.rows
+    };
+  } finally {
+    await pool.end();
+  }
+}
+
+/**
+ * Executes a raw SQL query against the database.
+ * @param query The raw SQL query string to execute.
+ * @returns The result of the query.
+ */
+export async function executeQuery(query: string): Promise<Record<string, any>[]> {
+  const dbUrl = process.env.NEON_DATABASE_URL;
+  if (!dbUrl) {
+    throw new Error('NEON_DATABASE_URL is not set in the environment variables.');
+  }
+
+  const pool = new Pool({ connectionString: dbUrl });
+
+  try {
+    const result = await pool.query(query);
+    return result.rows;
+  } finally {
+    await pool.end();
+  }
 } 

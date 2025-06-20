@@ -12,16 +12,21 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.0.1",
     "@xata.io/client": "^0.30.1",
     "dotenv": "^16.5.0",
     "node-fetch": "^3.3.2",
-    "uuid": "^9.0.1"
+    "postgres": "^3.4.4",
+    "uuid": "^9.0.1",
+    "ws": "^8.18.2"
   },
   "devDependencies": {
     "@kit/eslint-config": "workspace:*",
     "@kit/tsconfig": "workspace:*",
     "@types/node": "^22.15.29",
+    "@types/pg": "^8.15.1",
     "@types/uuid": "^9.0.8",
+    "@types/ws": "^8.18.1",
     "eslint": "^8.57.0",
     "typescript": "^5.3.3"
   }

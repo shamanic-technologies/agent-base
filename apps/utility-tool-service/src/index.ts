@@ -8,9 +8,9 @@ import { registry } from './registry/registry.js';
 
 // Import all utilities to ensure they register themselves
 import './internal/basic-utilities/database/get-database.js';
-// import './internal/basic-utilities/database/create-table.js';
-// import './internal/basic-utilities/database/get-table.js';
-// import './internal/basic-utilities/database/query-table.js';
+import './internal/basic-utilities/database/create-table.js';
+import './internal/basic-utilities/database/query-database.js';
+import './internal/basic-utilities/database/get-table.js';
 // import './internal/basic-utilities/database/alter-table.js';
 // import './internal/basic-utilities/database/delete-table.js';
 
