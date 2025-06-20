@@ -40,3 +40,6 @@ export * from './types/oauth.js';
 
 // Export credit types
 export * from './types/credit.js';
+
+// Export dashboard-related types
+export * from './types/dashboard.js';

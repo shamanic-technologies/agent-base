@@ -14,6 +14,7 @@ export const CONVERSATIONS_TABLE = 'conversations';
 export const CLIENT_USER_OAUTH_TABLE = 'client_user_oauth';
 export const PLATFORM_USER_API_KEY_TABLE = 'platform_user_api_keys';
 export const CLIENT_USER_CLIENT_ORGANIZATION_TABLE = 'client_user_client_organization';
+export const DASHBOARDS_TABLE = 'dashboards';
 // Add other table names here as needed, for example:
 // export const WEBHOOK_TABLE = 'webhook';
 // export const AGENT_WEBHOOK_TABLE = 'agent_webhook';

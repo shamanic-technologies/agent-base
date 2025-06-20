@@ -14,6 +14,7 @@ import { configureWebhookRoutes } from './webhook.routes.js';
 import { configureApiToolRoutes } from './api-tool.routes.js';
 import { configureToolAuthRoutes } from './tool-auth.routes.js';
 import { configureUserRoutes } from './user.routes.js';
+import { configureDatabaseRoutes } from './database.routes.js';
 
 /**
  * Configure all routes for the API Gateway
@@ -34,6 +35,7 @@ export const configureRoutes = (
     apiTool: string;
     toolAuth: string;
     user: string;
+    database: string;
     // payment: string;
   },
   authMiddleware: express.RequestHandler,
@@ -86,5 +88,10 @@ export const configureRoutes = (
   const userRouter = express.Router();
   configureUserRoutes(userRouter, serviceUrls.user, authMiddleware);
   app.use('/user', userRouter);
+
+  // Database service routes
+  const databaseRouter = express.Router();
+  configureDatabaseRoutes(databaseRouter, serviceUrls.database, authMiddleware);
+  app.use('/database', databaseRouter);
 
 }; 

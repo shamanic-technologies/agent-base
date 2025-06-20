@@ -37,6 +37,7 @@ const WEBHOOK_TOOL_API_URL = process.env.WEBHOOK_TOOL_API_URL;
 const API_TOOL_API_URL = process.env.API_TOOL_API_URL; // Add API Tool Service URL
 const TOOL_AUTH_SERVICE_URL = process.env.TOOL_AUTH_SERVICE_URL;
 const USER_SERVICE_URL = process.env.USER_SERVICE_URL;
+const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL; // Add Database Service URL
 
 const requiredEnvVars = {
   PORT,
@@ -48,6 +49,7 @@ const requiredEnvVars = {
   API_TOOL_API_URL,
   TOOL_AUTH_SERVICE_URL,
   USER_SERVICE_URL,
+  DATABASE_SERVICE_URL, // Add to required list
 };
 
 for (const [key, value] of Object.entries(requiredEnvVars)) {
@@ -82,6 +84,7 @@ configureRoutes(
     apiTool: API_TOOL_API_URL!, // Add API Tool URL to the configuration
     toolAuth: TOOL_AUTH_SERVICE_URL!,
     user: USER_SERVICE_URL!,
+    database: DATABASE_SERVICE_URL!, // Pass to routes
     // payment: PAYMENT_SERVICE_URL
   },
   authMiddleware(),
@@ -107,5 +110,6 @@ const server = app.listen(PORT, () => {
   console.log(`🔗 API_TOOL_API_URL: ${API_TOOL_API_URL || 'not set'}`); // Log API Tool Service URL
   console.log(`🔗 TOOL_AUTH_SERVICE_URL: ${TOOL_AUTH_SERVICE_URL || 'not set'}`);
   console.log(`🔗 USER_SERVICE_URL: ${USER_SERVICE_URL || 'not set'}`);
+  console.log(`🔗 DATABASE_SERVICE_URL: ${DATABASE_SERVICE_URL || 'not set'}`); // Log Database Service URL
   // console.log(`🔗 PAYMENT_SERVICE_URL: ${PAYMENT_SERVICE_URL || 'not set'}`); // Log Payment Service URL
 });

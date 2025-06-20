@@ -23,6 +23,10 @@ import './internal/basic-utilities/web/read-webpage.js';
 import './internal/basic-utilities/get-current-datetime.js';
 import './internal/basic-utilities/curl-command.js';
 
+import './internal/dashboard-utilities/create-dashboard.js';
+import './internal/dashboard-utilities/list-dashboards.js';
+import './internal/dashboard-utilities/get-dashboard.js';
+
 // Import internal utility for managing external tools
 import './internal/api-utilities/create-api-tool.js';
 import './internal/api-utilities/rename-api-tool.js';
