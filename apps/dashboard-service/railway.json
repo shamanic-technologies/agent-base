@@ -2,9 +2,9 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "DOCKERFILE",
-    "dockerfilePath": "apps/utility-tool-service/Dockerfile",
+    "dockerfilePath": "apps/dashboard-service/Dockerfile",
     "watchPatterns": [
-      "apps/utility-tool-service/**",
+      "apps/dashboard-service/**",
       "packages/types/**",
       "packages/api-client/**",
       "packages/secret-client/**",
@@ -17,9 +17,10 @@
     ]
   },
   "deploy": {
-    "numReplicas": 1,
+    "startCommand": "node dist/index.js",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 10,
-    "restartPolicyType": "ON_FAILURE"
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 5
   }
 } 

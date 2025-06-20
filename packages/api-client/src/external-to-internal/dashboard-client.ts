@@ -7,7 +7,8 @@ import {
     DashboardInfo
 } from "@agent-base/types";
 
-const DATABASE_SERVICE_ROUTE_PREFIX = '/database'; // Assuming the gateway prefixes database routes
+const DATABASE_SERVICE_ROUTE_PREFIX = '/database';
+const DASHBOARD_SERVICE_ROUTE_PREFIX = '/dashboard';
 
 /**
  * Lists all dashboards for the user and organization specified in the credentials.
@@ -46,5 +47,36 @@ export const getDashboard = async (
         'GET',
         endpoint,
         credentials
+    );
+};
+
+/**
+ * Executes a raw SQL query via the dashboard-service.
+ * This is a powerful and potentially dangerous endpoint that should be used with care.
+ * @param {QueryDashboardServiceInput} data - The SQL query to execute.
+ * @param {AgentBaseCredentials} credentials - The credentials for authentication.
+ * @returns {Promise<ServiceResponse<Record<string, any>[]>>} A promise resolving to the query result.
+ */
+export const queryDashboard = async (
+    query: string,
+    credentials: AgentBaseCredentials
+): Promise<ServiceResponse<Record<string, any>[]>> => {
+    // The new dashboard-service is mounted on /dashboard at the gateway
+    const endpoint = `${DASHBOARD_SERVICE_ROUTE_PREFIX}/query`;
+
+    // The body for this request only needs the query string.
+    // The user/org context is handled by the gateway and middleware.
+    const body = {
+        query: query,
+        clientUserId: credentials.clientAuthUserId, // Pass credentials in body as expected by the service
+        clientOrganizationId: credentials.clientAuthOrganizationId
+    };
+
+    return makeAgentBaseRequest<Record<string, any>[]>(
+        getAgentBaseApiUrl(),
+        'POST',
+        endpoint,
+        credentials,
+        body
     );
 };
