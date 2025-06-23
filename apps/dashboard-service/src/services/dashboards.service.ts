@@ -13,10 +13,35 @@ import {
   dashboardLayoutSchema,
   DashboardInfo
 } from '@agent-base/types';
+import { ZodError } from 'zod';
 
 interface DashboardAuth {
   clientUserId: string;
   clientOrganizationId: string;
+}
+
+/**
+ * Formats a Zod validation error into a human-readable and AI-friendly string.
+ * @param error - The ZodError object.
+ * @returns A descriptive error message.
+ */
+function formatZodError(error: ZodError): string {
+  const issues = error.flatten().fieldErrors;
+  const errorMessages = Object.entries(issues).map(([field, messages]) => {
+    // Attempt to provide more context for common errors
+    if (field === 'children' && messages?.includes('Required')) {
+      return `A 'Grid' block is missing its required 'children' array.`;
+    }
+    if (messages && messages.length > 0) {
+      // Check for common structural mistakes
+      if (messages[0].includes("'source'")) {
+         return `A data-driven block is missing its 'source' property. All charts and tables require a 'source' property containing either a 'query' string or static 'data'.`;
+      }
+      return `Field '${field}': ${messages.join(', ')}`;
+    }
+    return `An unspecified validation error occurred.`;
+  });
+  return `Validation Error: ${errorMessages.join('; ')}`;
 }
 
 /**
@@ -35,9 +60,9 @@ export async function createDashboard(
     // Validate the incoming layout against the Zod schema
     const validationResult = dashboardLayoutSchema.safeParse(layout);
     if (!validationResult.success) {
-      const errorMessage = JSON.stringify(validationResult.error.flatten());
-      console.error('Invalid dashboard layout:', errorMessage);
-      return { success: false, error: 'Invalid dashboard layout provided.', details: errorMessage };
+      const friendlyError = formatZodError(validationResult.error);
+      console.error('Invalid dashboard layout:', friendlyError);
+      return { success: false, error: 'Invalid dashboard layout provided.', details: friendlyError };
     }
 
     const pool = getDbPool();
@@ -132,9 +157,9 @@ export async function updateDashboard(
     if (layout) {
       const validationResult = dashboardLayoutSchema.safeParse(layout);
       if (!validationResult.success) {
-        const errorMessage = JSON.stringify(validationResult.error.flatten());
-        console.error('Invalid dashboard layout:', errorMessage);
-        return { success: false, error: 'Invalid dashboard layout provided.', details: errorMessage };
+        const friendlyError = formatZodError(validationResult.error);
+        console.error('Invalid dashboard layout:', friendlyError);
+        return { success: false, error: 'Invalid dashboard layout provided.', details: friendlyError };
       }
     }
 

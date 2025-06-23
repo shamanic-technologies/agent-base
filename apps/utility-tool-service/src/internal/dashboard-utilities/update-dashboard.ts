@@ -60,16 +60,22 @@ const updateDashboardUtility: InternalUtilityTool = {
     }
 
     try {
-      const updateResponse : ServiceResponse<Dashboard> = await updateDashboardApiClient(
+      const updateResponse = await updateDashboardApiClient(
         dashboardId,
         { name, layout },
         { clientUserId, clientOrganizationId, platformUserId, platformApiKey }
       );
 
       if (!updateResponse.success) {
-        console.error(`${logPrefix} Failed to update dashboard from service:`, updateResponse.error);
-        return updateResponse;
+        console.error(`${logPrefix} Failed to update dashboard from service:`, updateResponse.error, updateResponse.details);
+        return {
+            success: false,
+            error: updateResponse.error || "Failed to update the dashboard.",
+            details: updateResponse.details || "No further details provided."
+        };
       }
+
+      const toolSpecificSuccessData: UpdateDashboardSuccessResponse_Local = updateResponse.data;
 
       return updateResponse;
       

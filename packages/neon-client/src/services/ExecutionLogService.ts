@@ -50,6 +50,23 @@ async function createLogTable(pool: Pool, tableName: string, schema: any): Promi
   await pool.query(finalQuery);
 }
 
+/**
+ * Constructs a sanitized, valid table name from an ApiTool's info.
+ * @param tool - The ApiTool object.
+ * @returns A string representing the safe table name.
+ * @throws If the constructed table name is invalid.
+ */
+export function getTableNameForApiTool(tool: ApiTool): string {
+  const title = tool.openapiSpecification.info.title.toLowerCase().replace(/\s/g, '_');
+  const version = tool.openapiSpecification.info.version.toLowerCase().replace(/\s/g, '_');
+  const tableName = `tool_${title}_${version}`;
+  
+  if (!isValidIdentifier(tableName)) {
+    throw new Error(`Invalid constructed table name from tool info: ${tableName}`);
+  }
+  return tableName;
+}
+
 export async function logInternalToolExecution(tool: InternalUtilityTool, params: any, result: any): Promise<void> {
   const dbUrl = process.env.NEON_DATABASE_URL;
   if (!dbUrl) {
@@ -92,14 +109,7 @@ export async function logApiToolExecution(tool: ApiTool, params: any, result: an
     throw new Error('NEON_DATABASE_URL is not set in the environment variables.');
   }
 
-  const title = tool.openapiSpecification.info.title.toLowerCase().replace(/\s/g, '_');
-  const version = tool.openapiSpecification.info.version.toLowerCase().replace(/\s/g, '_');
-  const tableName = `tool_${title}_${version}`;
-  
-  if (!isValidIdentifier(tableName)) {
-    // Fallback for safety, though the above construction should be safe
-    throw new Error(`Invalid constructed table name: ${tableName}`);
-  }
+  const tableName = getTableNameForApiTool(tool);
   
   // Extract schema from OpenAPI spec
   const path = Object.keys(tool.openapiSpecification.paths)[0];
