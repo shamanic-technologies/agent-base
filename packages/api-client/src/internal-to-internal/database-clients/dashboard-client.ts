@@ -12,7 +12,7 @@ import { makeInternalRequest } from '../../utils/service-client.js';
 import { getDatabaseServiceUrl } from '../../utils/config.js';
 import { Method } from 'axios';
 
-interface CreateDashboardApiClientInput {
+interface CreateDashboardInput {
     name: string;
     webContainerConfig: DashboardFileTree;
 }
@@ -21,22 +21,15 @@ interface CreateDashboardApiClientInput {
  * Creates a new dashboard record via the database service.
  * Corresponds to: POST /dashboards
  * 
- * @param {CreateDashboardApiClientInput} data - The dashboard name and configuration.
+ * @param {CreateDashboardInput} data - The dashboard name and configuration.
  * @param {HumanInternalCredentials} credentials - The internal credentials for the user making the request.
  * @returns {Promise<ServiceResponse<Dashboard>>} A promise resolving to a ServiceResponse containing the created Dashboard data or an error.
  */
 export const createDashboardApiClient = async (
-  data: CreateDashboardApiClientInput,
+  data: CreateDashboardInput,
   credentials: HumanInternalCredentials
 ): Promise<ServiceResponse<Dashboard>> => {
   const { platformUserId, clientUserId, clientOrganizationId, platformApiKey } = credentials;
-
-  // The body for the database service endpoint needs the user and org IDs.
-  const body = {
-    ...data,
-    client_user_id: clientUserId,
-    client_organization_id: clientOrganizationId
-  };
 
   return makeInternalRequest<Dashboard>(
     getDatabaseServiceUrl(),
@@ -46,7 +39,7 @@ export const createDashboardApiClient = async (
     clientUserId,
     clientOrganizationId,
     platformApiKey,
-    body
+    data
   );
 };
 

@@ -30,8 +30,12 @@ export const dashboardFileTreeSchema = z.record(fileSystemEntrySchema);
 /**
  * Inferred TypeScript type from the Zod schema for type safety in our code.
  */
-export type DashboardFileTree = z.infer<typeof dashboardFileTreeSchema>;
+export type DashboardFileTree = z.infer<typeof dashboardFileTreeSchema>; 
 
+export interface CreateDashboardRequest {
+  name: string;
+  webContainerConfig: DashboardFileTree;
+}
 /**
  * Represents a dashboard record as it is stored in the database.
  */

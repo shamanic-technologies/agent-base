@@ -12,15 +12,9 @@ import {
     ServiceResponse,
     DashboardInfo,
     mapDashboardFromDatabase,
+    CreateDashboardRequest
 } from '@agent-base/types';
 import { DASHBOARDS_TABLE } from '../types/database-constants.js';
-
-interface CreateDashboardInput {
-    name: string;
-    clientUserId: string;
-    clientOrganizationId: string;
-    webContainerConfig: DashboardFileTree;
-}
 
 /**
  * Creates a new dashboard record in the database.
@@ -28,12 +22,13 @@ interface CreateDashboardInput {
  * @param {CreateDashboardInput} input - The details of the dashboard to create.
  * @returns {Promise<ServiceResponse<Dashboard>>} A response containing the data of the created dashboard.
  */
-export async function createDashboard(input: CreateDashboardInput): Promise<ServiceResponse<Dashboard>> {
+export async function createDashboard(input: CreateDashboardRequest, clientUserId: string, clientOrganizationId: string): Promise<ServiceResponse<Dashboard>> {
     let client: PoolClient | null = null;
-    const { name, clientUserId, clientOrganizationId, webContainerConfig } = input;
+    const { name, webContainerConfig } = input;
 
     // --- Basic Validation ---
     if (!name || !clientUserId || !clientOrganizationId || !webContainerConfig) {
+        console.error('[createDashboard] Missing required fields: name, clientUserId, clientOrganizationId, webContainerConfig');
         return { 
             success: false,
             error: 'Missing required fields: name, clientUserId, clientOrganizationId, webContainerConfig'
@@ -43,6 +38,7 @@ export async function createDashboard(input: CreateDashboardInput): Promise<Serv
     // --- Zod Schema Validation ---
     const validationResult = dashboardFileTreeSchema.safeParse(webContainerConfig);
     if (!validationResult.success) {
+        console.error('[createDashboard] Invalid webContainerConfig structure.');
         return { 
             success: false,
             error: "Invalid webContainerConfig structure.", 
@@ -93,6 +89,7 @@ export async function getDashboardsForUserAndOrganization(clientUserId: string, 
     let client: PoolClient | null = null;
 
     if (!clientUserId || !clientOrganizationId) {
+        console.error('[getDashboardsForUserAndOrganization] clientUserId and clientOrganizationId are required');
         return { success: false, error: 'clientUserId and clientOrganizationId are required' };
     }
     
@@ -138,6 +135,7 @@ export async function getDashboardById(dashboardId: string): Promise<ServiceResp
     let client: PoolClient | null = null;
 
     if (!dashboardId) {
+        console.error('[getDashboardById] dashboardId is required');
         return { success: false, error: 'dashboardId is required' };
     }
 
@@ -148,6 +146,7 @@ export async function getDashboardById(dashboardId: string): Promise<ServiceResp
         const result = await client.query(queryText, [dashboardId]);
 
         if (result.rowCount === 0) {
+            console.error('[getDashboardById] Dashboard not found');
             return { success: false, error: 'Dashboard not found' };
         }
         

@@ -4,17 +4,34 @@ import {
     getDashboardsForUserAndOrganization,
     getDashboardById 
 } from '../services/dashboards.js';
+import { CreateDashboardRequest } from '@agent-base/types';
 
 const router = Router();
 
 // POST /dashboards - Create a new dashboard
 router.post('/', async (req: Request, res: Response): Promise<void> => {
+    const clientOrganizationId = req.headers['x-client-organization-id'] as string; // This is the unique ID for the org
+    const clientUserId = req.headers['x-client-user-id'] as string; // This is the unique ID for the user
+
+    if (!clientOrganizationId) {
+        console.error(`[GET /dashboards] Missing required header: x-client-organization-id`);
+        res.status(400).json({ error: 'Missing required header: x-client-organization-id' });
+        return;
+    }
+    if (!clientUserId) {
+        console.error(`[GET /dashboards] Missing required header: x-client-user-id`);
+        res.status(400).json({ error: 'Missing required header: x-client-user-id' });
+        return;
+    }
+
     try {
-        const result = await createDashboard(req.body);
+        const createDashboardRequest: CreateDashboardRequest = req.body;
+        const result = await createDashboard(createDashboardRequest, clientUserId, clientOrganizationId);
 
         if (result.success) {
             res.status(201).json(result);
         } else {
+            console.error('[POST /dashboards] Error creating dashboard:', result);
             res.status(400).json(result);
         }
     } catch (error: any) {
@@ -26,10 +43,17 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 // GET /dashboards - List dashboards for a user and organization
 router.get('/', async (req: Request, res: Response): Promise<void> => {
     try {
-        const { clientUserId, clientOrganizationId } = req.query;
+        const clientOrganizationId = req.headers['x-client-organization-id'] as string; // This is the unique ID for the org
+        const clientUserId = req.headers['x-client-user-id'] as string; // This is the unique ID for the user
 
-        if (!clientUserId || typeof clientUserId !== 'string' || !clientOrganizationId || typeof clientOrganizationId !== 'string') {
-            res.status(400).json({ error: 'Query parameters "clientUserId" and "clientOrganizationId" are required.' });
+        if (!clientOrganizationId) {
+            console.error(`[GET /dashboards] Missing required header: x-client-organization-id`);
+            res.status(400).json({ error: 'Missing required header: x-client-organization-id' });
+            return;
+        }
+        if (!clientUserId) {
+            console.error(`[GET /dashboards] Missing required header: x-client-user-id`);
+            res.status(400).json({ error: 'Missing required header: x-client-user-id' });
             return;
         }
 
@@ -38,6 +62,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
         if (result.success) {
             res.status(200).json(result);
         } else {
+            console.error('[GET /dashboards] Error getting dashboards for user and organization:', result);
             res.status(400).json(result);
         }
     } catch (error: any) {
@@ -55,6 +80,7 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
         if (result.success) {
             res.status(200).json(result);
         } else {
+            console.error('[GET /dashboards/:id] Error getting dashboard by id:', result);
             const statusCode = result.error === 'Dashboard not found' ? 404 : 400;
             res.status(statusCode).json(result);
         }

@@ -12,16 +12,14 @@ import {
   ExecuteToolResult,
   dashboardFileTreeSchema,
   DashboardFileTree,
+  CreateDashboardRequest,
 } from '@agent-base/types';
 import { registry } from '../../registry/registry.js';
 import { createDashboardApiClient } from '@agent-base/api-client';
 
 // --- Local Type Definitions for this Utility ---
 
-export interface CreateDashboardRequest {
-  name: string;
-  webContainerConfig: DashboardFileTree;
-}
+
 
 export interface CreateDashboardSuccessResponse_Local {
     dashboardId: string;
@@ -40,19 +38,61 @@ export type CreateDashboardResponse_Local =
  */
 const createDashboardUtility: InternalUtilityTool = {
   id: 'utility_create_dashboard',
-  description: 'Creates and saves a new dashboard configuration to be used in a web container.',
+  description: 'Creates and saves a new Tremor dashboard configuration. The agent must generate the file system for a Vite + React application that uses Tremor components and Tailwind CSS for the UI. The dashboard will be viewable and interactive in a sandboxed web container.',
   schema: {
     type: 'object',
     properties: {
       name: {
         type: 'string',
-        description: 'The name of the dashboard.',
+        description: 'REQUIRED. A human-readable name for the dashboard.',
         examples: ['Monthly Recurring Revenue', 'User Churn Analysis']
       },
       webContainerConfig: {
         type: 'object',
-        description: 'A JSON object representing the file system tree for the web container. This includes package.json, vite.config.ts, and all source files.',
-        // In a real scenario, we'd link to a more detailed JSON schema definition here.
+        description: "REQUIRED. A JSON object for a complete Vite + React + Tremor project. The React components SHOULD fetch data via the '/api/dashboard/query' endpoint. The host application handles authentication. VERY IMPORTANT: The `main.tsx` file MUST call `render` with the `<App />` component wrapped in `<React.StrictMode>`. The full, correct syntax is: `ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode><App /></React.StrictMode>);`. Follow the example precisely for this file.",
+        examples: [
+          {
+            "package.json": {
+              "file": {
+                "contents": "{\n  \"name\": \"ai-dashboard\",\n  \"private\": true,\n  \"version\": \"0.0.0\",\n  \"type\": \"module\",\n  \"scripts\": {\n    \"dev\": \"vite\"\n  },\n  \"dependencies\": {\n    \"react\": \"^18.2.0\",\n    \"react-dom\": \"^18.2.0\",\n    \"@tremor/react\": \"latest\"\n  },\n  \"devDependencies\": {\n    \"vite\": \"^5.0.0\",\n    \"@vitejs/plugin-react\": \"^4.2.0\",\n    \"tailwindcss\": \"^3.4.1\",\n    \"tailwindcss-animate\": \"^1.0.0\"\n  }\n}"
+              }
+            },
+            "vite.config.ts": {
+              "file": {
+                "contents": "import { defineConfig } from 'vite';\nimport react from '@vitejs/plugin-react';\n\nexport default defineConfig({\n  plugins: [react()],\n});"
+              }
+            },
+            "index.html": {
+                "file": {
+                    "contents": "<!doctype html><html lang=\"en\"><head><meta charset=\"UTF-8\" /><title>AI Dashboard</title></head><body><div id=\"root\"></div><script type=\"module\" src=\"/src/main.tsx\"></script></body></html>"
+                }
+            },
+            "src": {
+              "directory": {
+                "App.tsx": {
+                  "file": {
+                    "contents": "import { Card, Title, Text, Metric, Grid, BarChart, DonutChart, Badge } from '@tremor/react';\n\nexport default function QualtricsDashboard() {\n  // Données statiques pour le dashboard\n  const totalSurveys = 42;\n  const activeSurveys = 31;\n  const responseRate = 78;\n\n  const statusData = [\n    { name: 'Actives', value: activeSurveys },\n    { name: 'Inactives', value: 11 }\n  ];\n\n  const monthlyResponses = [\n    { month: 'Jan 24', 'Réponses': 245 },\n    { month: 'Fév 24', 'Réponses': 312 },\n    { month: 'Mar 24', 'Réponses': 189 }\n  ];\n\n  return (\n    <main className='p-6 sm:p-10'>\n      <Title>Dashboard Qualtrics</Title>\n      <Text>Vue d'ensemble de vos enquêtes.</Text>\n      <Grid numItemsMd={2} numItemsLg={3} className='mt-6 gap-6'>\n        <Card><Title>Total Enquêtes</Title><Metric>{totalSurveys}</Metric></Card>\n        <Card><Title>Enquêtes Actives</Title><Metric>{activeSurveys}</Metric></Card>\n        <Card><Title>Taux de Réponse</Title><Metric>{responseRate}%</Metric></Card>\n      </Grid>\n      <div className='mt-6'>\n        <Card>\n          <Title>Réponses par Mois</Title>\n          <BarChart data={monthlyResponses} index='month' categories={['Réponses']} colors={['blue']} />\n        </Card>\n      </div>\n    </main>\n  );\n}"
+                  }
+                },
+                "main.tsx": {
+                  "file": {
+                    "contents": "import React from 'react';\nimport ReactDOM from 'react-dom/client';\nimport App from './App.tsx';\nimport './index.css';\n\nReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode><App /></React.StrictMode>);"
+                  }
+                },
+                "index.css": {
+                  "file": {
+                    "contents": "@tailwind base;\\n@tailwind components;\\n@tailwind utilities;"
+                  }
+                }
+              }
+            },
+            "tailwind.config.cjs": {
+                "file": {
+                    "contents": "/** @type {import('tailwindcss').Config} */\nmodule.exports = {\n  content: [ './src/**/*.{js,ts,jsx,tsx}', './node_modules/@tremor/**/*.{js,ts,jsx,tsx}' ],\n  theme: { extend: {} },\n  plugins: [require('tailwindcss-animate'), require('@tremor/react/tailwind')],\n}"
+                }
+            }
+          }
+        ]
       }
     },
     required: ['name', 'webContainerConfig']
@@ -65,17 +105,17 @@ const createDashboardUtility: InternalUtilityTool = {
 
       // Validate input (this is good practice even if the schema does it)
       if (!name || typeof name !== 'string' || !webContainerConfig || typeof webContainerConfig !== 'object') {
+        console.error(`${logPrefix} Invalid input: name=${name}, webContainerConfig=${JSON.stringify(webContainerConfig)}`);
         return { success: false, error: "Name and webContainerConfig are required." };
       }
 
       // Validate the webContainerConfig against the shared Zod schema
       const validationResult = dashboardFileTreeSchema.safeParse(webContainerConfig);
       if (!validationResult.success) {
+        console.error(`${logPrefix} Invalid webContainerConfig structure: ${JSON.stringify(validationResult.error.flatten())}`);
         return { success: false, error: "Invalid webContainerConfig structure.", details: JSON.stringify(validationResult.error.flatten()) };
       }
-      
-      console.log(`${logPrefix} Calling database service to save dashboard for org "${clientOrganizationId}"`);
-      
+            
       const createResponse = await createDashboardApiClient(
         {
           name: name,
@@ -96,7 +136,6 @@ const createDashboardUtility: InternalUtilityTool = {
       
       // Now TypeScript knows that createResponse.data exists
       const newDashboard = createResponse.data;
-      console.log(`${logPrefix} Dashboard saved with ID: ${newDashboard.id}`);
       
       const toolSpecificSuccessData: CreateDashboardSuccessResponse_Local = {
         dashboardId: newDashboard.id,
