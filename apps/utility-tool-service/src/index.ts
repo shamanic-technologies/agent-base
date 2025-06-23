@@ -26,6 +26,10 @@ import './internal/basic-utilities/curl-command.js';
 import './internal/dashboard-utilities/create-dashboard.js';
 import './internal/dashboard-utilities/list-dashboards.js';
 import './internal/dashboard-utilities/get-dashboard.js';
+import './internal/dashboard-utilities/update-dashboard.js';
+import './internal/dashboard-utilities/delete-dashboard.js';
+import './internal/dashboard-utilities/list-dashboard-blocks.js';
+import './internal/dashboard-utilities/get-dashboard-block-by-id.js';
 
 // Import internal utility for managing external tools
 import './internal/api-utilities/create-api-tool.js';

@@ -43,3 +43,9 @@ export * from './types/credit.js';
 
 // Export dashboard-related types
 export * from './types/dashboard.js';
+
+// Export all Zod schemas for validation
+export * from './schemas/dashboard.schema.js';
+
+// Export the centralized block definitions
+export * from './dashboard-blocks.js';

@@ -14,7 +14,6 @@ import conversationsRoutes from './conversations.js';
 import clientUsersRoutes from './client-users.js';
 import clientOrganizationsRoutes from './client-organizations.js';
 import actionsRoutes from './actions.js';
-import dashboardRoutes from './dashboards.js';
 
 const router = Router();
 
@@ -34,6 +33,5 @@ router.use('/client-users', clientUsersRoutes);
 router.use('/actions', actionsRoutes);
 
 router.use('/client-organizations', clientOrganizationsRoutes);
-router.use('/dashboards', dashboardRoutes);
 
 export default router; 

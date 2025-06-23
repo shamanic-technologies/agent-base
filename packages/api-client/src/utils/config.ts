@@ -195,4 +195,18 @@ export function getUserServiceUrl(): string {
   }
   validateServiceUrl(url, 'USER_SERVICE_URL');
   return url;
+}
+
+/**
+ * Retrieves the Dashboard Service URL from the DASHBOARD_SERVICE_URL environment variable.
+ * @returns {string} The Dashboard Service URL.
+ * @throws {Error} If DASHBOARD_SERVICE_URL is not set or is not a valid URL.
+ */
+export function getDashboardServiceUrl(): string {
+  const url = process.env.DASHBOARD_SERVICE_URL;
+  if (!url) {
+    throw new Error('[api-client/config] DASHBOARD_SERVICE_URL environment variable is not set. This is required.');
+  }
+  validateServiceUrl(url, 'DASHBOARD_SERVICE_URL');
+  return url;
 } 
