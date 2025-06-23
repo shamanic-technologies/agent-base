@@ -108,7 +108,7 @@ const gridConfigBaseSchema = z.object({
 
 // Forward-declare the TypeScript type for a single block config.
 // This is necessary for the recursive definition of the grid.
-type DashboardBlockConfig =
+export type DashboardBlockConfig =
   | z.infer<typeof metricCardConfigSchema>
   | z.infer<typeof barChartConfigSchema>
   | z.infer<typeof lineChartConfigSchema>
