@@ -16,7 +16,7 @@ import {
   gridConfigSchema,
   textConfigSchema,
   calloutConfigSchema,
-} from './schemas/dashboard.schema.js';
+} from '../schemas/dashboard.schema.js';
 
 
 // Define a type for our block definitions for strong typing.
