@@ -195,7 +195,7 @@ export function getUserServiceUrl(): string {
   }
   validateServiceUrl(url, 'USER_SERVICE_URL');
   return url;
-}
+} 
 
 /**
  * Retrieves the Dashboard Service URL from the DASHBOARD_SERVICE_URL environment variable.
