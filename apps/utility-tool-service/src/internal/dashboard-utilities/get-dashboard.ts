@@ -27,7 +27,7 @@ export type GetDashboardResponse_Local =
  * Implementation of the Get Dashboard utility
  */
 const getDashboardUtility: InternalUtilityTool = {
-  id: 'utility_get_dashboard',
+  id: 'get_dashboard',
   description: 'Retrieves the full configuration for a single dashboard by its unique ID. This is useful for inspecting or editing an existing dashboard.',
   schema: {
     type: 'object',

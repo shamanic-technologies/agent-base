@@ -31,7 +31,7 @@ export async function callUtilityFromAgent(
     executeToolPayload: ExecuteToolPayload
 ): Promise<ServiceResponse<ExecuteToolResult>> {
     const { clientUserId, platformUserId, clientOrganizationId, platformApiKey, agentId } = agentInternalCredentials;
-    const endpoint = `utility-tool/call-tool/${utilityId}`;
+    const endpoint = `utility-tool/run`;
 
     // Use makeAPIServiceRequest, passing conversationId in data and agentId for header
     return await makeInternalRequest<ExecuteToolResult>(
@@ -43,7 +43,7 @@ export async function callUtilityFromAgent(
         clientOrganizationId,
         platformApiKey,
         executeToolPayload, // Pass data containing input and conversationId
-        undefined,
+        { id: utilityId }, // Pass utilityId as a query parameter
         agentId      // Pass agentId for the header
     );
 }
@@ -62,7 +62,7 @@ export async function getUtilityInfoFromAgent(
     utilityId: string
 ): Promise<ServiceResponse<UtilityInfo>> {
     const { clientUserId, platformUserId, clientOrganizationId, platformApiKey, agentId } = agentInternalCredentials;
-    const endpoint = `utility-tool/get-details/${utilityId}`;
+    const endpoint = `utility-tool/get`;
 
 
     return await makeInternalRequest<UtilityInfo>(
@@ -74,7 +74,7 @@ export async function getUtilityInfoFromAgent(
         clientOrganizationId,
         platformApiKey,
         undefined,    // No data body for GET
-        {conversationId},
+        { conversationId, id: utilityId }, // Pass utilityId as a query parameter
         agentId       // Pass agentId for the header
     );
 }
@@ -92,7 +92,7 @@ export async function listUtilitiesFromAgent(
 ): Promise<ServiceResponse<ListUtilities>> {
     const { clientUserId, platformUserId, clientOrganizationId, platformApiKey, agentId } = agentInternalCredentials;
     // conversationId not needed for this endpoint
-    const endpoint = 'utility-tool/get-list';
+    const endpoint = 'utility-tool/list';
    // Use makeAPIServiceRequest, passing agentId for header and conversationId as query param
     return await makeInternalRequest<ListUtilities>(
         getApiGatewayServiceUrl(),

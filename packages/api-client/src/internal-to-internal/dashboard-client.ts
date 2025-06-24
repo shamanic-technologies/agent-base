@@ -159,3 +159,24 @@ export const getDashboardBlockByIdApiClient = (
     platformApiKey
   );
 };
+
+/**
+ * Executes a paginated SQL query via the dashboard service.
+ * Corresponds to: POST /query
+ */
+export const queryDashboardInternalApiClient = (
+  data: { query: string; page?: number; limit?: number },
+  credentials: HumanInternalCredentials
+): Promise<ServiceResponse<any>> => {
+  const { platformUserId, clientUserId, clientOrganizationId, platformApiKey } = credentials;
+  return makeInternalRequest<any>(
+    getDashboardServiceUrl(),
+    'POST' as Method,
+    '/query',
+    platformUserId,
+    clientUserId,
+    clientOrganizationId,
+    platformApiKey,
+    data
+  );
+};

@@ -9,7 +9,7 @@ import {
     ServiceResponse,
     ExecuteToolResult
 } from '@agent-base/types';
-import { registry } from '../../../registry/registry.js';
+import { registry } from '../../registry/registry.js';
 import { createTable as createTableInDb } from '@agent-base/neon-client';
 
 // --- Local Type Definitions ---
@@ -31,7 +31,7 @@ interface CreateTableSuccessResponse_Local {
  * Implementation of the Create Table utility
  */
 const createTableUtility: InternalUtilityTool = {
-  id: 'utility_create_table',
+  id: 'create_table',
   description: "Create a new table in the user's dedicated database.",
   schema: {
     type: 'object',

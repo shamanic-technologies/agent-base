@@ -10,7 +10,7 @@ import {
   ServiceResponse,
   ExecuteToolResult
 } from '@agent-base/types';
-import { registry } from '../../../registry/registry.js';
+import { registry } from '../../registry/registry.js';
 import { neon } from '@neondatabase/serverless';
 
 interface TableSchema {
@@ -26,7 +26,7 @@ interface GetDatabaseSuccessResponse_Local {
  * Implementation of the Get Database utility
  */
 const getDatabaseUtility: InternalUtilityTool = {
-  id: 'utility_get_database',
+  id: 'get_database',
   description: "Get information about the user's dedicated database, including a list of its tables.",
   schema: {
     type: 'object',

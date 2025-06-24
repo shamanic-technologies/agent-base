@@ -30,7 +30,7 @@ export type UpdateDashboardResponse_Local =
  * Implementation of the Update Dashboard utility
  */
 const updateDashboardUtility: InternalUtilityTool = {
-  id: 'utility_update_dashboard',
+  id: 'update_dashboard',
   description: "Updates a dashboard's name and/or its layout configuration. At least one of 'name' or 'layout' must be provided.",
   schema: {
     type: 'object',

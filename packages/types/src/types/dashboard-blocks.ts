@@ -40,6 +40,11 @@ export interface DashboardBlockInfo {
     type: string;
 }
 
+// Define a type for our block definitions for strong typing.
+export interface DashboardBlockInfoWithSchema extends DashboardBlockInfo {
+  schema: object;
+}
+
 
 export const DASHBOARD_BLOCKS: DashboardBlock[] = [
   {

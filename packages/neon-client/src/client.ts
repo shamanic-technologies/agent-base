@@ -65,6 +65,7 @@ async function findProjectByName(projectName: string): Promise<NeonProject | nul
   });
 
   if (!response.ok) {
+    console.error(`[neon-client] findProjectByName: Failed to list projects. ${await response.text()}`);
     throw new Error(`Neon API Error: Failed to list projects. ${await response.text()}`);
   }
 
@@ -106,6 +107,7 @@ async function createProject(projectName: string): Promise<NeonProject> {
   });
 
   if (!response.ok) {
+    console.error(`[neon-client] createProject: Failed to create project. ${await response.text()}`);
     throw new Error(`Neon API Error: Failed to create project. ${await response.text()}`);
   }
 
@@ -131,6 +133,7 @@ async function getConnectionString(projectId: string): Promise<string> {
   });
 
   if (!response.ok) {
+    console.error(`[neon-client] getConnectionString: Failed to get connection URI. ${await response.text()}`);
     throw new Error(`Neon API Error: Failed to get connection URI. ${await response.text()}`);
   }
 
@@ -182,10 +185,12 @@ const isValidIdentifier = (name: string) => /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name
 export async function createTable(tableName: string, schema: Record<string, string>): Promise<void> {
   const dbUrl = process.env.NEON_DATABASE_URL;
   if (!dbUrl) {
+    console.error('[neon-client] NEON_DATABASE_URL is not set in the environment variables.');
     throw new Error('NEON_DATABASE_URL is not set in the environment variables.');
   }
 
   if (!isValidIdentifier(tableName)) {
+    console.error(`[neon-client] createTable: Invalid table name: ${tableName}`);
     throw new Error(`Invalid table name: ${tableName}`);
   }
 
@@ -194,10 +199,12 @@ export async function createTable(tableName: string, schema: Record<string, stri
   try {
     const columnDefinitions = Object.entries(schema).map(([name, type]) => {
       if (!isValidIdentifier(name)) {
+        console.error(`[neon-client] createTable: Invalid column name: ${name}`);
         throw new Error(`Invalid column name: ${name}`);
       }
       const pgType = supportedTypes[type.toLowerCase()];
       if (!pgType) {
+        console.error(`[neon-client] createTable: Unsupported column type: ${type}`);
         throw new Error(`Unsupported column type: ${type}`);
       }
       return `"${name}" ${pgType}`;
@@ -220,10 +227,12 @@ export async function createTable(tableName: string, schema: Record<string, stri
 export async function getTable(tableName: string, limit: number = 10): Promise<{ columns: { name: string; type: string; }[], rows: Record<string, any>[] }> {
   const dbUrl = process.env.NEON_DATABASE_URL;
   if (!dbUrl) {
+    console.error('[neon-client] NEON_DATABASE_URL is not set in the environment variables.');
     throw new Error('NEON_DATABASE_URL is not set in the environment variables.');
   }
 
   if (!isValidIdentifier(tableName)) {
+    console.error(`[neon-client] getTable: Invalid table name: ${tableName}`);
     throw new Error(`Invalid table name: ${tableName}`);
   }
 
@@ -261,6 +270,7 @@ export async function getTable(tableName: string, limit: number = 10): Promise<{
 export async function executeQuery(query: string): Promise<Record<string, any>[]> {
   const dbUrl = process.env.NEON_DATABASE_URL;
   if (!dbUrl) {
+    console.error('[neon-client] NEON_DATABASE_URL is not set in the environment variables.');
     throw new Error('NEON_DATABASE_URL is not set in the environment variables.');
   }
 

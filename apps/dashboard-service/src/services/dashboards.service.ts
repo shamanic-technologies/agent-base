@@ -58,13 +58,18 @@ export async function createDashboard(
 ): Promise<ServiceResponse<Dashboard>> {
   try {
     // Validate the incoming layout against the Zod schema
-    const validationResult = dashboardLayoutSchema.safeParse(layout);
-    if (!validationResult.success) {
-      const friendlyError = formatZodError(validationResult.error);
+    dashboardLayoutSchema.parse(layout);
+  } catch (error) {
+    if (error instanceof ZodError) {
+      const friendlyError = formatZodError(error);
       console.error('Invalid dashboard layout:', friendlyError);
       return { success: false, error: 'Invalid dashboard layout provided.', details: friendlyError };
     }
+    // Re-throw other errors to be caught by the main catch block
+    throw error;
+  }
 
+  try {
     const pool = getDbPool();
     const query = `
       INSERT INTO dashboards (name, layout, client_user_id, client_organization_id)
@@ -78,6 +83,7 @@ export async function createDashboard(
     return { success: true, data: newDashboard };
   } catch (error: any) {
     console.error('Error creating dashboard:', error);
+    // The Zod parsing is now handled above, so this catch is for database/other errors
     return { success: false, error: 'Failed to create dashboard.', details: error.message };
   }
 }
@@ -152,17 +158,21 @@ export async function updateDashboard(
     return { success: false, error: 'No update data provided. Please provide a new name or layout.' };
   }
 
-  try {
-    // Validate the layout if it's provided
-    if (layout) {
-      const validationResult = dashboardLayoutSchema.safeParse(layout);
-      if (!validationResult.success) {
-        const friendlyError = formatZodError(validationResult.error);
+  // Validate the layout if it's provided
+  if (layout) {
+    try {
+      dashboardLayoutSchema.parse(layout);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const friendlyError = formatZodError(error);
         console.error('Invalid dashboard layout:', friendlyError);
         return { success: false, error: 'Invalid dashboard layout provided.', details: friendlyError };
       }
+      throw error;
     }
+  }
 
+  try {
     const pool = getDbPool();
     
     // Build the query dynamically

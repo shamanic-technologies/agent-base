@@ -36,7 +36,7 @@ export type CreateDashboardResponse_Local =
  * Implementation of the Create Dashboard utility
  */
 const createDashboardUtility: InternalUtilityTool = {
-  id: 'utility_create_dashboard',
+  id: 'create_dashboard',
   description: 'Creates and saves a new Tremor dashboard configuration. The agent must generate a valid JSON layout object for the dashboard, starting with a "Grid" block at the root.',
   schema: {
     type: 'object',

@@ -23,7 +23,7 @@ import {
     listApiToolsInternal,
     getApiToolInfoInternal,
     executeApiToolInternal
-} from '@agent-base/api-client'; // <--- Updated Import Path
+} from '@agent-base/api-client'; 
 
 // Import shared response types for consistency
 import {
@@ -67,7 +67,6 @@ const handleServiceError = (res: Response, error: any, prefix: string) => {
 
 // Health check endpoint (Simplified)
 app.get('/health', (req, res) => {
-  console.log(`📡 [UTILITY SERVICE] Health check request received from ${req.ip}. Responding OK.`);
   res.status(200).json({
     status: 'healthy',
   });
@@ -89,11 +88,11 @@ app.get('/client-side-tools', (req, res) => {
 // --- Unified Tool Endpoints --- 
 
 // List ALL available utilities (Internal + External)
-app.get('/get-list', async (req, res): Promise<void> => {
-  const logPrefix = '[GET /get-list]';
+app.get('/list', async (req, res): Promise<void> => {
+  const logPrefix = '[GET /list]';
   const authHeaders = getAgentInternalAuthHeaders(req);
   if (!authHeaders.success) {
-    console.log(`${logPrefix} Auth headers:`, authHeaders);
+    console.error(`${logPrefix} Auth headers:`, authHeaders);
     res.status(401).json(authHeaders);
     return;
   }
@@ -106,7 +105,7 @@ app.get('/get-list', async (req, res): Promise<void> => {
     let externalTools: UtilitiesList = []; 
     const externalResponse: ServiceResponse<ApiToolInfo[]> = await listApiToolsInternal(agentServiceCredentials);
     if (!externalResponse.success) {
-      console.log(`${logPrefix} Error listing external tools:`, externalResponse);
+      console.error(`${logPrefix} Error listing external tools:`, externalResponse);
       res.status(502).json(externalResponse);
       return;
     }
@@ -131,12 +130,16 @@ app.get('/get-list', async (req, res): Promise<void> => {
 });
 
 // Get info about a specific utility (Internal or External)
-app.get('/get-details/:id', async (req, res): Promise<void> => {
-  const { id } = req.params;
-  const logPrefix = `[GET /get-details/${id}]`;
+app.get('/get', async (req, res): Promise<void> => {
+  const { id } = req.query;
+  const logPrefix = `[GET /get?id=${id}]`;
+  if (!id || typeof id !== 'string') {
+    console.error(`${logPrefix} Tool ID is required as a query parameter.`);
+    return handleServiceError(res, { statusCode: 400, message: 'Tool ID is required as a query parameter.' }, '[GET /get]');
+  }
   const authHeaders = getAgentInternalAuthHeaders(req);
   if (!authHeaders.success) {
-    console.log(`${logPrefix} Auth headers:`, authHeaders);
+    console.error(`${logPrefix} Auth headers:`, authHeaders);
     res.status(401).json(authHeaders);
     return;
   }
@@ -179,20 +182,24 @@ app.get('/get-details/:id', async (req, res): Promise<void> => {
 });
 
 // Execute a utility (Internal or External)
-app.post('/call-tool/:id', async (req, res): Promise<void> => {
-  const { id } = req.params;
-  const logPrefix = `[POST /call-tool/${id}]`;
+app.post('/run', async (req, res): Promise<void> => {
+  const { id } = req.query;
+  const logPrefix = `[POST /run?id=${id}]`;
+  if (!id || typeof id !== 'string') {
+    console.error(`${logPrefix} Tool ID is required as a query parameter.`);
+    return handleServiceError(res, { statusCode: 400, message: 'Tool ID is required as a query parameter.' }, '[POST /run]');
+  }
   const { conversationId, params } : ExecuteToolPayload = req.body;
   // Basic input validation
   if (!conversationId) {
-    console.log(`${logPrefix} Conversation ID is required`);
+    console.error(`${logPrefix} Conversation ID is required`);
     const errorResponse: ErrorResponse = { success: false, error: 'conversationId is required' };
     res.status(400).json(errorResponse);
     return;
   }
   const authHeaders = getAgentInternalAuthHeaders(req);
   if (!authHeaders.success) {
-    console.log(`${logPrefix} Auth headers:`, authHeaders);
+    console.error(`${logPrefix} Auth headers:`, authHeaders);
     res.status(401).json(authHeaders);
     return;
   }
@@ -220,7 +227,6 @@ app.post('/call-tool/:id', async (req, res): Promise<void> => {
           res.status(502).json(executeToolResult);
           return;
         }
-        console.debug(`${logPrefix} Internal tool execution result:`, executeToolResult);
         res.status(200).json(executeToolResult); 
         return;
     }

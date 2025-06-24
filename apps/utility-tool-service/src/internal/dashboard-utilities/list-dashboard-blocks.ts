@@ -28,7 +28,7 @@ export type ListDashboardBlocksResponse_Local =
  * Implementation of the List Dashboard Blocks utility
  */
 const listDashboardBlocksUtility: InternalUtilityTool = {
-  id: 'utility_list_dashboard_blocks',
+  id: 'list_dashboard_blocks',
   description: 'Lists all available dashboard block templates. This provides the essential information (ID, name, description, type) for each block that can be used to build a dashboard layout.',
   schema: {}, // No parameters required
 

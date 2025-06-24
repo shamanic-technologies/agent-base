@@ -31,7 +31,7 @@ export type ListDashboardsResponse_Local =
  * Implementation of the List Dashboards utility
  */
 const listDashboardsUtility: InternalUtilityTool = {
-  id: 'utility_list_dashboards',
+  id: 'list_dashboards',
   description: 'Lists all available dashboards for the current user and organization. Provides a summary of each dashboard, including its ID and name.',
   schema: {}, // No parameters required
   

@@ -28,7 +28,7 @@ export type GetDashboardBlockResponse_Local =
  * Implementation of the Get Dashboard Block By ID utility
  */
 const getDashboardBlockByIdUtility: InternalUtilityTool = {
-  id: 'utility_get_dashboard_block_by_id',
+  id: 'get_dashboard_block_by_id',
   description: 'Retrieves the full definition for a single dashboard block template by its unique ID. This is useful for inspecting the validation schema of a block before using it in a layout.',
   schema: {
     type: 'object',

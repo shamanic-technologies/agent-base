@@ -29,7 +29,7 @@ export type DeleteDashboardResponse_Local =
  * Implementation of the Delete Dashboard utility
  */
 const deleteDashboardUtility: InternalUtilityTool = {
-  id: 'utility_delete_dashboard',
+  id: 'delete_dashboard',
   description: 'Permanently deletes a dashboard by its unique ID.',
   schema: {
     type: 'object',

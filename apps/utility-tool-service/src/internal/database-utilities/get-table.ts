@@ -9,7 +9,7 @@ import {
   ServiceResponse,
   ExecuteToolResult
 } from '@agent-base/types';
-import { registry } from '../../../registry/registry.js';
+import { registry } from '../../registry/registry.js';
 import { getTable as getTableFromDb } from '@agent-base/neon-client';
 
 // --- Local Type Definitions ---
@@ -29,7 +29,7 @@ interface GetTableSuccessResponse_Local {
  * Implementation of the Get Table utility
  */
 const getTableUtility: InternalUtilityTool = {
-  id: 'utility_get_table',
+  id: 'get_table',
   description: 'Get information about a database table, including schema and a limited number of rows.',
   schema: {
     type: 'object',
