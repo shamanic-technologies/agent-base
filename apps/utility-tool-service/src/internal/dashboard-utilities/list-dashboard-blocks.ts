@@ -16,11 +16,7 @@ import { listDashboardBlocksApiClient } from '@agent-base/api-client';
 
 // --- Local Type Definitions for this Utility ---
 
-export type ListDashboardBlocksSuccessResponse_Local = DashboardBlockInfo[];
 
-export type ListDashboardBlocksResponse_Local =
-  ListDashboardBlocksSuccessResponse_Local |
-  ErrorResponse;
 
 // --- End Local Type Definitions ---
 
@@ -30,7 +26,10 @@ export type ListDashboardBlocksResponse_Local =
 const listDashboardBlocksUtility: InternalUtilityTool = {
   id: 'list_dashboard_blocks',
   description: 'Lists all available dashboard block templates. This provides the essential information (ID, name, description, type) for each block that can be used to build a dashboard layout.',
-  schema: {}, // No parameters required
+  schema: {
+    type: 'object',
+    properties: {},
+  },
 
   execute: async (clientUserId: string, clientOrganizationId: string, platformUserId: string, platformApiKey: string, conversationId: string): Promise<ServiceResponse<ExecuteToolResult>> => {
     const logPrefix = '🧱 [LIST_DASHBOARD_BLOCKS]';

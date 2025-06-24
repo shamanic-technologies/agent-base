@@ -46,8 +46,8 @@ import { Tool } from 'ai';
 
 // Prompt Builder import
 import { buildSystemPrompt } from '../lib/promptBuilder.js';
-import { sanitizeIncompleteToolCalls } from '../lib/utils/messageSanitizers.js';
-import { mergeMessages } from '../lib/utils/messageMerger.js';
+import { sanitizeIncompleteToolCalls } from '../lib/messageSanitizers.js';
+import { mergeMessages } from '../lib/messageMerger.js';
 import { loadAndPrepareTools } from '../lib/toolLoader.js';
 
 // Import error handler
@@ -138,8 +138,8 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
             // 3. Truncate history to fit within the context window.
             const maxSteps = 10;
             const inputTokensBudget = 15000;
-            const maxOutputTokens = 40000;
             const thinkingBudgetTokens = 10000;
+            const maxOutputTokens = 40000;
 
             const truncatedMessages : Message[] = truncateHistory(
                 systemPrompt, 
@@ -171,9 +171,12 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
                 maxSteps, 
                 providerOptions: { anthropic: { thinking: { type: 'enabled', budgetTokens: thinkingBudgetTokens } } },
                 experimental_generateMessageId: createIdGenerator({ prefix: 'msgs', size: 16 }),
+                onError: (error) => {
+                    console.error(`[Agent Service /run] Error:`, error, null, 2);
+                    streamData.close();
+                },
                 async onFinish({ response, usage }) {
                     try {
-
                         const messagesToSave: Message[] = appendResponseMessages({
                             messages,
                             responseMessages: response.messages

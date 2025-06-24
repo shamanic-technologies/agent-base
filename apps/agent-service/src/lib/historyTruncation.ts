@@ -55,15 +55,19 @@ export function truncateHistory(
   inputTokensBudget: number,
   thinkingBudgetTokens: number = 0,
 ): Message[] {
+  console.log(`[HistoryTruncation] Input tokens budget: ${inputTokensBudget}.`);
+  console.log(`[HistoryTruncation] Thinking budget tokens: ${thinkingBudgetTokens}.`);
 
 
   // Count tokens for the system prompt and the current user message.
   const systemPromptTokens = countMessageContentTokens(systemPrompt, "system prompt");
   // const currentUserMessageTokens = countMessageContentTokens(currentMessage.content, `current user message ID: ${currentMessage.id}`);
+  console.log(`[HistoryTruncation] System prompt tokens: ${systemPromptTokens}.`);
 
   // Determine the remaining token budget for historical messages.
   // Ensure budget is not negative, and account for thinking budget.
   const historyTokensBudget = Math.max(0, inputTokensBudget - systemPromptTokens - thinkingBudgetTokens);
+  console.log(`[HistoryTruncation] Remaining history tokens budget: ${historyTokensBudget}.`);
 
   const selectedHistoryMessages: Message[] = [];
   let currentHistoryTokens = 0;

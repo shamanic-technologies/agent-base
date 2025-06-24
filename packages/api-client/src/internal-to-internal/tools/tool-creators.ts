@@ -95,7 +95,6 @@ export function createCallUtilityTool(
             params: z.any().describe('An object containing the parameters required by the specific functional utility tool being called.')
         }),
         execute: async (args: { toolId: string, params: any }): Promise<ServiceResponse<ExecuteToolResult>> => { // Argument key is params
-            console.log(`[createCallUtilityTool] Executing utility_call_utility for tool: ${args.toolId}`);
             const payload: ExecuteToolPayload = {
                 params: args.params,
                 conversationId: conversationId 
@@ -132,7 +131,7 @@ export async function createFunctionalToolObject(
     // 1. Fetch tool info (description, JSON schema)
     const infoResponse: ServiceResponse<UtilityInfo> = await getUtilityInfoFromAgent(agentInternalCredentials, conversationId, toolId);
 
-    if (!infoResponse.success || !infoResponse.data) {
+    if (!infoResponse.success) {
         console.error(`[createFunctionalToolObject] Failed to get info for tool ${toolId}:`, infoResponse);
         throw new Error(`Could not fetch tool definition for '${toolId}'.`);
     }

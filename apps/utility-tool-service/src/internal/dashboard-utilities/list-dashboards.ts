@@ -19,11 +19,7 @@ import { listDashboardsApiClient } from '@agent-base/api-client';
 
 // --- Local Type Definitions for this Utility ---
 
-export type ListDashboardsSuccessResponse_Local = DashboardInfo[];
 
-export type ListDashboardsResponse_Local =
-  ListDashboardsSuccessResponse_Local |
-  ErrorResponse;
 
 // --- End Local Type Definitions ---
 
@@ -33,7 +29,10 @@ export type ListDashboardsResponse_Local =
 const listDashboardsUtility: InternalUtilityTool = {
   id: 'list_dashboards',
   description: 'Lists all available dashboards for the current user and organization. Provides a summary of each dashboard, including its ID and name.',
-  schema: {}, // No parameters required
+  schema: {
+    type: 'object',
+    properties: {},
+  },
   
   execute: async (clientUserId: string, clientOrganizationId: string, platformUserId: string, platformApiKey: string, conversationId: string): Promise<ServiceResponse<ExecuteToolResult>> => {
     const logPrefix = '📊 [LIST_DASHBOARDS]';

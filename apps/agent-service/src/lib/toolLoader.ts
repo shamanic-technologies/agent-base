@@ -5,7 +5,8 @@
  */
 import {
     AgentInternalCredentials,
-    InternalUtilityInfo
+    InternalUtilityInfo,
+    SuccessResponse
 } from '@agent-base/types';
 import {
     createListUtilitiesTool,
@@ -49,18 +50,18 @@ export async function loadAndPrepareTools(
         'utility_read_webpage',
         'utility_curl_command',
         //// Dashboard utilities
-        // 'create_dashboard',
-        // 'delete_dashboard',
-        // 'get_dashboard',
-        // 'update_dashboard',
-        // 'list_dashboards',
-        // 'list_dashboard_blocks',
-        // 'get_dashboard_block_by_id',
+        'create_dashboard',
+        'delete_dashboard',
+        'get_dashboard',
+        'update_dashboard',
+        'list_dashboards',
+        'list_dashboard_blocks',
+        'get_dashboard_block_by_id',
         //// Database utilities
-        // 'create_table',
-        // 'get_database',
-        // 'get_table',
-        // 'query_database',
+        'create_table',
+        'get_database',
+        'get_table',
+        'query_database',
         // client-side tools
         'get_active_organization',
         'update_organization',
@@ -68,7 +69,12 @@ export async function loadAndPrepareTools(
     ];
 
     const clientSideToolsResponse = await listClientSideUtilitiesFromAgent(agentServiceCredentials);
-    const clientSideToolIds = clientSideToolsResponse.success ? clientSideToolsResponse.data.map((t: InternalUtilityInfo) => t.id) : [];
+
+    if (!clientSideToolsResponse.success) {
+        console.error(`[ToolLoader] Failed to list client-side tools: ${clientSideToolsResponse.error}`);
+        throw new Error(`[ToolLoader] Failed to list client-side tools: ${clientSideToolsResponse.error}.`);
+    }
+    const clientSideToolIds = clientSideToolsResponse.data.map((t: InternalUtilityInfo) => t.id);
     
     const fetchedFunctionalTools = await Promise.all(
         startupToolIds.map(id => createFunctionalToolObject(id, agentServiceCredentials, conversationId, clientSideToolIds))
