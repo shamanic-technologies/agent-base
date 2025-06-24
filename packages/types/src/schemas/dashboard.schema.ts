@@ -82,6 +82,7 @@ export const textConfigSchema = z.object({
     content: z.string(),
     props: z.object({
         className: z.string().optional(),
+        variant: z.enum(['title', 'subtitle', 'body', 'caption', 'default']).optional(),
     }).optional(),
 });
 

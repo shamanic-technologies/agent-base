@@ -2,14 +2,6 @@
 import { Message } from 'ai';
 import { countTokens } from '@anthropic-ai/tokenizer';
 
-interface TruncateHistoryParams {
-  systemPrompt: string;
-  currentMessage: Message;
-  fullHistoryMessages: Message[];
-  inputTokensBudget: number;
-  maxOutputTokens: number;
-  thinkingBudgetTokens: number;
-}
 
 /**
  * Counts tokens for message content, handling string or array formats.
@@ -48,38 +40,30 @@ function countMessageContentTokens(
 
 /**
  * Truncates conversation history to fit within the specified model's context window.
- * This function prioritizes inclusion of the system prompt, the current user message,
- * and the most recent historical messages, while adhering to token limits and a safety margin.
+ * This function prioritizes inclusion of the system prompt,
+ * and the most recent historical messages, while adhering to token limits.
  *
- * @param params - Object containing parameters for truncation:
- *  - `systemPrompt`: The system prompt string.
- *  - `currentMessage`: The current user's message object.
- *  - `fullHistoryMessages`: An array of all historical messages in the conversation.
- *  - `totalModelLimit`: The total token limit for the model.
- *  - `maxOutputTokens`: The maximum number of tokens reserved for the model's output.
- *  - `safetyMargin` (optional): A factor (0.0 to 1.0) for the safety margin (e.g., 0.90 for 10% margin). Defaults to 0.90.
- *  - `thinkingBudgetTokens` (optional): The token budget for thinking. Defaults to 0 if not provided.
+ * @param systemPrompt - The system prompt string.
+ * @param fullHistoryMessages - An array of all historical messages in the conversation.
+ * @param inputTokensBudget - The total token limit for the model.
+ * @param thinkingBudgetTokens - The token budget for thinking. Defaults to 0 if not provided.
  * @returns An array of `Message` objects representing the selected history messages that fit the calculated token budget.
  */
-export function truncateHistory(params: TruncateHistoryParams): Message[] {
-  const {
-    systemPrompt,
-    currentMessage,
-    fullHistoryMessages,
-    inputTokensBudget,
-    maxOutputTokens,
-    thinkingBudgetTokens = 0, // Default to 0 if not provided
-  } = params;
+export function truncateHistory(
+  systemPrompt: string,
+  fullHistoryMessages: Message[],
+  inputTokensBudget: number,
+  thinkingBudgetTokens: number = 0,
+): Message[] {
 
-  const safetyMargin = 1.0;
 
   // Count tokens for the system prompt and the current user message.
   const systemPromptTokens = countMessageContentTokens(systemPrompt, "system prompt");
-  const currentUserMessageTokens = countMessageContentTokens(currentMessage.content, `current user message ID: ${currentMessage.id}`);
+  // const currentUserMessageTokens = countMessageContentTokens(currentMessage.content, `current user message ID: ${currentMessage.id}`);
 
   // Determine the remaining token budget for historical messages.
   // Ensure budget is not negative, and account for thinking budget.
-  const historyTokensBudget = Math.max(0, inputTokensBudget - systemPromptTokens - currentUserMessageTokens);
+  const historyTokensBudget = Math.max(0, inputTokensBudget - systemPromptTokens - thinkingBudgetTokens);
 
   const selectedHistoryMessages: Message[] = [];
   let currentHistoryTokens = 0;

@@ -183,14 +183,8 @@ export function handleValidationError(error: any, toolName: string): ErrorRespon
  * It catches errors passed via `next(error)` and sends a structured JSON response.
  */
 export function agentServiceErrorHandler(err: any, req: Request, res: Response, next: NextFunction) {
-  // Log the full error for debugging purposes
-  console.error(`[Agent Service Error Handler] Caught Error: ${err.message}`, {
-    name: err.name,
-    type: err.data?.error?.type,
-    stack: err.stack,
-    path: req.path,
-    method: req.method,
-  });
+  // Log the full, raw error object for comprehensive debugging
+  console.error('[Agent Service Error Handler] A critical error occurred:', err);
 
   // If headers have already been sent, delegate to the default Express error handler.
   if (res.headersSent) {
@@ -218,10 +212,11 @@ export function agentServiceErrorHandler(err: any, req: Request, res: Response, 
     }
   }
 
-  // For all other errors, send a generic 500 Internal Server Error
+  // For all other errors, send a generic 500 Internal Server Error but include the original message
   res.status(500).json({
     success: false,
     error: 'An internal server error occurred.',
-    code: 'INTERNAL_SERVER_ERROR'
+    details: err.message, // Include the specific error message for debugging
+    code: err.name || 'INTERNAL_SERVER_ERROR' // Use the error name as a code if available
   });
 } 

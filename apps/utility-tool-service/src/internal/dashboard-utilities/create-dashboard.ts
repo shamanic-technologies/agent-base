@@ -77,18 +77,10 @@ const createDashboardUtility: InternalUtilityTool = {
         return { success: false, error: "Name and layout are required." };
       }
 
-      // Validate the layout against the shared Zod schema
-      const validationResult = dashboardLayoutSchema.safeParse(layout);
-      if (!validationResult.success) {
-        const errorDetails = JSON.stringify(validationResult.error.flatten());
-        console.error(`${logPrefix} Invalid layout structure: ${errorDetails}`);
-        return { success: false, error: "Invalid dashboard layout structure.", details: errorDetails };
-      }
-            
       const createResponse: ServiceResponse<Dashboard> = await createDashboardApiClient(
         {
-          name: name,
-          layout: validationResult.data,
+          name,
+          layout,
         },
         { clientUserId, clientOrganizationId, platformUserId, platformApiKey }
       );
