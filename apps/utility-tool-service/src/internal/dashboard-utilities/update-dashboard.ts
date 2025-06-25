@@ -14,17 +14,6 @@ import {
 } from '@agent-base/types';
 import { registry } from '../../registry/registry.js';
 import { updateDashboardApiClient } from '@agent-base/api-client';
-import { z } from 'zod';
-
-// --- Local Type Definitions for this Utility ---
-
-export type UpdateDashboardSuccessResponse_Local = Dashboard;
-
-export type UpdateDashboardResponse_Local =
-  UpdateDashboardSuccessResponse_Local |
-  ErrorResponse;
-
-// --- End Local Type Definitions ---
 
 /**
  * Implementation of the Update Dashboard utility
@@ -68,14 +57,8 @@ const updateDashboardUtility: InternalUtilityTool = {
 
       if (!updateResponse.success) {
         console.error(`${logPrefix} Failed to update dashboard from service:`, updateResponse.error, updateResponse.details);
-        return {
-            success: false,
-            error: updateResponse.error || "Failed to update the dashboard.",
-            details: updateResponse.details || "No further details provided."
-        };
+        return updateResponse;
       }
-
-      const toolSpecificSuccessData: UpdateDashboardSuccessResponse_Local = updateResponse.data;
 
       return updateResponse;
       

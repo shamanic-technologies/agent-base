@@ -26,22 +26,30 @@ interface DashboardAuth {
  * @returns A descriptive error message.
  */
 function formatZodError(error: ZodError): string {
-  const issues = error.flatten().fieldErrors;
-  const errorMessages = Object.entries(issues).map(([field, messages]) => {
-    // Attempt to provide more context for common errors
-    if (field === 'children' && messages?.includes('Required')) {
-      return `A 'Grid' block is missing its required 'children' array.`;
+  const errorMessages = error.issues.map(issue => {
+    // Create a user-friendly path string like "children[6].source"
+    const path = issue.path.reduce<string>((acc, p) => {
+        if (typeof p === 'number') return `${acc}[${p}]`;
+        return acc ? `${acc}.${p}` : String(p);
+    }, '');
+
+    // Check for the most common error: using 'sql' instead of 'query'
+    if (issue.code === 'invalid_union' && path.endsWith('source')) {
+      return `Error in '${path}': Invalid data source. A 'source' object must contain either a 'query' key for SQL or a 'data' key for static data. You may have used 'sql' instead of 'query'.`;
     }
-    if (messages && messages.length > 0) {
-      // Check for common structural mistakes
-      if (messages[0].includes("'source'")) {
-         return `A data-driven block is missing its 'source' property. All charts and tables require a 'source' property containing either a 'query' string or static 'data'.`;
-      }
-      return `Field '${field}': ${messages.join(', ')}`;
+    
+    // Provide a clear message for missing required properties
+    if (issue.code === 'invalid_type' && issue.received === 'undefined') {
+       return `Error in '${path}': A required property is missing.`;
     }
-    return `An unspecified validation error occurred.`;
+
+    // General fallback for other errors, making the path prominent
+    return `Error in '${path}': ${issue.message}`;
   });
-  return `Validation Error: ${errorMessages.join('; ')}`;
+
+  // Use a Set to remove duplicate messages, which often occur with discriminated unions
+  const uniqueMessages = [...new Set(errorMessages)];
+  return `Validation Error(s): ${uniqueMessages.join('; ')}`;
 }
 
 /**
