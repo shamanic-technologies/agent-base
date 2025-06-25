@@ -39,18 +39,24 @@ export function sanitizeIncompleteToolCalls(messages: Message[]): Message[] {
 
   const lastAssistantMsg = messages[lastAssistantMsgIndex];
 
-  // If the assistant message content isn't an array, it can't contain tool calls.
-  if (!Array.isArray(lastAssistantMsg.content)) {
-    return messages;
-  }
+  // If the assistant message content isn't an array, it can't contain standard tool calls,
+  // but we must still check for the `toolInvocations` property used by the UI.
+  const contentToolCalls = (Array.isArray(lastAssistantMsg.content)
+    ? lastAssistantMsg.content
+        .filter((part: any) => part.type === 'tool_call')
+        .map((part) => (part as { toolCallId: string }).toolCallId)
+    : []) as string[];
+  
+  // Also check for tool calls in the `toolInvocations` property, which is used by the Vercel AI SDK UI components.
+  // This is the key change to handle messages coming from a `useChat` client.
+  const invocationToolCalls = ((lastAssistantMsg as any).toolInvocations
+    ? (lastAssistantMsg as any).toolInvocations
+        .map((tool: any) => tool.toolCallId)
+    : []) as string[];
 
-  const requiredToolCallIds = new Set(
-    lastAssistantMsg.content
-      .filter((part: { type: string; }) => part.type === 'tool_call')
-      .map((part) => (part as { type: 'tool_call'; toolCallId: string }).toolCallId),
-  );
+  const requiredToolCallIds = new Set([...contentToolCalls, ...invocationToolCalls]);
 
-  // If the last assistant message had no tool calls, there's nothing to sanitize.
+  // If the last assistant message had no tool calls in either location, there's nothing to sanitize.
   if (requiredToolCallIds.size === 0) {
     return messages;
   }
@@ -58,18 +64,25 @@ export function sanitizeIncompleteToolCalls(messages: Message[]): Message[] {
   const subsequentToolMessages = messages.slice(lastAssistantMsgIndex + 1).filter((msg: any) => msg.role === 'tool');
   
   // According to the Vercel AI SDK documentation, the toolCallId for a tool result
-  // is located inside the 'content' array.
-  const providedToolCallIds = new Set(
-    subsequentToolMessages.flatMap((msg: Message) => {
-      if (Array.isArray(msg.content)) {
-        // Filter for tool-result parts and map to their toolCallId
-        return msg.content
-          .filter((part: any) => part.type === 'tool-result' && part.toolCallId)
-          .map((part: any) => part.toolCallId);
-      }
-      return [];
-    })
-  );
+  // is located inside the 'content' array. However, we also check for a backward-
+  // compatible format where `toolCallId` is a top-level property.
+  const providedToolCallIds = new Set<string>();
+  subsequentToolMessages.forEach((msg: Message) => {
+    // Check for the modern format where content is an array of tool results
+    if (Array.isArray(msg.content)) {
+      msg.content.forEach((part: any) => {
+        // The `part` can be a string or an object. We only care about tool-result objects.
+        if (typeof part === 'object' && part.type === 'tool-result' && part.toolCallId) {
+          providedToolCallIds.add(part.toolCallId);
+        }
+      });
+    }
+    // Check for the backward-compatible format where toolCallId is a top-level property.
+    // The type assertion is safe because we've already filtered for role: 'tool'.
+    if ((msg as any).toolCallId) {
+      providedToolCallIds.add((msg as any).toolCallId);
+    }
+  });
   
   // --- Enhanced Logging ---
   console.log('[Sanitizer] Last assistant message index:', lastAssistantMsgIndex);

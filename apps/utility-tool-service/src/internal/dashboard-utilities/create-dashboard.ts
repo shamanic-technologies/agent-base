@@ -48,15 +48,31 @@ const createDashboardUtility: InternalUtilityTool = {
       },
       layout: {
         type: 'object',
-        description: "REQUIRED. A JSON object representing the dashboard layout. It must start with a 'Grid' block at the root, which contains other blocks as its children. The agent should use other available block-related tools to discover what blocks and properties are available.",
+        description: "REQUIRED. A JSON object representing the dashboard layout. It must start with a 'Grid' block at the root, which contains other blocks as its children. The agent should use other available block-related tools to discover what blocks and properties are available. Almost always, create a 'Grid' with more than one column to create a nice dashboard.",
         examples: [
           {
             "type": "Grid",
             "children": [
               {
-                "type": "MetricCard",
-                "title": "Total Users",
-                "source": { "value": "1,234" }
+                "type": "Text",
+                "props": {"variant": "title"},
+                "content": "Monthly Revenue Dashboard"
+              },
+              {
+                "type": "Grid",
+                "props": { "numItemsLg": 2 },
+                "children": [
+                  {
+                    "type": "MetricCard",
+                    "title": "Total Revenue",
+                    "source": { "value": "$125,432" }
+                  },
+                  {
+                    "type": "MetricCard",
+                    "title": "New Customers",
+                    "source": { "value": "1,234" }
+                  }
+                ]
               }
             ]
           }
