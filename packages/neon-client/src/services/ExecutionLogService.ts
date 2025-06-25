@@ -1,5 +1,6 @@
 import { Pool } from '@neondatabase/serverless';
 import { InternalUtilityTool, ApiTool } from '@agent-base/types';
+import JSZip from 'jszip';
 
 // A mapping from JSON schema types to PostgreSQL types.
 const typeMapping: Record<string, string> = {
@@ -67,6 +68,52 @@ export function getTableNameForApiTool(tool: ApiTool): string {
   return tableName;
 }
 
+async function handleZipResult(result: any): Promise<any> {
+  if (typeof result === 'object' && result !== null && result.encoding === 'base64' && result.contentType === 'application/zip') {
+    try {
+      const zip = new JSZip();
+      const zipContent = await zip.loadAsync(result.content, { base64: true });
+      const filesInZip = Object.values(zipContent.files).filter(file => !file.dir);
+
+      if (filesInZip.length === 1) {
+        const singleFile = filesInZip[0];
+        if (!singleFile) {
+          // This case should not be reached due to the length check, but it satisfies the linter.
+          return result;
+        }
+        console.log(`[ExecutionLogService] Found a single file in zip: ${singleFile.name}`);
+
+        const fileContent = await singleFile.async('nodebuffer');
+
+        // Check if the single file is JSON
+        if (singleFile.name.toLowerCase().endsWith('.json')) {
+          try {
+            return JSON.parse(fileContent.toString('utf-8'));
+          } catch (e) {
+            console.warn(`[ExecutionLogService] Failed to parse JSON from single file in zip: ${singleFile.name}. Storing as binary.`);
+          }
+        }
+
+        // For other file types (images, etc.), return as a new Base64 object
+        // We need to guess the content type or use a generic one.
+        // For simplicity, we'll use a generic one but ideally, we'd map extensions.
+        const newContentType = 'application/octet-stream'; // A generic content type
+        return {
+          encoding: 'base64',
+          contentType: newContentType, // Or derive from file extension
+          content: fileContent.toString('base64'),
+        };
+      }
+      
+      console.log(`[ExecutionLogService] Zip contains ${filesInZip.length} files. Storing the zip as is.`);
+    } catch (error) {
+      console.error('[ExecutionLogService] Error processing zip file. Storing the original zip.', error);
+      return result; // Return original zip if processing fails
+    }
+  }
+  return result; // Return original result if not a zip file
+}
+
 export async function logInternalToolExecution(tool: InternalUtilityTool, params: any, result: any): Promise<void> {
   const dbUrl = process.env.NEON_DATABASE_URL;
   if (!dbUrl) {
@@ -110,6 +157,9 @@ export async function logApiToolExecution(tool: ApiTool, params: any, result: an
   }
 
   const tableName = getTableNameForApiTool(tool);
+  
+  // Handle potential zip file in the result
+  const processedResult = await handleZipResult(result);
   
   // Extract schema from OpenAPI spec
   const path = Object.keys(tool.openapiSpecification.paths)[0];
@@ -156,7 +206,7 @@ export async function logApiToolExecution(tool: ApiTool, params: any, result: an
 
     const paramKeys = Array.isArray(schema) ? schema.map(p => 'name' in p ? p.name : '').filter(name => name) : [];
     const columns = ['execution_result', ...paramKeys].filter(isValidIdentifier);
-    const values = [JSON.stringify(result), ...paramKeys.map(key => params[key])];
+    const values = [JSON.stringify(processedResult), ...paramKeys.map(key => params[key])];
     const valuePlaceholders = values.map((_, i) => `$${i + 1}`).join(', ');
 
     const insertQuery = `INSERT INTO "${tableName}" (${columns.map(c => `"${c}"`).join(', ')}) VALUES (${valuePlaceholders})`;

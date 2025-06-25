@@ -30,7 +30,7 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "packageManager": "pnpm@10.6.2",
+  "packageManager": "pnpm@10.12.3",
   "dependencies": {
     "@google-cloud/sql": "^0.20.1",
     "@google-cloud/storage": "^7.16.0",

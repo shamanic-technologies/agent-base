@@ -33,8 +33,10 @@
   "dependencies": {
     "@agent-base/types": "workspace:*",
     "@neondatabase/serverless": "^1.0.1",
+    "@types/jszip": "^3.4.1",
     "@xata.io/client": "^0.30.1",
     "dotenv": "^16.5.0",
+    "jszip": "^3.10.1",
     "node-fetch": "^3.3.2",
     "postgres": "^3.4.7",
     "uuid": "^9.0.1",
