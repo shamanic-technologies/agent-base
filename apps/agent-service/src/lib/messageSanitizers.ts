@@ -35,7 +35,7 @@ export function sanitizeIncompleteToolCalls(messages: Message[]): Message[] {
     uiParts.forEach((part: any) => {
       if (part.type === 'tool-invocation' && part.toolInvocation?.state === 'result' && part.toolInvocation?.toolCallId) {
         allProvidedToolResultIds.add(part.toolInvocation.toolCallId);
-      }
+  }
     });
 
     // Also check the top-level `toolInvocations` array for results
@@ -67,7 +67,7 @@ export function sanitizeIncompleteToolCalls(messages: Message[]): Message[] {
     const requiredToolCallIds = new Set([...partsToolCalls, ...invocationToolCalls]);
 
     // If this assistant message doesn't call any tools, it's safe.
-    if (requiredToolCallIds.size === 0) {
+  if (requiredToolCallIds.size === 0) {
       sanitizedMessages.push(message);
       continue;
     }

@@ -49,7 +49,6 @@ const readWebPage: InternalUtilityTool = {
       url: { 
         type: 'string',
         description: 'The URL to fetch content from (must include http:// or https://)',
-        format: 'uri',
         examples: ['https://example.com', 'http://blog.example.com/article']
       },
       onlyMainContent: { 

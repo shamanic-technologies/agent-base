@@ -18,9 +18,9 @@ import { z } from 'zod';
 
 // Zod schema for input parameters
 const CurlRequestParamsSchema = z.object({
-  url: z.string().url({ message: "Invalid URL format." }),
+  url: z.string().describe("The URL to send the request to."),
   method: z.enum(['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS']).default('GET'),
-  headers: z.record(z.string()).optional().describe("Key-value pairs for request headers."),
+  headers: z.record(z.string()).optional().describe("Key-value-pairs for request headers."),
   body: z.string().optional().describe("Request body, typically for POST, PUT, PATCH."),
   timeout_ms: z.number().int().positive({ message: "Timeout must be a positive integer." }).optional().default(10000).describe("Request timeout in milliseconds."),
   from_character: z.number().int().nonnegative().optional().default(0).describe("The starting character index from which to return the response body. Defaults to 0."),
@@ -39,7 +39,7 @@ const curlCommandUtility: InternalUtilityTool = {
   schema: {
     type: 'object',
     properties: {
-      url: { type: 'string', format: 'uri', description: 'The URL to send the request to.' },
+      url: { type: 'string', description: 'The URL to send the request to.' },
       method: { 
         type: 'string', 
         enum: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'], 

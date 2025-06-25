@@ -68,9 +68,9 @@ const createDashboardUtility: InternalUtilityTool = {
                     "source": { "value": "$125,432" }
                   },
                   {
-                    "type": "MetricCard",
+                "type": "MetricCard",
                     "title": "New Customers",
-                    "source": { "value": "1,234" }
+                "source": { "value": "1,234" }
                   }
                 ]
               }

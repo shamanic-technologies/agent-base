@@ -24,6 +24,7 @@
     "@agent-base/api-client": "workspace:*",
     "@agent-base/types": "workspace:*",
     "@ai-sdk/anthropic": "^1.2.12",
+    "@ai-sdk/google": "^1.2.19",
     "@anthropic-ai/tokenizer": "^0.0.4",
     "@langchain/anthropic": "^0.3.20",
     "@langchain/core": "^0.3.55",

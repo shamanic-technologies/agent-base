@@ -17,6 +17,7 @@ import {
 } from '@agent-base/types';
 // AI SDK imports
 import { anthropic } from '@ai-sdk/anthropic';
+// import { google } from '@ai-sdk/google';
 import { streamText, StreamData, ToolCall } from 'ai';
 
 // Import necessary API client functions
@@ -163,6 +164,7 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
             // --- Call AI Model ---
             const result = await streamText({
                 model: anthropic(ModelName.CLAUDE_SONNET_4_20250514),
+                // model: google('gemini-2.5-pro'),
                 messages: sanitizedMessages,
                 system: systemPrompt, 
                 tools: allStartupTools,
