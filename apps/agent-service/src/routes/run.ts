@@ -132,9 +132,6 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
             // 1. Merge to get the most complete history.
             const mergedMessages : Message[] = mergeMessages(dbHistory, messages);
 
-            // 2. Sanitize the merged history to prevent crashes from incomplete tool calls.
-            const sanitizedMessages : Message[] = sanitizeIncompleteToolCalls(mergedMessages as any);
-
             // 3. Truncate history to fit within the context window.
             const maxSteps = 10;
             const inputTokensBudget = 15000;
@@ -143,10 +140,14 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
 
             const truncatedMessages : Message[] = truncateHistory(
                 systemPrompt, 
-                sanitizedMessages, 
+                mergedMessages, 
                 inputTokensBudget, 
                 thinkingBudgetTokens
             );
+
+            // 2. Sanitize the merged history to prevent crashes from incomplete tool calls.
+            const sanitizedMessages : Message[] = sanitizeIncompleteToolCalls(truncatedMessages);
+
             
             // 4. Dynamically Load and Prepare Tools
             const agentServiceCredentials: AgentInternalCredentials = {
@@ -162,7 +163,7 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
             // --- Call AI Model ---
             const result = await streamText({
                 model: anthropic(ModelName.CLAUDE_SONNET_4_20250514),
-                messages: truncatedMessages,
+                messages: sanitizedMessages,
                 system: systemPrompt, 
                 tools: allStartupTools,
                 toolCallStreaming: true,

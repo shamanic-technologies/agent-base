@@ -130,7 +130,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/types
       '@ai-sdk/anthropic':
-        specifier: ^1.2.11
+        specifier: ^1.2.12
         version: 1.2.12(zod@3.25.42)
       '@anthropic-ai/tokenizer':
         specifier: ^0.0.4
@@ -145,8 +145,8 @@ importers:
         specifier: ^0.2.72
         version: 0.2.74(@langchain/core@0.3.57)(react@19.1.0)(zod-to-json-schema@3.24.5(zod@3.25.42))
       ai:
-        specifier: ^4.3.15
-        version: 4.3.15(react@19.1.0)(zod@3.25.42)
+        specifier: ^4.3.16
+        version: 4.3.16(react@19.1.0)(zod@3.25.42)
       axios:
         specifier: ^1.9.0
         version: 1.9.0
@@ -334,8 +334,8 @@ importers:
         specifier: ^10.0.0
         version: 10.0.0
       ai:
-        specifier: 4.3.15
-        version: 4.3.15(react@19.1.0)(zod@3.25.42)
+        specifier: 4.3.16
+        version: 4.3.16(react@19.1.0)(zod@3.25.42)
       cors:
         specifier: ^2.8.5
         version: 2.8.5
@@ -876,8 +876,8 @@ importers:
         specifier: ^8.0.417
         version: 8.0.417(@types/node@22.15.29)
       ai:
-        specifier: ^4.3.15
-        version: 4.3.15(react@19.1.0)(zod@3.25.42)
+        specifier: ^4.3.16
+        version: 4.3.16(react@19.1.0)(zod@3.25.42)
       axios:
         specifier: ^1.9.0
         version: 1.9.0
@@ -990,8 +990,8 @@ importers:
         specifier: ^8.0.417
         version: 8.0.417(@types/node@22.15.29)
       ai:
-        specifier: ^4.3.15
-        version: 4.3.15(react@19.1.0)(zod@3.25.42)
+        specifier: ^4.3.16
+        version: 4.3.16(react@19.1.0)(zod@3.25.42)
       axios:
         specifier: ^1.9.0
         version: 1.9.0
@@ -3077,8 +3077,8 @@ packages:
     resolution: {integrity: sha512-kja8j7PjmncONqaTsB8fQ+wE2mSU2DJ9D4XKoJ5PFWIdRMa6SLSN1ff4mOr4jCbfRSsxR4keIiySJU0N9T5hIQ==}
     engines: {node: '>= 8.0.0'}
 
-  ai@4.3.15:
-    resolution: {integrity: sha512-TYKRzbWg6mx/pmTadlAEIhuQtzfHUV0BbLY72+zkovXwq/9xhcH24IlQmkyBpElK6/4ArS0dHdOOtR1jOPVwtg==}
+  ai@4.3.16:
+    resolution: {integrity: sha512-KUDwlThJ5tr2Vw0A1ZkbDKNME3wzWhuVfAOwIvFUzl1TPVDFAXDFTXio3p+jaKneB+dKNCvFFlolYmmgHttG1g==}
     engines: {node: '>=18'}
     peerDependencies:
       react: ^18 || ^19 || ^19.0.0-rc
@@ -3438,6 +3438,9 @@ packages:
 
   caniuse-lite@1.0.30001720:
     resolution: {integrity: sha512-Ec/2yV2nNPwb4DnTANEV99ZWwm3ZWfdlfkQbWSDDt+PsXEVYwlhPH8tdMaPunYTKKmz7AnHi2oNEi1GcmKCD8g==}
+
+  caniuse-lite@1.0.30001725:
+    resolution: {integrity: sha512-OllFBaEDJx2nwkQSHdScjdRGCCLb9cb4fq50W3A/njtnJFRaRDQfGIl+J8vqAvwwKtbWB4Ptf4YdPXEculKdwg==}
 
   case@1.6.3:
     resolution: {integrity: sha512-mzDSXIPaFwVDvZAHqZ9VlbyF4yyXRuX6IvB06WvPYkqJVO24kX1PPhv9bfpKNFZyxYFmmgo03HUiD8iklmJYRQ==}
@@ -9813,7 +9816,7 @@ snapshots:
     dependencies:
       humanize-ms: 1.2.1
 
-  ai@4.3.15(react@19.1.0)(zod@3.25.42):
+  ai@4.3.16(react@19.1.0)(zod@3.25.42):
     dependencies:
       '@ai-sdk/provider': 1.1.3
       '@ai-sdk/provider-utils': 2.2.8(zod@3.25.42)
@@ -10262,6 +10265,8 @@ snapshots:
   camelcase@6.3.0: {}
 
   caniuse-lite@1.0.30001720: {}
+
+  caniuse-lite@1.0.30001725: {}
 
   case@1.6.3: {}
 
@@ -13039,7 +13044,7 @@ snapshots:
       '@swc/counter': 0.1.3
       '@swc/helpers': 0.5.15
       busboy: 1.6.0
-      caniuse-lite: 1.0.30001720
+      caniuse-lite: 1.0.30001725
       postcss: 8.4.31
       react: 18.3.1
       react-dom: 19.1.0(react@18.3.1)

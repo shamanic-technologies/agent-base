@@ -24,89 +24,72 @@ import { Message } from 'ai';
  * @returns A new array of messages with any incomplete tool call sequence removed.
  */
 export function sanitizeIncompleteToolCalls(messages: Message[]): Message[] {
-  let lastAssistantMsgIndex = -1;
-  for (let i = messages.length - 1; i >= 0; i--) {
-    if (messages[i].role === 'assistant') {
-      lastAssistantMsgIndex = i;
-      break;
-    }
-  }
+  // 1. First, create a set of all available tool result IDs from the entire history for efficient lookup.
+  const allProvidedToolResultIds = new Set<string>();
+  messages.forEach(message => {
+    // In UIMessages, results are not in `role: 'tool'` messages. They are part of
+    // assistant messages in the `parts` and `toolInvocations` arrays, identified by `state: 'result'`.
 
-  // If there's no assistant message, the history is considered safe.
-  if (lastAssistantMsgIndex === -1) {
-    return messages;
-  }
+    // Check `parts` array for tool results
+    const uiParts = (message as any).parts ?? [];
+    uiParts.forEach((part: any) => {
+      if (part.type === 'tool-invocation' && part.toolInvocation?.state === 'result' && part.toolInvocation?.toolCallId) {
+        allProvidedToolResultIds.add(part.toolInvocation.toolCallId);
+      }
+    });
 
-  const lastAssistantMsg = messages[lastAssistantMsgIndex];
-
-  // If the assistant message content isn't an array, it can't contain standard tool calls,
-  // but we must still check for the `toolInvocations` property used by the UI.
-  const contentToolCalls = (Array.isArray(lastAssistantMsg.content)
-    ? lastAssistantMsg.content
-        .filter((part: any) => part.type === 'tool_call')
-        .map((part) => (part as { toolCallId: string }).toolCallId)
-    : []) as string[];
-  
-  // Also check for tool calls in the `toolInvocations` property, which is used by the Vercel AI SDK UI components.
-  // This is the key change to handle messages coming from a `useChat` client.
-  const invocationToolCalls = ((lastAssistantMsg as any).toolInvocations
-    ? (lastAssistantMsg as any).toolInvocations
-        .map((tool: any) => tool.toolCallId)
-    : []) as string[];
-
-  const requiredToolCallIds = new Set([...contentToolCalls, ...invocationToolCalls]);
-
-  // If the last assistant message had no tool calls in either location, there's nothing to sanitize.
-  if (requiredToolCallIds.size === 0) {
-    return messages;
-  }
-
-  const subsequentToolMessages = messages.slice(lastAssistantMsgIndex + 1).filter((msg: any) => msg.role === 'tool');
-  
-  // According to the Vercel AI SDK documentation, the toolCallId for a tool result
-  // is located inside the 'content' array. However, we also check for a backward-
-  // compatible format where `toolCallId` is a top-level property.
-  const providedToolCallIds = new Set<string>();
-  subsequentToolMessages.forEach((msg: Message) => {
-    // Check for the modern format where content is an array of tool results
-    if (Array.isArray(msg.content)) {
-      msg.content.forEach((part: any) => {
-        // The `part` can be a string or an object. We only care about tool-result objects.
-        if (typeof part === 'object' && part.type === 'tool-result' && part.toolCallId) {
-          providedToolCallIds.add(part.toolCallId);
-        }
-      });
-    }
-    // Check for the backward-compatible format where toolCallId is a top-level property.
-    // The type assertion is safe because we've already filtered for role: 'tool'.
-    if ((msg as any).toolCallId) {
-      providedToolCallIds.add((msg as any).toolCallId);
-    }
+    // Also check the top-level `toolInvocations` array for results
+    const invocations = (message as any).toolInvocations ?? [];
+    invocations.forEach((invocation: any) => {
+      if (invocation.state === 'result' && invocation.toolCallId) {
+        allProvidedToolResultIds.add(invocation.toolCallId);
+      }
+    });
   });
-  
-  // --- Enhanced Logging ---
-  console.log('[Sanitizer] Last assistant message index:', lastAssistantMsgIndex);
-  console.log('[Sanitizer] Required tool call IDs:', Array.from(requiredToolCallIds));
-  console.log('[Sanitizer] Subsequent tool messages found:', subsequentToolMessages.length);
-  console.log('[Sanitizer] Provided tool call IDs:', Array.from(providedToolCallIds));
-  // -------------------------
 
-  // Check if the number of required and provided tool calls match.
-  // This is a robust way to check if the sequence is complete.
-  if (requiredToolCallIds.size !== providedToolCallIds.size) {
-    console.warn('[Agent Service /run] Detected incomplete tool call sequence at the end of the history. Sanitizing messages by removing the last assistant turn.');
-    // Remove the last assistant message and all subsequent (tool) messages.
-    return messages.slice(0, lastAssistantMsgIndex);
-  }
+  // 2. Iterate through the messages and build a new, sanitized list.
+  const sanitizedMessages: Message[] = [];
+  for (const message of messages) {
+    // We only need to validate assistant messages that contain tool calls.
+    if (message.role !== 'assistant') {
+      sanitizedMessages.push(message);
+      continue;
+    }
 
-  // A more thorough check to ensure all specific IDs match.
-  for (const id of requiredToolCallIds) {
-    if (!providedToolCallIds.has(id)) {
-        console.warn(`[Agent Service /run] Detected mismatched tool ID in sequence: ${id}. Sanitizing messages.`);
-        return messages.slice(0, lastAssistantMsgIndex);
+    // Find all tool calls required by this specific assistant message.
+    const uiParts = (message as any).parts ?? [];
+    const partsToolCalls = uiParts
+      .filter((part: any) => part.type === 'tool-invocation' && part.toolInvocation?.toolCallId)
+      .map((part: any) => part.toolInvocation.toolCallId) as string[];
+    const invocationToolCalls = ((message as any).toolInvocations ?? [])
+      .map((tool: any) => tool.toolCallId)
+      .filter(Boolean) as string[];
+    const requiredToolCallIds = new Set([...partsToolCalls, ...invocationToolCalls]);
+
+    // If this assistant message doesn't call any tools, it's safe.
+    if (requiredToolCallIds.size === 0) {
+      sanitizedMessages.push(message);
+      continue;
+    }
+
+    // 3. Check if every required tool call has a corresponding result somewhere in the history.
+    let isMessageValid = true;
+    for (const requiredId of requiredToolCallIds) {
+      if (!allProvidedToolResultIds.has(requiredId)) {
+        const contentPreview = typeof message.content === 'string' 
+          ? message.content.substring(0, 100) 
+          : 'N/A (non-string content)';
+        console.warn(`[Sanitizer] Removing message with ID ${message.id} due to incomplete tool call '${requiredId}'. Content starts: "${contentPreview}..."`);
+        isMessageValid = false;
+        break; // One bad call invalidates the whole message.
+      }
+    }
+
+    // Add the message to our clean list ONLY if it's valid.
+    if (isMessageValid) {
+      sanitizedMessages.push(message);
     }
   }
 
-  // If all checks pass, the history is valid.
-  return messages;
+  return sanitizedMessages;
 } 
