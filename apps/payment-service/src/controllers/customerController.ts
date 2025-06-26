@@ -380,11 +380,10 @@ export async function updateAutoRechargeSettings(req: Request, res: Response): P
     // The authMiddleware ensures platformUser and platformUser.platformUserId are present.
     const { platformUserId, platformUserEmail, platformUserName } = req.platformUser!;
     const { enabled, thresholdAmountInUSDCents, rechargeAmountInUSDCents } : AgentBaseAutoRechargeSettings = req.body;
-    
-    console.log(`Updating auto-recharge settings for userId: ${platformUserId}`);
-    
+        
     // Validate inputs
     if (enabled === undefined) {
+      console.error(`Enabled flag is required for userId: ${platformUserId}`);
       res.status(400).json({
         success: false,
         error: 'Enabled flag is required',
@@ -394,6 +393,7 @@ export async function updateAutoRechargeSettings(req: Request, res: Response): P
     }
     
     if (enabled && (thresholdAmountInUSDCents === undefined || rechargeAmountInUSDCents === undefined)) {
+      console.error(`Threshold amount and recharge amount are required for userId: ${platformUserId}`);
       res.status(400).json({
         success: false,
         error: 'Missing required fields',
@@ -406,6 +406,7 @@ export async function updateAutoRechargeSettings(req: Request, res: Response): P
     const customer = await customerService.getOrCreateStripeCustomer(platformUserId, platformUserEmail, platformUserName);
     
     if (!customer) {
+      console.error(`Customer not found with userId: ${platformUserId}`);
       res.status(404).json({
         success: false,
         error: 'Customer not found'

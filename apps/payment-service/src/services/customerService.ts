@@ -27,30 +27,45 @@ export async function addFreeSignupCredit(stripeCustomerId: string): Promise<Str
  * Calculate customer credit balance from transaction history
  */
 export async function calculateCustomerCredits(stripeCustomerId: string): Promise<AgentBaseCustomerCredits> {
-  const balanceTransactions = await stripe.customers.listBalanceTransactions(
-    stripeCustomerId,
-    { limit: 100 }
-  );
+  let allTransactions: Stripe.CustomerBalanceTransaction[] = [];
+  let hasMore = true;
+  let startingAfter: string | undefined = undefined;
+
+  while (hasMore) {
+    const balanceTransactions: Stripe.ApiList<Stripe.CustomerBalanceTransaction> = await stripe.customers.listBalanceTransactions(
+      stripeCustomerId,
+      { limit: 100, starting_after: startingAfter }
+    );
+
+    allTransactions = allTransactions.concat(balanceTransactions.data);
+    hasMore = balanceTransactions.has_more;
+    if (hasMore) {
+      startingAfter = allTransactions[allTransactions.length - 1].id;
+    }
+  }
+  
+  const customer = await stripe.customers.retrieve(stripeCustomerId);
+
+  if (!customer || 'deleted' in customer) {
+    throw new Error('Customer not found or has been deleted');
+  }
   
   // Calculate total credits granted (all negative transactions)
-  const totalCreditsInUSDCents = balanceTransactions.data
+  const totalInUSDCents = allTransactions
     .filter(tx => tx.amount < 0)
-    .reduce((sum, tx) => sum + Math.abs(tx.amount), 0) / 100;
+    .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
   
-  // Calculate used credits (all positive transactions)
-  const usedCreditsInUSDCents = balanceTransactions.data
-    .filter(tx => tx.amount > 0)
-    .reduce((sum, tx) => sum + tx.amount, 0) / 100;
-  
-  // Calculate remaining credits
-  const remainingCreditsInUSDCents = totalCreditsInUSDCents - usedCreditsInUSDCents;
-  
+  // Remaining credits are the inverse of the customer's balance
+  const remainingInUSDCents = -customer.balance;
+
+  // Used credits are the difference
+  const usedInUSDCents = totalInUSDCents - remainingInUSDCents;
   
   return {
-    totalInUSDCents: totalCreditsInUSDCents,
-    usedInUSDCents: usedCreditsInUSDCents,
-    remainingInUSDCents: remainingCreditsInUSDCents
-  } as AgentBaseCustomerCredits;
+    totalInUSDCents,
+    usedInUSDCents,
+    remainingInUSDCents,
+  };
 }
 
 /**
