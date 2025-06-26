@@ -2,14 +2,14 @@ import { z } from 'zod';
 
 // Source for a single metric: a static value or a query returning one value.
 export const singleValueSourceSchema = z.union([
-    z.object({ value: z.string(), query: z.undefined().optional() }).describe("A static string value."),
-    z.object({ query: z.string(), value: z.undefined().optional() }).describe("A SQL query that returns a single value.")
+    z.object({ value: z.string(), query: z.undefined().optional() }).strict().describe("A static string value."),
+    z.object({ query: z.string(), value: z.undefined().optional() }).strict().describe("A SQL query that returns a single value.")
 ]);
 
 // Source for structured data: a static array of data or a query returning a list.
 export const tabularDataSourceSchema = z.union([
-    z.object({ data: z.array(z.record(z.any())), query: z.undefined().optional() }).describe("A static array of JSON objects."),
-    z.object({ query: z.string(), data: z.undefined().optional() }).describe("A SQL query that returns a list of records.")
+    z.object({ data: z.array(z.record(z.any())), query: z.undefined().optional() }).strict().describe("A static array of JSON objects."),
+    z.object({ query: z.string(), data: z.undefined().optional() }).strict().describe("A SQL query that returns a list of records.")
 ]);
 
 // Schema for MetricCard
@@ -19,14 +19,14 @@ export const metricCardConfigSchema = z.object({
     source: singleValueSourceSchema,
     change: z.string().optional(),
     changeType: z.enum(['positive', 'negative']).optional(),
-});
+}).strict();
 
 // Schema for chart props
 const chartPropsSchema = z.object({
     index: z.string(),
     categories: z.array(z.string()),
     colors: z.array(z.string()).optional(),
-});
+}).strict();
 
 // Schema for BarChart
 export const barChartConfigSchema = z.object({
@@ -34,7 +34,7 @@ export const barChartConfigSchema = z.object({
     title: z.string(),
     source: tabularDataSourceSchema,
     props: chartPropsSchema
-});
+}).strict();
 
 // Schema for LineChart
 export const lineChartConfigSchema = z.object({
@@ -42,7 +42,7 @@ export const lineChartConfigSchema = z.object({
     title: z.string(),
     source: tabularDataSourceSchema,
     props: chartPropsSchema
-});
+}).strict();
 
 // Schema for DonutChart
 export const donutChartConfigSchema = z.object({
@@ -52,8 +52,8 @@ export const donutChartConfigSchema = z.object({
     props: z.object({
         index: z.string(),
         category: z.string(),
-    }),
-});
+    }).strict(),
+}).strict();
 
 // Schema for ProgressCard
 export const progressCardConfigSchema = z.object({
@@ -66,15 +66,15 @@ export const progressCardConfigSchema = z.object({
         value: z.string(),
         target: z.string(),
         query: z.string().optional(),
-    })),
-});
+    }).strict()),
+}).strict();
 
 // Schema for Table
 export const tableConfigSchema = z.object({
     type: z.literal('Table'),
     title: z.string(),
     source: tabularDataSourceSchema,
-});
+}).strict();
 
 // Schema for Text
 export const textConfigSchema = z.object({
@@ -83,8 +83,8 @@ export const textConfigSchema = z.object({
     props: z.object({
         className: z.string().optional(),
         variant: z.enum(['title', 'subtitle', 'body', 'caption', 'default']).optional(),
-    }).optional(),
-});
+    }).strict().optional(),
+}).strict();
 
 // Schema for Callout
 export const calloutConfigSchema = z.object({
@@ -94,8 +94,8 @@ export const calloutConfigSchema = z.object({
     props: z.object({
         color: z.string().optional(),
         icon: z.string().optional(),
-    }).optional(),
-});
+    }).strict().optional(),
+}).strict();
 
 // --- Recursive Grid, Union, and Layout ---
 
@@ -103,9 +103,9 @@ export const calloutConfigSchema = z.object({
 const gridConfigBaseSchema = z.object({
     type: z.literal('Grid'),
     props: z.object({
-        numItemsLg: z.number().optional()
-    }).optional(),
-});
+        columns: z.number().optional()
+    }).strict().optional(),
+}).strict();
 
 // Forward-declare the TypeScript type for a single block config.
 // This is necessary for the recursive definition of the grid.

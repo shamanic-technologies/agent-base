@@ -26,6 +26,11 @@ const PORT = process.env.PORT || 3090; // Fallback port
 app.use(cors()); // Basic CORS for now
 app.use(express.json()); // Body parser
 
+// --- Health Check ---
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
+
 // --- Routes ---
 app.use(authMiddleware);
 // Mount the main router

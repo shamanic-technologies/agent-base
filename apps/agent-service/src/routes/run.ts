@@ -16,8 +16,8 @@ import {
     Conversation
 } from '@agent-base/types';
 // AI SDK imports
-import { anthropic } from '@ai-sdk/anthropic';
-// import { google } from '@ai-sdk/google';
+// import { anthropic } from '@ai-sdk/anthropic';
+import { google } from '@ai-sdk/google';
 import { streamText, StreamData, ToolCall } from 'ai';
 
 // Import necessary API client functions
@@ -160,11 +160,12 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
             };
 
             const allStartupTools = await loadAndPrepareTools(agentServiceCredentials, conversationId);
+            console.debug(`🟠 [Agent Service /run] allStartupTools:`, allStartupTools, null, 2);
 
             // --- Call AI Model ---
             const result = await streamText({
-                model: anthropic(ModelName.CLAUDE_SONNET_4_20250514),
-                // model: google('gemini-2.5-pro'),
+                // model: anthropic(ModelName.CLAUDE_SONNET_4_20250514),
+                model: google('gemini-2.5-pro'),
                 messages: sanitizedMessages,
                 system: systemPrompt, 
                 tools: allStartupTools,
@@ -172,7 +173,7 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
                 maxTokens: maxOutputTokens,
                 temperature: 0.1,
                 maxSteps, 
-                providerOptions: { anthropic: { thinking: { type: 'enabled', budgetTokens: thinkingBudgetTokens } } },
+                // providerOptions: { anthropic: { thinking: { type: 'enabled', budgetTokens: thinkingBudgetTokens } } },
                 experimental_generateMessageId: createIdGenerator({ prefix: 'msgs', size: 16 }),
                 onError: (error) => {
                     console.error(`[Agent Service /run] Error:`, error, null, 2);
