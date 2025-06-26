@@ -1,22 +1,15 @@
 {
-  "extends": "../../tooling/typescript/base.json",
   "compilerOptions": {
-    "outDir": "dist",
-    "noEmit": false,
-    "strict": true,
-    "target": "ES2022",
+    "target": "ES2020",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "esModuleInterop": true,
-    "resolveJsonModule": true,
+    "outDir": "dist",
+    "strict": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "composite": true
+    "resolveJsonModule": true
   },
-  "include": ["src/**/*.ts", "src/**/*.js"],
-  "exclude": ["node_modules", "dist"],
-  "references": [
-    { "path": "../../packages/neon-client" },
-    { "path": "../../packages/types" }
-  ]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "test-*.js", "tests", "dist"]
 } 
