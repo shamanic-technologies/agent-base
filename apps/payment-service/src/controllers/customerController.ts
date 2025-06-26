@@ -58,8 +58,6 @@ export async function getStripeCustomerCreditByPlatformUserId(req: Request, res:
   try {
     // The authMiddleware ensures platformUser and platformUser.platformUserId are present.
     const { platformUserId, platformUserEmail, platformUserName } = req.platformUser!;
-
-    console.log(`Getting credit balance for userId: ${platformUserId}`);
     
     // Find the customer
     const stripeCustomer = await customerService.getOrCreateStripeCustomer(platformUserId, platformUserEmail, platformUserName);

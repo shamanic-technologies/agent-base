@@ -35,8 +35,6 @@ export async function createCheckoutSession(req: Request, res: Response): Promis
       return;
     }
     
-    console.log(`Creating checkout session for user: ${platformUserId}, amount: $${(amountInUSDCents/100).toFixed(2)}`);
-    
     // Find or create customer for the user
     const stripeCustomer = await customerService.getOrCreateStripeCustomer(platformUserId, platformUserEmail, platformUserName);
     
@@ -48,9 +46,7 @@ export async function createCheckoutSession(req: Request, res: Response): Promis
       });
       return;
     }
-    
-    console.log(`Found customer: ${stripeCustomer.id} for user: ${platformUserId}`);
-    
+        
     // Create a Stripe Checkout session
     const stripeCheckoutSession: Stripe.Checkout.Session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -75,8 +71,6 @@ export async function createCheckoutSession(req: Request, res: Response): Promis
         creditAmountInUSDCents: amountInUSDCents.toString()
       }
     });
-    
-    console.log(`Created checkout session: ${stripeCheckoutSession.id}`);
     
     res.status(200).json({
       success: true,

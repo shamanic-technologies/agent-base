@@ -33,9 +33,9 @@ export async function calculateCustomerCredits(stripeCustomerId: string): Promis
 
   while (hasMore) {
     const balanceTransactions: Stripe.ApiList<Stripe.CustomerBalanceTransaction> = await stripe.customers.listBalanceTransactions(
-      stripeCustomerId,
+    stripeCustomerId,
       { limit: 100, starting_after: startingAfter }
-    );
+  );
 
     allTransactions = allTransactions.concat(balanceTransactions.data);
     hasMore = balanceTransactions.has_more;
@@ -57,7 +57,7 @@ export async function calculateCustomerCredits(stripeCustomerId: string): Promis
   
   // Remaining credits are the inverse of the customer's balance
   const remainingInUSDCents = -customer.balance;
-
+  
   // Used credits are the difference
   const usedInUSDCents = totalInUSDCents - remainingInUSDCents;
   
