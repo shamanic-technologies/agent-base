@@ -46,6 +46,10 @@ export async function getDashboardsInfo(req: Request, res: Response) {
 // GET /dashboards/:id - Get a single dashboard by ID
 export async function getDashboardById(req: Request, res: Response) {
   const { id } = req.params;
+  if (!id) {
+    console.error('Dashboard ID is required.');
+    return res.status(400).json({ success: false, error: 'Dashboard ID is required.' });
+  }
   const result : ServiceResponse<Dashboard> = await DashboardService.getDashboardById(id, getAuth(res));
   if (result.success) {
     return res.status(200).json(result);
@@ -60,6 +64,10 @@ export async function getDashboardById(req: Request, res: Response) {
 // PATCH /dashboards/:id - Update a dashboard
 export async function updateDashboard(req: Request, res: Response) {
   const { id } = req.params;
+  if (!id) {
+    console.error('Dashboard ID is required.');
+    return res.status(400).json({ success: false, error: 'Dashboard ID is required.' });
+  }
   const { name, layout } = req.body;
 
   const result = await DashboardService.updateDashboard(id, name, layout, getAuth(res));
@@ -77,6 +85,10 @@ export async function updateDashboard(req: Request, res: Response) {
 // DELETE /dashboards/:id - Delete a dashboard
 export async function deleteDashboard(req: Request, res: Response) {
   const { id } = req.params;
+  if (!id) {
+    console.error('Dashboard ID is required.');
+    return res.status(400).json({ success: false, error: 'Dashboard ID is required.' });
+  }
   const result = await DashboardService.deleteDashboard(id, getAuth(res));
   if (result.success) {
     return res.status(200).json(result);

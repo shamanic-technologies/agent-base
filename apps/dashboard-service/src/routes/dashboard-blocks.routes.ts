@@ -23,6 +23,11 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
 router.get('/:id', async (req: Request, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
+        if (!id) {
+            console.error('Block ID is required.');
+            res.status(400).json({ success: false, error: 'Block ID is required.' });
+            return;
+        }
         const result = await getDashboardBlockById(id);
 
         if (result.success) {
