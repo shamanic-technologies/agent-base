@@ -134,8 +134,8 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
             const mergedMessages : Message[] = mergeMessages(dbHistory, messages);
 
             // 3. Truncate history to fit within the context window.
-            const maxSteps = 10;
-            const inputTokensBudget = 15000;
+            const maxSteps = 25;
+            const inputTokensBudget = 30000;
             const thinkingBudgetTokens = 10000;
             const maxOutputTokens = 40000;
 
@@ -160,7 +160,6 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
             };
 
             const allStartupTools = await loadAndPrepareTools(agentServiceCredentials, conversationId);
-            console.debug(`🟠 [Agent Service /run] allStartupTools:`, allStartupTools, null, 2);
 
             // --- Call AI Model ---
             const result = await streamText({

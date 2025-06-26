@@ -15,6 +15,12 @@ import {
 import { ServiceResponse, ClientUser, PlatformUserId, SecretValue, ClientOrganization } from '@agent-base/types';
 import { apiCache } from '../utils/api-cache.js'; // Import the API cache
 
+// Define a list of public paths that should bypass API key validation
+const PUBLIC_PATHS = [
+  '/payment/webhook', // Stripe webhook needs to be public
+  // Add other public paths here, e.g., '/health'
+];
+
 /**
  * Authentication middleware factory that returns a middleware function
  * The middleware validates API keys, potentially upserts client users,
@@ -23,6 +29,11 @@ import { apiCache } from '../utils/api-cache.js'; // Import the API cache
  */
 export const authMiddleware = () => { 
   return async (req: express.Request, res: express.Response, next: express.NextFunction): Promise<void> => {
+    // Bypass auth for public paths
+    if (PUBLIC_PATHS.includes(req.path)) {
+      return next();
+    }
+
     try {
       let clientUserId: string | undefined;
       let clientOrganizationId: string | undefined;

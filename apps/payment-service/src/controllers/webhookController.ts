@@ -43,9 +43,9 @@ export async function handleWebhook(req: Request, res: Response): Promise<void> 
           // Get metadata
           const metadata = session.metadata || {};
           
-          if (metadata.purpose === 'add_credit' && metadata.userId && metadata.creditAmount) {
-            const userId = metadata.userId;
-            const creditAmount = parseFloat(metadata.creditAmount);
+          if (metadata.purpose === 'add_credit' && metadata.platformUserId && metadata.creditAmountInUSDCents) {
+            const userId = metadata.platformUserId;
+            const creditAmount = parseInt(metadata.creditAmountInUSDCents, 10);
             
             if (!isNaN(creditAmount) && creditAmount > 0) {
               console.log(`Processing successful payment for user ${userId}, adding ${creditAmount} credits`);

@@ -8,7 +8,7 @@ import { configureHealthRoutes } from './health.routes.js';
 import { configureAgentRoutes } from './agent.routes.js';
 import { configureUtilityRoutes } from './utility.routes.js';
 import { configureSecretRoutes } from './secret.routes.js';
-// import { configurePaymentRoutes } from './payment.routes.js';
+import { configurePaymentRoutes } from './payment.routes.js';
 // Import webhook routes config
 import { configureWebhookRoutes } from './webhook.routes.js';
 import { configureApiToolRoutes } from './api-tool.routes.js';
@@ -38,7 +38,7 @@ export const configureRoutes = (
     user: string;
     database: string;
     dashboard: string;
-    // payment: string;
+    payment: string;
   },
   authMiddleware: express.RequestHandler,
   creditValidationMiddleware: express.RequestHandler
@@ -54,10 +54,10 @@ export const configureRoutes = (
   configureAgentRoutes(agentRouter, serviceUrls.agent, authMiddleware, creditValidationMiddleware);
   app.use('/agent', agentRouter);
 
-  // // Payment service routes
-  // const paymentRouter = express.Router();
-  // configurePaymentRoutes(paymentRouter, serviceUrls.payment, authMiddleware, creditValidationMiddleware);
-  // app.use('/payment', paymentRouter);
+  // Payment service routes
+  const paymentRouter = express.Router();
+  configurePaymentRoutes(paymentRouter, serviceUrls.payment, authMiddleware, creditValidationMiddleware);
+  app.use('/payment', paymentRouter);
 
   
   // Utility tool service routes

@@ -124,13 +124,18 @@ export async function getOrCreatePlatformUserByAuthId(userData: GetOrCreatePlatf
       };
     }
     
-    // First check if user exists
-    const getResponse: ServiceResponse<PlatformUser> = await getPlatformUserByAuthUserId(userData.platformAuthUserId);
+    // First check if user exists using the acquired client
+    const getUserQuery = `
+      SELECT * FROM "${PLATFORM_USERS_TABLE}" 
+      WHERE auth_user_id = $1 
+      LIMIT 1
+    `;
     
-    if (getResponse.success && getResponse.data) {
+    const existingUserResult = await client.query(getUserQuery, [userData.platformAuthUserId]);
+    
+    if (existingUserResult && typeof existingUserResult.rowCount === 'number' && existingUserResult.rowCount > 0) {
       // User exists, update it
-      client = await getClient();
-      const existingUser = getResponse.data;
+      const existingUser = mapPlatformUserFromDatabase(existingUserResult.rows[0]);
       
       const updateQuery = `
         UPDATE "${PLATFORM_USERS_TABLE}"
@@ -159,7 +164,6 @@ export async function getOrCreatePlatformUserByAuthId(userData: GetOrCreatePlatf
       };
     } else {
       // User doesn't exist, create it
-      client = await getClient();
       const createQuery = `
         INSERT INTO "${PLATFORM_USERS_TABLE}" (
           id,

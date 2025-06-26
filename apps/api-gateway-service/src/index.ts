@@ -31,7 +31,7 @@ const AGENT_SERVICE_URL = process.env.AGENT_SERVICE_URL;
 const UTILITY_TOOL_SERVICE_URL = process.env.UTILITY_TOOL_SERVICE_URL;
 const KEY_SERVICE_URL = process.env.KEY_SERVICE_URL;
 const SECRET_SERVICE_URL = process.env.SECRET_SERVICE_URL;
-// const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL;
+const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL;
 // Rename variable and environment key
 const WEBHOOK_TOOL_API_URL = process.env.WEBHOOK_TOOL_API_URL; 
 const API_TOOL_API_URL = process.env.API_TOOL_API_URL; // Add API Tool Service URL
@@ -52,6 +52,7 @@ const requiredEnvVars = {
   USER_SERVICE_URL,
   DATABASE_SERVICE_URL, // Add to required list
   DASHBOARD_SERVICE_URL, // Add to required list
+  PAYMENT_SERVICE_URL,
 };
 
 for (const [key, value] of Object.entries(requiredEnvVars)) {
@@ -88,7 +89,7 @@ configureRoutes(
     user: USER_SERVICE_URL!,
     database: DATABASE_SERVICE_URL!, // Pass to routes
     dashboard: DASHBOARD_SERVICE_URL!, // Pass to routes
-    // payment: PAYMENT_SERVICE_URL
+    payment: PAYMENT_SERVICE_URL!
   },
   authMiddleware(),
   creditValidationMiddleware // Pass the imported middleware
@@ -115,5 +116,5 @@ const server = app.listen(PORT, () => {
   console.log(`🔗 USER_SERVICE_URL: ${USER_SERVICE_URL || 'not set'}`);
   console.log(`🔗 DATABASE_SERVICE_URL: ${DATABASE_SERVICE_URL || 'not set'}`); // Log Database Service URL
   console.log(`🔗 DASHBOARD_SERVICE_URL: ${DASHBOARD_SERVICE_URL || 'not set'}`); // Log Dashboard Service URL
-  // console.log(`🔗 PAYMENT_SERVICE_URL: ${PAYMENT_SERVICE_URL || 'not set'}`); // Log Payment Service URL
+  console.log(`🔗 PAYMENT_SERVICE_URL: ${PAYMENT_SERVICE_URL || 'not set'}`); // Log Payment Service URL
 });
