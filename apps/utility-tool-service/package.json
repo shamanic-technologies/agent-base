@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "nodemon --exec \"tsx -r dotenv/config src/server.ts\"",
     "dev:no-watch": "tsx src/server.ts",
-    "build": "pnpm exec tsc",
+    "build": "node ../../node_modules/typescript/bin/tsc",
     "start": "node dist/server.js",
     "lint": "eslint src/**/*.ts",
     "test": "vitest run",
