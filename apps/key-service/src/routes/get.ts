@@ -61,10 +61,10 @@ router.get('/by-name', async (req, res): Promise<void> => {
       });
       return;
     }
-
+    console.debug('➡️ keyName', keyName);
     // Get all user keys and filter by name
     const userKeys: ServiceResponse<ApiKey[]> = await getUserApiKeys(platformUserId, platformOrganizationId);
-    
+    console.debug('➡️ userKeys', userKeys);
     if (!userKeys.success) {
       console.error('Error retrieving user keys:', userKeys.error);
       res.status(500).json(userKeys);
@@ -82,7 +82,9 @@ router.get('/by-name', async (req, res): Promise<void> => {
         secretUtilityProvider: UtilityProviderEnum.AGENT_BASE,
         secretType: `api_key_${keyId}` as PlatformApiKeySecretType
       };
+      console.debug('➡️ getSecretRequest', getSecretRequest, null, 2);
       const secretValueResponse: ServiceResponse<SecretValue> = await getSecretWebClient(platformUserId, platformOrganizationId, getSecretRequest);
+      console.debug('➡️ secretValueResponse', secretValueResponse);
       
       if (!secretValueResponse.success) {
         console.error('Error retrieving API key secret:', secretValueResponse.error);

@@ -188,3 +188,35 @@ export async function checkSecretExistsApiClient(
     { userType, secretUtilityProvider } // Query parameters (params)
   );
 } 
+
+/**
+ * Deletes a secret via the secret service.
+ * 
+ * @param platformUserId The ID used for authentication header (value for x-platform-user-id or x-client-user-id).
+ * @param platformOrganizationId The ID used for authentication header.
+ * @param deleteSecretRequest The request query containing userType, secretType, etc.
+ * @returns ServiceResponse containing a success boolean or error.
+ */
+export async function deleteSecretWebClient(
+  platformUserId: string,
+  platformOrganizationId: string,
+  deleteSecretRequest: GetSecretRequest // Reusing GetSecretRequest as the parameters are the same
+): Promise<ServiceResponse<boolean>> {
+  const { userType, secretType, secretUtilityProvider, secretUtilitySubProvider } = deleteSecretRequest;
+  
+  const queryParams = {
+    userType,
+    secretUtilityProvider,
+    secretUtilitySubProvider,
+  };
+
+  return await makeWebAuthenticatedServiceRequest<boolean>(
+    getSecretServiceUrl(),
+    'delete',
+    `/api/secrets/${secretType}`, // Endpoint for deleting secrets
+    platformUserId,
+    platformOrganizationId,
+    undefined, // No body
+    queryParams
+  );
+} 

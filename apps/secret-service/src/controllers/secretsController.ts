@@ -97,9 +97,10 @@ export async function getSecretHandler(req: Request, res: Response, next: NextFu
         const userType: UserType = req.query.userType as UserType;
         const secretUtilityProvider: UtilityProvider = req.query.secretUtilityProvider as UtilityProvider;
         const secretUtilitySubProvider: string | undefined = req.query.secretUtilitySubProvider as string | undefined;
-        
+        console.debug('➡️ getSecretHandler', secretTypeParam, userType, secretUtilityProvider, secretUtilitySubProvider, null, 2);
         const { platformUserId, platformOrganizationId, clientUserId, clientOrganizationId } = (req as AuthenticatedRequest);
-
+        console.debug('➡️ getSecretHandler', platformUserId, platformOrganizationId, clientUserId, clientOrganizationId, null, 2);
+        
         if (!userType || !secretTypeParam || !secretUtilityProvider) {
             const errorResponse: ErrorResponse = { success: false, error: 'Missing required query parameters: userType, secretTypeParam (in path), secretUtilityProvider.' };
             res.status(400).json(errorResponse);
@@ -129,9 +130,11 @@ export async function getSecretHandler(req: Request, res: Response, next: NextFu
             secretTypeParam,
             secretUtilitySubProvider
         );
+        console.debug('➡️ getSecretHandler', secretIdToGet, null, 2);
         
         const secretValue = await gsmClient.getSecret(secretIdToGet);
-
+        console.debug('➡️ getSecretHandler', secretValue, null, 2);
+        
         if (secretValue === null) {
             const errorResponse: ErrorResponse = { success: false, error: 'Secret not found.' };
             res.status(404).json(errorResponse);
@@ -202,6 +205,68 @@ export async function checkSecretExistsHandler(req: Request, res: Response, next
     } catch (error: any) {
         console.error('Error checking secret existence:', error);
         if (error instanceof GoogleCloudSecretManagerApiError) {
+            res.status(500).json({ success: false, error: `GSM API error: ${error.message}` });
+        } else {
+            next(error);
+        }
+    }
+}
+
+/**
+ * Handles DELETE /api/secrets/:secretType
+ * Deletes a secret using the Google Secret Manager client.
+ */
+export async function deleteSecretHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+        const secretTypeParam: UtilitySecretType = req.params.secretType as UtilitySecretType;
+        const userType: UserType = req.query.userType as UserType;
+        const secretUtilityProvider: UtilityProvider = req.query.secretUtilityProvider as UtilityProvider;
+        const secretUtilitySubProvider: string | undefined = req.query.secretUtilitySubProvider as string | undefined;
+
+        const { platformUserId, platformOrganizationId, clientUserId, clientOrganizationId } = (req as AuthenticatedRequest);
+
+        if (!userType || !secretTypeParam || !secretUtilityProvider) {
+            const errorResponse: ErrorResponse = { success: false, error: 'Missing required query parameters: userType, secretTypeParam (in path), secretUtilityProvider.' };
+            console.error('deleteSecretHandler', errorResponse, null, 2);
+            res.status(400).json(errorResponse);
+            return;
+        }
+
+        const userId = userType === UserType.Platform ? platformUserId : clientUserId;
+        if (!userId) {
+            const errorResponse: ErrorResponse = { success: false, error: 'User ID could not be determined.' };
+            console.error('deleteSecretHandler', errorResponse, null, 2);
+            res.status(400).json(errorResponse);
+            return;
+        }
+        const organizationId = userType === UserType.Platform ? platformOrganizationId : clientOrganizationId;
+        if (!organizationId) {
+            console.error('Organization ID could not be determined:', req.query);
+            const errorResponse: ErrorResponse = { success: false, error: 'Organization ID could not be determined.' };
+            res.status(400).json(errorResponse);
+            return;
+        }
+
+        const gsmClient = getGsmClient();
+        const secretIdToDelete = generateSecretManagerId(
+            userType,
+            userId,
+            organizationId,
+            secretUtilityProvider,
+            secretTypeParam,
+            secretUtilitySubProvider
+        );
+
+        await gsmClient.deleteSecret(secretIdToDelete);
+
+        const response: ServiceResponse<boolean> = { success: true, data: true };
+        res.status(200).json(response);
+
+    } catch (error: any) {
+        console.error('Error deleting secret:', error);
+        if (error instanceof SecretNotFoundError) {
+            res.status(404).json({ success: false, error: error.message });
+        } else if (error instanceof GoogleCloudSecretManagerApiError) {
             res.status(500).json({ success: false, error: `GSM API error: ${error.message}` });
         } else {
             next(error);

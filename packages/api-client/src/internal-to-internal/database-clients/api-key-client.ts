@@ -97,4 +97,32 @@ export const validateApiKey = async (
     placeholderOrgId, // Provide a placeholder or modify makeServiceRequest if necessary
     data
   );
+};
+
+/**
+ * Deletes API Key metadata.
+ * 
+ * Corresponds to: DELETE /api-keys/:keyId
+ * 
+ * @param keyId - The ID of the key to delete.
+ * @param platformUserId - The platform user ID making the request (for headers).
+ * @param platformOrganizationId - The platform organization ID making the request (for headers).
+ * @returns A ServiceResponse containing a boolean success status or an error.
+ */
+export const deleteApiKeyMetadata = async (
+  keyId: string,
+  platformUserId: string,
+  platformOrganizationId: string
+): Promise<ServiceResponse<boolean>> => {
+  if (!keyId) {
+    throw new Error('[api-client:deleteApiKeyMetadata] keyId is required.');
+  }
+  const endpoint = `/api-keys/${keyId}`;
+  return makeWebAuthenticatedServiceRequest<boolean>(
+    getDatabaseServiceUrl(),
+    'DELETE',
+    endpoint,
+    platformUserId,
+    platformOrganizationId
+  );
 }; 

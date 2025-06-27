@@ -12,15 +12,6 @@ import { validateCreditInternalService } from '@agent-base/api-client';
  */
 export const creditValidationMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const authorizationHeader = req.headers.authorization;
-
-    if (!authorizationHeader) {
-      // This should ideally be caught by an auth middleware first.
-      // If no auth header, and the endpoint requires auth, it will fail later anyway.
-      // For now, we proceed if no auth header, assuming some routes might not need credit validation
-      // or are public. A more robust solution would be to check if the route itself requires auth.
-      return next();
-    }
     
     const amountToValidateInUSDCents = 0; // Validate credit is positive
 

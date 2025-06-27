@@ -3,7 +3,7 @@
  */
 import { Router, Request, Response } from 'express';
 import { ApiKey, CreateApiKeyRequest, ServiceResponse, ValidateApiKeyRequest } from '@agent-base/types';
-import { upsertApiKey, getApiKeys, validateApiKey } from '../services/api-keys.js';
+import { upsertApiKey, getApiKeys, validateApiKey, deleteApiKey } from '../services/api-keys.js';
 
 const router = Router();
 
@@ -135,6 +135,46 @@ router.post('/validate', async (req: Request, res: Response): Promise<void> => {
 
   } catch (error: any) {
     console.error('Error updating API key usage:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Database operation failed'
+    });
+  }
+});
+
+router.delete('/:id', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const platformUserId = req.headers['x-platform-user-id'] as string;
+    const platformOrganizationId = req.headers['x-platform-organization-id'] as string;
+
+    if (!id) {
+      console.error('deleteApiKey', 'Key ID is required', null, 2);
+      res.status(400).json({ success: false, error: 'Key ID is required' });
+      return;
+    }
+    if (!platformUserId) {
+      console.error('deleteApiKey', 'User ID is required', null, 2);
+      res.status(401).json({ success: false, error: 'User ID is required' });
+      return;
+    }
+    if (!platformOrganizationId) {
+      console.error('deleteApiKey', 'Organization ID is required', null, 2);
+      res.status(401).json({ success: false, error: 'Organization ID is required' });
+      return;
+    }
+
+    const deleteResponse = await deleteApiKey(id, platformUserId, platformOrganizationId);
+
+    if (!deleteResponse.success) {
+      console.error('deleteApiKey', 'Key not found or you do not have permission to delete it.', null, 2);
+      res.status(404).json(deleteResponse);
+      return;
+    }
+
+    res.status(200).json(deleteResponse);
+  } catch (error: any) {
+    console.error('Error deleting API key:', error);
     res.status(500).json({
       success: false,
       error: error.message || 'Database operation failed'

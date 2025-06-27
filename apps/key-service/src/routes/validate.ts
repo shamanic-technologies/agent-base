@@ -16,6 +16,7 @@ router.post('/', async (req, res): Promise<void> => {
   try {
     // Extract API key from the request headers
     const platformApiKey = req.headers['x-platform-api-key'];
+    console.debug('➡️ platformApiKey', platformApiKey);
     // Validate the key structure/presence
     if (!platformApiKey || typeof platformApiKey !== 'string') {
       console.error('API key is required in the request body');
@@ -30,7 +31,7 @@ router.post('/', async (req, res): Promise<void> => {
     // dbService.validateApiKey now handles the interaction with the database service
     // and expects the database service to return the ApiKey object (including platformUserId) on success.
     const validateResponse : ServiceResponse<ApiKey> = await dbService.validateApiKey(platformApiKey); // Pass only the apiKey
-    
+    console.debug('➡️ validateResponse', validateResponse);
     // If validation failed (invalid key, db error, etc.)
     if (!validateResponse.success) {
       // Use 401 for authentication failures (invalid/unknown key)

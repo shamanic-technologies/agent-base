@@ -52,5 +52,17 @@ router.get('/:secretType', secretsController.getSecretHandler);
  */
 router.get('/exists/:secretType', secretsController.checkSecretExistsHandler);
 
+/**
+ * @route DELETE /api/secrets/:secretType
+ * @description Deletes a secret value for a given user and type.
+ * @access Private
+ * @urlParam secretType - The type identifier of the secret.
+ * @response 200 { success: true, data: boolean } - Success response
+ * @response 400 { success: false, error: string } - Missing parameters
+ * @response 404 { success: false, error: string } - Secret not found
+ * @response 500 { success: false, error: string, details?: string } - Server error
+ */
+router.delete('/:secretType', secretsController.deleteSecretHandler);
+
 // Export the secrets router
 export default router; 

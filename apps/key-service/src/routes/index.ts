@@ -7,6 +7,7 @@ import { Router } from 'express';
 import listKeysRoutes from './list.js';
 import validateKeyRoutes from './validate.js';
 import getKeyRoutes from './get.js';
+import deleteRouter from './delete.js';
 
 const router = Router();
 
@@ -16,5 +17,6 @@ const router = Router();
 router.use('/', listKeysRoutes);   // GET /
 router.use('/validate', validateKeyRoutes); // POST /validate
 router.use('/', getKeyRoutes);     // GET /:keyId, GET /by-name
+router.use('/', deleteRouter);
 
 export default router; 

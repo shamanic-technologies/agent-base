@@ -16,6 +16,7 @@ import { configureToolAuthRoutes } from './tool-auth.routes.js';
 import { configureUserRoutes } from './user.routes.js';
 import { configureDatabaseRoutes } from './database.routes.js';
 import { configureDashboardRoutes } from './dashboard.routes.js';
+import { configureKeyRoutes } from './key.routes.js';
 
 /**
  * Configure all routes for the API Gateway
@@ -100,5 +101,10 @@ export const configureRoutes = (
   const dashboardRouter = express.Router();
   configureDashboardRoutes(dashboardRouter, serviceUrls.dashboard, authMiddleware);
   app.use('/dashboard', dashboardRouter);
+
+  // Key service routes
+  const keyRouter = express.Router();
+  configureKeyRoutes(keyRouter, serviceUrls.key, authMiddleware, creditValidationMiddleware);
+  app.use('/key', keyRouter);
 
 }; 

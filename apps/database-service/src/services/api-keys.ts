@@ -179,3 +179,48 @@ export async function validateApiKey(input: ValidateApiKeyRequest): Promise<Serv
     }
   }
 }
+
+/**
+ * Deletes an API key for a specific user.
+ * @param keyId - The ID of the key to delete.
+ * @param platformUserId - The user ID who owns the key.
+ * @param platformOrganizationId - The organization ID of the user.
+ * @returns A response indicating success or failure.
+ */
+export async function deleteApiKey(keyId: string, platformUserId: string, platformOrganizationId: string): Promise<ServiceResponse<boolean>> {
+  let client: PoolClient | null = null;
+  try {
+    client = await getClient();
+    
+    const query = `
+      DELETE FROM "${PLATFORM_USER_API_KEY_TABLE}"
+      WHERE key_id = $1
+      AND platform_user_id = $2
+      AND platform_organization_id = $3
+    `;
+    
+    const result = await client.query(query, [keyId, platformUserId, platformOrganizationId]);
+    
+    if (result.rowCount === 0) {
+      return {
+        success: false,
+        error: 'API key not found or you do not have permission to delete it.'
+      };
+    }
+    
+    return {
+      success: true,
+      data: true
+    };
+  } catch (error: any) {
+    console.error('Error deleting API key:', error);
+    return { 
+      success: false, 
+      error: error.message || 'Failed to delete API key'
+    };
+  } finally {
+    if (client) {
+      client.release();
+    }
+  }
+}

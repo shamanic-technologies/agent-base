@@ -12,9 +12,11 @@ import {
   UserType,
   StoreSecretRequest,
   UtilityProvider,
-  PlatformApiKeySecretType
+  PlatformApiKeySecretType,
+  UtilityProviderEnum,
+  GetSecretRequest
 } from '@agent-base/types';
-import { makeWebAuthenticatedServiceRequest, storeSecretWebClient, makeWebAnonymousServiceRequest, createApiKeyMetadata } from '@agent-base/api-client';
+import { makeWebAuthenticatedServiceRequest, storeSecretWebClient, makeWebAnonymousServiceRequest, createApiKeyMetadata, deleteSecretWebClient, deleteApiKeyMetadata } from '@agent-base/api-client';
 import { v4 as uuidv4 } from 'uuid';
 import { generateApiKey, getKeyPrefix, hashApiKey, isValidKeyFormat } from '../utils/apiKeyUtils.js';
 
@@ -143,5 +145,46 @@ export async function validateApiKey(apiKey: string): Promise<ServiceResponse<Ap
       success: false, 
       error: 'Internal error during key validation' 
     } as ErrorResponse;
+  }
+}
+
+/**
+ * Delete an API key
+ * Deletes the key's metadata from the database and the key's secret from the secret service.
+ */
+export async function deleteApiKey(keyId: string, platformUserId: string, platformOrganizationId: string): Promise<ServiceResponse<boolean>> {
+  try {
+    // Delete the secret from the secret service first
+    const deleteSecretRequest: GetSecretRequest = {
+      userType: UserType.Platform,
+      secretUtilityProvider: UtilityProviderEnum.AGENT_BASE,
+      secretType: `api_key_${keyId}` as PlatformApiKeySecretType,
+    };
+    
+    const deleteSecretResponse = await deleteSecretWebClient(platformUserId, platformOrganizationId, deleteSecretRequest);
+    
+    if (!deleteSecretResponse.success) {
+      console.error(`Failed to delete secret for key ${keyId}:`, deleteSecretResponse.error);
+      return { success: false, error: 'Failed to delete key secret' };
+    }
+
+    // Now delete the key metadata from the database
+    const response = await deleteApiKeyMetadata(
+      keyId,
+      platformUserId,
+      platformOrganizationId
+    );
+
+    if (!response.success) {
+      console.error(`Failed to delete API key metadata for key ${keyId}:`, response.error);
+      // If metadata deletion fails, we should ideally try to restore the secret.
+      // For now, we'll just return the error.
+      return response;
+    }
+
+    return { success: true, data: true };
+  } catch (error) {
+    console.error(`Error in deleteApiKey for key ${keyId}:`, error);
+    return { success: false, error: 'Internal error during API key deletion' } as ErrorResponse;
   }
 } 
