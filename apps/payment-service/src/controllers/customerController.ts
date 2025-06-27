@@ -2,7 +2,7 @@
  * Controller for customer-related endpoints
  */
 import { Request, Response } from 'express';
-import { AgentBaseAutoRechargeSettings, AgentBaseCustomerCredits, AgentBasePricing, AgentBaseStripeCustomerInformation, AgentBaseCreateCustomerRequest } from '@agent-base/types';
+import { AgentBaseAutoRechargeSettings, AgentBaseCustomerCredits, AgentBasePricing, AgentBaseStripeCustomerInformation, AgentBaseCreateCustomerRequest, AgentBaseDefaultAutoRechargeSettings } from '@agent-base/types';
 import * as customerService from '../services/customerService.js';
 import * as creditService from '../services/creditService.js';
 import { stripe } from '../config/index.js';
@@ -317,8 +317,6 @@ export async function getAutoRechargeSettings(req: Request, res: Response): Prom
   try {
     // The authMiddleware ensures platformUser and platformUser.platformUserId are present.
     const { platformUserId, platformUserEmail, platformUserName } = req.platformUser!;
-
-    console.log(`Getting auto-recharge settings for userId: ${platformUserId}`);
     
     // Find customer associated with this user
     const stripeCustomer = await customerService.getOrCreateStripeCustomer(platformUserId, platformUserEmail, platformUserName);
@@ -339,10 +337,9 @@ export async function getAutoRechargeSettings(req: Request, res: Response): Prom
     // Return default settings if none exist
     if (!settings) {
       const defaultSettings: AgentBaseAutoRechargeSettings = {
-        platformUserId: platformUserId,
         enabled: false,
-        thresholdAmountInUSDCents: 500, // Default to $5
-        rechargeAmountInUSDCents: 1000 // Default to $10
+        thresholdAmountInUSDCents: AgentBaseDefaultAutoRechargeSettings.AGENT_BASE_DEFAULT_AUTO_RECHARGE_THRESHOLD_AMOUNT_IN_USD_CENTS,
+        rechargeAmountInUSDCents: AgentBaseDefaultAutoRechargeSettings.AGENT_BASE_DEFAULT_AUTO_RECHARGE_RECHARGE_AMOUNT_IN_USD_CENTS
       };
       
       res.status(200).json({
@@ -414,7 +411,6 @@ export async function updateAutoRechargeSettings(req: Request, res: Response): P
     
     // Prepare settings object
     const settings: AgentBaseAutoRechargeSettings = {
-      platformUserId: platformUserId,
       enabled: Boolean(enabled),
       thresholdAmountInUSDCents,
       rechargeAmountInUSDCents

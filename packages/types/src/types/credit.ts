@@ -66,11 +66,15 @@ export interface AgentBaseStripeTransaction {
 
 // Auto-recharge types
 export interface AgentBaseAutoRechargeSettings {
-  platformUserId: string;
   enabled: boolean;
   thresholdAmountInUSDCents?: number;
   rechargeAmountInUSDCents?: number;
-} 
+}
+
+export enum AgentBaseDefaultAutoRechargeSettings {
+  AGENT_BASE_DEFAULT_AUTO_RECHARGE_THRESHOLD_AMOUNT_IN_USD_CENTS = 5000,
+  AGENT_BASE_DEFAULT_AUTO_RECHARGE_RECHARGE_AMOUNT_IN_USD_CENTS = 10000,
+}
 
 export interface AgentBaseCreateCheckoutSessionRequest {
   amountInUSDCents: number;

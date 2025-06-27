@@ -90,7 +90,6 @@ export async function getAutoRechargeSettings(stripeCustomerId: string): Promise
   }
   
   return {
-    platformUserId: metadata.platformUserId,
     enabled: metadata.auto_recharge_enabled === 'true',
     thresholdAmountInUSDCents: parseFloat(metadata.auto_recharge_threshold_in_usd_cents),
     rechargeAmountInUSDCents: parseFloat(metadata.auto_recharge_amount_in_usd_cents)
@@ -128,7 +127,6 @@ export function formatCustomerData(customer: Stripe.Customer, credits: AgentBase
     customer.metadata?.auto_recharge_amount_in_usd_cents
   ) {
     autoRechargeSettings = {
-      platformUserId: customer.metadata.platformUserId,
       enabled: customer.metadata.auto_recharge_enabled === 'true',
       thresholdAmountInUSDCents: parseFloat(customer.metadata.auto_recharge_threshold_in_usd_cents),
       rechargeAmountInUSDCents: parseFloat(customer.metadata.auto_recharge_amount_in_usd_cents)
