@@ -4,21 +4,27 @@ import { ServiceResponse } from '@agent-base/types';
 
 const router = Router();
 
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
   const platformUserId = req.headers['x-platform-user-id'] as string;
   const platformOrganizationId = req.headers['x-platform-organization-id'] as string;
 
   if (!id) {
-    return res.status(400).json({ success: false, error: 'Key ID is required' });
+    console.error('Key ID is required', null, 2);
+    res.status(400).json({ success: false, error: 'Key ID is required' });
+    return;
   }
 
   if (!platformUserId) {
-    return res.status(401).json({ success: false, error: 'User ID is required' });
+    console.error('User ID is required', null, 2);
+    res.status(401).json({ success: false, error: 'User ID is required' });
+    return;
   }
 
   if (!platformOrganizationId) {
-    return res.status(401).json({ success: false, error: 'Organization ID is required' });
+    console.error('Organization ID is required', null, 2);
+    res.status(401).json({ success: false, error: 'Organization ID is required' });
+    return;
   }
 
   try {
