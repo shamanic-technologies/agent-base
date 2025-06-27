@@ -38,6 +38,7 @@ export * from './external-to-internal/tool-auth-client.js';
 export * from './external-to-internal/api-tool-client.js';
 export * from './external-to-internal/user-client.js';
 export * from './external-to-internal/dashboard-client.js';
+export * from './external-to-internal/key-client.js';
 
 export * from './internal-to-external/webhook-tool-client.js';
 export * from './internal-to-external/api-tool-client.js';
