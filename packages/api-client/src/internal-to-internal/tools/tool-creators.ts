@@ -91,7 +91,7 @@ export function createCallUtilityTool(
         description: 'Executes a specific functional utility tool by its ID, providing the necessary input parameters.',
         parameters: z.object({
             toolId: z.string().describe('The unique ID of the functional utility tool to execute.'),
-            params: z.object({}).passthrough().describe('An object containing the parameters required by the specific functional utility tool being called.')
+            params: z.record(z.any()).describe('An object containing the parameters required by the specific functional utility tool being called.')
         }),
         execute: async (args: { toolId: string, params: any }): Promise<ServiceResponse<ExecuteToolResult>> => { // Argument key is params
             const payload: ExecuteToolPayload = {

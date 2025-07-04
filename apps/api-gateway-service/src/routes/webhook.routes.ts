@@ -14,13 +14,11 @@ import { createProxyMiddleware } from 'http-proxy-middleware';
  * @param router Express Router
  * @param webhookToolApiUrl Base URL for the webhook store service
  * @param authMiddleware Authentication middleware
- * @param creditValidationMiddleware Credit validation middleware
  */
 export const configureWebhookRoutes = (
   router: express.Router,
   webhookToolApiUrl: string,
   authMiddleware: express.RequestHandler,
-  creditValidationMiddleware: express.RequestHandler
 ) => {
   // --- Environment Variable Checks ---
   if (!webhookToolApiUrl) {
@@ -41,10 +39,6 @@ export const configureWebhookRoutes = (
   // --- Middleware Application Order ---
   // 1. Apply authentication middleware first.
   router.use(authMiddleware);
-
-
-  // 2. Apply credit validation middleware
-  router.use(creditValidationMiddleware);
 
   // --- Proxy Configuration ---
   // Use createProxyMiddleware directly because we need onProxyReq to add the specific API key.

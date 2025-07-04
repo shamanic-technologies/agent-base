@@ -63,7 +63,7 @@ export const configureRoutes = (
   
   // Utility tool service routes
   const utilityToolRouter = express.Router();
-  configureUtilityRoutes(utilityToolRouter, serviceUrls.utilityTool, authMiddleware, creditValidationMiddleware);
+  configureUtilityRoutes(utilityToolRouter, serviceUrls.utilityTool, authMiddleware);
   app.use('/utility-tool', utilityToolRouter);
 
   // Secret service routes
@@ -74,12 +74,12 @@ export const configureRoutes = (
   // Webhook service routes
   const webhookRouter = express.Router();
   // Pass the renamed key from serviceUrls
-  configureWebhookRoutes(webhookRouter, serviceUrls.webhookTool, authMiddleware, creditValidationMiddleware);
+  configureWebhookRoutes(webhookRouter, serviceUrls.webhookTool, authMiddleware);
   app.use('/webhook', webhookRouter);
 
   // API tool service routes
   const apiToolRouter = express.Router();
-  configureApiToolRoutes(apiToolRouter, serviceUrls.apiTool, authMiddleware, creditValidationMiddleware);
+  configureApiToolRoutes(apiToolRouter, serviceUrls.apiTool, authMiddleware);
   app.use('/api-tool', apiToolRouter);
 
   // Tool auth service routes
