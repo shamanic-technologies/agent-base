@@ -68,17 +68,17 @@ export async function loadAndPrepareTools(
         'delete_organization'
     ];
 
-    // const clientSideToolsResponse = await listClientSideUtilitiesFromAgent(agentServiceCredentials);
+    const clientSideToolsResponse = await listClientSideUtilitiesFromAgent(agentServiceCredentials);
 
-    // if (!clientSideToolsResponse.success) {
-    //     console.error(`[ToolLoader] Failed to list client-side tools: ${clientSideToolsResponse.error}`);
-    //     throw new Error(`[ToolLoader] Failed to list client-side tools: ${clientSideToolsResponse.error}.`);
-    // }
-    // const clientSideToolIds = clientSideToolsResponse.data.map((t: InternalUtilityInfo) => t.id);
+    if (!clientSideToolsResponse.success) {
+        console.error(`[ToolLoader] Failed to list client-side tools: ${clientSideToolsResponse.error}`);
+        throw new Error(`[ToolLoader] Failed to list client-side tools: ${clientSideToolsResponse.error}.`);
+    }
+    const clientSideToolIds = clientSideToolsResponse.data.map((t: InternalUtilityInfo) => t.id);
     
-    // const fetchedFunctionalTools = await Promise.all(
-    //     startupToolIds.map(id => createFunctionalToolObject(id, agentServiceCredentials, conversationId, clientSideToolIds))
-    // );
+    const fetchedFunctionalTools = await Promise.all(
+        startupToolIds.map(id => createFunctionalToolObject(id, agentServiceCredentials, conversationId, clientSideToolIds))
+    );
     
     const allStartupTools: Record<string, Tool> = {
         utility_list_utilities: createListUtilitiesTool(agentServiceCredentials, conversationId),
@@ -86,11 +86,11 @@ export async function loadAndPrepareTools(
         utility_call_utility: createCallUtilityTool(agentServiceCredentials, conversationId),
     };
 
-    // fetchedFunctionalTools.forEach(item => {
-    //     if (item) { // Ensure the item is not null/undefined
-    //         allStartupTools[item.id] = item.tool;
-    //     }
-    // });
+    fetchedFunctionalTools.forEach(item => {
+        if (item) { // Ensure the item is not null/undefined
+            allStartupTools[item.id] = item.tool;
+        }
+    });
 
     return allStartupTools;
 } 

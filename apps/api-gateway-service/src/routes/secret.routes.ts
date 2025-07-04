@@ -22,15 +22,16 @@ export const configureSecretRoutes = (
   router: express.Router,
   targetServiceUrl: string, // Renamed from serviceUrl for consistency
   authMiddleware: express.RequestHandler,
-  creditValidationMiddleware: express.RequestHandler
+  creditValidationMiddleware?: express.RequestHandler
 ) => {
 
-  // Apply authentication middleware first.
+  // Apply authentication middleware to all routes in this router
   router.use(authMiddleware);
 
-
-  // Apply credit validation middleware
-  router.use(creditValidationMiddleware);
+  if (creditValidationMiddleware) {
+    // Apply credit validation middleware
+    router.use(creditValidationMiddleware);
+  }
 
   // Create the proxy middleware instance for the Secret Service (no path rewrite).
   const secretProxy = createApiProxy(targetServiceUrl, 'Secret Service');

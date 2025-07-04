@@ -22,18 +22,24 @@ export const configureAgentRoutes = (
   router: express.Router,
   targetServiceUrl: string,
   authMiddleware: express.RequestHandler,
-  creditValidationMiddleware: express.RequestHandler
+  creditValidationMiddleware?: express.RequestHandler
 ) => {
 
-  // Apply authentication middleware to all agent routes.
+  // Apply authentication middleware to all agent routes
   router.use(authMiddleware);
-  // Apply credit validation middleware
-  router.use(creditValidationMiddleware);
-  // Create the proxy middleware instance for the Agent Service.
+
+  if (creditValidationMiddleware) {
+    router.use(creditValidationMiddleware);
+  }
+
+  // Create proxy for the Agent Service
   const agentProxy = createApiProxy(targetServiceUrl, 'Agent Service');
-  // Apply the proxy middleware. This will forward all requests matching the router's path.
+
+  // Specific route handling (if any) can go here
+  // For example, validating specific permissions for /run vs /create
+
+  // Apply the proxy to all paths handled by this router
   router.use(agentProxy);
-  // The router is implicitly returned by Express when configured this way,
-  // but returning explicitly for clarity might be preferred by some.
+
   return router;
 }; 

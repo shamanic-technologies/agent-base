@@ -57,7 +57,7 @@ export const configureRoutes = (
 
   // Payment service routes
   const paymentRouter = express.Router();
-  configurePaymentRoutes(paymentRouter, serviceUrls.payment, authMiddleware, creditValidationMiddleware);
+  configurePaymentRoutes(paymentRouter, serviceUrls.payment, authMiddleware);
   app.use('/payment', paymentRouter);
 
   
@@ -68,7 +68,7 @@ export const configureRoutes = (
 
   // Secret service routes
   const secretRouter = express.Router();
-  configureSecretRoutes(secretRouter, serviceUrls.secret, authMiddleware, creditValidationMiddleware);
+  configureSecretRoutes(secretRouter, serviceUrls.secret, authMiddleware);
   app.use('/secret', secretRouter);
 
   // Webhook service routes
@@ -104,7 +104,7 @@ export const configureRoutes = (
 
   // Key service routes
   const keyRouter = express.Router();
-  configureKeyRoutes(keyRouter, serviceUrls.key, authMiddleware, creditValidationMiddleware);
+  configureKeyRoutes(keyRouter, serviceUrls.key, authMiddleware);
   app.use('/key', keyRouter);
 
 }; 

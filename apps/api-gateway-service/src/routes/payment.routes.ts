@@ -11,12 +11,12 @@ import { createApiProxy } from '../utils/proxy.util.js';
 
 /**
  * Configures routes related to payment, proxying them to the Payment Service.
+ * @returns {express.Router} The configured router.
  */
 export const configurePaymentRoutes = (
   router: express.Router,
   targetServiceUrl: string,
-  authMiddleware: express.RequestHandler,
-  creditValidationMiddleware: express.RequestHandler
+  authMiddleware: express.RequestHandler
 ) => {
   // Create a proxy for the payment service
   const paymentProxy = createApiProxy(targetServiceUrl, 'Payment Service');
@@ -27,9 +27,6 @@ export const configurePaymentRoutes = (
   // Apply authentication middleware to all other payment routes
   router.use(authMiddleware);
   
-  // Apply credit validation middleware to all other payment routes
-//   router.use(creditValidationMiddleware);
-
   // Proxy all other requests to the payment service
   router.use(paymentProxy);
   
