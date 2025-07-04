@@ -78,15 +78,17 @@ export const authMiddleware = () => {
       req.platformUserId = platformUserId; 
       req.headers['x-platform-user-id'] = platformUserId;
 
-      // 2. Client Auth User ID Validation (Optional)
+      // 2. Client User ID Handling (Internal vs. External)
+      clientUserId = req.headers['x-client-user-id'] as string;
       const clientAuthUserId = req.headers['x-client-auth-user-id'] as string;
-      const clientAuthOrganizationId = req.headers['x-client-auth-organization-id'] as string;
-      
-      if (clientAuthUserId) {
 
-        clientUserId = apiCache.getClientUserId(platformUserId, clientAuthUserId);
+      if (!clientUserId && clientAuthUserId) {
+        // External call: clientAuthUserId needs to be resolved to our internal clientUserId
+        const cachedClientUserId = apiCache.getClientUserId(platformUserId, clientAuthUserId);
 
-        if (!clientUserId) {
+        if (cachedClientUserId) {
+          clientUserId = cachedClientUserId;
+        } else {
           console.log(`[Auth Middleware] Client User Cache MISS for ${platformUserId}:${clientAuthUserId}. Validating/upserting...`);
           
           const clientUserResponse: ServiceResponse<ClientUser> = await upsertClientUserApiClient(
@@ -95,9 +97,7 @@ export const authMiddleware = () => {
           );
 
           if (clientUserResponse.success) {
-            // Extract the internal client user ID (UUID)
             clientUserId = clientUserResponse.data.id;
-            // Cache the successful result
             apiCache.setClientUserId(platformUserId, clientAuthUserId, clientUserId);
           } else {
             console.error(`[Auth Middleware] Failed to validate/upsert client user ID ${clientAuthUserId} for platform user ${platformUserId}. Error: ${clientUserResponse.error}`);
@@ -105,25 +105,28 @@ export const authMiddleware = () => {
             return;
           }
         }
+      }
 
-        // Assign clientUserId to request and headers
+      if (clientUserId) {
+        // Assign clientUserId to request and headers for downstream services
         req.clientUserId = clientUserId; 
         req.headers['x-client-user-id'] = clientUserId;
       }
 
-      // 3. Client Auth Organization ID Validation (Optional)
+      // 3. Client Organization ID Handling (Internal vs. External)
+      clientOrganizationId = req.headers['x-client-organization-id'] as string;
+      const clientAuthOrganizationId = req.headers['x-client-auth-organization-id'] as string;
+      
+      if (!clientOrganizationId && clientAuthOrganizationId) {
+        // External call: clientAuthOrganizationId needs to be resolved to our internal clientOrganizationId
+        const cachedClientOrganizationId = apiCache.getClientOrganizationId(platformUserId, clientAuthOrganizationId);
 
-      if (clientAuthOrganizationId) {
-
-        clientOrganizationId = apiCache.getClientOrganizationId(platformUserId, clientAuthOrganizationId);
-
-        if (!clientOrganizationId) {
+        if (cachedClientOrganizationId) {
+          clientOrganizationId = cachedClientOrganizationId;
+        } else {
           console.log(`[Auth Middleware] Client Organization Cache MISS for ${platformUserId}:${clientAuthOrganizationId}. Validating/upserting...`);
 
           if (!clientUserId) {
-            // This case should ideally not be reached if clientAuthOrganizationId is present
-            // as it implies a client user context is also expected.
-            // Handling it defensively.
             console.error(`[Auth Middleware] Cannot upsert organization without a clientUserId.`);
             res.status(400).json({ success: false, error: "Cannot process organization without a user context." });
             return;
@@ -135,9 +138,7 @@ export const authMiddleware = () => {
           );
 
           if (clientOrganizationResponse.success) {
-            // Extract the internal client user ID (UUID)
             clientOrganizationId = clientOrganizationResponse.data.id;
-            // Cache the successful result
             apiCache.setClientOrganizationId(platformUserId, clientAuthOrganizationId, clientOrganizationId);
           } else {
             console.error(`[Auth Middleware] Failed to validate/upsert client organization ID ${clientAuthOrganizationId} for platform user ${platformUserId}. Error: ${clientOrganizationResponse.error}`);
@@ -145,11 +146,12 @@ export const authMiddleware = () => {
             return;
           }
         }
+      }
 
-        // Assign clientUserId to request and headers
+      if (clientOrganizationId) {
+        // Assign clientOrganizationId to request and headers for downstream services
         req.clientOrganizationId = clientOrganizationId; 
         req.headers['x-client-organization-id'] = clientOrganizationId;
-
       }
 
       // 4. Client+Organization Validation (Optional)

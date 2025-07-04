@@ -30,11 +30,13 @@ router.delete('/:id', async (req: Request, res: Response): Promise<void> => {
   try {
     const result: ServiceResponse<boolean> = await deleteApiKey(id, platformUserId, platformOrganizationId);
     
-    if (result.success) {
-      res.status(200).json({ success: true, message: 'API key deleted successfully' });
-    } else {
-      res.status(404).json(result);
+    if (!result.success) {
+      console.error('Error deleting API key:', result.error);
+      res.status(500).json(result);
     }
+
+    res.status(200).json(result);
+    
   } catch (error: any) {
     console.error('Error deleting API key:', error);
     res.status(500).json({ success: false, error: 'Internal server error' });

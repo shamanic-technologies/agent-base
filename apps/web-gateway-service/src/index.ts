@@ -30,6 +30,7 @@ const requiredEnvVars = [
   'PORT',
   'KEY_SERVICE_URL',
   'PAYMENT_SERVICE_URL',
+  'USER_SERVICE_URL',
   // 'LOGGING_SERVICE_URL',
   // 'DATABASE_SERVICE_URL',
   'WEB_GATEWAY_API_KEY'
@@ -47,6 +48,7 @@ const PORT = process.env.PORT;
 // Service URLs with non-null assertion to handle TypeScript
 const KEY_SERVICE_URL = process.env.KEY_SERVICE_URL!;
 const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL!;
+const USER_SERVICE_URL = process.env.USER_SERVICE_URL!;
 
 // Middleware
 app.use(cors({
@@ -141,6 +143,7 @@ app.listen(PORT, () => {
   console.log('Connected to services:');
   console.log(`🔑 Key Service: ${KEY_SERVICE_URL}`);
   console.log(`💳 Payment Service: ${PAYMENT_SERVICE_URL}`);
+  console.log(`👤 User service: ${USER_SERVICE_URL}`);
   // console.log(`📝 Logging Service: ${LOGGING_SERVICE_URL}`);
   // console.log(`🗄️ Database Service: ${DATABASE_SERVICE_URL}`);
 }); 

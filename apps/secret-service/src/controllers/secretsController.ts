@@ -263,12 +263,14 @@ export async function deleteSecretHandler(req: Request, res: Response, next: Nex
         res.status(200).json(response);
 
     } catch (error: any) {
-        console.error('Error deleting secret:', error);
         if (error instanceof SecretNotFoundError) {
-            res.status(404).json({ success: false, error: error.message });
+            console.warn(`Attempted to delete a secret that was not found: ${error.secretId}`);
+            res.status(200).json({ success: true, data: true, message: 'Secret not found, but operation considered successful.' });
         } else if (error instanceof GoogleCloudSecretManagerApiError) {
+            console.error('GSM API error during secret deletion:', error);
             res.status(500).json({ success: false, error: `GSM API error: ${error.message}` });
         } else {
+            console.error('Unexpected error deleting secret:', error);
             next(error);
         }
     }
