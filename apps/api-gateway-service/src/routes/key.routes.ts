@@ -9,16 +9,10 @@ import { createApiProxy } from '../utils/proxy.util.js';
 export const configureKeyRoutes = (
   router: express.Router,
   targetServiceUrl: string,
-  authMiddleware: express.RequestHandler,
-  creditValidationMiddleware?: express.RequestHandler
+  authMiddleware: express.RequestHandler
 ) => {
   // Apply authentication middleware to all routes.
   router.use(authMiddleware);
-
-  if (creditValidationMiddleware) {
-    // Apply credit validation middleware to all routes.
-    router.use(creditValidationMiddleware);
-  }
   
   const keyProxy = createApiProxy(targetServiceUrl, 'Key Service');
   

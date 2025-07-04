@@ -20,16 +20,15 @@ export const configureUtilityRoutes = (
   router: express.Router,
   targetServiceUrl: string, // Renamed from serviceUrl for consistency
   authMiddleware: express.RequestHandler,
-  creditValidationMiddleware?: express.RequestHandler
+  creditValidationMiddleware: express.RequestHandler
 ) => {
 
   // Apply authentication middleware first.
   router.use(authMiddleware);
 
-  if (creditValidationMiddleware) {
-    // Apply credit validation middleware
-    router.use(creditValidationMiddleware);
-  }
+
+  // Apply credit validation middleware
+  router.use(creditValidationMiddleware);
 
   // Create the proxy middleware instance for the Utility Tool Service.
   const utilityProxy = createApiProxy(targetServiceUrl, 'Utility Tool Service');

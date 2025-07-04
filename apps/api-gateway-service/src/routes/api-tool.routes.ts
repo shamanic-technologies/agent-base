@@ -20,7 +20,7 @@ export const configureApiToolRoutes = (
   router: express.Router,
   apiToolServiceUrl: string,
   authMiddleware: express.RequestHandler,
-  creditValidationMiddleware?: express.RequestHandler
+  creditValidationMiddleware: express.RequestHandler
 ) => {
   // --- Environment Variable Checks ---
   if (!apiToolServiceUrl) {
@@ -42,10 +42,8 @@ export const configureApiToolRoutes = (
   // 1. Apply authentication middleware first.
   router.use(authMiddleware);
 
-  if (creditValidationMiddleware) {
-    // 2. Apply credit validation middleware
-    router.use(creditValidationMiddleware);
-  }
+  // 2. Apply credit validation middleware
+  router.use(creditValidationMiddleware);
 
   // --- Proxy Configuration ---
   // Use createProxyMiddleware directly because we need onProxyReq to add the specific API key.

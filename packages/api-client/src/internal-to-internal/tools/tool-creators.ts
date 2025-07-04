@@ -6,7 +6,7 @@
  */
 import { z } from 'zod';
 import type { Tool } from 'ai'; // Use type import for clarity
-import { jsonSchema } from 'ai'; // Import the jsonSchema helper
+import { jsonSchemaToZod } from 'json-schema-to-zod';
 import {
     ServiceResponse,
     UtilityInfo,
@@ -91,7 +91,7 @@ export function createCallUtilityTool(
         description: 'Executes a specific functional utility tool by its ID, providing the necessary input parameters.',
         parameters: z.object({
             toolId: z.string().describe('The unique ID of the functional utility tool to execute.'),
-            params: z.any().describe('An object containing the parameters required by the specific functional utility tool being called.')
+            params: z.object({}).passthrough().describe('An object containing the parameters required by the specific functional utility tool being called.')
         }),
         execute: async (args: { toolId: string, params: any }): Promise<ServiceResponse<ExecuteToolResult>> => { // Argument key is params
             const payload: ExecuteToolPayload = {
@@ -151,7 +151,7 @@ export async function createFunctionalToolObject(
         id: toolId,
         tool: {
             description: description,
-            parameters: jsonSchema(fetchedJsonSchema || {}), // Provide empty object if schema is missing/invalid
+            parameters: eval(jsonSchemaToZod(fetchedJsonSchema || {})),
             ...(!isClientSide && {
                 execute: async (args: any): Promise<ServiceResponse<ExecuteToolResult>> => { 
                     const payload: ExecuteToolPayload = {
