@@ -5,6 +5,7 @@ import {
   Agent,
   Conversation,
   AgentBaseDeductCreditRequest,
+  AgentInternalCredentials,
 } from "@agent-base/types";
 import {
   getAgentFromConversation,
@@ -21,6 +22,7 @@ import {
   sanitizeIncompleteToolCalls,
 } from "../lib/lang-graph/message-utils.js";
 import { truncateHistory } from "../lib/lang-graph/history-truncation.js";
+import { loadLangGraphTools } from "../lib/lang-graph/tool-loader.js";
 import { ModelName } from "../types/index.js";
 import { Message } from "ai";
 
@@ -125,22 +127,19 @@ router.post(
         const sanitizedMessages: BaseMessage[] =
           sanitizeIncompleteToolCalls(truncatedMessages);
 
-        // Comment out tool loading for now to test without tools
-        const langchainTools: Tool[] = [];
-        // const agentServiceCredentials: AgentInternalCredentials = {
-        //   clientUserId,
-        //   clientOrganizationId,
-        //   platformApiKey,
-        //   platformUserId,
-        //   agentId: agent.id,
-        // };
+        const agentServiceCredentials: AgentInternalCredentials = {
+          clientUserId,
+          clientOrganizationId,
+          platformApiKey,
+          platformUserId,
+          agentId: agent.id,
+        };
 
-        // const vercelTools = await loadAndPrepareTools(
-        //   agentServiceCredentials,
-        //   conversationId,
-        // );
-        // const langchainTools = convertVercelToolsToLangChain(vercelTools as any);
-        console.debug("ANTHROPIC_API_KEY", process.env.ANTHROPIC_API_KEY);
+        const langchainTools = await loadLangGraphTools(
+          agentServiceCredentials,
+          conversationId,
+        );
+
         const model = new ChatAnthropic({
           model: ModelName.CLAUDE_SONNET_4_20250514,
           temperature: 0.1,
@@ -151,43 +150,31 @@ router.post(
           },
         });
 
-        const boundModel = model; // No tools bound
+        const boundModel = model.bindTools(langchainTools);
 
         const workflow = createAgentWorkflow(boundModel, langchainTools);
 
         const stream = await workflow.stream(
           {
-            messages: sanitizedMessages, // Use the sanitized LangChain messages
+            messages: langChainRequestMessages,
             inputTokens: 0,
             outputTokens: 0,
           },
           { streamMode: "values" },
         );
 
-        res.type("text/plain");
+        res.type("application/json");
 
         const allChunks = [];
         for await (const chunk of stream) {
           allChunks.push(chunk);
-          if (chunk.messages) {
-            const lastMessage = chunk.messages[chunk.messages.length - 1];
-            // Only stream back AI messages to avoid echoing the user's input
-            if (
-              lastMessage &&
-              lastMessage._getType() === "ai" &&
-              lastMessage.content
-            ) {
-              if (typeof lastMessage.content === "string") {
-                res.write(lastMessage.content);
-              } else if (Array.isArray(lastMessage.content)) {
-                res.write(JSON.stringify(lastMessage.content));
-              }
-            }
-          }
+          res.write(JSON.stringify(chunk) + "\n");
         }
         res.end();
 
         const finalState = allChunks[allChunks.length - 1];
+
+        // Save the final state for persistence
         if (finalState) {
           const messagesToSave: Partial<Message>[] = finalState.messages.map(
             (msg: BaseMessage) => ({
@@ -217,6 +204,10 @@ router.post(
             deductCreditRequest,
           );
         }
+        
+        // Return the final state to the client
+        res.status(200).json(finalState);
+
       } catch (error) {
         next(error);
       }

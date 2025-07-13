@@ -136,11 +136,12 @@ export async function createFunctionalToolObject(
     }
 
     // Explicitly type the fetched data to ensure schema property is recognized
-    const toolInfo = infoResponse.data as UtilityInfo; 
-    const { description, schema: fetchedJsonSchema } = toolInfo;
+    const toolInfo = infoResponse.data as UtilityInfo;
+    const description = toolInfo.description ?? "No description available.";
+    const fetchedJsonSchema = toolInfo.schema;
 
     // Validate if schema exists and is an object
-    if (!fetchedJsonSchema || typeof fetchedJsonSchema !== 'object') {
+    if (!fetchedJsonSchema || typeof fetchedJsonSchema !== "object") {
         console.warn(`[createFunctionalToolObject] No valid parameters schema found for tool ${toolId}. Using empty schema.`);
     }
 
@@ -148,25 +149,35 @@ export async function createFunctionalToolObject(
 
     // 2. Create the Tool object using the fetched JSON schema
     return {
-        id: toolId,
-        tool: {
-            description: description,
-            parameters: eval(jsonSchemaToZod(fetchedJsonSchema || {})),
-            ...(!isClientSide && {
-                execute: async (args: any): Promise<ServiceResponse<ExecuteToolResult>> => { 
-                    const payload: ExecuteToolPayload = {
-                        params: args,
-                        conversationId: conversationId 
-                    };
-                    const callResponse: ServiceResponse<ExecuteToolResult> = await callUtilityFromAgent(agentInternalCredentials, toolId, payload);
+      id: toolId,
+      tool: {
+        description: description,
+        parameters: eval(jsonSchemaToZod(fetchedJsonSchema || {})),
+        execute: isClientSide
+          ? undefined
+          : async (
+              args: any,
+            ): Promise<ServiceResponse<ExecuteToolResult>> => {
+              const payload: ExecuteToolPayload = {
+                params: args,
+                conversationId: conversationId,
+              };
+              const callResponse: ServiceResponse<ExecuteToolResult> =
+                await callUtilityFromAgent(
+                  agentInternalCredentials,
+                  toolId,
+                  payload,
+                );
 
-                    if (!callResponse.success) {
-                        console.error(`[createFunctionalToolObject] Error executing tool ${toolId} via callUtilityFromAgent:`, callResponse);
-                        return callResponse; 
-                    }
-                    return callResponse;
-                }
-            })
-        }
+              if (!callResponse.success) {
+                console.error(
+                  `[createFunctionalToolObject] Error executing tool ${toolId} via callUtilityFromAgent:`,
+                  callResponse,
+                );
+                return callResponse;
+              }
+              return callResponse;
+            },
+      },
     };
 } 

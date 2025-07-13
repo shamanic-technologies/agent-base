@@ -102,17 +102,46 @@ app.post(
       // Convert the web stream to a Node.js Readable stream
       const stream = Readable.fromWeb(response.body as any);
 
-      stream.on("data", (chunk: Buffer) => {
-        try {
-          const message = chunk.toString();
-          console.log(`Streaming message to ${userPhoneNumber}: "${message}"`);
-          twilioClient.messages.create({
-            body: message,
-            from: twilioPhoneNumber,
-            to: userPhoneNumber,
-          });
-        } catch (error) {
-            console.error("Error processing stream chunk:", error);
+      let jsonBuffer = "";
+      const chunkSize = 1500;
+      let sentMessagesCount = 0;
+
+      stream.on("data", async (chunk: Buffer) => {
+        jsonBuffer += chunk.toString();
+        const lines = jsonBuffer.split("\n");
+        jsonBuffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (line.trim() === "") continue;
+          try {
+            const state = JSON.parse(line);
+            if (state.messages && state.messages.length > sentMessagesCount) {
+              const newMessages = state.messages.slice(sentMessagesCount);
+              sentMessagesCount = state.messages.length; // Update the count
+
+              for (const message of newMessages) {
+                if (message.type === "ai" && message.content) {
+                  const content = message.content as string;
+                  for (let i = 0; i < content.length; i += chunkSize) {
+                    const chunkToSend = content.substring(i, i + chunkSize);
+                    await twilioClient.messages.create({
+                      body: chunkToSend,
+                      from: twilioPhoneNumber,
+                      to: userPhoneNumber,
+                    });
+                  }
+                } else if (message.type === "tool") {
+                  await twilioClient.messages.create({
+                    body: "Running tools...",
+                    from: twilioPhoneNumber,
+                    to: userPhoneNumber,
+                  });
+                }
+              }
+            }
+          } catch (e) {
+            console.error("Error parsing stream JSON:", e, "Line:", line);
+          }
         }
       });
 
