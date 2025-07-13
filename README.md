@@ -16,4 +16,5 @@
 | **logging-service** | API call logging, token usage tracking and billing integration | 3900 |
 | **webhook-gateway-service** | Receives and processes incoming webhooks (e.g., Crisp) | 3080 |
 | **dashboard-service** | Manage user dashboards | 3090 |
+| **whatsapp-service** | Manage whatsapp conversations | 3100 |
 

@@ -16,7 +16,7 @@ import {
     Conversation
 } from '@agent-base/types';
 // AI SDK imports
-// import { anthropic } from '@ai-sdk/anthropic';
+import { anthropic } from '@ai-sdk/anthropic';
 import { google } from '@ai-sdk/google';
 import { streamText, StreamData, ToolCall } from 'ai';
 
@@ -134,10 +134,10 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
             const mergedMessages : Message[] = mergeMessages(dbHistory, messages);
 
             // 3. Truncate history to fit within the context window.
-            const maxSteps = 25;
-            const inputTokensBudget = 30000;
-            const thinkingBudgetTokens = 10000;
-            const maxOutputTokens = 40000;
+            const maxSteps = 10;
+            const inputTokensBudget = 20000;
+            const thinkingBudgetTokens = 1024;
+            const maxOutputTokens = 4000;
 
             const truncatedMessages : Message[] = truncateHistory(
                 systemPrompt, 
@@ -163,8 +163,8 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
 
             // --- Call AI Model ---
             const result = await streamText({
-                // model: anthropic(ModelName.CLAUDE_SONNET_4_20250514),
-                model: google('gemini-2.5-pro'),
+                model: anthropic(ModelName.CLAUDE_SONNET_4_20250514),
+                // model: google('gemini-2.5-pro'),
                 messages: sanitizedMessages,
                 system: systemPrompt, 
                 tools: allStartupTools,
@@ -172,7 +172,7 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
                 maxTokens: maxOutputTokens,
                 temperature: 0.1,
                 maxSteps, 
-                // providerOptions: { anthropic: { thinking: { type: 'enabled', budgetTokens: thinkingBudgetTokens } } },
+                providerOptions: { anthropic: { thinking: { type: 'enabled', budgetTokens: thinkingBudgetTokens } } },
                 experimental_generateMessageId: createIdGenerator({ prefix: 'msgs', size: 16 }),
                 onError: (error) => {
                     console.error(`[Agent Service /run] Error:`, error, null, 2);

@@ -11,7 +11,9 @@ packages:
   - apps/payment-service
   - apps/key-service
   # - apps/webhook-gateway-service
+  - apps/whatsapp-service
   - apps/tool-auth-service
   - apps/dashboard-service
   - packages/**
   - tooling/*
+

@@ -468,3 +468,89 @@ export async function makeWebAnonymousServiceRequest<T>(
 
   return _makeServiceRequest<T>(fullUrl, config, logContext);
 }
+
+
+/**
+ * Makes a streaming, API Authenticated HTTP request using fetch.
+ * This is specialized for streaming endpoints like agent runs.
+ * 
+ * @param serviceUrl - Base URL of the target service.
+ * @param endpoint - The specific API endpoint to hit.
+ * @param body - The request body to send.
+ * @param agentBaseCredentials - Credentials for authentication.
+ * @returns A promise resolving to the raw Response object for streaming.
+ */
+export async function makeStreamingAgentRequest(
+    serviceUrl: string,
+    endpoint: string,
+    body: object,
+    agentBaseCredentials: AgentBaseCredentials
+): Promise<Response> {
+    const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const fullUrl = `${serviceUrl}${formattedEndpoint}`;
+    const logContext = `[httpClient:StreamingApiAuth] User ${agentBaseCredentials.clientAuthUserId}, Org ${agentBaseCredentials.clientAuthOrganizationId}`;
+
+    try {
+        const response = await fetch(fullUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-client-auth-user-id': agentBaseCredentials.clientAuthUserId,
+                'x-client-auth-organization-id': agentBaseCredentials.clientAuthOrganizationId,
+                'x-platform-api-key': agentBaseCredentials.platformApiKey,
+                'Accept': 'text/event-stream'
+            },
+            body: JSON.stringify(body)
+        });
+
+        if (!response.ok) {
+            let errorBody: any = null;
+            let errorText: string = 'Unknown agent service error during stream initiation';
+            let parsedError: string | null = null;
+            let parsedDetails: any = null;
+
+            try {
+                errorText = await response.text();
+                try {
+                    errorBody = JSON.parse(errorText);
+                    parsedError = errorBody?.error || errorBody?.message;
+                    parsedDetails = errorBody?.details;
+                } catch (parseError) {
+                    // console.warn('Failed to parse error response body as JSON:', parseError);
+                }
+            } catch (readError) {
+                // console.error('Failed to read error response body:', readError);
+            }
+
+            const errorToThrow = {
+                status: response.status,
+                code: 'AGENT_STREAM_ERROR',
+                message: parsedError || `Agent service stream error: ${errorText}`,
+                details: parsedDetails || 'There was an issue initiating the agent service stream'
+            };
+            throw errorToThrow;
+        }
+
+        if (!response.body) {
+            throw {
+                status: 500,
+                code: 'EMPTY_STREAM_RESPONSE',
+                message: 'Empty response body from agent service stream',
+                details: 'The agent service returned an empty response body for the stream.'
+            };
+        }
+
+        return response; // Return the raw response for the caller to handle the stream
+
+    } catch (error: any) {
+        if (error && typeof error === 'object' && 'status' in error && 'code' in error) {
+            throw error; // Re-throw custom structured error
+        }
+        throw {
+            status: 503, // Service Unavailable or connection error
+            code: 'AGENT_STREAM_CONNECTION_ERROR',
+            message: 'Failed to connect to agent service for streaming',
+            details: error.message || 'Could not establish connection to the agent service for streaming.'
+        };
+    }
+}

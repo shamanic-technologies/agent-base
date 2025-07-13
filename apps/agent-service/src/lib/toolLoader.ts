@@ -36,36 +36,36 @@ export async function loadAndPrepareTools(
         //// Agent utilities
         'update_agent_memory',
         //// Webhook utilities
-        // 'webhook_create_webhook',
-        // 'webhook_search_webhooks',
-        // 'webhook_link_user',
-        // 'webhook_link_agent',
-        // 'webhook_get_latest_events',
+        'webhook_create_webhook',
+        'webhook_search_webhooks',
+        'webhook_link_user',
+        'webhook_link_agent',
+        'webhook_get_latest_events',
         //// API tool utilities
-        // 'create_api_tool',
+        'create_api_tool',
         //// Basic utilities
-        // 'utility_google_search',
-        // 'utility_google_maps',
-        // 'utility_get_current_datetime',
-        // 'utility_read_webpage',
-        // 'utility_curl_command',
+        'utility_google_search',
+        'utility_google_maps',
+        'utility_get_current_datetime',
+        'utility_read_webpage',
+        'utility_curl_command',
         //// Dashboard utilities
-        // 'create_dashboard',
-        // 'delete_dashboard',
-        // 'get_dashboard',
-        // 'update_dashboard',
-        // 'list_dashboards',
-        // 'list_dashboard_blocks',
-        // 'get_dashboard_block_by_id',
+        'create_dashboard',
+        'delete_dashboard',
+        'get_dashboard',
+        'update_dashboard',
+        'list_dashboards',
+        'list_dashboard_blocks',
+        'get_dashboard_block_by_id',
         //// Database utilities
-        // 'create_table',
-        // 'get_database',
-        // 'get_table',
-        // 'query_database',
+        'create_table',
+        'get_database',
+        'get_table',
+        'query_database',
         // // client-side tools
-        // 'get_active_organization',
-        // 'update_organization',
-        // 'delete_organization'
+        'get_active_organization',
+        'update_organization',
+        'delete_organization'
     ];
 
     const clientSideToolsResponse = await listClientSideUtilitiesFromAgent(agentServiceCredentials);
@@ -77,7 +77,12 @@ export async function loadAndPrepareTools(
     const clientSideToolIds = clientSideToolsResponse.data.map((t: InternalUtilityInfo) => t.id);
     
     const fetchedFunctionalTools = await Promise.all(
-        startupToolIds.map(id => createFunctionalToolObject(id, agentServiceCredentials, conversationId, clientSideToolIds))
+        startupToolIds.map(id => createFunctionalToolObject(
+            id, 
+            agentServiceCredentials, 
+            conversationId, 
+            clientSideToolIds
+        ))
     );
     
     const allStartupTools: Record<string, Tool> = {
