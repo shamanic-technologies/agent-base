@@ -210,13 +210,14 @@ router.post('/get-or-create-conversation', async (req: Request, res: Response, n
             return;
         }
         // 2. If get failed (assumed not found), try to create it
-        const createResponse: ServiceResponse<ConversationId> = await createConversationInternalApiService(
+        const createResponse: ServiceResponse<Conversation> =
+          await createConversationInternalApiService(
             req.body, // Contains agentId, channelId, conversationId
             clientUserId,
             clientOrganizationId,
             platformUserId,
             platformApiKey
-        );
+          );
         if (!createResponse.success) {
             console.log(`[Agent Service] Failed to create conversation ${conversationId}: ${createResponse.error}`);
             res.status(500).json(createResponse);
@@ -229,10 +230,10 @@ router.post('/get-or-create-conversation', async (req: Request, res: Response, n
     } catch (error) {
         console.error('[Agent Service] Unexpected error in get-or-create-conversation:', error);
         res.status(500).json({
-            success: false,
-            error: error instanceof Error ? error.message : 'Unknown error processing get-or-create conversation'
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error processing get-or-create conversation'
         });
-    }
+      }
 });
 
 /**

@@ -63,8 +63,8 @@ export const createConversationInternalApiService = async (
     clientOrganizationId: string,
     platformUserId: string, 
     platformApiKey: string
-): Promise<ServiceResponse<ConversationId>> => {
-    return makeInternalRequest<ConversationId>(
+): Promise<ServiceResponse<Conversation>> => {
+    return makeInternalRequest<Conversation>(
         getDatabaseServiceUrl(),
         'POST',
         '/conversations/create-conversation',

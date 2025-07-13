@@ -11,7 +11,7 @@ import { countTokens } from '@anthropic-ai/tokenizer';
  * @param context A descriptive string for logging, indicating what content is being tokenized (e.g., "system prompt").
  * @returns The calculated number of tokens, or 0 if token counting fails.
  */
-function countMessageContentTokens(
+export function countMessageContentTokens(
   content: string | ReadonlyArray<{ type: 'text'; text: string } | { type: string; [key: string]: any }>,
   context: string
 ): number {

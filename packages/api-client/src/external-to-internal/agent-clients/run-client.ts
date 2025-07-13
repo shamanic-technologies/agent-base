@@ -5,6 +5,7 @@ import { ServiceResponse, AgentBaseCredentials, MinimalInternalCredentials } fro
 import { makeMinimalInternalRequest, makeStreamingAgentRequest } from '../../utils/service-client.js';
 import { getAgentBaseApiUrl } from '../../utils/config.js';
 import { Message } from 'ai';
+import { BaseMessage } from '@langchain/core/messages';
 
 const AGENT_SERVICE_ROUTE_PREFIX = '/agent';
 
@@ -66,13 +67,13 @@ export const triggerAgentRunPlatformUserApiServiceStream = async (
  * @returns A promise resolving to the raw Response object for streaming.
  */
 export const triggerLangGraphAgentRunStream = async (
-    message: string,
-    from: string,
+    conversationId: string,
+    messages: BaseMessage[],
     agentBaseCredentials: AgentBaseCredentials
 ): Promise<Response> => {
     const AGENT_BASE_API_URL = getAgentBaseApiUrl();
     const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/run/langgraph`;
-    const body = { message, from };
+    const body = { conversationId, messages };
     return makeStreamingAgentRequest(AGENT_BASE_API_URL, endpoint, body, agentBaseCredentials);
 }; 
 

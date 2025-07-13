@@ -47,13 +47,13 @@ import { Tool } from 'ai';
 
 // Prompt Builder import
 import { buildSystemPrompt } from '../lib/promptBuilder.js';
-import { sanitizeIncompleteToolCalls } from '../lib/messageSanitizers.js';
-import { mergeMessages } from '../lib/messageMerger.js';
-import { loadAndPrepareTools } from '../lib/toolLoader.js';
+import { sanitizeIncompleteToolCalls } from '../lib/vercel-ai/messageSanitizers.js';
+import { mergeMessages } from '../lib/vercel-ai/messageMerger.js';
+import { loadAndPrepareTools } from '../lib/vercel-ai/toolLoader.js';
 
 // Import error handler
 import { handleToolError } from '../lib/utils/errorHandlers.js';
-import { truncateHistory } from '../lib/historyTruncation.js'; // Added for history truncation
+import { truncateHistory } from '../lib/vercel-ai/historyTruncation.js'; // Added for history truncation
 import { ModelName } from '../types/index.js';
 
 const runRouter = Router(); // Use a specific router for this file

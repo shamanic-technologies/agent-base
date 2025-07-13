@@ -18,18 +18,23 @@ const CONVERSATIONS_TABLE = 'conversations'; // Define table name constant
 /**
  * Create a new conversation record in the database.
  */
-export async function createConversation(input: CreateConversationInput): Promise<ServiceResponse<ConversationId>> {
+export async function createConversation(
+  input: CreateConversationInput,
+): Promise<ServiceResponse<Conversation>> {
   const { conversationId, agentId, channelId } = input;
 
   if (!conversationId || !agentId || !channelId) {
-    return { success: false, error: 'Missing required fields: conversationId, agentId, channelId' };
+    return {
+      success: false,
+      error: "Missing required fields: conversationId, agentId, channelId",
+    };
   }
 
   const query = `
     INSERT INTO "${CONVERSATIONS_TABLE}" (conversation_id, agent_id, channel_id, messages)
     VALUES ($1, $2, $3, $4)
     ON CONFLICT (conversation_id) DO NOTHING
-    RETURNING conversation_id;
+    RETURNING *;
   `;
 
   let client: PoolClient | null = null;
@@ -40,31 +45,37 @@ export async function createConversation(input: CreateConversationInput): Promis
       conversationId,
       agentId,
       channelId,
-      '[]' // Empty JSON array for messages
+      "[]", // Empty JSON array for messages
     ]);
-    if (result.rowCount === 1 && result.rows[0]?.conversation_id) {
-      return { 
-        success: true, 
-        data: { conversationId: result.rows[0].conversation_id }
-      };
-    } else if (result.rowCount === 0) {
-      console.log(`[DB Service] Conversation with ID ${conversationId} already exists.`);
-      return { 
-        success: true, 
-        data: { conversationId: conversationId }
+    if (result.rowCount === 1 && result.rows[0]) {
+      return {
+        success: true,
+        data: mapConversationFromDatabase(result.rows[0]),
       };
     } else {
-      console.error('[DB Service] Failed to insert conversation or retrieve conversationId.');
-      return { success: false, error: 'Failed to save conversation to database' };
+      // If rowCount is 0, it means there was a conflict, so we fetch the existing conversation
+      const existingConversation = await getConversation(conversationId);
+      if (existingConversation.success && existingConversation.data) {
+        return { success: true, data: existingConversation.data };
+      } else {
+        console.error(
+          `[DB Service] Failed to retrieve existing conversation ${conversationId} after conflict.`,
+        );
+        return {
+          success: false,
+          error: "Failed to retrieve conversation after conflict",
+        };
+      }
     }
   } catch (error) {
-    console.error('[DB Service] Database error creating conversation:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Database error occurred'
+    console.error("[DB Service] Database error creating conversation:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Database error occurred",
     };
   } finally {
-    if (client) client.release(); 
+    if (client) client.release();
   }
 }
 

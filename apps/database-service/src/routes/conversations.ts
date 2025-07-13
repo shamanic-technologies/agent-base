@@ -15,6 +15,7 @@ import {
     SuccessResponse,
     ServiceResponse,
     ConversationId,
+    Conversation,
 } from '@agent-base/types';
 import {
     createConversation,
@@ -147,15 +148,16 @@ router.get('/get-or-create-conversations-from-agent', (async (req: Request, res:
       channelId: defaultChannelId
     };
 
-    const createResponse : ServiceResponse<ConversationId> = await createConversation(createInput);
+    const createResponse : ServiceResponse<Conversation> = await createConversation(createInput);
 
     // Handle errors during creation
     if (!createResponse.success) {
       console.error(`[DB Route /conversations] Failed to create conversation for agent ${agentId}:`, createResponse.error);
       return res.status(500).json(createResponse);
     }
+
     // Return the newly created conversation within the GetConversationsResponse structure
-    res.status(201).json(createResponse);
+    res.status(201).json([createResponse.data]);
     return;
 
   } catch (error) {

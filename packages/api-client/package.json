@@ -30,11 +30,13 @@
     "lint": "eslint . --ext .ts,.tsx",
     "typecheck": "tsc --noEmit"
   },
+  "private": true,
   "dependencies": {
     "@agent-base/types": "workspace:*",
+    "@langchain/core": "^0.3.62",
     "@types/stripe": "^8.0.417",
-    "ai": "^4.3.16",
-    "axios": "^1.9.0",
+    "ai": "^4.2.0",
+    "axios": "^1.7.2",
     "json-schema-to-zod": "^2.6.1",
     "stripe": "^18.1.0"
   },

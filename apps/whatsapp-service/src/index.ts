@@ -3,8 +3,13 @@ import express, { Request, Response } from "express";
 import cors from "cors";
 import twilio from "twilio";
 import { Readable } from "stream";
-import { triggerLangGraphAgentRunStream } from "@agent-base/api-client";
-import { AgentBaseCredentials } from "@agent-base/types";
+import {
+  getOrCreateAgents,
+  getOrCreateConversationsPlatformUserApiService,
+  triggerLangGraphAgentRunStream,
+} from "@agent-base/api-client";
+import { AgentBaseCredentials, ServiceResponse, Agent, Conversation } from "@agent-base/types";
+import { HumanMessage } from "@langchain/core/messages";
 
 // Validate environment variables
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
@@ -55,16 +60,43 @@ app.post(
 
     // Construct credentials for the SDK call
     const credentials: AgentBaseCredentials = {
-        clientAuthUserId: userPhoneNumber, // Use the sender's WA number as the client user ID
-        clientAuthOrganizationId,
-        platformApiKey: agentBaseApiKey
+      clientAuthUserId: userPhoneNumber, // Use the sender's WA number as the client user ID
+      clientAuthOrganizationId,
+      platformApiKey: agentBaseApiKey,
     };
 
     try {
+      // 1. Get or create agent
+      const agentResponse: ServiceResponse<Agent[]> = await getOrCreateAgents(credentials);
+      if (!agentResponse.success || !agentResponse.data || agentResponse.data.length === 0) {
+        throw new Error("Failed to get or create agent.");
+      }
+      // The response is an array of agents, so we take the first one.
+      const agent = agentResponse.data[0];
+
+      if (!agent || !agent.id) {
+        throw new Error("Agent ID is missing in the response.");
+      }
+      
+      // 2. Get or create conversation
+      const convosResponse: ServiceResponse<Conversation[]> =
+        await getOrCreateConversationsPlatformUserApiService(
+          { agentId: agent.id },
+          credentials,
+        );
+      if (!convosResponse.success || convosResponse.data.length === 0) {
+        throw new Error("Failed to get or create conversations.");
+      }
+      const conversationId = convosResponse.data[0].conversationId;
+
+      // 3. Construct the message payload for LangChain
+      const messages = [new HumanMessage({ content: userMessage })];
+
+      // 4. Trigger the agent run with the correct conversationId
       const response = await triggerLangGraphAgentRunStream(
-        userMessage,
-        userPhoneNumber,
-        credentials
+        conversationId,
+        messages,
+        credentials,
       );
 
       // Convert the web stream to a Node.js Readable stream

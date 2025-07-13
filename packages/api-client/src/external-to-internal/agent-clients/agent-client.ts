@@ -15,15 +15,15 @@ const AGENT_SERVICE_ROUTE_PREFIX = '/agent'; // Assuming API Gateway prefixes ag
  * @param {PlatformUserApiServiceCredentials} platformUserApiServiceCredentials - Object containing platformClientUserId and platformApiKey.
  * @returns {Promise<ServiceResponse<Agent>>} - A promise that resolves with the service response containing the agent data or an error.
  */
-export async function getOrCreateAgent(
+export async function getOrCreateAgents(
   agentBaseCredentials: AgentBaseCredentials
-): Promise<ServiceResponse<Agent>> { // Assuming the endpoint returns an Agent object
+): Promise<ServiceResponse<Agent[]>> { // Assuming the endpoint returns an Agent object
   const serviceUrl = getAgentBaseApiUrl(); // Use the API Gateway URL
   const endpoint = AGENT_SERVICE_ROUTE_PREFIX + '/get-or-create-user-agents'; // Assumed endpoint path
   const method = 'GET';
 
   // Using makePlatformUserApiServiceRequest as it correctly handles the required headers
-  return makeAgentBaseRequest<Agent>(
+  return makeAgentBaseRequest<Agent[]>(
     serviceUrl,
     method,
     endpoint,
