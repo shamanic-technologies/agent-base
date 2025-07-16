@@ -64,8 +64,6 @@ router.post(
     (async () => {
       try {
         const { messages, conversationId } = req.body;
-        console.log(`[LangGraph] Received request for conversationId: ${conversationId}`);
-        console.log('[LangGraph] Request body:', JSON.stringify(req.body, null, 2));
 
         const clientUserId = req.clientUserId as string;
         const clientOrganizationId = req.clientOrganizationId as string;
@@ -110,7 +108,6 @@ router.post(
           return res.status(500).json({ error: "Failed to load history" });
         }
         const dbHistory: Message[] = fullHistoryFromDBResponse.data.messages;
-        console.log("[LangGraph] History from DB:", JSON.stringify(dbHistory, null, 2));
 
         const langChainDbHistory = convertToLangChainMessages(dbHistory);
         const langChainRequestMessages = convertToLangChainMessages(messages);
@@ -160,8 +157,6 @@ router.post(
 
         const workflow = createAgentWorkflow(boundModel, langchainTools);
 
-        console.log("[LangGraph] Messages being sent to workflow:", JSON.stringify(sanitizedMessages, null, 2));
-
         const eventStream = await workflow.streamEvents(
           {
             messages: sanitizedMessages, // Corrected from langChainRequestMessages
@@ -185,7 +180,6 @@ router.post(
         }
         res.end();
 
-        console.log('[LangGraph] Final state for persistence:', JSON.stringify(finalState, null, 2));
         // Save the final state for persistence
         if (finalState && Array.isArray(finalState.messages)) {
           // The finalState contains the full, updated history.
