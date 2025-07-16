@@ -65,6 +65,7 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
     (async () => {
         try {
             const streamData = new StreamData(); // Instantiate StreamData
+            let hasError = false; // Flag to prevent onFinish from running after an error
 
             // --- Extraction & Validation ---
             const { messages, conversationId } = req.body;
@@ -176,9 +177,16 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
                 experimental_generateMessageId: createIdGenerator({ prefix: 'msgs', size: 16 }),
                 onError: (error) => {
                     console.error(`[Agent Service /run] Error:`, error, null, 2);
+                    hasError = true;
                     streamData.close();
                 },
                 async onFinish({ response, usage }) {
+                    // If an error occurred, onError has already handled closing the stream.
+                    if (hasError) {
+                        console.log('[Agent Service /run] Skipping onFinish due to a prior error.');
+                        return;
+                    }
+
                     try {
                         const messagesToSave: Message[] = appendResponseMessages({
                             messages,
