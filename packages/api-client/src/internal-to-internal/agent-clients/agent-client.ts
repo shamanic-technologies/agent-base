@@ -51,3 +51,35 @@ export async function updateAgentInternalService(
     agentId
   );
 }
+
+/**
+ * Creates a new agent for a client user via the agent service.
+ * This function calls the POST /create-user-agent endpoint.
+ *
+ * @param agentCreateData The data for creating the new agent.
+ * @param platformUserId The platform user ID (for x-platform-user-id header).
+ * @param platformApiKey The platform API key (for x-platform-api-key header).
+ * @param clientUserId The client user ID (for x-client-user-id header).
+ * @param clientOrganizationId The client organization ID (for x-client-organization-id header).
+ * @returns A promise that resolves to a ServiceResponse containing the new agent record or an error.
+ */
+export async function createAgentInternalService(
+  agentCreateData: CreateClientUserAgentInput,
+  platformUserId: string,
+  platformApiKey: string,
+  clientUserId: string,
+  clientOrganizationId: string
+): Promise<ServiceResponse<Agent>> {
+  const requestPath = '/create-user-agent';
+
+  return await makeInternalRequest<Agent>(
+    getAgentServiceUrl(),
+    'POST',
+    requestPath,
+    platformUserId,
+    clientUserId,
+    clientOrganizationId,
+    platformApiKey,
+    agentCreateData
+  );
+}
