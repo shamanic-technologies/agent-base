@@ -154,25 +154,28 @@ router.post(
 
         const workflow = createAgentWorkflow(boundModel, langchainTools);
 
-        const stream = await workflow.stream(
+        const eventStream = await workflow.streamEvents(
           {
             messages: langChainRequestMessages,
             inputTokens: 0,
             outputTokens: 0,
           },
-          { streamMode: "values" },
+          { version: "v2" },
         );
 
-        res.type("application/json");
+        res.setHeader("Content-Type", "text/event-stream");
+        res.setHeader("Cache-Control", "no-cache");
+        res.setHeader("Connection", "keep-alive");
 
-        const allChunks = [];
-        for await (const chunk of stream) {
-          allChunks.push(chunk);
-          res.write(JSON.stringify(chunk) + "\n");
+        let finalState: any = null;
+
+        for await (const event of eventStream) {
+          if (event.event === "on_chain_end") {
+            finalState = event.data.output;
+          }
+          res.write(`data: ${JSON.stringify(event)}\n\n`);
         }
         res.end();
-
-        const finalState = allChunks[allChunks.length - 1];
 
         // Save the final state for persistence
         if (finalState) {
@@ -206,7 +209,7 @@ router.post(
         }
         
         // Return the final state to the client
-        res.status(200).json(finalState);
+        // res.status(200).json(finalState); // This was causing the error
 
       } catch (error) {
         next(error);

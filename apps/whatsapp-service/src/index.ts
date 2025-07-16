@@ -102,50 +102,60 @@ app.post(
       // Convert the web stream to a Node.js Readable stream
       const stream = Readable.fromWeb(response.body as any);
 
-      let jsonBuffer = "";
-      const chunkSize = 1500;
-      let sentMessagesCount = 0;
+      let buffer = "";
+      let messageBuffer = ""; // Buffer to accumulate message content
 
       stream.on("data", async (chunk: Buffer) => {
-        jsonBuffer += chunk.toString();
-        const lines = jsonBuffer.split("\n");
-        jsonBuffer = lines.pop() ?? "";
+        buffer += chunk.toString();
+        let boundary = buffer.indexOf("\n\n");
+        while (boundary !== -1) {
+          const eventString = buffer.substring(0, boundary);
+          buffer = buffer.substring(boundary + 2);
+          if (eventString.startsWith("data:")) {
+            const data = JSON.parse(eventString.substring(5));
 
-        for (const line of lines) {
-          if (line.trim() === "") continue;
-          try {
-            const state = JSON.parse(line);
-            if (state.messages && state.messages.length > sentMessagesCount) {
-              const newMessages = state.messages.slice(sentMessagesCount);
-              sentMessagesCount = state.messages.length; // Update the count
-
-              for (const message of newMessages) {
-                if (message.type === "ai" && message.content) {
-                  const content = message.content as string;
-                  for (let i = 0; i < content.length; i += chunkSize) {
-                    const chunkToSend = content.substring(i, i + chunkSize);
-                    await twilioClient.messages.create({
-                      body: chunkToSend,
-                      from: twilioPhoneNumber,
-                      to: userPhoneNumber,
-                    });
+            switch (data.event) {
+              case "on_chat_model_stream": {
+                const contentParts = data.data?.chunk?.kwargs?.content;
+                if (Array.isArray(contentParts)) {
+                  for (const part of contentParts) {
+                    if (part.type === "text" && part.text) {
+                      messageBuffer += part.text;
+                    }
                   }
-                } else if (message.type === "tool") {
+                }
+                break;
+              }
+              case "on_tool_start": {
+                if (messageBuffer) {
                   await twilioClient.messages.create({
-                    body: "Running tools...",
+                    body: messageBuffer,
                     from: twilioPhoneNumber,
                     to: userPhoneNumber,
                   });
+                  messageBuffer = ""; // Clear the buffer after sending
                 }
+                await twilioClient.messages.create({
+                  body: "Just a moment, I'm working on your request...",
+                  from: twilioPhoneNumber,
+                  to: userPhoneNumber,
+                });
+                break;
               }
             }
-          } catch (e) {
-            console.error("Error parsing stream JSON:", e, "Line:", line);
           }
+          boundary = buffer.indexOf("\n\n");
         }
       });
 
-      stream.on("end", () => {
+      stream.on("end", async () => {
+        if (messageBuffer) {
+          await twilioClient.messages.create({
+            body: messageBuffer,
+            from: twilioPhoneNumber,
+            to: userPhoneNumber,
+          });
+        }
         console.log("Stream ended.");
       });
 
