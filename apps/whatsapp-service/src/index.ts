@@ -10,6 +10,7 @@ import {
 } from "@agent-base/api-client";
 import { AgentBaseCredentials, ServiceResponse, Agent, Conversation } from "@agent-base/types";
 import { HumanMessage } from "@langchain/core/messages";
+import { splitMessage } from "./lib/utils.js";
 
 // Validate environment variables
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
@@ -128,11 +129,14 @@ app.post(
               }
               case "on_tool_start": {
                 if (messageBuffer) {
-                  await twilioClient.messages.create({
-                    body: messageBuffer,
-                    from: twilioPhoneNumber,
-                    to: userPhoneNumber,
-                  });
+                  const messageChunks = splitMessage(messageBuffer);
+                  for (const chunk of messageChunks) {
+                    await twilioClient.messages.create({
+                      body: chunk,
+                      from: twilioPhoneNumber,
+                      to: userPhoneNumber,
+                    });
+                  }
                   messageBuffer = ""; // Clear the buffer after sending
                 }
                 await twilioClient.messages.create({
@@ -150,11 +154,14 @@ app.post(
 
       stream.on("end", async () => {
         if (messageBuffer) {
-          await twilioClient.messages.create({
-            body: messageBuffer,
-            from: twilioPhoneNumber,
-            to: userPhoneNumber,
-          });
+          const messageChunks = splitMessage(messageBuffer);
+          for (const chunk of messageChunks) {
+            await twilioClient.messages.create({
+              body: chunk,
+              from: twilioPhoneNumber,
+              to: userPhoneNumber,
+            });
+          }
         }
         console.log("Stream ended.");
       });

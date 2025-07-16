@@ -28,31 +28,19 @@ import { Message } from "ai";
 
 const router = Router();
 
-function convertToLangChainMessages(
-  messages: (Message | any)[],
-): BaseMessage[] {
-  return messages.map((msg) => {
+function convertToLangChainMessages(messages: (Message | any)[]): BaseMessage[] {
+  return messages.map((msg, index) => {
+    // Standardize content access
     const content = msg.content ?? msg.kwargs?.content ?? "";
-    // Handle serialized LangChain messages from the request body
-    if (msg.id && Array.isArray(msg.id)) {
-      const type = msg.id[msg.id.length - 1];
-      if (type === "HumanMessage") {
-        return new HumanMessage({ content });
-      }
-      if (type === "AIMessage") {
-        return new AIMessage({ content });
-      }
-    }
 
-    // Handle Vercel AI messages from the database
-    if (msg.role === "user") {
+    // Enforce alternating roles to fix corrupted history from the database.
+    // User (Human) messages are at even indices (0, 2, 4...).
+    // AI messages are at odd indices (1, 3, 5...).
+    if (index % 2 === 0) {
       return new HumanMessage({ content });
-    } else if (msg.role === "assistant" || msg.role === "system") {
+    } else {
       return new AIMessage({ content });
     }
-
-    // Fallback for safety, though it should not be reached with proper data
-    return new HumanMessage({ content });
   });
 }
 
@@ -62,6 +50,9 @@ router.post(
     (async () => {
       try {
         const { messages, conversationId } = req.body;
+        console.log(`[LangGraph] Received request for conversationId: ${conversationId}`);
+        console.log('[LangGraph] Request body:', JSON.stringify(req.body, null, 2));
+
         const clientUserId = req.clientUserId as string;
         const clientOrganizationId = req.clientOrganizationId as string;
         const platformUserId = req.platformUserId as string;
@@ -105,6 +96,7 @@ router.post(
           return res.status(500).json({ error: "Failed to load history" });
         }
         const dbHistory: Message[] = fullHistoryFromDBResponse.data.messages;
+        console.log("[LangGraph] History from DB:", JSON.stringify(dbHistory, null, 2));
 
         const langChainDbHistory = convertToLangChainMessages(dbHistory);
         const langChainRequestMessages = convertToLangChainMessages(messages);
@@ -154,9 +146,11 @@ router.post(
 
         const workflow = createAgentWorkflow(boundModel, langchainTools);
 
+        console.log("[LangGraph] Messages being sent to workflow:", JSON.stringify(sanitizedMessages, null, 2));
+
         const eventStream = await workflow.streamEvents(
           {
-            messages: langChainRequestMessages,
+            messages: sanitizedMessages, // Corrected from langChainRequestMessages
             inputTokens: 0,
             outputTokens: 0,
           },
@@ -177,17 +171,16 @@ router.post(
         }
         res.end();
 
+        console.log('[LangGraph] Final state for persistence:', JSON.stringify(finalState, null, 2));
         // Save the final state for persistence
-        if (finalState) {
-          const messagesToSave: Partial<Message>[] = finalState.messages.map(
-            (msg: BaseMessage) => ({
-              role: (msg as any).role,
-              content: msg.content,
-            }),
-          );
+        if (finalState && Array.isArray(finalState.messages)) {
+          // Combine the history from before this turn (from the DB) with the new messages
+          // from the current turn's execution to prevent overwriting the history.
+          // As per the request, we are saving the LangChain `BaseMessage` objects directly.
+          const messagesToSave = langChainDbHistory.concat(finalState.messages);
 
           await updateConversationInternalApiService(
-            { conversationId, messages: messagesToSave },
+            { conversationId, messages: messagesToSave as any },
             platformUserId,
             platformApiKey,
             clientUserId,

@@ -159,7 +159,7 @@ export async function createFunctionalToolObject(
               args: any,
             ): Promise<ServiceResponse<ExecuteToolResult>> => {
               const payload: ExecuteToolPayload = {
-                params: args,
+                input: args, // Corrected from 'params' to 'input'
                 conversationId: conversationId,
               };
               const callResponse: ServiceResponse<ExecuteToolResult> =
