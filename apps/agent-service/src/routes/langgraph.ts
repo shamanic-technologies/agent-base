@@ -29,18 +29,32 @@ import { Message } from "ai";
 const router = Router();
 
 function convertToLangChainMessages(messages: (Message | any)[]): BaseMessage[] {
-  return messages.map((msg, index) => {
+  return messages.map((msg) => {
     // Standardize content access
     const content = msg.content ?? msg.kwargs?.content ?? "";
 
-    // Enforce alternating roles to fix corrupted history from the database.
-    // User (Human) messages are at even indices (0, 2, 4...).
-    // AI messages are at odd indices (1, 3, 5...).
-    if (index % 2 === 0) {
+    // Handle serialized LangChain messages from the database
+    if (msg.id && Array.isArray(msg.id)) {
+      const type = msg.id[msg.id.length - 1];
+      switch (type) {
+        case "HumanMessage":
+          return new HumanMessage({ content });
+        case "AIMessage":
+        case "AIMessageChunk": // Treat chunks as full AI messages when reconstructing history
+          return new AIMessage({ content });
+      }
+    }
+
+    // Handle Vercel AI format messages (from initial request)
+    if (msg.role === "user") {
       return new HumanMessage({ content });
-    } else {
+    } else if (msg.role === "assistant" || msg.role === "system") {
       return new AIMessage({ content });
     }
+
+    // Fallback for any other unknown format, though this should be avoided.
+    console.warn("[LangGraph] Unknown message format, defaulting to HumanMessage:", msg);
+    return new HumanMessage({ content });
   });
 }
 
@@ -174,10 +188,9 @@ router.post(
         console.log('[LangGraph] Final state for persistence:', JSON.stringify(finalState, null, 2));
         // Save the final state for persistence
         if (finalState && Array.isArray(finalState.messages)) {
-          // Combine the history from before this turn (from the DB) with the new messages
-          // from the current turn's execution to prevent overwriting the history.
-          // As per the request, we are saving the LangChain `BaseMessage` objects directly.
-          const messagesToSave = langChainDbHistory.concat(finalState.messages);
+          // The finalState contains the full, updated history.
+          // We save it directly, overwriting the old (and potentially corrupted) history.
+          const messagesToSave = finalState.messages;
 
           await updateConversationInternalApiService(
             { conversationId, messages: messagesToSave as any },
