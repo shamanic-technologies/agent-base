@@ -17,6 +17,7 @@ export interface AgentRecord {
   job_title: string;
   created_at: Date;
   updated_at: Date;
+  embedding: number[];
 }
 
 export interface ClientUserAgentRecord {
@@ -58,6 +59,7 @@ export interface UpdateAgentInput {
   modelId?: string;
   memory?: string;
   jobTitle?: string;
+  embedding?: number[];
 }
 
 export interface UpdateClientUserAgentInput {
@@ -71,6 +73,7 @@ export interface UpdateClientUserAgentInput {
   agentModelId?: string;
   agentMemory?: string;
   agentJobTitle?: string;
+  agentEmbedding?: number[];
 }
 
 export interface ListClientUserAgentsInput {

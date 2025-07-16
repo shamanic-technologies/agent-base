@@ -160,3 +160,43 @@ export const getAgentFromConversation = async (
     params // Pass conversationId as query param
   );
 };
+
+
+
+/**
+ * Searches for agents in the database using vector similarity.
+ * This function calls the POST /agents/search endpoint in the database service.
+ *
+ * @param queryEmbedding The vector to search for.
+ * @param limit The maximum number of results to return.
+ * @param platformUserId The platform user ID.
+ * @param platformApiKey The platform API key.
+ * @param clientUserId The client user ID.
+ * @param clientOrganizationId The client organization ID.
+ * @returns A promise that resolves to a ServiceResponse containing a list of similar agents.
+ */
+export async function findSimilarAgentsInDb(
+  queryEmbedding: number[],
+  limit: number,
+  platformUserId: string,
+  platformApiKey: string,
+  clientUserId: string,
+  clientOrganizationId: string
+): Promise<ServiceResponse<Agent[]>> {
+  const requestPath = '/agents/search';
+  const requestBody = {
+    embedding: queryEmbedding,
+    limit,
+  };
+
+  return await makeInternalRequest<Agent[]>(
+    getDatabaseServiceUrl(),
+    'POST',
+    requestPath,
+    platformUserId,
+    clientUserId,
+    clientOrganizationId,
+    platformApiKey,
+    requestBody
+  );
+} 

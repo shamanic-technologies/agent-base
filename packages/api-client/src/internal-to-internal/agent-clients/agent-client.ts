@@ -83,3 +83,41 @@ export async function createAgentInternalService(
     agentCreateData
   );
 }
+
+/**
+ * Searches for agents based on a semantic query.
+ * This function calls the POST /search endpoint in the agent service.
+ *
+ * @param searchText The natural language query to search for.
+ * @param limit The maximum number of results to return.
+ * @param platformUserId The platform user ID.
+ * @param platformApiKey The platform API key.
+ * @param clientUserId The client user ID.
+ * @param clientOrganizationId The client organization ID.
+ * @returns A promise that resolves to a ServiceResponse containing a list of similar agents.
+ */
+export async function searchAgentsInternalService(
+  searchText: string,
+  limit: number,
+  platformUserId: string,
+  platformApiKey: string,
+  clientUserId: string,
+  clientOrganizationId: string
+): Promise<ServiceResponse<Agent[]>> {
+  const requestPath = '/search';
+  const requestBody = {
+    searchText,
+    limit,
+  };
+
+  return await makeInternalRequest<Agent[]>(
+    getAgentServiceUrl(),
+    'POST',
+    requestPath,
+    platformUserId,
+    clientUserId,
+    clientOrganizationId,
+    platformApiKey,
+    requestBody
+  );
+}

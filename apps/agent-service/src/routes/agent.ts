@@ -29,11 +29,13 @@ import {
   createUserAgent,
   updateUserAgent,
   listUserAgents,
-  getUserAgentApiClient
+  getUserAgentApiClient,
+  findSimilarAgentsInDb
 } from '@agent-base/api-client';
 
 // Import the new utility function
 import { createDefaultAgentPayload } from '../lib/utils/agentUtils.js';
+import { generateEmbedding } from '../lib/utils/embedding.js';
 
 const router = Router();
 // Remove DATABASE_SERVICE_URL - no longer needed here
@@ -86,6 +88,36 @@ router.post('/create-user-agent', async (req: Request, res: Response, next: Next
     );
 
     if (result.success) {
+      // If agent creation is successful, generate and save the embedding asynchronously
+      // We don't wait for this to finish to return the response to the user,
+      // making the process feel faster.
+      (async () => {
+        try {
+          const newAgent = result.data;
+          const textToEmbed = `${newAgent.jobTitle}. ${newAgent.memory}`;
+          const embedding = await generateEmbedding(textToEmbed);
+
+          if (embedding) {
+            const updatePayload: UpdateClientUserAgentInput = {
+              clientUserId,
+              clientOrganizationId,
+              agentId: newAgent.id,
+              agentEmbedding: embedding,
+            };
+            await updateUserAgent(
+              updatePayload,
+              platformUserId,
+              platformApiKey,
+              clientUserId,
+              clientOrganizationId
+            );
+            console.log(`[Agent Service /create-user-agent] Successfully generated and saved embedding for agent ${newAgent.id}`);
+          }
+        } catch (embeddingError) {
+          console.error(`[Agent Service /create-user-agent] Failed to generate or save embedding for new agent:`, embeddingError);
+        }
+      })();
+      
       // Send 201 Created on success
       res.status(201).json(result); 
     } else {
@@ -269,6 +301,50 @@ router.get('/get-user-agent', async (req: Request, res: Response, next: NextFunc
 
   } catch (error) {
     console.error('[Agent Service /get-user-agent] Unexpected error:', error);
+    next(error);
+  }
+});
+
+/**
+ * Search for agents based on a search query.
+ * This endpoint generates an embedding for the query and finds agents with similar embeddings.
+ */
+router.post('/search', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  const { searchText, limit } = req.body;
+  const clientUserId = req.clientUserId as string;
+  const clientOrganizationId = req.clientOrganizationId as string;
+  const platformUserId = req.platformUserId as string;
+  const platformApiKey = req.headers['x-platform-api-key'] as string;
+
+  if (!searchText) {
+    res.status(400).json({ success: false, error: 'searchText is required' });
+    return;
+  }
+
+  try {
+    const queryEmbedding = await generateEmbedding(searchText);
+
+    if (!queryEmbedding) {
+      res.status(500).json({ success: false, error: 'Failed to generate embedding for search query' });
+      return;
+    }
+
+    const searchResult = await findSimilarAgentsInDb(
+      queryEmbedding,
+      limit || 5,
+      platformUserId,
+      platformApiKey,
+      clientUserId,
+      clientOrganizationId,
+    );
+
+    if (searchResult.success) {
+      res.status(200).json(searchResult);
+    } else {
+      res.status(500).json({ success: false, error: searchResult.error || 'Failed to search for agents' });
+    }
+  } catch (error) {
+    console.error('[Agent Service /search] Unexpected error:', error);
     next(error);
   }
 });

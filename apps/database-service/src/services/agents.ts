@@ -73,72 +73,63 @@ export async function updateAgent(input: UpdateAgentInput): Promise<ServiceRespo
   let client: PoolClient | null = null;
   try {
     client = await getClient();
-    
-    // Build the SQL update statement dynamically based on provided fields
-    const updateFields: string[] = [];
-    const params: any[] = [];
-    let paramIndex = 1;
-    
-    if (input.firstName !== undefined) {
-      updateFields.push(`first_name = $${paramIndex++}`);
-      params.push(input.firstName);
+
+    const fields = [];
+    const values = [];
+    let query = `UPDATE "${AGENTS_TABLE}" SET `;
+
+    if (input.firstName) {
+      fields.push('first_name');
+      values.push(input.firstName);
     }
-    
-    if (input.lastName !== undefined) {
-      updateFields.push(`last_name = $${paramIndex++}`);
-      params.push(input.lastName);
+    if (input.lastName) {
+      fields.push('last_name');
+      values.push(input.lastName);
     }
-    
-    if (input.profilePicture !== undefined) {
-      updateFields.push(`profile_picture = $${paramIndex++}`);
-      params.push(input.profilePicture);
+    if (input.profilePicture) {
+      fields.push('profile_picture');
+      values.push(input.profilePicture);
     }
-    
-    if (input.gender !== undefined) {
-      updateFields.push(`gender = $${paramIndex++}`);
-      params.push(input.gender);
+    if (input.gender) {
+      fields.push('gender');
+      values.push(input.gender);
     }
-    
-    if (input.modelId !== undefined) {
-      updateFields.push(`model_id = $${paramIndex++}`);
-      params.push(input.modelId);
+    if (input.modelId) {
+      fields.push('model_id');
+      values.push(input.modelId);
     }
-    
-    if (input.memory !== undefined) {
-      updateFields.push(`memory = $${paramIndex++}`);
-      params.push(input.memory);
+    if (input.memory) {
+      fields.push('memory');
+      values.push(input.memory);
     }
-    
-    if (input.jobTitle !== undefined) {
-      updateFields.push(`job_title = $${paramIndex++}`);
-      params.push(input.jobTitle);
+    if (input.jobTitle) {
+      fields.push('job_title');
+      values.push(input.jobTitle);
     }
-    
-    // Always update the updated_at timestamp
-    updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
-    
-    // No fields to update
-    if (updateFields.length === 1) {
-      throw new Error('No fields to update');
+    if (input.embedding) {
+      fields.push('embedding');
+      values.push(`[${input.embedding.join(',')}]`);
     }
-    
-    // Add the agent_id as the last parameter
-    params.push(input.id);
-    
+
+    if (fields.length === 0) {
+      return { success: false, error: 'No fields to update' };
+    }
+
+    fields.forEach((field, index) => {
+      query += `${field} = $${index + 1}, `;
+    });
+
+    query += 'updated_at = NOW()';
+    query += ` WHERE id = $${fields.length + 1} RETURNING *`;
+    values.push(input.id);
+
     const result = await client.query(
-      `UPDATE "${AGENTS_TABLE}"
-       SET ${updateFields.join(', ')}
-       WHERE id = $${paramIndex}
-       RETURNING *`,
-      params
+      query,
+      values
     );
 
-    if (result.rows.length === 0) {
-      return {
-        success: false,
-        error: 'Agent not found',
-        hint: 'The agent you are trying to update does not exist. Retry with a correct agent id.'
-      };
+    if (result.rowCount === 0) {
+      return { success: false, error: 'Agent not found' };
     }
 
     return {
@@ -306,5 +297,41 @@ export async function getConversationAgent(input: ConversationId): Promise<Servi
     };
   } finally {
     if (client) client.release();
+  }
+}
+
+/**
+ * Finds agents with embeddings semantically similar to the given vector.
+ * @param embedding - The vector to search for.
+ * @param limit - The maximum number of similar agents to return.
+ * @returns A ServiceResponse containing a list of similar agents or an error.
+ */
+export async function findSimilarAgents(embedding: number[], limit: number = 5): Promise<ServiceResponse<Agent[]>> {
+  let client: PoolClient | null = null;
+  try {
+    client = await getClient();
+
+    // Use the cosine distance operator (<=>) from pgvector to find the most similar agents.
+    // 1 - (embedding <=> query_vector) gives the cosine similarity (0 to 1, where 1 is most similar).
+    const result = await client.query(
+      `SELECT *, 1 - (embedding <=> $1) as similarity
+       FROM "${AGENTS_TABLE}"
+       WHERE embedding IS NOT NULL
+       ORDER BY similarity DESC
+       LIMIT $2`,
+      [`[${embedding.join(',')}]`, limit]
+    );
+
+    return {
+      success: true,
+      data: result.rows.map(mapAgentFromDatabase),
+    };
+  } catch (error: any) {
+    console.error('Error finding similar agents:', error);
+    return { success: false, error: error.message || 'Failed to find similar agents' };
+  } finally {
+    if (client) {
+      client.release();
+    }
   }
 }

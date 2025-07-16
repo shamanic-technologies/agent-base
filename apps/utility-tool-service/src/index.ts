@@ -40,6 +40,7 @@ import './internal/api-utilities/update-api-tool.js';
 import './internal/agent-utilities/create-agent.js';
 import './internal/agent-utilities/update-memory.js';
 import './internal/agent-utilities/get-actions.js';
+import './internal/agent-utilities/search-agent.js';
 
 
 // User utilities

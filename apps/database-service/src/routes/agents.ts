@@ -4,7 +4,15 @@
  * API endpoints for managing agents
  */
 import express, { Request, Response, RequestHandler, NextFunction } from 'express';
-import { createAgent, updateAgent, linkAgentToClientUser, listClientUserAgents, getClientUserAgent, getConversationAgent } from '../services/agents.js';
+import {
+  createAgent,
+  updateAgent,
+  linkAgentToClientUser,
+  listClientUserAgents,
+  getClientUserAgent,
+  getConversationAgent,
+  findSimilarAgents
+} from '../services/agents.js';
 import { 
   UpdateAgentInput, 
   CreateClientUserAgentInput,
@@ -149,7 +157,8 @@ router.post('/update-user-agent', async (req: Request, res: Response): Promise<v
        gender: agentUpdateData.agentGender,
        modelId: agentUpdateData.agentModelId,
        memory: agentUpdateData.agentMemory,
-       jobTitle: agentUpdateData.agentJobTitle
+       jobTitle: agentUpdateData.agentJobTitle,
+       embedding: agentUpdateData.agentEmbedding, // Add the embedding field
     }; 
     const updateResponse : ServiceResponse<Agent> = await updateAgent(updatePayload);
     
@@ -303,6 +312,30 @@ router.get('/get-conversation-agent', async (req: Request, res: Response, next: 
   } catch (error) {
     console.error('Error in GET /agents/get-conversation-agent route:', error);
     next(error); 
+  }
+});
+
+/**
+ * Endpoint to search for agents using vector similarity.
+ */
+router.post('/search', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  const { embedding, limit } = req.body;
+
+  if (!embedding || !Array.isArray(embedding)) {
+    res.status(400).json({ success: false, error: 'embedding (array of numbers) is required' });
+    return;
+  }
+
+  try {
+    const result = await findSimilarAgents(embedding, limit);
+    if (result.success) {
+      res.status(200).json(result);
+    } else {
+      res.status(500).json({ success: false, error: result.error || 'Failed to search for agents' });
+    }
+  } catch (error) {
+    console.error('[Database Service /agents/search] Unexpected error:', error);
+    next(error);
   }
 });
 
