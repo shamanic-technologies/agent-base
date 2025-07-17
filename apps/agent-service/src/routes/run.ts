@@ -48,6 +48,8 @@ import { Tool } from 'ai';
 // Prompt Builder import
 import { buildSystemPrompt } from '../lib/promptBuilder.js';
 import { sanitizeIncompleteToolCalls } from '../lib/vercel-ai/messageSanitizers.js';
+import { sanitizeEmptyMessages } from '../lib/vercel-ai/contentSanitizer.js';
+import { sanitizeReasoning } from '../lib/vercel-ai/reasoningSanitizer.js';
 import { mergeMessages } from '../lib/vercel-ai/messageMerger.js';
 import { loadAndPrepareTools } from '../lib/vercel-ai/toolLoader.js';
 
@@ -148,7 +150,14 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
             );
 
             // 2. Sanitize the merged history to prevent crashes from incomplete tool calls.
-            const sanitizedMessages : Message[] = sanitizeIncompleteToolCalls(truncatedMessages);
+            const sanitizedToolCalls = sanitizeIncompleteToolCalls(truncatedMessages);
+
+            // Remove reasoning parts from history before sending to the model, as they can cause signature errors.
+            const sanitizedReasoning = sanitizeReasoning(sanitizedToolCalls);
+
+            const finalMessagesForModel = sanitizeEmptyMessages(sanitizedReasoning);
+
+            console.log('Final messages being sent to the model:', JSON.stringify(finalMessagesForModel, null, 2));
 
             
             // 4. Dynamically Load and Prepare Tools
@@ -166,14 +175,14 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
             const result = await streamText({
                 model: anthropic(ModelName.CLAUDE_SONNET_4_20250514),
                 // model: google('gemini-2.5-pro'),
-                messages: sanitizedMessages,
+                messages: finalMessagesForModel as any[],
                 system: systemPrompt, 
                 tools: allStartupTools,
                 toolCallStreaming: true,
                 maxTokens: maxOutputTokens,
                 temperature: 0.1,
                 maxSteps, 
-                providerOptions: { anthropic: { thinking: { type: 'enabled', budgetTokens: thinkingBudgetTokens } } },
+                providerOptions: { anthropic: { thinking: { type: 'disabled', budgetTokens: thinkingBudgetTokens } } },
                 experimental_generateMessageId: createIdGenerator({ prefix: 'msgs', size: 16 }),
                 onError: (error) => {
                     console.error(`[Agent Service /run] Error:`, error, null, 2);
@@ -189,7 +198,7 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
 
                     try {
                         const messagesToSave: Message[] = appendResponseMessages({
-                            messages,
+                            messages: sanitizedToolCalls,
                             responseMessages: response.messages
                         });
                         // Save the final, complete conversation history to the database

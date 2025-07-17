@@ -25,6 +25,7 @@ export * from './internal-to-internal/api-tool-client.js';
 export * from './internal-to-internal/utility-tool-client.js';
 export * from './internal-to-internal/agent-clients/agent-client.js';
 export * from './internal-to-internal/agent-clients/action-client.js';
+export * from './internal-to-internal/agent-clients/run-client.js';
 export * from './internal-to-internal/webhook-client.js';
 export * from './internal-to-internal/payment-client.js';
 export * from './internal-to-internal/tools/tool-creators.js';

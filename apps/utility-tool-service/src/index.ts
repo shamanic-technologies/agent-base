@@ -41,7 +41,7 @@ import './internal/agent-utilities/create-agent.js';
 import './internal/agent-utilities/update-memory.js';
 import './internal/agent-utilities/get-actions.js';
 import './internal/agent-utilities/search-agent.js';
-
+import './internal/agent-utilities/call-agent.js';
 
 // User utilities
 import './internal/user-utilities/get-organizations.js';
