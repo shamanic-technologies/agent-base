@@ -8,28 +8,27 @@ import { Agent } from './agent.js';
 import { AgentBaseDeductCreditResponse } from './credit.js';
 
 // --- Conversation Records and Inputs ---
-
-export interface UserMessageMetadata {
-    from_client_user: Partial<ClientUser>;
-    to_agent: Partial<Agent>; // We exclude memory
+export interface MessageMetadata {
+    type: 'user' | 'agent_to_agent' | 'agent_to_user';
     started_at: Date;
     ended_at?: Date;
     credit_consumption?: AgentBaseDeductCreditResponse;
+}
+export interface UserMessageMetadata extends MessageMetadata {
+    type: 'user';
+    from_client_user: Partial<ClientUser>;
+    to_agent: Partial<Agent>; // We exclude memory
 }
 
 export interface AgentToAgentMessageMetadata {
+    type: 'agent_to_agent';
     from_agent: Partial<Agent>; // We exclude memory
     to_agent: Partial<Agent>; // We exclude memory
-    started_at: Date;
-    ended_at?: Date;
-    credit_consumption?: AgentBaseDeductCreditResponse;
 }
 
 export interface AgentToUserMessageMetadata {
+    type: 'agent_to_user';
     from_agent: Partial<Agent>; // We exclude memory
     to_client_user: Partial<ClientUser>; 
-    started_at: Date;
-    ended_at?: Date;
-    credit_consumption?: AgentBaseDeductCreditResponse;
 }
 
