@@ -1,6 +1,6 @@
 import { getPaymentServiceUrl } from "../utils/config.js";
 import { makeInternalRequest, makeWebAuthenticatedServiceRequest } from "../utils/service-client.js";
-import { ServiceResponse, AgentBaseCreateCheckoutSessionRequest, AgentBaseValidateCreditResponse, AgentBaseValidateCreditRequest, AgentBaseDeductCreditRequest, AgentBaseDeductCreditResult, PlatformUserId } from "@agent-base/types";
+import { ServiceResponse, AgentBaseCreateCheckoutSessionRequest, AgentBaseValidateCreditResponse, AgentBaseValidateCreditRequest, AgentBaseDeductCreditRequest, AgentBaseDeductCreditResponse, PlatformUserId } from "@agent-base/types";
 import Stripe from "stripe";
 
 /**
@@ -51,9 +51,9 @@ export async function deductCreditByPlatformUserIdInternalService(
   clientUserId: string,
   clientOrganizationId: string,
   deductCreditRequest: AgentBaseDeductCreditRequest
-): Promise<ServiceResponse<AgentBaseDeductCreditResult>> {
+): Promise<ServiceResponse<AgentBaseDeductCreditResponse>> {
   // POST requests send data in the body.
-  return await makeInternalRequest<AgentBaseDeductCreditResult>(
+  return await makeInternalRequest<AgentBaseDeductCreditResponse>(
     getPaymentServiceUrl(), // Use dynamic getter
     'post',
     '/deduct-credit', // Endpoint for deducting credit
