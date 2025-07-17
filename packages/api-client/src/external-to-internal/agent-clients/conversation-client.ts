@@ -100,11 +100,35 @@ export const getOrCreateConversationClientUserApiService = async (
  * @param platformUserApiServiceCredentials - Credentials containing platformClientUserId and platformApiKey.
  * @returns A promise resolving to the ServiceResponse containing the list of all conversations for the user.
  */
-export const getAllUserConversationsPlatformUserApiService = async (
+export const getAllClientUserConversationsApiService = async (
     agentBaseCredentials: AgentBaseCredentials
 ): Promise<ServiceResponse<Conversation[]>> => {
     const AGENT_BASE_API_URL = getAgentBaseApiUrl();
     const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/conversation/get-all-user-conversations`;
+
+    return makeAgentBaseRequest<Conversation[]>(
+        AGENT_BASE_API_URL,
+        'GET',
+        endpoint,
+        agentBaseCredentials,
+        undefined, // No body for GET
+        undefined  // No query parameters for this specific endpoint
+    );
+};
+
+/**
+ * Fetches all conversations for the authenticated platform user via the API Gateway.
+ * This is different from `getAllUserConversationsPlatformUserApiService` because it's based on platform_user_id, not client_user_id.
+ * Corresponds to GET /agent/conversation/get-all-platform-user-conversations in API Gateway
+ * 
+ * @param agentBaseCredentials - Credentials containing platformClientUserId and platformApiKey.
+ * @returns A promise resolving to the ServiceResponse containing the list of all conversations for the user.
+ */
+export const getAllPlatformUserConversationsApiService = async (
+    agentBaseCredentials: AgentBaseCredentials
+): Promise<ServiceResponse<Conversation[]>> => {
+    const AGENT_BASE_API_URL = getAgentBaseApiUrl();
+    const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/conversation/get-all-platform-user-conversations`;
 
     return makeAgentBaseRequest<Conversation[]>(
         AGENT_BASE_API_URL,

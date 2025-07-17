@@ -258,3 +258,45 @@ export async function getConversationsByClientUserId(clientUserId: string, clien
     if (client) client.release();
   }
 }
+
+/**
+ * Get all conversations associated with a specific platform_user_id.
+ */
+export async function getConversationsByPlatformUserId(platformUserId: string): Promise<ServiceResponse<Conversation[]>> {
+  if (!platformUserId) {
+    console.error('[DB Service/getConversationsByPlatformUserId] platformUserId is required');
+    return { success: false, error: 'platformUserId is required' };
+  }
+
+  const query = `
+    SELECT c.*
+    FROM "conversations" c
+    JOIN "agents" a ON c.agent_id = a.id
+    JOIN "platform_users" pu ON a.creator_platform_user_id = pu.platform_user_id
+    WHERE pu.platform_user_id = $1
+    ORDER BY c.updated_at DESC;
+  `;
+
+  let client: PoolClient | null = null;
+  try {
+    client = await getClient();
+    const result = await client.query(query, [platformUserId]);
+
+    const conversations = result.rows.map(row => {
+      return mapConversationFromDatabase(row as any);
+    });
+
+    return {
+      success: true,
+      data: conversations
+    };
+  } catch (error) {
+    console.error(`[DB Service] Error getting conversations for platform_user_id ${platformUserId}:`, error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Database error occurred'
+    };
+  } finally {
+    if (client) client.release();
+  }
+}

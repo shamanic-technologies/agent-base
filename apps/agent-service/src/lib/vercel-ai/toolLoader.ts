@@ -35,6 +35,9 @@ export async function loadAndPrepareTools(
         // Server-side tools
         //// Agent utilities
         'update_agent_memory',
+        'call_agent',
+        'search_agents',
+        'create_agent',
         //// Webhook utilities
         'webhook_create_webhook',
         'webhook_search_webhooks',

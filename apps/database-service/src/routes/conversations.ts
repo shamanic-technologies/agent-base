@@ -22,7 +22,8 @@ import {
     getConversation,
     getConversationsByAgent,
     updateConversationMessages,
-    getConversationsByClientUserId
+    getConversationsByClientUserId,
+    getConversationsByPlatformUserId
 } from '../services/conversations.js';
 
 const router = express.Router();
@@ -284,6 +285,39 @@ router.get('/get-all-user-conversations', (async (req: Request, res: Response, n
         } as ErrorResponse);
     }
     // Optionally, call next(error) if you have a centralized error handling middleware that handles sending responses
+  }
+}) as unknown as RequestHandler);
+
+/**
+ * Get all conversations for a given platformUserId
+ * GET /get-all-platform-user-conversations?platformUserId=...
+ */
+router.get('/get-all-platform-user-conversations', (async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const platformUserId = req.headers['x-platform-user-id'] as string;
+
+    if (!platformUserId) {
+      console.error('[DB Route /conversations] platformUserId header is required');
+      return res.status(400).json({ success: false, error: 'platformUserId header is required' } as ErrorResponse);
+    }
+
+    const response = await getConversationsByPlatformUserId(platformUserId);
+
+    if (!response.success) {
+      console.error(`[DB Route /conversations] Service error getting all conversations for platform_user_id ${platformUserId}:`, response.error);
+      return res.status(500).json(response);
+    }
+
+    res.status(200).json(response);
+
+  } catch (error) {
+    console.error('Error in GET /conversations/get-all-platform-user-conversations route:', error);
+    if (!res.headersSent) {
+        res.status(500).json({
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown internal server error'
+        } as ErrorResponse);
+    }
   }
 }) as unknown as RequestHandler);
 

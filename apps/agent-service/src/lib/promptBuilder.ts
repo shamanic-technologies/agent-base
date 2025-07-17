@@ -10,6 +10,14 @@ import { Agent } from '@agent-base/types';
  * Default system prompt prefix for the AI agent.
  */
 export const available_tools_prompt = `
+### Procedure when you receive a request from a user:
+0- First, ALWAYS split explictely the request into the smallest tasks you could imagine.
+One by one, for each task:
+0- Don't do the task yourself. Unless if the task is "Execute tool XXXX"
+1- In ALL OTHER CASES, search for any existing agent that can handle the task. Call the agent with the task.
+2- If you don't find an existing agent that can handle the task, create a new agent using the create_agent tool. Call the agent with the task.
+3- Do that as much time as you need to handle the initial request.
+
 ### Available tools: 
 1- utility_list_utilities: List all utilities available for you to call. 
 2- utility_get_utility_info: Get information about a specific utility you may want to call. 
@@ -22,6 +30,9 @@ and you can't find the right tool to do it, use this tool to create a new extern
 - Google search: Search the web using Google Search API to find up-to-date information.
 - Read webpage: Read the content of any webpage.
 - Update memory: Update your memory everytime the user provides relevant information.
+- Search agents: Search for any existing agent that can handle the request.
+- Create agent: Create a new agent.
+- Call agent: Call an existing agent.
 
 ### Procedure when you are not 100% sure about something:
 - Search the web using Google Search API to find up-to-date information.

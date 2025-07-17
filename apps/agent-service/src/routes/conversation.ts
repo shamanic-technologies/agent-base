@@ -20,7 +20,8 @@ import {
     createConversationInternalApiService,
     getConversationByIdInternalApiService,
     // Import the new API client function
-    getAllUserConversationsFromDbService 
+    getAllUserConversationsFromDbService,
+    getAllPlatformUserConversationsFromDbService
 } from '@agent-base/api-client';
 
 const router = Router();
@@ -287,5 +288,50 @@ router.get('/get-all-user-conversations', async (req: Request, res: Response, ne
         // next(error); // Uncomment if you have a global error handler that sends response
     }
 });
+
+/**
+ * Get all conversations for the authenticated platform user.
+ * GET /get-all-platform-user-conversations
+ */
+router.get('/get-all-platform-user-conversations', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const clientUserId = req.clientUserId as string;
+    const clientOrganizationId = req.clientOrganizationId as string;
+    const platformUserId = req.platformUserId as string;
+    const platformApiKey = req.headers['x-platform-api-key'] as string;
+
+    const logPrefix = `[Agent Service /get-all-platform-user-conversations] User ${platformUserId}:`;
+
+    if (!clientUserId || !clientOrganizationId || !platformUserId || !platformApiKey) {
+        console.error(`${logPrefix} Authentication details missing.`);
+        res.status(401).json({ success: false, error: 'Authentication details missing from request headers/context' });
+        return;
+    }
+
+    try {
+        const response = await getAllPlatformUserConversationsFromDbService(
+            { platformUserId },
+            clientUserId,
+            clientOrganizationId,
+            platformUserId,
+            platformApiKey
+        );
+
+        if (response.success) {
+            res.status(200).json(response);
+        } else {
+            console.error(`${logPrefix} Failed to retrieve conversations: ${response.error}`);
+            res.status(500).json(response);
+        }
+    } catch (error) {
+        console.error(`${logPrefix} Unexpected error:`, error);
+        if (!res.headersSent) {
+            res.status(500).json({
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error processing get-all-platform-user-conversations'
+            });
+        }
+    }
+});
+
 
 export default router; 

@@ -178,5 +178,42 @@ export const updateConversationInternalApiService = async (
     );
 };
 
+/**
+ * Fetches all conversations for a given platform_user_id from the database service.
+ * This is an internal API call.
+ * @param params - Object containing platformUserId (the ID to fetch conversations for).
+ * @param clientUserId - The client user ID for authentication context (passed in header).
+ * @param clientOrganizationId - The client organization ID for authentication.
+ * @param platformUserIdAuth - The platform user ID for authentication.
+ * @param platformApiKey - The platform API key for authentication.
+ * @returns A promise that resolves to the service response containing an array of conversations.
+ */
+export const getAllPlatformUserConversationsFromDbService = async (
+    params: { platformUserId: string },
+    clientUserId: string,
+    clientOrganizationId: string,
+    platformUserIdAuth: string,
+    platformApiKey: string
+): Promise<ServiceResponse<Conversation[]>> => {
+    if (!params.platformUserId) {
+        throw new Error('platformUserId query parameter is required to fetch all user conversations.');
+    }
+    if (!clientUserId || !clientOrganizationId || !platformUserIdAuth || !platformApiKey) {
+        throw new Error('Authentication details (clientUserId, clientOrganizationId, platformUserId, platformApiKey) are required.');
+    }
+
+    return makeInternalRequest<Conversation[]>(
+        getDatabaseServiceUrl(),
+        'GET',
+        '/conversations/get-all-platform-user-conversations',
+        params.platformUserId,
+        clientUserId,
+        clientOrganizationId,
+        platformApiKey,
+        undefined,
+        undefined
+    );
+};
+
 
 
