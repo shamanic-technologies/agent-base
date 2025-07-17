@@ -30,7 +30,6 @@
     "lint": "eslint . --ext .ts,.tsx",
     "typecheck": "tsc --noEmit"
   },
-  "private": true,
   "dependencies": {
     "@agent-base/types": "workspace:*",
     "@langchain/core": "^0.3.62",
