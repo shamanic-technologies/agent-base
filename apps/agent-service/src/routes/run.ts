@@ -13,7 +13,11 @@ import {
     AgentBaseCreditStreamPayloadData,
     AgentBaseCreditStreamPayload,
     InternalUtilityInfo,
-    Conversation
+    Conversation,
+    AgentToUserMessageMetadata,
+    UserMessageMetadata,
+    AgentToAgentMessageMetadata,
+    AgentBaseCreditConsumption
 } from '@agent-base/types';
 // AI SDK imports
 import { anthropic } from '@ai-sdk/anthropic';
@@ -66,11 +70,13 @@ const runRouter = Router(); // Use a specific router for this file
 runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
     (async () => {
         try {
+            const startTime = new Date(); // Capture start time
             const streamData = new StreamData(); // Instantiate StreamData
             let hasError = false; // Flag to prevent onFinish from running after an error
 
             // --- Extraction & Validation ---
             const { messages, conversationId } = req.body;
+            console.debug('messages', messages, null, 2);
             const clientUserId = req.clientUserId;
             const clientOrganizationId = req.clientOrganizationId;
             const platformUserId = req.platformUserId;
@@ -186,35 +192,34 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
                 experimental_generateMessageId: createIdGenerator({ prefix: 'msgs', size: 16 }),
                 onError: (error) => {
                     console.error(`[Agent Service /run] Error:`, error, null, 2);
-                    hasError = true;
-                    streamData.close();
                 },
                 async onFinish({ response, usage }) {
-                    // If an error occurred, onError has already handled closing the stream.
-                    if (hasError) {
-                        console.log('[Agent Service /run] Skipping onFinish due to a prior error.');
-                        return;
-                    }
 
-                    try {
-                        const messagesToSave: Message[] = appendResponseMessages({
-                            messages: sanitizedToolCalls,
-                            responseMessages: response.messages
-                        });
-                        // Save the final, complete conversation history to the database
-                        await updateConversationInternalApiService(
-                            { conversationId, messages: messagesToSave },
-                            platformUserId,
-                            platformApiKey,
-                            clientUserId,
-                            clientOrganizationId
-                        );
-                    } catch (dbError) {
-                        console.error("[Agent Service /run] Exception saving messages in onFinish:", dbError);
-                    }
+                    const endTime = new Date().toISOString();
 
+                    // 1. Determine Recipient
+                    const lastUserMessage = [...finalMessagesForModel].reverse().find(m => m.role === 'user');
+                    const lastUserMessageAnnotation = (lastUserMessage as any)?.annotations?.[0];
+                    
+                    const recipientIsAgent = lastUserMessageAnnotation?.type === 'agent_to_agent';
+                    const recipientInfo = recipientIsAgent 
+                        ? lastUserMessageAnnotation.from_agent 
+                        : (lastUserMessageAnnotation as UserMessageMetadata)?.from_client_user || { id: clientUserId };
+
+                    // 2. Create base annotation
+                    const metadata: AgentToUserMessageMetadata | AgentToAgentMessageMetadata = {
+                        type: recipientIsAgent ? 'agent_to_agent' : 'agent_to_user',
+                        started_at: startTime.toISOString(),
+                        ended_at: endTime,
+                        from_agent: { id: agent.id, firstName: agent.firstName, lastName: agent.lastName, profilePicture: agent.profilePicture },
+                        ...(recipientIsAgent 
+                            ? { to_agent: recipientInfo } 
+                            : { to_client_user: recipientInfo })
+                    } as any; // Cast to any to add property later
+
+                    // 3. Deduct Credits and add to annotation
                     const lastMessage = response.messages?.[response.messages.length - 1];
-                    const assistantMessageId = lastMessage?.id ?? null; // In case there is no last message
+                    const assistantMessageId = lastMessage?.id ?? null;
 
                     const extractedToolCalls: ToolCall<string, any>[] = (response?.messages ?? [])
                         .flatMap(message => (message.role === 'assistant' && Array.isArray(message.content)) ? message.content : [])
@@ -239,24 +244,48 @@ runRouter.post('/', (req: Request, res: Response, next: NextFunction): void => {
                             deductCreditRequest
                         );
 
-                        if (!deductCreditResponse.success) {
+                        if (deductCreditResponse.success) {
+                            metadata.credit_consumption = deductCreditResponse.data;
+                            const creditData: AgentBaseCreditStreamPayloadData = {
+                                creditConsumption: deductCreditResponse.data.creditConsumption,
+                                newBalanceInUSDCents: deductCreditResponse.data.newBalanceInUSDCents,
+                                assistantMessageId,
+                            };
+                            streamData.append(JSON.stringify({ type: 'credit_info', success: true, data: creditData }));
+                        } else {
                             console.error(`[Agent Service /run] Failed to deduct credit:`, deductCreditResponse.error);
                             const creditData: AgentBaseCreditStreamPayloadData = { assistantMessageId };
                             streamData.append(JSON.stringify({ type: 'credit_info', success: false, error: 'Failed to deduct credit', details: deductCreditResponse.error, data: creditData }));
-                            return;
                         }
-
-                        const { creditConsumption, newBalanceInUSDCents } = deductCreditResponse.data;
-                        const creditData: AgentBaseCreditStreamPayloadData = {
-                            creditConsumption,
-                            newBalanceInUSDCents,
-                            assistantMessageId,
-                        };
-                        streamData.append(JSON.stringify({ type: 'credit_info', success: true, data: creditData }));
                     } catch (deductCreditError) {
                         const creditData: AgentBaseCreditStreamPayloadData = { assistantMessageId };
                         const details = deductCreditError instanceof Error ? deductCreditError.message : String(deductCreditError);
                         streamData.append(JSON.stringify({ type: 'credit_info', success: false, error: 'Exception during credit deduction', details, data: creditData }));
+                    } 
+                    
+                    // 4. Attach Annotation to Assistant Message
+                    const assistantMessage = response.messages.find(m => m.role === 'assistant');
+                    if (assistantMessage) {
+                        (assistantMessage as any).annotations = [metadata];
+                    } else {
+                        console.error("[Agent Service /run] No assistant message found in onFinish, cannot annotate.");
+                    }
+
+                    // 5. Save final conversation history
+                    try {
+                        const messagesToSave: Message[] = appendResponseMessages({
+                            messages: sanitizedToolCalls,
+                            responseMessages: response.messages
+                        });
+                        await updateConversationInternalApiService(
+                            { conversationId, messages: messagesToSave },
+                            platformUserId,
+                            platformApiKey,
+                            clientUserId,
+                            clientOrganizationId
+                        );
+                    } catch (dbError) {
+                        console.error("[Agent Service /run] Exception saving messages in onFinish:", dbError);
                     } finally {
                         streamData.close();
                     }

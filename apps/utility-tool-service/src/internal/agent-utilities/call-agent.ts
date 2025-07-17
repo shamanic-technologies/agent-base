@@ -8,8 +8,14 @@ import {
   InternalUtilityTool,
   ServiceResponse,
   AgentInternalCredentials,
+  AgentToAgentMessageMetadata,
+  Agent,
 } from '@agent-base/types';
-import { triggerAgentRunInternalServiceStream, getOrCreateConversationsInternalApiService } from '@agent-base/api-client';
+import { 
+  triggerAgentRunInternalServiceStream, 
+  getOrCreateConversationsInternalApiService,
+  getAgentByIdInternalService,
+} from '@agent-base/api-client';
 import { registry } from '../../registry/registry.js';
 import { Message } from 'ai';
 import { nanoid } from 'nanoid';
@@ -110,12 +116,42 @@ const callAgentUtility: InternalUtilityTool = {
       const conversation = convResponse.data[0];
       let messages = conversation.messages || [];
 
-      // 2. Append new user message
+      // 2. Append new user message with agent-to-agent annotation
       const userMessage: Message = {
         id: nanoid(),
         role: 'user',
         content: message,
       };
+
+      if (agentId) {
+        // Fetch details for both agents to enrich the metadata
+        const [fromAgentResponse, toAgentResponse] = await Promise.all([
+          getAgentByIdInternalService(agentId, platformUserId, platformApiKey, clientUserId, clientOrganizationId),
+          getAgentByIdInternalService(agent_id_to_call, platformUserId, platformApiKey, clientUserId, clientOrganizationId)
+        ]);
+        
+        const fromAgentInfo = fromAgentResponse.success ? fromAgentResponse.data : null;
+        const toAgentInfo = toAgentResponse.success ? toAgentResponse.data : null;
+
+        const metadata: AgentToAgentMessageMetadata = {
+          type: 'agent_to_agent',
+          started_at: new Date().toISOString(),
+          from_agent: { 
+            id: agentId,
+            firstName: fromAgentInfo?.firstName,
+            lastName: fromAgentInfo?.lastName,
+            profilePicture: fromAgentInfo?.profilePicture,
+          },
+          to_agent: { 
+            id: agent_id_to_call,
+            firstName: toAgentInfo?.firstName,
+            lastName: toAgentInfo?.lastName,
+            profilePicture: toAgentInfo?.profilePicture,
+         },
+        };
+        (userMessage as any).annotations = [metadata];
+      }
+
       messages.push(userMessage);
 
       // 3. Send full conversation to the /run endpoint

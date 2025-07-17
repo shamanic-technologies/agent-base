@@ -121,3 +121,39 @@ export async function searchAgentsInternalService(
     requestBody
   );
 }
+
+/**
+ * Retrieves a specific agent by its ID.
+ * This function calls the GET /get-user-agent endpoint in the agent service.
+ *
+ * @param agentId The ID of the agent to retrieve.
+ * @param platformUserId The platform user ID.
+ * @param platformApiKey The platform API key.
+ * @param clientUserId The client user ID.
+ * @param clientOrganizationId The client organization ID.
+ * @returns A promise that resolves to a ServiceResponse containing the agent.
+ */
+export async function getAgentByIdInternalService(
+  agentId: string,
+  platformUserId: string,
+  platformApiKey: string,
+  clientUserId: string,
+  clientOrganizationId: string
+): Promise<ServiceResponse<Agent>> {
+  const requestPath = '/get-user-agent';
+  const queryParams = {
+    agent_id: agentId,
+  };
+
+  return await makeInternalRequest<Agent>(
+    getAgentServiceUrl(),
+    'GET',
+    requestPath,
+    platformUserId,
+    clientUserId,
+    clientOrganizationId,
+    platformApiKey,
+    undefined, // No body for GET request
+    queryParams
+  );
+}
