@@ -13,6 +13,7 @@ export * from './types/agent.js';
 
 // Export conversation-related types
 export * from './types/conversation.js';
+export * from './types/message.js';
 
 // Export action-related types
 export * from './types/action.js';

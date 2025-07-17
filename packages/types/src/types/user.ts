@@ -100,6 +100,9 @@ export function mapPlatformUserToDatabase(user: PlatformUser): Partial<PlatformU
 
 export interface ClientUserRecord {
   id: string;
+  email: string;
+  display_name: string;
+  profile_image?: string;
   platform_user_id: string;
   auth_user_id: string;
   created_at: Date;
@@ -108,6 +111,9 @@ export interface ClientUserRecord {
 
 
 export interface ClientUserData {
+  email?: string;
+  displayName?: string;
+  profileImage?: string;
   platformUserId: string;
   authUserId: string;
 }
@@ -147,6 +153,9 @@ export function mapClientUserFromDatabase(record: ClientUserRecord): ClientUser 
     id: record.id,
     platformUserId: record.platform_user_id,
     authUserId: record.auth_user_id,
+    email: record.email,
+    displayName: record.display_name,
+    profileImage: record.profile_image,
     createdAt: record.created_at,
     updatedAt: record.updated_at
   };
@@ -163,6 +172,9 @@ export function mapClientUserToDatabase(user: ClientUser): Partial<ClientUserRec
   if (user.id !== undefined) record.id = user.id;
   if (user.platformUserId !== undefined) record.platform_user_id = user.platformUserId;
   if (user.authUserId !== undefined) record.auth_user_id = user.authUserId;
+  if (user.email !== undefined) record.email = user.email;
+  if (user.displayName !== undefined) record.display_name = user.displayName;
+  if (user.profileImage !== undefined) record.profile_image = user.profileImage;
   return record;
 }
 

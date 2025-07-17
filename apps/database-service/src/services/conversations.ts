@@ -271,9 +271,9 @@ export async function getConversationsByPlatformUserId(platformUserId: string): 
   const query = `
     SELECT c.*
     FROM "conversations" c
-    JOIN "agents" a ON c.agent_id = a.id
-    JOIN "platform_users" pu ON a.creator_platform_user_id = pu.platform_user_id
-    WHERE pu.platform_user_id = $1
+    JOIN "client_user_agents" cua ON c.agent_id = cua.agent_id
+    JOIN "client_users" cu ON cua.client_user_id = cu.id
+    WHERE cu.platform_user_id = $1
     ORDER BY c.updated_at DESC;
   `;
 
