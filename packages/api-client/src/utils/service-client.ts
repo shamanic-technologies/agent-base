@@ -2,7 +2,7 @@
  * HTTP client utility for service-to-service communication
  */
 import axios, { AxiosRequestConfig, Method } from 'axios';
-import { AgentBaseCredentials, MinimalInternalCredentials, ServiceResponse} from '@agent-base/types';
+import { AgentBaseCredentials, MinimalInternalCredentials, ServiceResponse, AgentInternalCredentials} from '@agent-base/types';
 
 /**
  * Base logic for making service requests and handling responses/errors.
@@ -471,35 +471,19 @@ export async function makeWebAnonymousServiceRequest<T>(
 
 
 /**
- * Makes a streaming, API Authenticated HTTP request using fetch.
- * This is specialized for streaming endpoints like agent runs.
- * 
- * @param serviceUrl - Base URL of the target service.
- * @param endpoint - The specific API endpoint to hit.
- * @param body - The request body to send.
- * @param agentBaseCredentials - Credentials for authentication.
- * @returns A promise resolving to the raw Response object for streaming.
+ * Base logic for making streaming service requests and handling responses/errors.
+ * Internal helper function.
  */
-export async function makeStreamingAgentRequest(
-    serviceUrl: string,
-    endpoint: string,
+async function _makeStreamingRequest(
+    fullUrl: string,
     body: object,
-    agentBaseCredentials: AgentBaseCredentials
+    headers: Record<string, string>,
+    logContext: string
 ): Promise<Response> {
-    const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-    const fullUrl = `${serviceUrl}${formattedEndpoint}`;
-    const logContext = `[httpClient:StreamingApiAuth] User ${agentBaseCredentials.clientAuthUserId}, Org ${agentBaseCredentials.clientAuthOrganizationId}`;
-
     try {
         const response = await fetch(fullUrl, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-client-auth-user-id': agentBaseCredentials.clientAuthUserId,
-                'x-client-auth-organization-id': agentBaseCredentials.clientAuthOrganizationId,
-                'x-platform-api-key': agentBaseCredentials.platformApiKey,
-                'Accept': 'text/event-stream'
-            },
+            headers,
             body: JSON.stringify(body)
         });
 
@@ -543,6 +527,7 @@ export async function makeStreamingAgentRequest(
         return response; // Return the raw response for the caller to handle the stream
 
     } catch (error: any) {
+        console.error(`${logContext} Streaming request error to ${fullUrl}:`, error);
         if (error && typeof error === 'object' && 'status' in error && 'code' in error) {
             throw error; // Re-throw custom structured error
         }
@@ -553,4 +538,74 @@ export async function makeStreamingAgentRequest(
             details: error.message || 'Could not establish connection to the agent service for streaming.'
         };
     }
+}
+
+
+/**
+ * Makes a streaming, API Authenticated HTTP request using fetch.
+ * This is specialized for streaming endpoints like agent runs.
+ * 
+ * @param serviceUrl - Base URL of the target service.
+ * @param endpoint - The specific API endpoint to hit.
+ * @param body - The request body to send.
+ * @param agentBaseCredentials - Credentials for authentication.
+ * @returns A promise resolving to the raw Response object for streaming.
+ */
+export async function makeStreamingAgentRequest(
+    serviceUrl: string,
+    endpoint: string,
+    body: object,
+    agentBaseCredentials: AgentBaseCredentials
+): Promise<Response> {
+    const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const fullUrl = `${serviceUrl}${formattedEndpoint}`;
+    const logContext = `[httpClient:StreamingApiAuth] User ${agentBaseCredentials.clientAuthUserId}, Org ${agentBaseCredentials.clientAuthOrganizationId}`;
+
+    const headers = {
+        'Content-Type': 'application/json',
+        'x-client-auth-user-id': agentBaseCredentials.clientAuthUserId,
+        'x-client-auth-organization-id': agentBaseCredentials.clientAuthOrganizationId,
+        'x-platform-api-key': agentBaseCredentials.platformApiKey,
+        'Accept': 'text/event-stream'
+    };
+
+    return _makeStreamingRequest(fullUrl, body, headers, logContext);
+}
+
+/**
+ * Makes a streaming, Internal-Authenticated HTTP request using fetch.
+ * This is specialized for streaming endpoints like agent runs.
+ *
+ * @param serviceUrl - Base URL of the target service.
+ * @param endpoint - The specific API endpoint to hit.
+ * @param body - The request body to send.
+ * @param platformUserId - The platform user ID.
+ * @param clientUserId - The client user ID.
+ * @param clientOrganizationId - The client organization ID.
+ * @param platformApiKey - The platform API key.
+ * @param agentId - Optional agent ID for 'x-agent-id' header.
+ * @returns A promise resolving to the raw Response object for streaming.
+ */
+export async function makeInternalStreamingRequest(
+    serviceUrl: string,
+    endpoint: string,
+    body: object,
+    credentials: AgentInternalCredentials
+): Promise<Response> {
+    const { platformUserId, clientUserId, clientOrganizationId, platformApiKey, agentId } = credentials;
+    const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const fullUrl = `${serviceUrl}${formattedEndpoint}`;
+    const logContext = `[httpClient:StreamingInternalAuth] PlatformUser ${platformUserId}, ClientUser ${clientUserId}, ClientOrganization ${clientOrganizationId}, Agent ${agentId}`;
+
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'x-platform-user-id': platformUserId,
+        'x-client-user-id': clientUserId,
+        'x-client-organization-id': clientOrganizationId,
+        'x-platform-api-key': platformApiKey,
+        'Accept': 'text/event-stream',
+        'x-agent-id': agentId
+    };
+
+    return _makeStreamingRequest(fullUrl, body, headers, logContext);
 }
