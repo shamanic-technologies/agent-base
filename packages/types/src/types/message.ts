@@ -2,7 +2,6 @@
  * Types related to Conversations.
  */
 // Use Message from 'ai' instead of UIMessage
-import { Message } from 'ai';
 import { ClientUser } from './user.js';
 import { Agent } from './agent.js';
 import { AgentBaseDeductCreditResponse } from './credit.js';

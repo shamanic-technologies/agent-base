@@ -10,6 +10,7 @@
     "dev": "tsc -w"
   },
   "dependencies": {
+    "@langchain/core": "^0.3.66",
     "@types/json-schema": "^7.0.15",
     "@types/stripe": "^8.0.417",
     "ai": "^4.3.16",

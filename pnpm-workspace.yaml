@@ -2,6 +2,7 @@ packages:
   # - apps/logging-service
   - apps/secret-service
   - apps/agent-service
+  - apps/agent-base-app
   - apps/database-service
   - apps/utility-tool-service
   - apps/api-gateway-service
@@ -11,7 +12,6 @@ packages:
   - apps/payment-service
   - apps/key-service
   # - apps/webhook-gateway-service
-  # - apps/agent-base-app
   - apps/whatsapp-service
   - apps/tool-auth-service
   - apps/dashboard-service
