@@ -1,0 +1,7 @@
+{
+  "graphs": {
+    "agent": "src/server.ts:app"
+  },
+  "node_version": "20",
+  "env": ".env"
+} 

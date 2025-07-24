@@ -3,6 +3,7 @@ import { loadLangGraphTools } from "./lib/lang-graph/tool-loader.js";
 import { ChatAnthropic } from "@langchain/anthropic";
 import { ModelName } from "./types/index.js";
 import { AgentInternalCredentials } from "@agent-base/types";
+import { Tool } from "@langchain/core/tools";
 
 // This is a placeholder for how we might get credentials in a server context.
 // In a real LangGraph server, this would likely be handled by middleware
@@ -30,9 +31,13 @@ const model = new ChatAnthropic({
 // For now, we'll create a factory function for the graph.
 async function createApp() {
   const credentials = getDummyCredentials();
-  const tools = await loadLangGraphTools(credentials, "dummy-conversation-id");
+  let tools: Tool[] = [];
+  // Bypass tool loading in development environment to avoid auth issues with other services
+  if (process.env.NODE_ENV !== 'development') {
+    tools = await loadLangGraphTools(credentials, "dummy-conversation-id");
+  }
   const boundModel = model.bindTools(tools);
-  const graph = createAgentWorkflow(boundModel, tools);
+  const graph = createAgentWorkflow(boundModel as any, tools);
   return graph;
 }
 
