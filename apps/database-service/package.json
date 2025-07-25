@@ -21,6 +21,7 @@
   "dependencies": {
     "@agent-base/api-client": "workspace:*",
     "@agent-base/types": "workspace:*",
+    "@langchain/core": "^0.3.66",
     "@types/uuid": "^10.0.0",
     "ai": "4.3.16",
     "cors": "^2.8.5",

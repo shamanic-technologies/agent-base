@@ -10,6 +10,7 @@ import apiKeysRoutes from './api-keys.js';
 import oauthRoutes from './oauth.js';
 import agentsRoutes from './agents.js';
 import conversationsRoutes from './conversations.js';
+import conversationsLangGraphRoutes from './conversations-langgraph.js';
 // import webhooksRoutes from './webhooks.js';
 import clientUsersRoutes from './client-users.js';
 import clientOrganizationsRoutes from './client-organizations.js';
@@ -25,6 +26,7 @@ router.use('/api-keys', apiKeysRoutes);
 router.use('/oauth', oauthRoutes);
 router.use('/agents', agentsRoutes);
 router.use('/conversations', conversationsRoutes);
+router.use('/conversations-langgraph', conversationsLangGraphRoutes);
 // router.use('/webhooks', webhooksRoutes);
 router.use('/client-users', clientUsersRoutes);
 

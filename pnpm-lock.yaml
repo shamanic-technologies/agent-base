@@ -619,6 +619,9 @@ importers:
       '@agent-base/types':
         specifier: workspace:*
         version: link:../../packages/types
+      '@langchain/core':
+        specifier: ^0.3.66
+        version: 0.3.66(@opentelemetry/api@1.9.0)(openai@5.9.2(ws@8.18.2)(zod@3.25.67))
       '@types/uuid':
         specifier: ^10.0.0
         version: 10.0.0

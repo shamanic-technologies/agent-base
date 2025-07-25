@@ -9,8 +9,8 @@ import {
 } from "@agent-base/types";
 import {
   getAgentFromConversation,
-  getConversationByIdInternalApiService,
-  updateConversationInternalApiService,
+  getConversationByIdLangGraphInternalApiService,
+  updateConversationLangGraphInternalApiService,
   deductCreditByPlatformUserIdInternalService,
 } from "@agent-base/api-client";
 import { Tool } from "@langchain/core/tools";
@@ -97,7 +97,7 @@ router.post(
         const systemPrompt: string = buildSystemPrompt(agent);
 
         const fullHistoryFromDBResponse: ServiceResponse<Conversation> =
-          await getConversationByIdInternalApiService(
+          await getConversationByIdLangGraphInternalApiService(
             { conversationId },
             platformUserId,
             platformApiKey,
@@ -186,7 +186,7 @@ router.post(
           // We save it directly, overwriting the old (and potentially corrupted) history.
           const messagesToSave = finalState.messages;
 
-          await updateConversationInternalApiService(
+          await updateConversationLangGraphInternalApiService(
             { conversationId, messages: messagesToSave as any },
             platformUserId,
             platformApiKey,

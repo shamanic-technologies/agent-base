@@ -14,6 +14,7 @@ export * from './utils/config.js';
 export * from './internal-to-internal/database-clients/agent-client.js';
 export * from './internal-to-internal/database-clients/platform-user.js';
 export * from './internal-to-internal/database-clients/conversation-client.js';
+export * from './internal-to-internal/database-clients/conversation-langgraph-client.js';
 export * from './internal-to-internal/database-clients/api-key-client.js';
 export * from './internal-to-internal/database-clients/oauth-client.js';
 export * from './internal-to-internal/database-clients/client-user.js'; // Ensure this is present
@@ -33,6 +34,7 @@ export * from './internal-to-internal/dashboard-client.js';
 
 export * from './external-to-internal/agent-clients/agent-client.js';
 export * from './external-to-internal/agent-clients/conversation-client.js';
+export * from './external-to-internal/agent-clients/conversation-langgraph-client.js';
 export * from './external-to-internal/agent-clients/message-client.js';
 export * from './external-to-internal/agent-clients/run-client.js';
 export * from './external-to-internal/tool-auth-client.js';

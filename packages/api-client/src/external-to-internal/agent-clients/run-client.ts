@@ -72,7 +72,7 @@ export const triggerLangGraphAgentRunStream = async (
     agentBaseCredentials: AgentBaseCredentials
 ): Promise<Response> => {
     const AGENT_BASE_API_URL = getAgentBaseApiUrl();
-    const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/run/langgraph`;
+    const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/run-langgraph`;
     const body = { conversationId, messages };
     return makeStreamingAgentRequest(AGENT_BASE_API_URL, endpoint, body, agentBaseCredentials);
 }; 
