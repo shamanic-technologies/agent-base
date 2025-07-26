@@ -6,6 +6,9 @@
 
 export type Gender = 'man' | 'woman' | 'other';
 
+export interface AgentId {
+  agentId: string;
+}
 export interface AgentRecord {
   id: string;
   first_name: string;
@@ -15,6 +18,7 @@ export interface AgentRecord {
   model_id: string;
   memory: string;
   job_title: string;
+  is_deployed: boolean;
   created_at: Date;
   updated_at: Date;
   embedding: number[];
@@ -37,6 +41,7 @@ export interface CreateAgentInput {
   modelId: string;
   memory: string;
   jobTitle: string;
+  isDeployed: boolean;
 }
 
 export interface CreateClientUserAgentInput extends CreateAgentInput {
@@ -60,6 +65,7 @@ export interface UpdateAgentInput {
   memory?: string;
   jobTitle?: string;
   embedding?: number[];
+  isDeployed?: boolean;
 }
 
 export interface UpdateClientUserAgentInput {
@@ -74,6 +80,7 @@ export interface UpdateClientUserAgentInput {
   agentMemory?: string;
   agentJobTitle?: string;
   agentEmbedding?: number[];
+  agentIsDeployed?: boolean;
 }
 
 export interface ListClientUserAgentsInput {
@@ -100,6 +107,7 @@ export interface Agent {
   jobTitle: string;
   createdAt: Date;
   updatedAt: Date;
+  isDeployed: boolean;
 } 
 
 
@@ -120,7 +128,8 @@ export function mapAgentFromDatabase(record: AgentRecord): Agent {
     memory: record.memory,
     jobTitle: record.job_title,
     createdAt: new Date(record.created_at),
-    updatedAt: new Date(record.updated_at)
+    updatedAt: new Date(record.updated_at),
+    isDeployed: record.is_deployed
   };
 }
 
@@ -140,6 +149,7 @@ export function mapAgentToDatabase(agent: Partial<Agent>): Partial<AgentRecord> 
   if (agent.modelId !== undefined) record.model_id = agent.modelId;
   if (agent.memory !== undefined) record.memory = agent.memory;
   if (agent.jobTitle !== undefined) record.job_title = agent.jobTitle;
+  if (agent.isDeployed !== undefined) record.is_deployed = agent.isDeployed;
   // createdAt and updatedAt are usually handled by the database
   return record;
 }

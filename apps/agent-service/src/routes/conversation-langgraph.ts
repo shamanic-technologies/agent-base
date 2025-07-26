@@ -6,11 +6,11 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import {
     CreateConversationInput,
-    Conversation,
+    ConversationLanggraph,
     ServiceResponse,
 } from '@agent-base/types';
 import { 
-    getOrCreateConversationsLangGraphInternalApiService, 
+    listConversationsByAgentLangGraphInternalApiService, 
     createConversationLangGraphInternalApiService,
     getConversationByIdLangGraphInternalApiService,
     getAllUserConversationsFromDbServiceLangGraph,
@@ -20,7 +20,8 @@ import {
 const router = Router();
 
 /**
- * Get LangGraph conversations for an agent, or create one if none exist
+ * Get LangGraph conversations for an agent.
+ * This route is being updated to only LIST conversations, not create them.
  */
 router.get('/get-or-create-conversations-from-agent-langgraph', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -41,7 +42,8 @@ router.get('/get-or-create-conversations-from-agent-langgraph', async (req: Requ
         }
 
         try {
-            const conversationsResponse = await getOrCreateConversationsLangGraphInternalApiService(
+            // Updated to call the new list service
+            const conversationsResponse = await listConversationsByAgentLangGraphInternalApiService(
                 { agentId },
                 clientUserId,
                 clientOrganizationId,
@@ -134,7 +136,7 @@ router.post('/get-or-create-conversation-langgraph', async (req: Request, res: R
             return;
         }
 
-        const getResponse : ServiceResponse<Conversation> = await getConversationByIdLangGraphInternalApiService(
+        const getResponse : ServiceResponse<ConversationLanggraph> = await getConversationByIdLangGraphInternalApiService(
             { conversationId },
             clientUserId,
             clientOrganizationId,
@@ -147,7 +149,7 @@ router.post('/get-or-create-conversation-langgraph', async (req: Request, res: R
             return;
         }
         
-        const createResponse: ServiceResponse<Conversation> =
+        const createResponse: ServiceResponse<ConversationLanggraph> =
           await createConversationLangGraphInternalApiService(
             req.body,
             clientUserId,

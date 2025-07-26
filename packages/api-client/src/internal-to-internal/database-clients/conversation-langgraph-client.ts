@@ -7,8 +7,8 @@
  */
 import {
     AgentId,
-    Conversation,
-    ServiceResponse,
+    ConversationLanggraph,
+    ServiceResponse,    
     ConversationId,
     CreateConversationInput,
     UpdateConversationLanggraphInput,
@@ -29,11 +29,34 @@ export const getOrCreateConversationsLangGraphInternalApiService = async (
     clientOrganizationId: string,
     platformUserId: string, 
     platformApiKey: string
-): Promise<ServiceResponse<Conversation[]>> => {
-    return makeInternalRequest<Conversation[]>(
+): Promise<ServiceResponse<ConversationLanggraph[]>> => {
+    return makeInternalRequest<ConversationLanggraph[]>(
         getDatabaseServiceUrl(),
         'GET',
         '/conversations-langgraph/get-or-create-conversations-from-agent-langgraph',
+        platformUserId,
+        clientUserId,
+        clientOrganizationId,
+        platformApiKey,
+        undefined, 
+        params 
+    );
+};
+
+/**
+ * Retrieves conversations for a specific agent from the database service.
+ */
+export const listConversationsByAgentLangGraphInternalApiService = async (
+    params: AgentId,
+    clientUserId: string, 
+    clientOrganizationId: string,
+    platformUserId: string, 
+    platformApiKey: string
+): Promise<ServiceResponse<ConversationLanggraph[]>> => {
+    return makeInternalRequest<ConversationLanggraph[]>(
+        getDatabaseServiceUrl(),
+        'GET',
+        '/conversations-langgraph/get-conversations-from-agent-langgraph',
         platformUserId,
         clientUserId,
         clientOrganizationId,
@@ -52,8 +75,8 @@ export const createConversationLangGraphInternalApiService = async (
     clientOrganizationId: string,
     platformUserId: string, 
     platformApiKey: string
-): Promise<ServiceResponse<Conversation>> => {
-    return makeInternalRequest<Conversation>(
+): Promise<ServiceResponse<ConversationLanggraph>> => {
+    return makeInternalRequest<ConversationLanggraph>(
         getDatabaseServiceUrl(),
         'POST',
         '/conversations-langgraph/create-conversation-langgraph',
@@ -76,8 +99,8 @@ export const getConversationByIdLangGraphInternalApiService = async (
     clientOrganizationId: string,
     platformUserId: string, 
     platformApiKey: string
-): Promise<ServiceResponse<Conversation>> => {
-    return makeInternalRequest<Conversation>(
+): Promise<ServiceResponse<ConversationLanggraph>> => {
+    return makeInternalRequest<ConversationLanggraph>(
         getDatabaseServiceUrl(),
         'GET',
         `/conversations-langgraph/get-conversation-langgraph/${params.conversationId}`,
@@ -100,7 +123,7 @@ export const getAllUserConversationsFromDbServiceLangGraph = async (
     clientOrganizationId: string,
     platformUserId: string,
     platformApiKey: string
-): Promise<ServiceResponse<Conversation[]>> => {
+): Promise<ServiceResponse<ConversationLanggraph[]>> => {
     if (!params.clientUserId) {
         throw new Error('clientUserId query parameter is required to fetch all user conversations.');
     }
@@ -108,7 +131,7 @@ export const getAllUserConversationsFromDbServiceLangGraph = async (
         throw new Error('Authentication details (clientAuthUserId, clientAuthOrganizationId, platformUserId, platformApiKey) are required.');
     }
 
-    return makeInternalRequest<Conversation[]>(
+    return makeInternalRequest<ConversationLanggraph[]>(
         getDatabaseServiceUrl(),
         'GET',
         '/conversations-langgraph/get-all-user-conversations-langgraph', 
@@ -156,7 +179,7 @@ export const getAllPlatformUserConversationsFromDbServiceLangGraph = async (
     clientOrganizationId: string,
     platformUserIdAuth: string,
     platformApiKey: string
-): Promise<ServiceResponse<Conversation[]>> => {
+): Promise<ServiceResponse<ConversationLanggraph[]>> => {
     if (!params.platformUserId) {
         throw new Error('platformUserId query parameter is required to fetch all user conversations.');
     }
@@ -164,7 +187,7 @@ export const getAllPlatformUserConversationsFromDbServiceLangGraph = async (
         throw new Error('Authentication details (clientUserId, clientOrganizationId, platformUserId, platformApiKey) are required.');
     }
 
-    return makeInternalRequest<Conversation[]>(
+    return makeInternalRequest<ConversationLanggraph[]>(
         getDatabaseServiceUrl(),
         'GET',
         '/conversations-langgraph/get-all-platform-user-conversations-langgraph',

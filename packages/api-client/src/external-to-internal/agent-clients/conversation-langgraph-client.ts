@@ -3,9 +3,8 @@
  */
 import { 
     ServiceResponse, 
-    Conversation, 
+    ConversationLanggraph, 
     CreateConversationInput, 
-    ConversationId,
     AgentBaseCredentials,
     MinimalInternalCredentials,
 } from '@agent-base/types';
@@ -20,13 +19,13 @@ const AGENT_SERVICE_ROUTE_PREFIX = '/agent';
 export const getOrCreateConversationsLangGraphPlatformUserApiService = async (
     params: { agentId: string }, 
     agentBaseCredentials: AgentBaseCredentials
-): Promise<ServiceResponse<Conversation[]>> => {
+): Promise<ServiceResponse<ConversationLanggraph[]>> => {
     const AGENT_BASE_API_URL = getAgentBaseApiUrl();
     const { agentId } = params;
     const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/conversation-langgraph/get-or-create-conversations-from-agent-langgraph`;
     const queryParams = { agentId }; 
 
-    return makeAgentBaseRequest<Conversation[]>( 
+    return makeAgentBaseRequest<ConversationLanggraph[]>( 
         AGENT_BASE_API_URL,
         'GET',
         endpoint,
@@ -43,10 +42,10 @@ export const getOrCreateConversationsLangGraphPlatformUserApiService = async (
 export const createConversationLangGraphExternalApiService = async (
     body: CreateConversationInput,
     agentBaseCredentials: AgentBaseCredentials
-): Promise<ServiceResponse<ConversationId>> => {
+): Promise<ServiceResponse<ConversationLanggraph>> => {
     const AGENT_BASE_API_URL = getAgentBaseApiUrl();
     const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/conversation-langgraph/create-conversation-langgraph`;    
-    return makeAgentBaseRequest<ConversationId>( 
+    return makeAgentBaseRequest<ConversationLanggraph>( 
         AGENT_BASE_API_URL,
         'POST',
         endpoint,
@@ -62,10 +61,10 @@ export const createConversationLangGraphExternalApiService = async (
 export const getOrCreateConversationLangGraphClientUserApiService = async (
     body: CreateConversationInput,
     minimalInternalCredentials: MinimalInternalCredentials
-): Promise<ServiceResponse<ConversationId>> => {
+): Promise<ServiceResponse<ConversationLanggraph>> => {
     const AGENT_BASE_API_URL = getAgentBaseApiUrl();
     const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/conversation-langgraph/get-or-create-conversation-langgraph`;    
-    return makeMinimalInternalRequest<ConversationId>( 
+    return makeMinimalInternalRequest<ConversationLanggraph>( 
         AGENT_BASE_API_URL,
         'POST',
         endpoint,
@@ -80,11 +79,11 @@ export const getOrCreateConversationLangGraphClientUserApiService = async (
  */
 export const getAllClientUserConversationsLangGraphApiService = async (
     agentBaseCredentials: AgentBaseCredentials
-): Promise<ServiceResponse<Conversation[]>> => {
+): Promise<ServiceResponse<ConversationLanggraph[]>> => {
     const AGENT_BASE_API_URL = getAgentBaseApiUrl();
     const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/conversation-langgraph/get-all-user-conversations-langgraph`;
 
-    return makeAgentBaseRequest<Conversation[]>(
+    return makeAgentBaseRequest<ConversationLanggraph[]>(
         AGENT_BASE_API_URL,
         'GET',
         endpoint,
@@ -99,11 +98,11 @@ export const getAllClientUserConversationsLangGraphApiService = async (
  */
 export const getAllPlatformUserConversationsLangGraphApiService = async (
     agentBaseCredentials: AgentBaseCredentials
-): Promise<ServiceResponse<Conversation[]>> => {
+): Promise<ServiceResponse<ConversationLanggraph[]>> => {
     const AGENT_BASE_API_URL = getAgentBaseApiUrl();
     const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/conversation-langgraph/get-all-platform-user-conversations-langgraph`;
 
-    return makeAgentBaseRequest<Conversation[]>(
+    return makeAgentBaseRequest<ConversationLanggraph[]>(
         AGENT_BASE_API_URL,
         'GET',
         endpoint,

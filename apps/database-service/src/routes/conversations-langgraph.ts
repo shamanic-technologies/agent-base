@@ -11,7 +11,7 @@ import {
     AgentId,
     ErrorResponse,
     ServiceResponse,
-    Conversation,
+    ConversationLanggraph,
 } from '@agent-base/types';
 import { UpdateConversationLanggraphInput } from '@agent-base/types';
 import {
@@ -122,10 +122,11 @@ router.get('/get-or-create-conversations-from-agent-langgraph', (async (req: Req
     const createInput: CreateConversationInput = {
       conversationId: newConversationId,
       agentId: agentId,
-      channelId: defaultChannelId
+      channelId: defaultChannelId,
+      langGraphThreadId: null
     };
 
-    const createResponse : ServiceResponse<Conversation> = await createConversationLangGraph(createInput);
+    const createResponse : ServiceResponse<ConversationLanggraph> = await createConversationLangGraph(createInput);
 
     if (!createResponse.success) {
       return res.status(500).json(createResponse);

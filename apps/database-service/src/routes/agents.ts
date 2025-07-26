@@ -55,6 +55,7 @@ router.post('/create-user-agent', async (req: Request, res: Response): Promise<v
       res.status(400).json({ success: false, error: 'Missing required agent fields' });
       return;
     }
+    // isDeployed is optional, defaults in DB if not provided
     // --- End Validation ---
 
     // --- Step 1: Create Agent ---
@@ -159,6 +160,7 @@ router.post('/update-user-agent', async (req: Request, res: Response): Promise<v
        memory: agentUpdateData.agentMemory,
        jobTitle: agentUpdateData.agentJobTitle,
        embedding: agentUpdateData.agentEmbedding, // Add the embedding field
+       isDeployed: agentUpdateData.agentIsDeployed,
     }; 
     const updateResponse : ServiceResponse<Agent> = await updateAgent(updatePayload);
     

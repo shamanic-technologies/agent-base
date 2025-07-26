@@ -9,6 +9,7 @@ export interface ConversationLanggraphRecord {
   conversation_id: string;
   agent_id: string;
   channel_id: string;
+  langgraph_thread_id: string | null;
   messages: BaseMessage[];
   created_at: string | Date;
   updated_at: string | Date;
@@ -18,31 +19,31 @@ export interface ConversationLanggraph {
   conversationId: string;
   agentId: string;
   channelId: string;
+  langGraphThreadId: string | null;
   messages: BaseMessage[];
   createdAt: string | Date;
   updatedAt: string | Date;
 }
 
-// export interface CreateConversationInput {
-//   conversationId: string; 
-//   agentId: string;
-//   channelId: string;
-// }
+export interface CreateConversationInput {
+  conversationId: string; 
+  agentId: string;
+  langGraphThreadId: string | null;
+  channelId: string;
+}
 
-// export interface AgentId {
-//   agentId: string;
-// }
 
 export interface UpdateConversationLanggraphInput {
   conversationId: string;
+  langGraphThreadId: string | null;
   messages: BaseMessage[];
 }
 
 // // --- Conversation Responses ---
 
-// export interface ConversationId {
-//   conversationId: string;
-// }
+export interface ConversationId {
+  conversationId: string;
+}
 
 
 /**
@@ -56,6 +57,7 @@ export function mapConversationLanggraphFromDatabase(record: ConversationLanggra
     conversationId: record.conversation_id,
     agentId: record.agent_id,
     channelId: record.channel_id,
+    langGraphThreadId: record.langgraph_thread_id,
     messages: record.messages,
     createdAt: record.created_at,
     updatedAt: record.updated_at
@@ -73,20 +75,21 @@ export function mapConversationLanggraphToDatabase(conversation: ConversationLan
   if (conversation.conversationId !== undefined) record.conversation_id = conversation.conversationId;
   if (conversation.agentId !== undefined) record.agent_id = conversation.agentId;
   if (conversation.channelId !== undefined) record.channel_id = conversation.channelId;
+  if (conversation.langGraphThreadId !== undefined) record.langgraph_thread_id = conversation.langGraphThreadId;
   if (conversation.messages !== undefined) record.messages = conversation.messages;
   return record;
 }
 
-// /**
-//  * Sanitizes a conversation ID to remove problematic URL characters and ensure consistency.
-//  * - Converts to lowercase.
-//  * - Allows alphanumeric characters (a-z, 0-9), hyphen (-), underscore (_), and colon (:).
-//  * - Replaces all other characters with an underscore (_).
-//  * @param id The conversation ID string to sanitize.
-//  * @returns The sanitized conversation ID string.
-//  */
-// export function sanitizeConversationId(id: string): string {
-//   if (typeof id !== 'string' || !id) return ''; // Handle null, undefined, or non-string input
-//   return id.toLowerCase().replace(/[^a-z0-9\-_:]/g, '_');
-// }
+/**
+ * Sanitizes a conversation ID to remove problematic URL characters and ensure consistency.
+ * - Converts to lowercase.
+ * - Allows alphanumeric characters (a-z, 0-9), hyphen (-), underscore (_), and colon (:).
+ * - Replaces all other characters with an underscore (_).
+ * @param id The conversation ID string to sanitize.
+ * @returns The sanitized conversation ID string.
+ */
+export function sanitizeConversationId(id: string): string {
+  if (typeof id !== 'string' || !id) return ''; // Handle null, undefined, or non-string input
+  return id.toLowerCase().replace(/[^a-z0-9\-_:]/g, '_');
+}
 

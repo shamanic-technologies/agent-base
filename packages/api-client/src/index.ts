@@ -36,6 +36,7 @@ export * from './external-to-internal/agent-clients/agent-client.js';
 export * from './external-to-internal/agent-clients/conversation-client.js';
 export * from './external-to-internal/agent-clients/conversation-langgraph-client.js';
 export * from './external-to-internal/agent-clients/message-client.js';
+export * from './external-to-internal/agent-clients/message-langgraph-client.js';
 export * from './external-to-internal/agent-clients/run-client.js';
 export * from './external-to-internal/tool-auth-client.js';
 export * from './external-to-internal/api-tool-client.js';

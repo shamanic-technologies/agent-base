@@ -36,8 +36,8 @@ export async function createAgent(input: CreateAgentInput): Promise<ServiceRespo
     // Insert new agent
     const result = await client.query(
       `INSERT INTO "${AGENTS_TABLE}" 
-      (first_name, last_name, profile_picture, gender, model_id, memory, job_title)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      (first_name, last_name, profile_picture, gender, model_id, memory, job_title, is_deployed)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *`,
       [
         input.firstName,
@@ -46,7 +46,8 @@ export async function createAgent(input: CreateAgentInput): Promise<ServiceRespo
         input.gender,
         input.modelId,
         input.memory,
-        input.jobTitle
+        input.jobTitle,
+        input.isDeployed
       ]
     );
 
@@ -109,6 +110,10 @@ export async function updateAgent(input: UpdateAgentInput): Promise<ServiceRespo
     if (input.embedding) {
       fields.push('embedding');
       values.push(`[${input.embedding.join(',')}]`);
+    }
+    if (input.isDeployed !== undefined) {
+      fields.push('is_deployed');
+      values.push(input.isDeployed);
     }
 
     if (fields.length === 0) {

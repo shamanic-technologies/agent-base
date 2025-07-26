@@ -3,7 +3,7 @@ import { HumanMessage, AIMessage, BaseMessage } from "@langchain/core/messages";
 import {
   ServiceResponse,
   Agent,
-  Conversation,
+  ConversationLanggraph,
   AgentBaseDeductCreditRequest,
   AgentInternalCredentials,
 } from "@agent-base/types";
@@ -13,46 +13,38 @@ import {
   updateConversationLangGraphInternalApiService,
   deductCreditByPlatformUserIdInternalService,
 } from "@agent-base/api-client";
-import { Tool } from "@langchain/core/tools";
-import { ChatAnthropic } from "@langchain/anthropic";
-import { createAgentWorkflow } from "../lib/lang-graph/langgraph-agent.js";
-import { buildSystemPrompt } from "../lib/promptBuilder.js";
 import {
   mergeMessages,
   sanitizeIncompleteToolCalls,
 } from "../lib/lang-graph/message-utils.js";
 import { truncateHistory } from "../lib/lang-graph/history-truncation.js";
-import { loadLangGraphTools } from "../lib/lang-graph/tool-loader.js";
-import { ModelName } from "../types/index.js";
+import { buildSystemPrompt } from "../lib/promptBuilder.js";
+import { agentExecutor } from "../lib/lang-graph/langgraph-app.js";
 import { Message } from "ai";
 
 const router = Router();
 
 function convertToLangChainMessages(messages: (Message | any)[]): BaseMessage[] {
   return messages.map((msg) => {
-    // Standardize content access
     const content = msg.content ?? msg.kwargs?.content ?? "";
 
-    // Handle serialized LangChain messages from the database
     if (msg.id && Array.isArray(msg.id)) {
       const type = msg.id[msg.id.length - 1];
       switch (type) {
         case "HumanMessage":
           return new HumanMessage({ content });
         case "AIMessage":
-        case "AIMessageChunk": // Treat chunks as full AI messages when reconstructing history
+        case "AIMessageChunk":
           return new AIMessage({ content });
       }
     }
 
-    // Handle Vercel AI format messages (from initial request)
     if (msg.role === "user") {
       return new HumanMessage({ content });
     } else if (msg.role === "assistant" || msg.role === "system") {
       return new AIMessage({ content });
     }
 
-    // Fallback for any other unknown format, though this should be avoided.
     console.warn("[LangGraph] Unknown message format, defaulting to HumanMessage:", msg);
     return new HumanMessage({ content });
   });
@@ -96,7 +88,7 @@ router.post(
 
         const systemPrompt: string = buildSystemPrompt(agent);
 
-        const fullHistoryFromDBResponse: ServiceResponse<Conversation> =
+        const fullHistoryFromDBResponse: ServiceResponse<ConversationLanggraph> =
           await getConversationByIdLangGraphInternalApiService(
             { conversationId },
             platformUserId,
@@ -107,7 +99,7 @@ router.post(
         if (!fullHistoryFromDBResponse.success) {
           return res.status(500).json({ error: "Failed to load history" });
         }
-        const dbHistory: Message[] = fullHistoryFromDBResponse.data.messages;
+        const dbHistory = fullHistoryFromDBResponse.data.messages;
 
         const langChainDbHistory = convertToLangChainMessages(dbHistory);
         const langChainRequestMessages = convertToLangChainMessages(messages);
@@ -137,33 +129,19 @@ router.post(
           platformUserId,
           agentId: agent.id,
         };
-
-        const langchainTools = await loadLangGraphTools(
-          agentServiceCredentials,
-          conversationId,
-        );
-
-        const model = new ChatAnthropic({
-          model: ModelName.CLAUDE_SONNET_4_20250514,
-          temperature: 0.1,
-          clientOptions: {
-            defaultHeaders: {
-              "x-api-key": process.env.ANTHROPIC_API_KEY,
-            },
-          },
-        });
-
-        const boundModel = model.bindTools(langchainTools);
-
-        const workflow = createAgentWorkflow(boundModel, langchainTools);
-
-        const eventStream = await workflow.streamEvents(
+        
+        const eventStream = await agentExecutor.getStream(
           {
-            messages: sanitizedMessages, // Corrected from langChainRequestMessages
+            messages: sanitizedMessages,
             inputTokens: 0,
             outputTokens: 0,
           },
-          { version: "v2" },
+          {
+            configurable: {
+              thread_id: conversationId,
+              ...agentServiceCredentials,
+            },
+          },
         );
 
         res.setHeader("Content-Type", "text/event-stream");
@@ -180,14 +158,15 @@ router.post(
         }
         res.end();
 
-        // Save the final state for persistence
         if (finalState && Array.isArray(finalState.messages)) {
-          // The finalState contains the full, updated history.
-          // We save it directly, overwriting the old (and potentially corrupted) history.
           const messagesToSave = finalState.messages;
 
           await updateConversationLangGraphInternalApiService(
-            { conversationId, messages: messagesToSave as any },
+            { 
+              conversationId, 
+              messages: messagesToSave as any, 
+              langGraphThreadId: null 
+            },
             platformUserId,
             platformApiKey,
             clientUserId,
@@ -195,7 +174,7 @@ router.post(
           );
 
           const deductCreditRequest: AgentBaseDeductCreditRequest = {
-            toolCalls: [], // TODO: Extract tool calls for credit deduction
+            toolCalls: [], 
             inputTokens: finalState.inputTokens,
             outputTokens: finalState.outputTokens,
           };
@@ -207,10 +186,6 @@ router.post(
             deductCreditRequest,
           );
         }
-        
-        // Return the final state to the client
-        // res.status(200).json(finalState); // This was causing the error
-
       } catch (error) {
         next(error);
       }

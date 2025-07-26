@@ -2,11 +2,11 @@ import { PoolClient } from 'pg';
 import { 
   CreateConversationInput, 
   AgentId,
-  ConversationRecord,
+  ConversationLanggraphRecord,
   ConversationId,
   ServiceResponse,
-  Conversation,
-  mapConversationFromDatabase
+  ConversationLanggraph,
+  mapConversationLanggraphFromDatabase
 } from '@agent-base/types';
 import { getClient } from '../db.js';
 import { BaseMessage } from '@langchain/core/messages';
@@ -18,7 +18,7 @@ const CONVERSATIONS_TABLE = 'conversations_langgraph';
  */
 export async function createConversationLangGraph(
   input: CreateConversationInput,
-): Promise<ServiceResponse<Conversation>> {
+): Promise<ServiceResponse<ConversationLanggraph>> {
   const { conversationId, agentId, channelId } = input;
 
   if (!conversationId || !agentId || !channelId) {
@@ -48,7 +48,7 @@ export async function createConversationLangGraph(
     if (result.rowCount === 1 && result.rows[0]) {
       return {
         success: true,
-        data: mapConversationFromDatabase(result.rows[0]),
+        data: mapConversationLanggraphFromDatabase(result.rows[0]),
       };
     } else {
       const existingConversation = await getConversationLangGraph(conversationId);
@@ -121,7 +121,7 @@ export async function updateConversationMessagesLangGraph(
  */
 export async function getConversationLangGraph(
   conversationId: string
-): Promise<ServiceResponse<Conversation | null>> {
+): Promise<ServiceResponse<ConversationLanggraph | null>> {
 
   const query = `
     SELECT * FROM "${CONVERSATIONS_TABLE}"
@@ -138,7 +138,7 @@ export async function getConversationLangGraph(
       const conversation = result.rows[0] as any;
       return {
         success: true,
-        data: mapConversationFromDatabase(conversation)
+        data: mapConversationLanggraphFromDatabase(conversation)
       };
     } else {
       console.warn(`[DB Service] Conversation ${conversationId} not found.`);
@@ -159,7 +159,7 @@ export async function getConversationLangGraph(
  * Get all LangGraph conversations associated with a specific agent.
  */
 export async function getConversationsByAgentLangGraph(input: AgentId)
-: Promise<ServiceResponse<Conversation[]>> {
+: Promise<ServiceResponse<ConversationLanggraph[]>> {
   const { agentId } = input;
 
   if (!agentId) {
@@ -181,12 +181,12 @@ export async function getConversationsByAgentLangGraph(input: AgentId)
     
     const conversations = result.rows.map(row => {
       const conversation = row as any;
-      return conversation as ConversationRecord;
+      return conversation as ConversationLanggraphRecord;
     });
 
     return { 
       success: true, 
-      data: conversations.map(mapConversationFromDatabase)
+      data: conversations.map(mapConversationLanggraphFromDatabase)
     };
 
   } catch (error) {
@@ -203,7 +203,7 @@ export async function getConversationsByAgentLangGraph(input: AgentId)
 /**
  * Get all LangGraph conversations associated with a specific client_user_id.
  */
-export async function getConversationsByClientUserIdLangGraph(clientUserId: string, clientOrganizationId: string): Promise<ServiceResponse<Conversation[]>> {
+export async function getConversationsByClientUserIdLangGraph(clientUserId: string, clientOrganizationId: string): Promise<ServiceResponse<ConversationLanggraph[]>> {
   if (!clientUserId) {
     console.error('[DB Service/getConversationsByClientUserId] clientUserId is required');
     return { success: false, error: 'clientUserId is required' };
@@ -227,7 +227,7 @@ export async function getConversationsByClientUserIdLangGraph(clientUserId: stri
     const result = await client.query(query, [clientUserId, clientOrganizationId]);
 
     const conversations = result.rows.map(row => {
-      return mapConversationFromDatabase(row as any);
+      return mapConversationLanggraphFromDatabase(row as any);
     });
 
     return {
@@ -248,7 +248,7 @@ export async function getConversationsByClientUserIdLangGraph(clientUserId: stri
 /**
  * Get all LangGraph conversations associated with a specific platform_user_id.
  */
-export async function getConversationsByPlatformUserIdLangGraph(platformUserId: string): Promise<ServiceResponse<Conversation[]>> {
+export async function getConversationsByPlatformUserIdLangGraph(platformUserId: string): Promise<ServiceResponse<ConversationLanggraph[]>> {
   if (!platformUserId) {
     console.error('[DB Service/getConversationsByPlatformUserId] platformUserId is required');
     return { success: false, error: 'platformUserId is required' };
@@ -269,7 +269,7 @@ export async function getConversationsByPlatformUserIdLangGraph(platformUserId: 
     const result = await client.query(query, [platformUserId]);
 
     const conversations = result.rows.map(row => {
-      return mapConversationFromDatabase(row as any);
+      return mapConversationLanggraphFromDatabase(row as any);
     });
 
     return {
