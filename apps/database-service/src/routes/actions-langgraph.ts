@@ -1,17 +1,14 @@
-/*
 /**
  * Actions Routes
  *
  * API endpoints for retrieving actions associated with a client user.
  * Actions are derived from tool calls and results in conversation messages.
  */
-/*
 import express, { Request, Response, Router, NextFunction } from 'express';
 import { Action, ServiceResponse, ErrorResponse } from '@agent-base/types';
-import { getActionsForClientUser } from '../services/actionsService.js';
+import { getActionsForClientUserLangGraph } from '../services/actions-langgraph.js';
 
 const router: Router = express.Router(); // mergeParams is not strictly needed if not using parent params
-*/
 
 /**
  * GET /actions
@@ -19,7 +16,6 @@ const router: Router = express.Router(); // mergeParams is not strictly needed i
  * Retrieves all actions for a given clientUserId and clientOrganizationId.
  * Both clientUserId and clientOrganizationId are expected in headers.
  */
-/*
 router.get('/', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     let clientUserIdFromHeader: string | undefined;
     try {
@@ -58,7 +54,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction): Promise
             return;
         }
 
-        const response: ServiceResponse<Action[]> = await getActionsForClientUser(
+        const response: ServiceResponse<Action[]> = await getActionsForClientUserLangGraph(
             clientUserIdFromHeader,
             clientOrganizationId,
             limit // Pass the parsed limit to the service
@@ -88,4 +84,3 @@ router.get('/', async (req: Request, res: Response, next: NextFunction): Promise
 });
 
 export default router;
-*/

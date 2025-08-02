@@ -85,6 +85,7 @@ export function createDefaultAgentPayload(clientUserId: string, clientOrganizati
             ]
         }`,
         jobTitle: 'Assistant',
+        isDeployed: false,
     };
     return defaultAgentPayload;
 } 

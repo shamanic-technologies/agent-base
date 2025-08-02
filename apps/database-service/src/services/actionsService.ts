@@ -1,8 +1,10 @@
+/*
 /**
  * Actions Service
  *
  * Handles business logic related to retrieving Actions from conversation messages.
  */
+/*
 import {
   ServiceResponse,
   Action,
@@ -13,6 +15,7 @@ import {
 } from '@agent-base/types';
 import { Message as VercelMessage, ToolCallPart, ToolResultPart } from 'ai'; // Assuming Message from 'ai' is CoreMessage or compatible
 import { getConversationsByClientUserId } from './conversations.js';
+*/
 
 /**
  * Retrieves all actions for a given client user by processing their conversations.
@@ -23,6 +26,7 @@ import { getConversationsByClientUserId } from './conversations.js';
  * @param limit - Optional limit for the number of actions to return.
  * @returns A promise that resolves to a service response containing an array of Actions.
  */
+/*
 export async function getActionsForClientUser(
   clientUserId: string,
   clientOrganizationId: string,
@@ -188,3 +192,4 @@ export async function getActionsForClientUser(
     };
   }
 } 
+*/

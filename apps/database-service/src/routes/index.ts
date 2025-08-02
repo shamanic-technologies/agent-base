@@ -14,7 +14,8 @@ import conversationsLangGraphRoutes from './conversations-langgraph.js';
 // import webhooksRoutes from './webhooks.js';
 import clientUsersRoutes from './client-users.js';
 import clientOrganizationsRoutes from './client-organizations.js';
-import actionsRoutes from './actions.js';
+// import actionsRoutes from './actions.js';
+import actionsLangGraphRoutes from './actions-langgraph.js';
 
 const router = Router();
 
@@ -32,7 +33,7 @@ router.use('/client-users', clientUsersRoutes);
 
 // Mount actionsRoutes under /actions
 // ClientUserId will be read from headers within actionsRoutes
-router.use('/actions', actionsRoutes);
+router.use('/actions', actionsLangGraphRoutes);
 
 router.use('/client-organizations', clientOrganizationsRoutes);
 

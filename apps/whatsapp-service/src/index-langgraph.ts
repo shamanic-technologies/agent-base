@@ -1,4 +1,3 @@
-/*
 import "dotenv/config";
 import express, { Request, Response } from "express";
 import cors from "cors";
@@ -6,10 +5,10 @@ import twilio from "twilio";
 import { Readable } from "stream";
 import {
   getOrCreateAgents,
-  getOrCreateConversationsPlatformUserApiService,
+  getOrCreateConversationsLangGraphPlatformUserApiService,
   triggerLangGraphAgentRunStream,
 } from "@agent-base/api-client";
-import { AgentBaseCredentials, ServiceResponse, Agent, Conversation } from "@agent-base/types";
+import { AgentBaseCredentials, ServiceResponse, Agent, ConversationLanggraph } from "@agent-base/types";
 import { HumanMessage } from "@langchain/core/messages";
 import { splitMessage } from "./lib/utils.js";
 
@@ -38,13 +37,11 @@ interface TwilioRequestBody {
   From: string; // e.g., 'whatsapp:+14155238886'
   To: string; // e.g., 'whatsapp:+15005550006'
 }
-*/
 
 /**
  * Handles incoming WhatsApp messages from Twilio.
  * It forwards the message to the agent-service via the api-client SDK and streams the response back to the user.
  */
-/*
 app.post(
   "/whatsapp",
   async (
@@ -83,8 +80,8 @@ app.post(
       }
       
       // 2. Get or create conversation
-      const convosResponse: ServiceResponse<Conversation[]> =
-        await getOrCreateConversationsPlatformUserApiService(
+      const convosResponse: ServiceResponse<ConversationLanggraph[]> =
+        await getOrCreateConversationsLangGraphPlatformUserApiService(
           { agentId: agent.id },
           credentials,
         );
@@ -183,11 +180,10 @@ app.post(
     }
   }
 );
-*/
+
 /**
  * Starts the Express server.
  */
-/*
 const start = async () => {
   try {
     const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3100;
@@ -204,4 +200,3 @@ const start = async () => {
 };
 
 start();
-*/

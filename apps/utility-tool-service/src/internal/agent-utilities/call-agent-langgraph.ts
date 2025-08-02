@@ -1,27 +1,25 @@
-/*
 /**
  * Internal Utility: Call Agent
  * 
  * Provides an internal utility to call another agent with a message and get a complete response back.
  * It handles the streaming SDK call and resolves the entire response before returning.
  */
-/*
 import {
   InternalUtilityTool,
   ServiceResponse,
   AgentInternalCredentials,
   AgentToAgentMessageMetadata,
-  Agent,
+  ConversationLanggraph,
 } from '@agent-base/types';
 import { 
-  triggerAgentRunInternalServiceStream, 
-  getOrCreateConversationsInternalApiService,
+  triggerAgentRunInternalServiceLangGraphStream, 
+  getOrCreateConversationsLangGraphInternalApiService,
   getAgentByIdInternalService,
 } from '@agent-base/api-client';
 import { registry } from '../../registry/registry.js';
-import { Message } from 'ai';
+import { HumanMessage } from '@langchain/core/messages';
 import { nanoid } from 'nanoid';
-*/
+
 
 /**
  * Reads a ReadableStream of Uint8Array chunks (like those from a `fetch` response)
@@ -29,7 +27,6 @@ import { nanoid } from 'nanoid';
  * @param stream The body of a streaming response.
  * @returns A promise that resolves to the full string content of the stream.
  */
-/*
 async function streamToString(stream: ReadableStream<Uint8Array>): Promise<string> {
     const reader = stream.getReader();
     const decoder = new TextDecoder();
@@ -43,12 +40,10 @@ async function streamToString(stream: ReadableStream<Uint8Array>): Promise<strin
     }
     return result;
 }
-*/
 
 /**
  * Implementation of the Call Agent utility
  */
-/*
 const callAgentUtility: InternalUtilityTool = {
   id: 'call_agent',
   description: 'Calls another agent with a specific question or message and returns its full response. Use this to collaborate with other agents on complex tasks.',
@@ -100,7 +95,7 @@ const callAgentUtility: InternalUtilityTool = {
       }
 
       // 1. Get or create conversation
-      const convResponse = await getOrCreateConversationsInternalApiService(
+      const convResponse = await getOrCreateConversationsLangGraphInternalApiService(
         { agentId: agent_id_to_call },
         clientUserId,
         clientOrganizationId,
@@ -118,15 +113,13 @@ const callAgentUtility: InternalUtilityTool = {
         return { success: false, error: `No conversations available for agent ${agent_id_to_call}.` };
       }
 
-      const conversation = convResponse.data[0];
+      const conversation: ConversationLanggraph = convResponse.data[0];
       let messages = conversation.messages || [];
 
       // 2. Append new user message with agent-to-agent annotation
-      const userMessage: Message = {
-        id: nanoid(),
-        role: 'user',
+      const userMessage = new HumanMessage({
         content: message,
-      };
+      });
 
       if (agentId) {
         // Fetch details for both agents to enrich the metadata
@@ -168,7 +161,7 @@ const callAgentUtility: InternalUtilityTool = {
         agentId: agent_id_to_call, // To confirm that the agentId is the one being called, not the one calling.
       };
 
-      const response: Response = await triggerAgentRunInternalServiceStream(
+      const response: Response = await triggerAgentRunInternalServiceLangGraphStream(
         conversation.conversationId,
         messages,
         credentials
@@ -204,8 +197,6 @@ const callAgentUtility: InternalUtilityTool = {
     }
   },
 };
-*/
-/**
- * Register the utility
- */
-//registry.register(callAgentUtility);
+
+// Register the utility
+registry.register(callAgentUtility);
