@@ -36,29 +36,29 @@ export const triggerAgentRunInternalServiceStream = async (
     );
 };
 
-/**
- * Triggers the agent run process for a given conversation and message, for an internal service request, returning a stream.
- * This is the LangGraph compatible endpoint for internal service-to-service calls.
- * Corresponds to POST /run-langgraph in Agent Service.
- *
- * @param conversationId - The ID of the conversation.
- * @param messages - The array of message objects to send to the agent.
- * @param credentials - The internal credentials for the agent.
- * @returns A promise resolving to the raw Response object for streaming.
- */
-export const triggerAgentRunInternalServiceLangGraphStream = async (
-    conversationId: string,
-    messages: BaseMessage[],
-    credentials: AgentInternalCredentials
-): Promise<Response> => {
-    const AGENT_SERVICE_URL = getAgentServiceUrl();
-    const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}run-langgraph`;
-    const body = { conversationId, messages };
-
-    return makeInternalStreamingRequest(
-        AGENT_SERVICE_URL,
-        endpoint,
-        body,
-        credentials
-    );
-};
+// /**
+//  * Triggers the agent run process for a given conversation and message, for an internal service request, returning a stream.
+//  * This is the LangGraph compatible endpoint for internal service-to-service calls.
+//  * Corresponds to POST /run-langgraph in Agent Service.
+//  *
+//  * @param conversationId - The ID of the conversation.
+//  * @param messages - The array of message objects to send to the agent.
+//  * @param credentials - The internal credentials for the agent.
+//  * @returns A promise resolving to the raw Response object for streaming.
+//  */
+// export const triggerAgentRunInternalServiceLangGraphStream = async (
+//     conversationId: string,
+//     messages: BaseMessage[],
+//     credentials: AgentInternalCredentials
+// ): Promise<Response> => {
+//     const AGENT_SERVICE_URL = getAgentServiceUrl();
+//     const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}run-langgraph`;
+//     const body = { conversationId, messages };
+// 
+//     return makeInternalStreamingRequest(
+//         AGENT_SERVICE_URL,
+//         endpoint,
+//         body,
+//         credentials
+//     );
+// };

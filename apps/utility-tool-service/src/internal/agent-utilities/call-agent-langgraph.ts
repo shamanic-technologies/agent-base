@@ -12,7 +12,7 @@ import {
   ConversationLanggraph,
 } from '@agent-base/types';
 import { 
-  triggerAgentRunInternalServiceLangGraphStream, 
+//   triggerAgentRunInternalServiceLangGraphStream, 
   getOrCreateConversationsLangGraphInternalApiService,
   getAgentByIdInternalService,
 } from '@agent-base/api-client';
@@ -161,11 +161,12 @@ const callAgentUtility: InternalUtilityTool = {
         agentId: agent_id_to_call, // To confirm that the agentId is the one being called, not the one calling.
       };
 
-      const response: Response = await triggerAgentRunInternalServiceLangGraphStream(
-        conversation.conversationId,
-        messages,
-        credentials
-      );
+      const response: any = {};
+    //   const response: Response = await triggerAgentRunInternalServiceLangGraphStream(
+    //     conversation.conversationId,
+    //     messages,
+    //     credentials
+    //   );
 
       if (!response.ok || !response.body) {
         const errorText = response.body ? await response.text() : 'No response body';

@@ -56,25 +56,26 @@ export const triggerAgentRunPlatformUserApiServiceStream = async (
     return makeStreamingAgentRequest(AGENT_BASE_API_URL, endpoint, body, agentBaseCredentials);
 };
 
-/**
- * Triggers a LangGraph agent run, returning a stream.
- * Intended for clients like the WhatsApp service.
- * Corresponds to POST /agent/run/langgraph in API Gateway.
- * 
- * @param message - The user's message string.
- * @param from - The identifier for the user (e.g., WhatsApp phone number).
- * @param agentBaseCredentials - Credentials for authentication.
- * @returns A promise resolving to the raw Response object for streaming.
- */
-export const triggerLangGraphAgentRunStream = async (
-    conversationId: string,
-    messages: BaseMessage[],
-    agentBaseCredentials: AgentBaseCredentials
-): Promise<Response> => {
-    const AGENT_BASE_API_URL = getAgentBaseApiUrl();
-    const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/run-langgraph`;
-    const body = { conversationId, messages };
-    return makeStreamingAgentRequest(AGENT_BASE_API_URL, endpoint, body, agentBaseCredentials);
-}; 
+// /**
+//  * Triggers a LangGraph agent run, returning a stream.
+//  * Intended for clients like the WhatsApp service.
+//  * Corresponds to POST /agent/run/langgraph in API Gateway.
+//  * 
+//  * @param message - The user's message string.
+//  * @param from - The identifier for the user (e.g., WhatsApp phone number).
+//  * @param agentBaseCredentials - Credentials for authentication.
+//  * @returns A promise resolving to the raw Response object for streaming.
+//  */
+// export const triggerLangGraphAgentRunStream = async (
+//     conversationId: string,
+//     messages: BaseMessage[],
+//     agentBaseCredentials: AgentBaseCredentials
+// ): Promise<Response> => {
+//     const AGENT_BASE_API_URL = getAgentBaseApiUrl();
+//     const endpoint = `${AGENT_SERVICE_ROUTE_PREFIX}/run-langgraph`;
+//     const body = { conversationId, messages };
+//     return makeStreamingAgentRequest(AGENT_BASE_API_URL, endpoint, body, agentBaseCredentials);
+// }; 
+
 
 
