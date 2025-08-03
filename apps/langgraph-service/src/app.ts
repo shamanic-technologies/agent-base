@@ -13,8 +13,19 @@ interface AgentState {
 }
 
 const setupTools = async (state: AgentState, config: RunnableConfig): Promise<Partial<AgentState>> => {
-  // Return an empty array of tools to bypass tool loading for now.
-  return { tools: [] };
+  const agentId = config.configurable?.assistant_id;
+
+  if (!agentId) {
+    console.error("No agentId found in config");
+    return { tools: [] };
+  }
+
+  console.log(`Setting up tools for agent: ${agentId}`);
+
+  // Here you would add your logic to fetch tools from your database using the agentId.
+  // const tools = await loadToolsForAgent(agentId);
+  
+  return { tools: [] }; // For now, we continue with no tools.
 };
 
 const callModel = async (state: AgentState, config?: RunnableConfig): Promise<Partial<AgentState>> => {
@@ -73,4 +84,13 @@ const workflow = new StateGraph<AgentState>({
   .addConditionalEdges("agent", shouldContinue)
   .addEdge("action", "agent");
 
-export const app = workflow.compile();
+const compiledGraph = workflow.compile();
+
+export const app = (config: RunnableConfig) => {
+    const assistant_id = config.configurable?.assistant_id;
+    console.log(`Serving graph for assistant_id: ${assistant_id}`);
+    // This function acts as a factory. The langgraphjs server calls this
+    // with the full config. We extract the assistant_id and return the
+    // compiled graph, effectively registering it for the given ID.
+    return compiledGraph;
+};
