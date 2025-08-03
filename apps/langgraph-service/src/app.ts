@@ -13,6 +13,8 @@ interface AgentState {
 }
 
 const setupTools = async (state: AgentState, config: RunnableConfig): Promise<Partial<AgentState>> => {
+  console.debug("[LangGraph Service] Received config in setupTools:", JSON.stringify(config, null, 2));
+  
   const agentId = config.configurable?.assistant_id;
 
   if (!agentId) {
@@ -87,10 +89,6 @@ const workflow = new StateGraph<AgentState>({
 const compiledGraph = workflow.compile();
 
 export const app = (config: RunnableConfig) => {
-    const assistant_id = config.configurable?.assistant_id;
-    console.log(`Serving graph for assistant_id: ${assistant_id}`);
-    // This function acts as a factory. The langgraphjs server calls this
-    // with the full config. We extract the assistant_id and return the
-    // compiled graph, effectively registering it for the given ID.
+    console.log(`Serving graph with config: ${JSON.stringify(config, null, 2)}`);
     return compiledGraph;
 };
