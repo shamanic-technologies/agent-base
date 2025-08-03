@@ -31,6 +31,7 @@ export * from './internal-to-internal/webhook-client.js';
 export * from './internal-to-internal/payment-client.js';
 export * from './internal-to-internal/tools/tool-creators.js';
 export * from './internal-to-internal/dashboard-client.js';
+export * from './internal-to-internal/langgraph-client.js';
 
 export * from './external-to-internal/agent-clients/agent-client.js';
 export * from './external-to-internal/agent-clients/conversation-client.js';
@@ -48,5 +49,5 @@ export * from './internal-to-external/webhook-tool-client.js';
 export * from './internal-to-external/api-tool-client.js';
 export * from './internal-to-external/secret-client.js';
 export * from './internal-to-external/api-tool-client.js';
+export * from './internal-to-external/langgraph-service.js';
 export * from './external-to-internal/agent-clients/agent-client.js';
-

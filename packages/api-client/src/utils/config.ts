@@ -209,4 +209,18 @@ export function getDashboardServiceUrl(): string {
   }
   validateServiceUrl(url, 'DASHBOARD_SERVICE_URL');
   return url;
-} 
+}
+
+/**
+ * Retrieves the LangGraph Service URL from the LANGGRAPH_SERVICE_URL environment variable.
+ * @returns {string} The LangGraph Service URL.
+ * @throws {Error} If LANGGRAPH_SERVICE_URL is not set or is not a valid URL.
+ */
+export function getLangGraphServiceUrl(): string {
+  const url = process.env.LANGGRAPH_SERVICE_URL;
+  if (!url) {
+    throw new Error('[api-client/config] LANGGRAPH_SERVICE_URL environment variable is not set. This is required.');
+  }
+  validateServiceUrl(url, 'LANGGRAPH_SERVICE_URL');
+  return url;
+}
