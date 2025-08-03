@@ -39,6 +39,7 @@ const TOOL_AUTH_SERVICE_URL = process.env.TOOL_AUTH_SERVICE_URL;
 const USER_SERVICE_URL = process.env.USER_SERVICE_URL;
 const DATABASE_SERVICE_URL = process.env.DATABASE_SERVICE_URL; // Add Database Service URL
 const DASHBOARD_SERVICE_URL = process.env.DASHBOARD_SERVICE_URL; // Add Dashboard Service URL
+const LANGGRAPH_SERVICE_URL = process.env.LANGGRAPH_SERVICE_URL;
 
 const requiredEnvVars = {
   PORT,
@@ -53,6 +54,7 @@ const requiredEnvVars = {
   DATABASE_SERVICE_URL, // Add to required list
   DASHBOARD_SERVICE_URL, // Add to required list
   PAYMENT_SERVICE_URL,
+  LANGGRAPH_SERVICE_URL,
 };
 
 for (const [key, value] of Object.entries(requiredEnvVars)) {
@@ -89,7 +91,8 @@ configureRoutes(
     user: USER_SERVICE_URL!,
     database: DATABASE_SERVICE_URL!, // Pass to routes
     dashboard: DASHBOARD_SERVICE_URL!, // Pass to routes
-    payment: PAYMENT_SERVICE_URL!
+    payment: PAYMENT_SERVICE_URL!,
+    langgraph: LANGGRAPH_SERVICE_URL!,
   },
   authMiddleware(),
   creditValidationMiddleware // Pass the imported middleware

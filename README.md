@@ -7,6 +7,7 @@
 | **database-service** | Data persistence layer | 3006 |
 | **key-service** | API key management and validation | 3003 |
 | **agent-service** | AI model inference service wit Vercel AI SDK | 3040 |
+| **langgraph-service** | Real-time agent conversation execution | 8080 |
 | **payment-service** | Subscription and payment processing | 3007 |
 | **api-gateway-service** | API gateway that routes requests to appropriate services | 3002 |
 | **web-gateway-service** | Web gateway that routes requests to appropriate services | 3030 |

@@ -17,6 +17,7 @@ import { configureUserRoutes } from './user.routes.js';
 import { configureDatabaseRoutes } from './database.routes.js';
 import { configureDashboardRoutes } from './dashboard.routes.js';
 import { configureKeyRoutes } from './key.routes.js';
+import { configureLangGraphRoutes } from './langgraph.routes.js';
 
 /**
  * Configure all routes for the API Gateway
@@ -40,6 +41,7 @@ export const configureRoutes = (
     database: string;
     dashboard: string;
     payment: string;
+    langgraph: string;
   },
   authMiddleware: express.RequestHandler,
   creditValidationMiddleware: express.RequestHandler
@@ -54,6 +56,11 @@ export const configureRoutes = (
   const agentRouter = express.Router();
   configureAgentRoutes(agentRouter, serviceUrls.agent, authMiddleware, creditValidationMiddleware);
   app.use('/agent', agentRouter);
+
+  // /langgraph prefix
+  const langGraphRouter = express.Router();
+  configureLangGraphRoutes(langGraphRouter, serviceUrls.langgraph, authMiddleware);
+  app.use('/langgraph', langGraphRouter);
 
   // Payment service routes
   const paymentRouter = express.Router();
