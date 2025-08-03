@@ -31,7 +31,6 @@ export * from './internal-to-internal/webhook-client.js';
 export * from './internal-to-internal/payment-client.js';
 export * from './internal-to-internal/tools/tool-creators.js';
 export * from './internal-to-internal/dashboard-client.js';
-export * from './internal-to-internal/langgraph-client.js';
 
 export * from './external-to-internal/agent-clients/agent-client.js';
 export * from './external-to-internal/agent-clients/conversation-client.js';
@@ -39,6 +38,7 @@ export * from './external-to-internal/agent-clients/conversation-langgraph-clien
 export * from './external-to-internal/agent-clients/message-client.js';
 export * from './external-to-internal/agent-clients/message-langgraph-client.js';
 export * from './external-to-internal/agent-clients/run-client.js';
+export * from './external-to-internal/agent-clients/langgraph-client.js'; // Add new client
 export * from './external-to-internal/tool-auth-client.js';
 export * from './external-to-internal/api-tool-client.js';
 export * from './external-to-internal/user-client.js';

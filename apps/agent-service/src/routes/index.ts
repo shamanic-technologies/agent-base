@@ -13,6 +13,8 @@ import actionsRoutes from './actions.js';
 // import langgraphRoutes from './run-langgraph.js';
 import conversationLangGraphRoutes from './conversation-langgraph.js';
 import messageLangGraphRoutes from './message-langgraph.js';
+import langgraphRoutes from './langgraph.js'; // Renamed import
+
 // Configure all routes for the application
 export function configureRoutes(app: Express) {
   app.use('/health', healthRoutes);
@@ -24,6 +26,7 @@ export function configureRoutes(app: Express) {
   app.use('/actions', actionsRoutes);
   app.use('/conversation-langgraph', conversationLangGraphRoutes);
   app.use('/', agentRoutes);
+  app.use('/', langgraphRoutes); // Use the renamed route
 }
 
 // Default export
@@ -36,5 +39,6 @@ export default {
   messageLangGraphRoutes,
   healthRoutes,
   actionsRoutes,
+  langgraphRoutes, // Export the renamed route
   // langgraphRoutes,
-}; 
+};
