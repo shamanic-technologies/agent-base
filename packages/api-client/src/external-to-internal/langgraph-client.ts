@@ -41,7 +41,7 @@ export const proxyLangGraphRequest = async (
     const response = await fetch(fullUrl, {
         method: method,
         headers,
-        body: Object.keys(body).length > 0 ? JSON.stringify(body) : undefined,
+        body: JSON.stringify(body ?? {}),
     });
 
     if (!response.ok) {

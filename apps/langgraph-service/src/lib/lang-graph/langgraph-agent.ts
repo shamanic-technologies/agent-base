@@ -16,39 +16,7 @@ interface AgentState {
   agent: Agent | null;
 }
 
-const setupAgent = async (_: AgentState, config: RunnableConfig) => {
-  const { configurable } = config;
-  const {
-    clientUserId,
-    clientOrganizationId,
-    platformUserId,
-    platformApiKey,
-    thread_id,
-  } = (configurable || {}) as AgentInternalCredentials & { thread_id: string };
 
-  if (!clientUserId || !clientOrganizationId || !platformUserId || !platformApiKey || !thread_id) {
-    throw new Error("Missing required credentials in invocation config.");
-  }
-
-  console.log(`[setupAgent] Loading agent for conversation: ${thread_id}`);
-
-  const agentResponse = await getAgentFromConversation(
-    { conversationId: thread_id },
-    clientUserId,
-    clientOrganizationId,
-    platformUserId,
-    platformApiKey,
-  );
-
-  if (!agentResponse.success) {
-    console.error("[setupAgent] Failed to load agent from database:", agentResponse.error);
-    throw new Error("Failed to load agent from database.");
-  }
-
-  console.log(`[setupAgent] Successfully loaded agent: ${agentResponse.data.firstName}`);
-
-  return { agent: agentResponse.data };
-};
 
 
 const shouldContinue = (state: AgentState) => {
@@ -126,12 +94,10 @@ export const createAgentWorkflow = (boundModel: Runnable, tools: Tool[]) => {
       },
     },
   })
-    .addNode("setup", setupAgent)
     .addNode("llm", (state) => callModel(state, boundModel))
     .addNode("tools", toolNode);
 
-  graph.addEdge(START, "setup");
-  graph.addEdge("setup", "llm");
+  graph.addEdge(START, "llm");
   graph.addConditionalEdges("llm", shouldContinue);
   graph.addEdge("tools", "llm");
 

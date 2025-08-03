@@ -13,5 +13,4 @@ const model = new ChatAnthropic({
 });
 
 const graph = createAgentWorkflow(model as any, []);
-
 export const app = graph; 
