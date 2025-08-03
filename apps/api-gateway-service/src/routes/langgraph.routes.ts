@@ -20,6 +20,7 @@ export const configureLangGraphRoutes = (
   // 2. Then, our special langgraph middleware runs to modify the body.
   // 3. Finally, the request is proxied.
   router.use(
+    express.json({ limit: '50mb' }), // Parse JSON bodies
     authMiddleware, 
     langgraphMiddleware()
   );
